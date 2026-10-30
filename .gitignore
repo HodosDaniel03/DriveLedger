@@ -1,1 +1,11 @@
 STITCH_DESIGN_PROMPTS.md
+# Függőségek és build mappa
+node_modules/
+dist/
+.vite/
+
+# Logok és helyi beállítások
+*.log
+.env
+.env.local
+.DS_Store
