@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
+::-webkit-scrollbar{display:none;}
+
+/* Interactive micro-interaction utilities & transitions */
+.hover-lift {
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+}
+.active-press {
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.active-press:active {
+  transform: scale(0.97);
+}
+
+/* Severity gauge animations */
+.gauge-segment {
+  transition: stroke-dashoffset 1200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Flash pulse for sticky card on workshop change */
+@keyframes flashSummary {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 91, 255, 0.3);
+    background-color: #EEF3FF;
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(15, 91, 255, 0);
+  }
+  100% {
+    background-color: #FFFFFF;
+  }
+}
+.flash-highlight {
+  animation: flashSummary 850ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Root cause animated progress bar */
+.progress-fill {
+  transition: width 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "warning-bg": "#FFF6D6", "on-background": "#191b24", "tertiary-container": "#c43b00", "surface-container-high": "#e7e7f4", "primary-50": "#EEF3FF", "error": "#ba1a1a", "warning-text": "#8A5A00", "secondary": "#006d33", "surface": "#FFFFFF", "on-secondary-fixed-variant": "#005225", "primary-container": "#0f5bff", "faint": "#98A2B3", "surface-subtle": "#F8FAFC", "canvas": "#F3F5F8", "success-bg": "#E8F7EE", "score-fair": "#F2B705", "error-container": "#ffdad6", "background": "#faf8ff", "on-error": "#ffffff", "tertiary-fixed": "#ffdbd0", "inverse-surface": "#2e303a", "surface-container-highest": "#e1e1ef", "secondary-fixed-dim": "#62de85", "primary": "#0045cd", "surface-bright": "#faf8ff", "score-good": "#12A150", "surface-variant": "#e1e1ef", "on-primary": "#ffffff", "success-text": "#0E7A3E", "inverse-primary": "#b6c4ff", "muted": "#6B7686", "secondary-fixed": "#7ffb9f", "outline-variant": "#c3c5d9", "on-primary-container": "#ebecff", "on-tertiary-container": "#ffe9e3", "score-poor": "#F04438", "on-tertiary": "#ffffff", "on-primary-fixed-variant": "#003bb0", "border": "#E4E8EE", "on-primary-fixed": "#00164f", "danger-bg": "#FDECEA", "ink": "#0B1220", "on-error-container": "#93000a", "body": "#3D4756", "on-surface": "#191b24", "on-secondary-fixed": "#00210b", "border-strong": "#CDD4DE", "primary-800": "#0838A8", "on-secondary": "#ffffff", "primary-600": "#0F5BFF", "on-surface-variant": "#434656", "primary-fixed-dim": "#b6c4ff", "surface-tint": "#004fe6", "danger-text": "#B42318", "surface-container-low": "#f3f2ff", "on-tertiary-fixed": "#3a0b00", "tertiary-fixed-dim": "#ffb59e", "tertiary": "#9a2d00", "on-tertiary-fixed-variant": "#842500", "primary-100": "#DCE6FF", "outline": "#737688", "inverse-on-surface": "#f0f0fd", "surface-dim": "#d9d9e6", "surface-container-lowest": "#ffffff", "primary-fixed": "#dce1ff", "primary-700": "#0A47D1", "on-secondary-container": "#007235", "surface-container": "#ededfa", "secondary-container": "#7cf99c" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-2xl": "2rem", "space-xs": "0.25rem", "space-lg": "1rem", "space-xl": "1.5rem", "gutter": "1.5rem", "space-md": "0.75rem", "margin": "1.5rem", "space-3xl": "3rem", "space-sm": "0.5rem" }, "fontFamily": { "metric-xl": ["Inter"], "code": ["JetBrains Mono"], "h1": ["Inter"], "display": ["Inter"], "body-l": ["Inter"], "metric-l": ["Inter"], "micro": ["Inter"], "body": ["Inter"], "h2": ["Inter"], "h3": ["Inter"], "small": ["Inter"] }, "fontSize": { "metric-xl": ["48px", { "lineHeight": "52px", "fontWeight": "700" }], "code": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "h1": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "display": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.025em", "fontWeight": "700" }], "body-l": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "metric-l": ["28px", { "lineHeight": "32px", "fontWeight": "700" }], "micro": ["11px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }], "body": ["15px", { "lineHeight": "24px", "fontWeight": "400" }], "h2": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "h3": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "small": ["13px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script></head><body class="bg-canvas font-body text-body antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 right-0 z-50"><div class="h-16 bg-surface border-b border-border w-full"><div class="max-w-[1160px] mx-auto px-space-lg h-full flex items-center justify-between"><div class="flex items-center gap-space-2xl"><a class="flex items-center gap-space-sm text-ink focus:outline-none group" data-path="true-cost-to-own" href="#"><span class="material-symbols-outlined text-primary-600 text-[26px] transition-transform duration-300 group-hover:rotate-12">speed</span><span class="font-h3 text-h3 tracking-tight text-ink font-bold">Odometer</span></a><nav class="hidden md:flex items-center gap-space-xl" data-active-classes="text-ink font-semibold"><a class="flex items-center gap-1 font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="tools" href="#"><span>Tools</span><span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span></a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="methodology" href="#">Methodology</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="reviews" href="#">Reviews</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="blog" href="#">Blog</a></nav></div><div class="flex items-center gap-space-lg"><button class="flex items-center gap-1.5 px-space-sm py-1 rounded-full text-small font-small text-on-surface-variant hover:text-ink hover:bg-surface-subtle transition-all active-press" type="button"><span class="text-small font-code font-bold leading-none tracking-wider">🇺🇸 US</span><span class="material-symbols-outlined text-[16px]">expand_more</span></button><a class="hidden sm:inline-flex items-center px-space-lg py-2 rounded-full border border-border-strong text-small font-small text-ink font-semibold hover:border-ink hover:bg-surface-subtle transition-all active-press" data-path="get-started" href="#">Get started</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm transition-transform hover:scale-105"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div><div class="h-14 bg-surface border-b border-border w-full"><div class="max-w-[1160px] mx-auto px-space-lg h-full flex items-center"><nav class="flex items-center gap-space-sm overflow-x-auto py-1" data-active-classes="bg-primary-600 text-on-primary border-primary-600 font-semibold shadow-sm"><a class="inline-flex items-center px-space-lg py-1.5 rounded-full border border-border-strong text-small font-small text-on-surface-variant hover:text-ink hover:border-ink transition-all shrink-0 active-press" data-path="true-cost-to-own" href="#">True Cost to Own</a><a class="inline-flex items-center px-space-lg py-1.5 rounded-full border border-border-strong text-small font-small text-on-surface-variant hover:text-ink hover:border-ink transition-all shrink-0 active-press" data-path="maintenance-check" href="#">Maintenance Check</a><a aria-current="page" class="inline-flex items-center px-space-lg py-1.5 rounded-full transition-all shrink-0 bg-primary-600 text-on-primary border-primary-600 font-semibold shadow-sm active-press" data-path="obd2-repair-estimator" href="#">OBD2 Repair Estimator</a></nav></div></div></header><main class="w-full pt-[120px] bg-canvas flex-1"><div class="max-w-[1160px] mx-auto px-space-lg py-space-xl"><div class="flex flex-col w-full space-y-6">
+<!-- Search Bar Card -->
+<section class="bg-surface rounded-2xl p-5 shadow-sm hover-lift">
+<div class="relative flex items-center bg-surface-subtle rounded-full px-4 gap-3 focus-within:bg-surface focus-within:shadow-md focus-within:ring-4 focus-within:ring-primary-600/15 transition-all h-14">
+<span class="material-symbols-outlined text-muted text-[22px] shrink-0 transition-colors group-focus-within:text-primary-600">search</span>
+<span class="font-code text-code px-2.5 py-1 rounded bg-primary-50 text-primary-600 shrink-0 select-none font-bold">P0420</span>
+<input class="font-body text-body text-ink placeholder:text-faint flex-1 bg-transparent border-0 outline-none min-w-0" id="diagnostic-search-input" placeholder="Search a code or symptom (e.g. catalyst efficiency, P0430, rough idle)..." type="text" value="Catalyst System Efficiency Below Threshold (Bank 1)"/>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-small font-small text-muted hover:text-ink hover:bg-surface active-press transition-colors shrink-0" id="clear-search-btn" title="Clear input" type="button">
+<span class="font-code text-micro text-faint bg-surface-container px-1.5 py-0.5 rounded">ESC</span>
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Filter Category Pills -->
+<div class="flex items-center gap-2 pt-3.5 overflow-x-auto no-scrollbar scroll-smooth" id="category-pills">
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full bg-primary-50 text-primary-600 font-semibold shrink-0 transition-all duration-200 active-press shadow-xs" data-category="all">
+        All Systems
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="emissions">
+        Emissions &amp; Exhaust
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="forced-induction">
+        Forced Induction &amp; Air
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="fuel-air">
+        Fuel &amp; Air Induction
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="engine">
+        Engine Mechanical &amp; Ignition
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="transmission">
+        Transmission &amp; Drivetrain
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="cooling">
+        Cooling &amp; Thermal
+      </button>
+<button class="category-pill h-8 inline-flex items-center text-small font-small px-3.5 rounded-full text-body hover:bg-surface-subtle hover:text-ink shrink-0 transition-all duration-200 active-press" data-category="hybrid">
+        Hybrid &amp; Network
+      </button>
+</div>
+</section>
+<!-- Hero Row: Code Card + Severity Card -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Code Information Card -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-6 hover-lift relative">
+<div class="space-y-4">
+<div class="flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<span class="font-code text-metric-l font-bold text-ink tracking-tight">P0420</span>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-surface-container text-body text-small font-small font-medium">
+              Emissions &amp; Exhaust
+            </span>
+</div>
+<span class="font-code text-micro text-faint uppercase tracking-wider">OBD-II GENERIC</span>
+</div>
+<div>
+<h2 class="font-h3 text-h3 text-ink font-semibold tracking-tight">
+            Catalyst System Efficiency Below Threshold (Bank 1)
+          </h2>
+<p class="font-body text-body text-body mt-2 leading-relaxed">
+            The engine control module (ECM) detects that the catalytic converter’s oxygen storage capacity on Bank 1 has degraded below acceptable EPA emissions thresholds.
+          </p>
+</div>
+<div class="bg-surface-subtle rounded-xl p-4 space-y-2.5">
+<span class="font-micro text-micro uppercase tracking-wider text-muted font-semibold block">Confirmed Symptoms</span>
+<ul class="space-y-2">
+<li class="flex items-start gap-2.5 font-small text-small text-body group cursor-default">
+<span class="material-symbols-outlined text-muted text-[18px] shrink-0 group-hover:text-warning-text transition-colors">warning</span>
+<span>Check engine light (MIL) illuminated with no catastrophic loss of drivability.</span>
+</li>
+<li class="flex items-start gap-2.5 font-small text-small text-body group cursor-default">
+<span class="material-symbols-outlined text-muted text-[18px] shrink-0 group-hover:text-primary-600 transition-colors">air</span>
+<span>Noticeable sulfur or rotten-egg exhaust odor following extended highway loads.</span>
+</li>
+<li class="flex items-start gap-2.5 font-small text-small text-body group cursor-default">
+<span class="material-symbols-outlined text-muted text-[18px] shrink-0 group-hover:text-score-poor transition-colors">cancel</span>
+<span>Immediate rejection during state or regional OBD-II tailpipe readiness checks.</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-surface-subtle hover:bg-surface-container active-press text-small font-small font-semibold text-ink transition-all" id="btn-change-code">
+<span class="material-symbols-outlined text-[16px] transition-transform duration-300">swap_horiz</span>
+<span>Change code</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-surface-subtle hover:bg-surface-container active-press text-small font-small font-semibold text-ink transition-all" id="btn-share">
+<span class="material-symbols-outlined text-[16px]">share</span>
+<span id="share-text">Share</span>
+</button>
+</div>
+<span class="font-code text-micro text-muted">SAE J2012 Standard</span>
+</div>
+<!-- Change code quick popover -->
+<div class="hidden absolute left-6 bottom-16 z-20 w-72 p-3 bg-surface rounded-xl shadow-xl border border-border space-y-2 transition-all" id="change-code-popover">
+<div class="text-small font-semibold text-ink">Select or type code:</div>
+<div class="grid grid-cols-3 gap-1.5 text-center font-code text-small">
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0420</button>
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0430</button>
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0136</button>
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0300</button>
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0171</button>
+<button class="code-choice p-1.5 rounded bg-surface-subtle hover:bg-primary-50 hover:text-primary-600 transition-colors">P0455</button>
+</div>
+</div>
+<!-- Share toast message -->
+<div class="opacity-0 pointer-events-none absolute left-6 bottom-16 z-20 px-3.5 py-2 rounded-lg bg-inverse-surface text-inverse-on-surface text-small font-medium shadow-lg transition-opacity duration-300 flex items-center gap-2" id="share-toast">
+<span class="material-symbols-outlined text-score-good text-[18px]">check_circle</span>
+<span>Link copied to clipboard!</span>
+</div>
+</div>
+<!-- Severity & Cost Overview Card -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-6 hover-lift">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h3 class="font-h3 text-h3 text-ink font-semibold">Repair Severity</h3>
+<span class="material-symbols-outlined text-muted text-[18px] cursor-help transition-transform hover:scale-110" title="Based on risk to mechanical powertrain integrity.">info</span>
+</div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text font-small text-small font-semibold transition-all">
+<span class="w-1.5 h-1.5 rounded-full bg-score-fair animate-pulse"></span>
+            Moderate
+          </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+<!-- Segmented Arc Gauge with sequential draw-in animations -->
+<div class="sm:col-span-5 flex flex-col items-center justify-center relative">
+<svg class="w-36 h-36 transform -rotate-90" viewbox="0 0 120 120">
+<!-- Background Inactive Track Segment 1 (Low) -->
+<circle class="gauge-segment text-surface-container-high" cx="60" cy="60" fill="none" id="gauge-bg-1" r="48" stroke="currentColor" stroke-dasharray="75 226" stroke-dashoffset="75" stroke-linecap="round" stroke-width="8"></circle>
+<!-- Moderate Active Arc (Yellow #F2B705) -->
+<circle class="gauge-segment text-score-fair" cx="60" cy="60" fill="none" id="gauge-active-2" r="48" stroke="currentColor" stroke-dasharray="75 226" stroke-dashoffset="75" stroke-linecap="round" stroke-width="9"></circle>
+<!-- Inactive Segment 3 (Critical) -->
+<circle class="gauge-segment text-surface-container-high" cx="60" cy="60" fill="none" id="gauge-bg-3" r="48" stroke="currentColor" stroke-dasharray="75 226" stroke-dashoffset="75" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center opacity-0 transform scale-90 transition-all duration-700" id="gauge-center-text">
+<span class="font-h2 text-h2 font-bold text-ink leading-none">Mod</span>
+<span class="font-micro text-micro text-muted uppercase tracking-wider mt-1">Tier 2 of 3</span>
+</div>
+</div>
+<div class="sm:col-span-7 space-y-2">
+<h4 class="font-small text-small font-semibold text-ink">Can I keep driving?</h4>
+<p class="font-small text-small text-body leading-relaxed">
+              Safe for short commutes. Schedule service within 1–2 months to prevent substrate melt, exhaust flow choke, and upstream cylinder backpressure damage.
+            </p>
+</div>
+</div>
+<!-- Blue Insight Highlight Callout -->
+<div class="bg-primary-50 rounded-xl p-4 text-small font-small text-primary-800 leading-relaxed border border-primary-100/50">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-primary-600 text-[20px] shrink-0 mt-0.5">price_check</span>
+<div>
+<span class="font-semibold text-ink">Most drivers spend $742 – $1,980</span> at an independent specialist. Franchise dealerships average <strong>38% higher</strong> due to OEM core markup and standard bench diagnostic fees.
+            </div>
+</div>
+</div>
+</div>
+<div class="flex flex-col space-y-2 pt-2">
+<div class="flex items-center justify-between">
+<button class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-surface-subtle hover:bg-surface-container active-press text-small font-small font-semibold text-ink transition-all" id="toggle-rubric-btn">
+<span>See severity rubric</span>
+<span class="material-symbols-outlined text-[16px] transition-transform duration-300" id="rubric-icon">chevron_right</span>
+</button>
+<span class="font-small text-small text-muted">EPA Tier 3 Protocol</span>
+</div>
+<!-- Expandable severity rubric disclosure -->
+<div class="hidden overflow-hidden transition-all duration-300 pt-2 border-t border-border mt-2" id="rubric-disclosure">
+<div class="grid grid-cols-3 gap-2 text-micro">
+<div class="p-2 rounded-lg bg-surface-subtle">
+<div class="font-bold text-score-good">Tier 1: Low</div>
+<div class="text-muted mt-0.5">Minor emissions or comfort flag. Safe indefinitely.</div>
+</div>
+<div class="p-2 rounded-lg bg-warning-bg">
+<div class="font-bold text-warning-text">Tier 2: Moderate</div>
+<div class="text-body mt-0.5">Component efficiency degradation. Safe 30-60 days.</div>
+</div>
+<div class="p-2 rounded-lg bg-danger-bg">
+<div class="font-bold text-danger-text">Tier 3: Critical</div>
+<div class="text-body mt-0.5">Imminent engine stall or cat melt. Immediate stop.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Workspace Split: 7 Cols Diagnostic vs 5 Cols Sticky Financials -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (7 COLS) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Most Likely Root Causes -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm space-y-5 hover-lift">
+<div>
+<h3 class="font-h3 text-h3 text-ink font-semibold">Most likely root causes</h3>
+<p class="font-small text-small text-muted mt-0.5">Statistically calibrated against 24,000+ confirmed OBD2 repair log records.</p>
+</div>
+<div class="space-y-3">
+<!-- Cause 1 -->
+<div class="cause-row p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 cursor-pointer space-y-2.5 group">
+<div class="flex items-center justify-between gap-4">
+<span class="font-body text-body font-semibold text-ink group-hover:text-primary-600 transition-colors">Degraded catalytic converter (Bank 1)</span>
+<span class="font-metric-l text-body font-bold text-primary-600 tabular-nums">54%</span>
+</div>
+<p class="font-small text-small text-body">Internal precious metal washcoat depleted from high mileage or persistent thermal shock.</p>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="progress-fill bg-primary-600 h-full rounded-full group-hover:bg-primary-700" data-width="54%" style="width: 0%"></div>
+</div>
+<div class="flex items-center justify-between font-code text-micro text-muted pt-1">
+<span>Parts $680–$1,650</span>
+<span>Labour 2.2–3.8 hrs</span>
+</div>
+</div>
+<!-- Cause 2 -->
+<div class="cause-row p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 cursor-pointer space-y-2.5 group">
+<div class="flex items-center justify-between gap-4">
+<span class="font-body text-body font-semibold text-ink group-hover:text-primary-600 transition-colors">Lazy downstream O2 sensor (B1S2)</span>
+<span class="font-metric-l text-body font-bold text-ink tabular-nums">24%</span>
+</div>
+<p class="font-small text-small text-body">Slow voltage switching frequency causing false ECM catalyst monitoring errors.</p>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="progress-fill bg-body h-full rounded-full group-hover:bg-ink" data-width="24%" style="width: 0%"></div>
+</div>
+<div class="flex items-center justify-between font-code text-micro text-muted pt-1">
+<span>Parts $85–$190</span>
+<span>Labour 0.5–1.0 hrs</span>
+</div>
+</div>
+<!-- Cause 3 -->
+<div class="cause-row p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 cursor-pointer space-y-2.5 group">
+<div class="flex items-center justify-between gap-4">
+<span class="font-body text-body font-semibold text-ink group-hover:text-primary-600 transition-colors">Exhaust leak upstream of B1S2</span>
+<span class="font-metric-l text-body font-bold text-ink tabular-nums">15%</span>
+</div>
+<p class="font-small text-small text-body">Fresh ambient oxygen intrusion through a cracked flex pipe or flange gasket distorting readings.</p>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="progress-fill bg-muted h-full rounded-full group-hover:bg-body" data-width="15%" style="width: 0%"></div>
+</div>
+<div class="flex items-center justify-between font-code text-micro text-muted pt-1">
+<span>Parts $35–$120</span>
+<span>Labour 1.0–2.0 hrs</span>
+</div>
+</div>
+<!-- Cause 4 -->
+<div class="cause-row p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 cursor-pointer space-y-2.5 group">
+<div class="flex items-center justify-between gap-4">
+<span class="font-body text-body font-semibold text-ink group-hover:text-primary-600 transition-colors">Fuel trim or oil contamination</span>
+<span class="font-metric-l text-body font-bold text-ink tabular-nums">7%</span>
+</div>
+<p class="font-small text-small text-body">Unburned fuel misfires or leaking valve stem seals glazing the ceramic internal honeycomb.</p>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="progress-fill bg-faint h-full rounded-full group-hover:bg-muted" data-width="7%" style="width: 0%"></div>
+</div>
+<div class="flex items-center justify-between font-code text-micro text-muted pt-1">
+<span>Parts $120–$450</span>
+<span>Labour 1.5–3.0 hrs</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Workshop Selection (Radio Options) with real-time recalculation -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm space-y-4 hover-lift">
+<div>
+<h3 class="font-h3 text-h3 text-ink font-semibold">Choose your workshop</h3>
+<p class="font-small text-small text-muted mt-0.5">Select labor rate assumptions to recalibrate the repair quote.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+<!-- Dealership -->
+<label class="workshop-card cursor-pointer flex flex-col justify-between p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 border-2 border-transparent hover:border-border-strong active-press">
+<div class="flex items-center justify-between">
+<span class="card-title font-small text-small font-semibold text-ink">Franchise Dealer</span>
+<input class="accent-primary-600 transition-transform cursor-pointer" name="workshop" type="radio" value="dealer"/>
+</div>
+<div class="mt-3">
+<div class="card-rate font-h3 text-h3 font-bold text-ink tabular-nums">$185<span class="font-small text-small text-muted font-normal">/hr</span></div>
+<p class="card-desc font-small text-small text-body mt-1 leading-snug">OEM factory parts, proprietary diagnostic scan charges.</p>
+</div>
+</label>
+<!-- Specialist (Selected default) -->
+<label class="workshop-card cursor-pointer relative flex flex-col justify-between p-4 rounded-xl bg-primary-50 shadow-sm transition-all duration-200 border-2 border-primary-600 active-press">
+<div class="flex items-center justify-between">
+<span class="card-title font-small text-small font-semibold text-primary-800">Independent Pro</span>
+<input checked="" class="accent-primary-600 transition-transform cursor-pointer" name="workshop" type="radio" value="independent"/>
+</div>
+<div class="mt-3">
+<div class="card-rate font-h3 text-h3 font-bold text-primary-800 tabular-nums">$115<span class="font-small text-small text-muted font-normal">/hr</span></div>
+<p class="card-desc font-small text-small text-primary-700 mt-1 leading-snug">Tier 1 aftermarket direct-fit units, ASE master certified.</p>
+</div>
+</label>
+<!-- DIY Garage -->
+<label class="workshop-card cursor-pointer flex flex-col justify-between p-4 rounded-xl bg-surface-subtle hover:bg-surface-container-low transition-all duration-200 border-2 border-transparent hover:border-border-strong active-press">
+<div class="flex items-center justify-between">
+<span class="card-title font-small text-small font-semibold text-ink">DIY Garage</span>
+<input class="accent-primary-600 transition-transform cursor-pointer" name="workshop" type="radio" value="diy"/>
+</div>
+<div class="mt-3">
+<div class="card-rate font-h3 text-h3 font-bold text-ink tabular-nums">$0<span class="font-small text-small text-muted font-normal"> labour</span></div>
+<p class="card-desc font-small text-small text-body mt-1 leading-snug">Parts cost only, assuming personal jack stands and OBD tool.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Verification Steps Checklist with Interactive Checkboxes -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm space-y-4 hover-lift">
+<div>
+<h3 class="font-h3 text-h3 text-ink font-semibold">Check before you replace</h3>
+<p class="font-small text-small text-muted mt-0.5">Avoid replacing a $1,200 catalytic converter prematurely. Verify these 3 live sensor PIDs:</p>
+</div>
+<div class="space-y-3 pt-1">
+<div class="checklist-item flex items-start gap-4 p-3 rounded-xl hover:bg-surface-subtle transition-all duration-200 cursor-pointer">
+<button class="step-check-btn w-7 h-7 rounded-full bg-primary-50 text-primary-600 font-code font-bold text-small flex items-center justify-center shrink-0 border border-primary-200 transition-all hover:scale-105 active-press" type="button">
+<span>1</span>
+</button>
+<div class="space-y-1">
+<h4 class="font-small text-small font-semibold text-ink flex items-center gap-2">
+<span>Graph live oxygen sensor voltages</span>
+<span class="step-status text-micro px-1.5 py-0.2 rounded bg-surface-container text-muted hidden">Verified</span>
+</h4>
+<p class="font-small text-small text-body leading-relaxed">
+  Compare upstream PID <code class="font-code text-code px-1.5 py-0.5 rounded bg-surface-container text-ink">O2S11</code> (should switch rapidly 0.1V–0.9V) against downstream PID <code class="font-code text-code px-1.5 py-0.5 rounded bg-surface-container text-ink">O2S12</code> (should remain flat at ~0.45V). If downstream mirrors upstream cycling, converter washcoat is exhausted.
+</p>
+</div>
+</div>
+<div class="checklist-item flex items-start gap-4 p-3 rounded-xl hover:bg-surface-subtle transition-all duration-200 cursor-pointer">
+<button class="step-check-btn w-7 h-7 rounded-full bg-primary-50 text-primary-600 font-code font-bold text-small flex items-center justify-center shrink-0 border border-primary-200 transition-all hover:scale-105 active-press" type="button">
+<span>2</span>
+</button>
+<div class="space-y-1">
+<h4 class="font-small text-small font-semibold text-ink flex items-center gap-2">
+<span>Inspect short &amp; long term fuel trims</span>
+<span class="step-status text-micro px-1.5 py-0.2 rounded bg-surface-container text-muted hidden">Verified</span>
+</h4>
+<p class="font-small text-small text-body leading-relaxed">
+  Verify PIDs <code class="font-code text-code px-1.5 py-0.5 rounded bg-surface-container text-ink">SHRTFT1</code> and <code class="font-code text-code px-1.5 py-0.5 rounded bg-surface-container text-ink">LONGFT1</code>. Combined trim corrections exceeding ±10% indicate an air-fuel metering fault contaminating the catalyst substrate.
+</p>
+</div>
+</div>
+<div class="checklist-item flex items-start gap-4 p-3 rounded-xl hover:bg-surface-subtle transition-all duration-200 cursor-pointer">
+<button class="step-check-btn w-7 h-7 rounded-full bg-primary-50 text-primary-600 font-code font-bold text-small flex items-center justify-center shrink-0 border border-primary-200 transition-all hover:scale-105 active-press" type="button">
+<span>3</span>
+</button>
+<div class="space-y-1">
+<h4 class="font-small text-small font-semibold text-ink flex items-center gap-2">
+<span>Acoustic &amp; smoke leak inspection</span>
+<span class="step-status text-micro px-1.5 py-0.2 rounded bg-surface-container text-muted hidden">Verified</span>
+</h4>
+<p class="font-small text-small text-body leading-relaxed">
+  Check for micro-fissures or pinholes along the manifold gasket and flex pipe within 12 inches of the upstream sensor bung before purchasing a replacement converter.
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (5 COLS STICKY) -->
+<div class="lg:col-span-5 sticky top-[136px] space-y-6">
+<!-- Sticky Price Card with flash animation container -->
+<div class="bg-surface rounded-2xl p-6 shadow-sm space-y-5 transition-all duration-300" id="sticky-price-card">
+<div>
+<span class="font-micro text-micro text-muted font-bold tracking-widest uppercase">Fair Price Range</span>
+<div class="font-metric-xl text-metric-xl font-bold text-ink tracking-tight tabular-nums mt-1 transition-all duration-300" id="price-range-display">$742 – $1,980</div>
+<span class="font-small text-small text-muted">Estimated parts &amp; certified labour combined</span>
+</div>
+<!-- Custom Distribution Track Bar with Animated Pin Marker -->
+<div class="space-y-2 py-2">
+<div class="relative w-full h-3 bg-surface-container rounded-full overflow-visible flex items-center">
+<div class="absolute left-0 right-0 h-2 bg-gradient-to-r from-success-text/30 via-score-fair/40 to-score-poor/40 rounded-full"></div>
+<!-- Typical Value Pin Marker (~42% along the span default) -->
+<div class="absolute left-[42%] -top-1 w-5 h-5 bg-primary-600 rounded-full shadow-md flex items-center justify-center -translate-x-1/2 transition-all duration-500 ease-out cursor-pointer hover:scale-125" id="price-slider-pin">
+<div class="w-2 h-2 rounded-full bg-surface"></div>
+</div>
+</div>
+<div class="flex justify-between font-code text-micro text-muted pt-1">
+<span id="label-low-price">Low $742</span>
+<span class="text-primary-600 font-bold transition-colors" id="label-typical-price">Typical $1,210</span>
+<span id="label-high-price">High $1,980</span>
+</div>
+</div>
+<!-- Inner Metric Tile Split -->
+<div class="grid grid-cols-2 gap-3 pt-1">
+<div class="p-3.5 rounded-xl bg-surface-subtle transition-colors hover:bg-surface-container-low">
+<span class="font-micro text-micro text-muted uppercase font-semibold block">Parts (Converter + Kit)</span>
+<span class="font-h3 text-h3 font-bold text-ink tabular-nums mt-0.5 block transition-colors" id="metric-parts">$680 – $1,650</span>
+<span class="font-small text-small text-faint">EPA / CARB Certified</span>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-subtle transition-colors hover:bg-surface-container-low">
+<span class="font-micro text-micro text-muted uppercase font-semibold block">Labour (1.8–3.4 hrs)</span>
+<span class="font-h3 text-h3 font-bold text-ink tabular-nums mt-0.5 block transition-colors" id="metric-labour">$62 – $437</span>
+<span class="font-small text-small text-faint" id="metric-labour-sub">Local market rate</span>
+</div>
+</div>
+<!-- Verified Diagnostic Partner Card -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-3 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-micro text-micro font-bold tracking-wider text-primary-600 bg-primary-50 px-2 py-0.5 rounded uppercase">Verified Tooling</span>
+<span class="font-small text-small text-muted">Bluetooth 5.2</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary-600 transition-transform hover:rotate-6">
+<span class="material-symbols-outlined text-[24px]">phonelink_setup</span>
+</div>
+<div>
+<div class="font-small text-small font-semibold text-ink">Read live sensor data yourself</div>
+<div class="font-small text-small text-body">Wireless OBD2 scanner with PID graphing, $29.</div>
+</div>
+</div>
+<a class="block text-center py-2 px-4 rounded-full bg-surface hover:bg-surface-container text-small font-small font-semibold text-ink shadow-sm transition-all active-press" href="#">
+            View recommended scanner ↗
+          </a>
+</div>
+<!-- Ancillary Action Link -->
+<div class="pt-1 text-center">
+<a class="inline-flex items-center gap-1.5 font-small text-small text-primary-600 font-semibold hover:text-primary-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] transition-transform group-hover:translate-y-0.5">download</span>
+<span>Download diagnostic checklist PDF</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Report Summary Card (8 Diagnostic Checkpoints) -->
+<section class="bg-surface rounded-2xl p-6 shadow-sm space-y-5 hover-lift">
+<div class="flex items-center justify-between flex-wrap gap-3">
+<div>
+<h2 class="font-h2 text-h2 text-ink font-semibold">Report summary</h2>
+<p class="font-small text-small text-muted mt-0.5">Consolidated engineering specifications for code verification.</p>
+</div>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success-bg text-success-text font-small text-small font-semibold">
+<span class="w-2 h-2 rounded-full bg-score-good animate-ping"></span>
+        8 diagnostic points verified
+      </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- 1. Drivability -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Drivability</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text text-micro font-micro font-semibold">Normal</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Vehicle operates reliably without limp-mode, though fuel mixture may default slightly rich.
+        </p>
+</div>
+<!-- 2. Emissions Test -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Emissions test</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-danger-bg text-danger-text text-micro font-micro font-semibold">Fail</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Catalyst readiness monitor flag triggers immediate refusal during statutory state inspections.
+        </p>
+</div>
+<!-- 3. Fuel Economy -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Fuel economy</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-warning-bg text-warning-text text-micro font-micro font-semibold">-3% to -5%</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          ECM introduces closed-loop safety margin, burning marginal excess fuel under load.
+        </p>
+</div>
+<!-- 4. Risk of Damage -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Risk of damage</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-warning-bg text-warning-text text-micro font-micro font-semibold">Moderate</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Prolonged unburned hydrocarbon throughput risks thermal sintering of ceramic structure.
+        </p>
+</div>
+<!-- 5. DIY Difficulty -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">DIY difficulty</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container text-body text-micro font-micro font-semibold">Intermediate</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Requires vehicle lift access, penetrating solvent for seized manifold studs, and torque wrench.
+        </p>
+</div>
+<!-- 6. Typical Labour Time -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Labour time</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text text-micro font-micro font-semibold">1.5 – 3.2 hrs</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Covers pre-scan verification, manifold unbolting, O2 sensor transfer, and drive cycle reset.
+        </p>
+</div>
+<!-- 7. Parts Availability -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Availability</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text text-micro font-micro font-semibold">In Stock</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Direct-fit OEM &amp; CARB-compliant aftermarket units readily stocked by 4 national suppliers.
+        </p>
+</div>
+<!-- 8. Related Codes -->
+<div class="p-4 rounded-xl bg-surface-subtle space-y-2 hover:bg-surface-container-low transition-all duration-200">
+<div class="flex items-center justify-between">
+<span class="font-small text-small text-muted font-medium">Related codes</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container text-body text-micro font-micro font-semibold">2 Related</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+          Frequently logged alongside <code class="font-code text-micro bg-surface-container px-1 py-0.5 rounded text-ink">P0430</code> (Bank 2) and <code class="font-code text-micro bg-surface-container px-1 py-0.5 rounded text-ink">P0136</code> (Downstream Sensor).
+        </p>
+</div>
+</div>
+</section>
+<!-- Clean Full-Width Advertisement Slot -->
+<section class="min-h-[80px] rounded-2xl bg-surface-subtle flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 hover-lift">
+<div class="flex items-center gap-3 text-center sm:text-left">
+<div class="w-8 h-8 rounded-full bg-surface flex items-center justify-center shrink-0 text-faint shadow-xs">
+<span class="material-symbols-outlined text-[20px]">handshake</span>
+</div>
+<div>
+<span class="font-micro text-micro font-bold uppercase tracking-widest text-faint block">Sponsored Network</span>
+<span class="font-small text-small font-semibold text-body">Certified Independent Repair Shops • Instant Verified Quotes</span>
+</div>
+</div>
+<button class="inline-flex items-center px-4 py-1.5 rounded-full bg-surface hover:bg-surface-container active-press text-small font-small font-semibold text-ink shadow-sm transition-all shrink-0">
+      Find ASE certified shops ↗
+    </button>
+</section>
+</div>
+<script>
+  // Workshop Configuration Presets
+  const workshopRates = {
+    independent: {
+      range: "$742 – $1,980",
+      typical: "Typical $1,210",
+      parts: "$680 – $1,650",
+      labour: "$62 – $437",
+      labourSub: "Local market rate",
+      low: "Low $742",
+      high: "High $1,980",
+      pinLeft: "42%"
+    },
+    dealer: {
+      range: "$920 – $2,350",
+      typical: "Typical $1,480",
+      parts: "$680 – $1,650",
+      labour: "$140 – $700",
+      labourSub: "OEM dealership rate ($185/hr)",
+      low: "Low $920",
+      high: "High $2,350",
+      pinLeft: "58%"
+    },
+    diy: {
+      range: "$680 – $1,650",
+      typical: "Typical $1,050",
+      parts: "$680 – $1,650",
+      labour: "$0",
+      labourSub: "Self-installed labour",
+      low: "Low $680",
+      high: "High $1,650",
+      pinLeft: "26%"
+    }
+  };
+
+  // Workshop Labor Rate Interactive Recalibration with Pulse Flash
+  const stickyCard = document.getElementById('sticky-price-card');
+  const priceDisplay = document.getElementById('price-range-display');
+  const typicalDisplay = document.getElementById('label-typical-price');
+  const lowDisplay = document.getElementById('label-low-price');
+  const highDisplay = document.getElementById('label-high-price');
+  const partsDisplay = document.getElementById('metric-parts');
+  const labourDisplay = document.getElementById('metric-labour');
+  const labourSubDisplay = document.getElementById('metric-labour-sub');
+  const sliderPin = document.getElementById('price-slider-pin');
+
+  document.querySelectorAll('input[name="workshop"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      const selected = e.target.value;
+      const data = workshopRates[selected];
+
+      // Update Card Visuals
+      document.querySelectorAll('.workshop-card').forEach(card => {
+        const input = card.querySelector('input');
+        const title = card.querySelector('.card-title');
+        const rate = card.querySelector('.card-rate');
+        const desc = card.querySelector('.card-desc');
+
+        if (input.checked) {
+          card.classList.remove('bg-surface-subtle', 'border-transparent');
+          card.classList.add('bg-primary-50', 'border-primary-600', 'shadow-sm');
+          title.classList.replace('text-ink', 'text-primary-800');
+          rate.classList.replace('text-ink', 'text-primary-800');
+          desc.classList.replace('text-body', 'text-primary-700');
+        } else {
+          card.classList.remove('bg-primary-50', 'border-primary-600', 'shadow-sm');
+          card.classList.add('bg-surface-subtle', 'border-transparent');
+          title.classList.replace('text-primary-800', 'text-ink');
+          rate.classList.replace('text-primary-800', 'text-ink');
+          desc.classList.replace('text-primary-700', 'text-body');
+        }
+      });
+
+      // Update Values with gentle fade/recalc
+      priceDisplay.style.opacity = '0.4';
+      setTimeout(() => {
+        priceDisplay.textContent = data.range;
+        typicalDisplay.textContent = data.typical;
+        lowDisplay.textContent = data.low;
+        highDisplay.textContent = data.high;
+        partsDisplay.textContent = data.parts;
+        labourDisplay.textContent = data.labour;
+        labourSubDisplay.textContent = data.labourSub;
+        sliderPin.style.left = data.pinLeft;
+        priceDisplay.style.opacity = '1';
+      }, 140);
+
+      // Trigger sticky summary pulse flash
+      stickyCard.classList.remove('flash-highlight');
+      // trigger reflow
+      void stickyCard.offsetWidth;
+      stickyCard.classList.add('flash-highlight');
+    });
+  });
+
+  // 1. Severity Gauge Animation Sequence
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      // 3-Segment Radial Gauge sequential draw
+      const seg1 = document.getElementById('gauge-bg-1');
+      const seg2 = document.getElementById('gauge-active-2');
+      const seg3 = document.getElementById('gauge-bg-3');
+      const centerText = document.getElementById('gauge-center-text');
+
+      if (seg1 && seg2 && seg3) {
+        // Draw segment 1 (Low)
+        seg1.style.strokeDashoffset = '0';
+        setTimeout(() => {
+          // Draw segment 2 (Moderate Active Arc - yellow)
+          seg2.style.strokeDashoffset = '-85';
+          setTimeout(() => {
+            // Draw segment 3 (Critical Inactive Track)
+            seg3.style.strokeDashoffset = '-170';
+            // Reveal centered text with soft bounce
+            if (centerText) {
+              centerText.style.opacity = '1';
+              centerText.style.transform = 'scale(1)';
+            }
+          }, 260);
+        }, 220);
+      }
+
+      // 3. Probability progress bar fill animation
+      document.querySelectorAll('.progress-fill').forEach((bar, index) => {
+        const targetWidth = bar.getAttribute('data-width');
+        setTimeout(() => {
+          bar.style.width = targetWidth;
+        }, index * 140);
+      });
+    }, 180);
+  });
+
+  // 4. Interactive Diagnostic Search & Category Filters
+  const searchInput = document.getElementById('diagnostic-search-input');
+  const clearBtn = document.getElementById('clear-search-btn');
+  if (clearBtn && searchInput) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchInput.focus();
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+      }
+    });
+  }
+
+  // Category filter toggle interactions
+  document.querySelectorAll('.category-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-pill').forEach(p => {
+        p.classList.remove('bg-primary-50', 'text-primary-600', 'font-semibold', 'shadow-xs');
+        p.classList.add('text-body');
+      });
+      btn.classList.add('bg-primary-50', 'text-primary-600', 'font-semibold', 'shadow-xs');
+      btn.classList.remove('text-body');
+    });
+  });
+
+  // "Change code" modal / dropdown toggle
+  const changeCodeBtn = document.getElementById('btn-change-code');
+  const changeCodePopover = document.getElementById('change-code-popover');
+  if (changeCodeBtn && changeCodePopover) {
+    changeCodeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      changeCodePopover.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => {
+      changeCodePopover.classList.add('hidden');
+    });
+    changeCodePopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    document.querySelectorAll('.code-choice').forEach(choice => {
+      choice.addEventListener('click', () => {
+        changeCodePopover.classList.add('hidden');
+      });
+    });
+  }
+
+  // "Share" button toast micro-interaction
+  const shareBtn = document.getElementById('btn-share');
+  const shareToast = document.getElementById('share-toast');
+  if (shareBtn && shareToast) {
+    shareBtn.addEventListener('click', () => {
+      shareToast.classList.remove('opacity-0', 'pointer-events-none');
+      shareToast.classList.add('opacity-100');
+      setTimeout(() => {
+        shareToast.classList.remove('opacity-100');
+        shareToast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2400);
+    });
+  }
+
+  // Expandable severity rubric disclosure
+  const rubricBtn = document.getElementById('toggle-rubric-btn');
+  const rubricDisclosure = document.getElementById('rubric-disclosure');
+  const rubricIcon = document.getElementById('rubric-icon');
+  if (rubricBtn && rubricDisclosure && rubricIcon) {
+    rubricBtn.addEventListener('click', () => {
+      const isHidden = rubricDisclosure.classList.contains('hidden');
+      if (isHidden) {
+        rubricDisclosure.classList.remove('hidden');
+        rubricIcon.style.transform = 'rotate(90deg)';
+      } else {
+        rubricDisclosure.classList.add('hidden');
+        rubricIcon.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+
+  // 5. Checklist verification item interactivity
+  document.querySelectorAll('.checklist-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const btn = item.querySelector('.step-check-btn');
+      const badge = item.querySelector('.step-status');
+      const isChecked = btn.getAttribute('data-checked') === 'true';
+
+      if (!isChecked) {
+        btn.setAttribute('data-checked', 'true');
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span>';
+        btn.classList.remove('bg-primary-50', 'text-primary-600', 'border-primary-200');
+        btn.classList.add('bg-score-good', 'text-on-primary', 'border-score-good');
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.classList.add('bg-success-bg', 'text-success-text');
+        }
+      } else {
+        btn.setAttribute('data-checked', 'false');
+        btn.innerHTML = `<span>${btn.parentElement.querySelector('h4').textContent.includes('Graph') ? '1' : btn.parentElement.querySelector('h4').textContent.includes('fuel') ? '2' : '3'}</span>`;
+        btn.classList.remove('bg-score-good', 'text-on-primary', 'border-score-good');
+        btn.classList.add('bg-primary-50', 'text-primary-600', 'border-primary-200');
+        if (badge) {
+          badge.classList.add('hidden');
+        }
+      }
+    });
+  });
+</script></div></main><footer class="w-full bg-surface border-t border-border mt-auto"><div class="max-w-[1160px] mx-auto px-space-lg pt-space-3xl pb-space-2xl"><div class="flex flex-col md:flex-row md:items-center justify-between gap-space-lg pb-space-2xl border-b border-border"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary-600 text-[26px]">speed</span><span class="font-h3 text-h3 tracking-tight text-ink font-bold">Odometer</span></div><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-bg border border-success-text/20 text-success-text text-micro font-micro tracking-widest uppercase"><span class="w-2 h-2 rounded-full bg-score-good animate-pulse"></span><span>LIVE DATA INDEX • VERIFIED</span></div></div><div class="grid grid-cols-2 md:grid-cols-4 gap-space-2xl py-space-2xl"><div class="flex flex-col gap-space-md"><span class="text-small font-small font-semibold text-ink uppercase tracking-wider">Tools</span><ul class="flex flex-col gap-space-sm"><li class="font-small text-small text-muted hover:text-ink"><a data-path="true-cost-to-own" href="#">True Cost to Own</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="maintenance-check" href="#">Maintenance Check</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="obd2-repair-estimator" href="#">OBD2 Repair Estimator</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="depreciation-calculator" href="#">Depreciation Curve</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="text-small font-small font-semibold text-ink uppercase tracking-wider">Popular Cars</span><ul class="flex flex-col gap-space-sm"><li class="font-small text-small text-muted hover:text-ink"><a data-path="toyota-camry-costs" href="#">Toyota Camry</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="honda-civic-costs" href="#">Honda Civic</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="ford-f150-costs" href="#">Ford F-150</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="tesla-model-3-costs" href="#">Tesla Model 3</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="text-small font-small font-semibold text-ink uppercase tracking-wider">Company</span><ul class="flex flex-col gap-space-sm"><li class="font-small text-small text-muted hover:text-ink"><a data-path="about-us" href="#">About Us</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="methodology" href="#">Data Methodology</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="reviews" href="#">Editorial Standards</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="careers" href="#">Careers</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="text-small font-small font-semibold text-ink uppercase tracking-wider">Legal</span><ul class="flex flex-col gap-space-sm"><li class="font-small text-small text-muted hover:text-ink"><a data-path="privacy-policy" href="#">Privacy Policy</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="terms-of-service" href="#">Terms of Service</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="disclaimer" href="#">Estimates Disclaimer</a></li><li class="font-small text-small text-muted hover:text-ink"><a data-path="security" href="#">Security &amp; Compliance</a></li></ul></div></div><div class="pt-space-xl border-t border-border flex flex-col sm:flex-row items-center justify-between gap-space-md text-small font-small text-muted"><p>© 2026 Odometer. Estimates only.</p><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">language</span><span class="font-code">United States (USD)</span></div></div></div></footer></body></html>

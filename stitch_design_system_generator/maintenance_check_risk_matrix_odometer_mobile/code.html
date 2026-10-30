@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Maintenance Check &amp; Risk Matrix — Odometer Mobile</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-lowest": "#ffffff",
+            "surface-tint": "#004fe6",
+            "surface-container-highest": "#e1e1ef",
+            "primary-800": "#0838A8",
+            "surface-container-low": "#f3f2ff",
+            "surface": "#FFFFFF",
+            "on-tertiary-fixed-variant": "#842500",
+            "inverse-surface": "#2e303a",
+            "outline": "#737688",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#c43b00",
+            "on-secondary-fixed": "#00210b",
+            "success-bg": "#E8F7EE",
+            "surface-dim": "#d9d9e6",
+            "primary-100": "#DCE6FF",
+            "danger-text": "#B42318",
+            "outline-variant": "#c3c5d9",
+            "secondary-container": "#7cf99c",
+            "warning-text": "#8A5A00",
+            "on-tertiary-container": "#ffe9e3",
+            "tertiary-fixed": "#ffdbd0",
+            "primary-700": "#0A47D1",
+            "on-primary-fixed": "#00164f",
+            "canvas": "#F3F5F8",
+            "score-good": "#12A150",
+            "secondary-fixed": "#7ffb9f",
+            "faint": "#98A2B3",
+            "error-container": "#ffdad6",
+            "on-secondary": "#ffffff",
+            "primary-container": "#0f5bff",
+            "ink": "#0B1220",
+            "danger-bg": "#FDECEA",
+            "primary-600": "#0F5BFF",
+            "success-text": "#0E7A3E",
+            "background": "#faf8ff",
+            "inverse-primary": "#b6c4ff",
+            "primary-50": "#EEF3FF",
+            "surface-subtle": "#F8FAFC",
+            "surface-bright": "#faf8ff",
+            "surface-container": "#ededfa",
+            "on-secondary-container": "#007235",
+            "border-strong": "#CDD4DE",
+            "error": "#ba1a1a",
+            "on-error-container": "#93000a",
+            "on-surface-variant": "#434656",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#f0f0fd",
+            "surface-variant": "#e1e1ef",
+            "border": "#E4E8EE",
+            "score-poor": "#F04438",
+            "surface-container-high": "#e7e7f4",
+            "on-surface": "#191b24",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-primary": "#ffffff",
+            "tertiary": "#9a2d00",
+            "body": "#3D4756",
+            "secondary-fixed-dim": "#62de85",
+            "on-tertiary-fixed": "#3a0b00",
+            "primary": "#0045cd",
+            "tertiary-fixed-dim": "#ffb59e",
+            "on-primary-container": "#ebecff",
+            "on-background": "#191b24",
+            "secondary": "#006d33",
+            "muted": "#6B7686",
+            "on-secondary-fixed-variant": "#005225",
+            "primary-fixed": "#dce1ff",
+            "on-primary-fixed-variant": "#003bb0",
+            "warning-bg": "#FFF6D6",
+            "score-fair": "#F2B705"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "metric-l": ["Inter", "sans-serif"],
+            "body-l": ["Inter", "sans-serif"],
+            "h2": ["Inter", "sans-serif"],
+            "h1": ["Inter", "sans-serif"],
+            "h3": ["Inter", "sans-serif"],
+            "micro": ["Inter", "sans-serif"],
+            "metric-xl": ["Inter", "sans-serif"],
+            "body": ["Inter", "sans-serif"],
+            "code": ["JetBrains Mono", "monospace"],
+            "display": ["Inter", "sans-serif"],
+            "small": ["Inter", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #0F5BFF;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      cursor: pointer;
+      margin-top: -7px;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #E4E8EE;
+      border-radius: 9999px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-canvas text-ink antialiased min-h-screen flex justify-center selection:bg-primary-100 selection:text-primary-800">
+<!-- Mobile Screen Shell constrained to 390px -->
+<div class="w-full max-w-[390px] bg-canvas min-h-screen flex flex-col relative pb-32 shadow-xl border-x border-border">
+<!-- Top Sticky Shell Header & Navigation -->
+<header class="sticky top-0 z-40 bg-surface/95 backdrop-blur-md border-b border-border">
+<!-- Title row -->
+<div class="flex items-center justify-between px-4 h-14">
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-subtle active:scale-95 transition-transform text-ink">
+<span class="material-symbols-outlined text-[22px]">arrow_back</span>
+</button>
+<h1 class="text-[17px] font-bold text-ink tracking-tight flex-1 text-center pr-2">Maintenance Check</h1>
+<button aria-label="More options" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-subtle active:scale-95 transition-transform text-muted">
+<span class="material-symbols-outlined text-[22px]">more_vert</span>
+</button>
+</div>
+<!-- Scrollable Sub-Nav with soft edge fades -->
+<div class="relative w-full overflow-hidden px-4 pb-3">
+<nav aria-label="Analysis modules" class="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth pr-6">
+<!-- Active Pill -->
+<a class="shrink-0 h-8 px-3.5 rounded-full bg-primary-600 text-surface text-small font-semibold flex items-center shadow-sm" href="#">
+            Maintenance Check
+          </a>
+<!-- Inactive Outlined Pills -->
+<a class="shrink-0 h-8 px-3.5 rounded-full bg-surface border border-border text-body hover:bg-surface-subtle text-small font-medium flex items-center whitespace-nowrap transition-colors" href="#">
+            True Cost to Own
+          </a>
+<a class="shrink-0 h-8 px-3.5 rounded-full bg-surface border border-border text-body hover:bg-surface-subtle text-small font-medium flex items-center whitespace-nowrap transition-colors" href="#">
+            OBD2 Repair Estimator
+          </a>
+</nav>
+<div class="pointer-events-none absolute right-0 top-0 bottom-3 w-8 bg-gradient-to-l from-surface to-transparent"></div>
+</div>
+</header>
+<!-- Main Content Container (16px gutters) -->
+<main class="flex-1 px-4 py-4 space-y-4">
+<!-- 2. Stacked Vehicle Hero Card -->
+<section class="bg-surface rounded-2xl p-3 border border-border shadow-xs">
+<div class="relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-surface-subtle border border-border/60">
+<div class="w-full h-full bg-cover bg-center" data-alt="A pristine dark blue metallic BMW 3 Series G20 modern sedan parked in an immaculate automotive inspection studio with high-key neutral white studio lighting, soft diffused floor reflections, clean geometric architectural lines, luxury German engineering aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJqX4VEkZYMrK41e695ybL8LU2s6lc-wcw8m92MW6tjJ5AT7V100f4YnIQnlS7HrDyyLa443Fk8RodCXWTNId36cJwFt8soIWax9Rn_gXENUY7rFnYBmm_MLtcN6JMhnegvydPSYBPDqoRVzEWRCOBUUmdZoGSX_pz64olz2hiHfQIw5UEVl6OYGLl8FnyU2TvOdoWYZPAdtezEaCNgWfKzL0VOrO_k43ib8QDhqQXZdlU1LL34boO5Q')"></div>
+<span class="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-ink/80 backdrop-blur-md text-surface text-micro uppercase tracking-wider font-semibold">G20 Chassis</span>
+</div>
+<div class="mt-3 px-1">
+<div class="flex items-baseline justify-between">
+<h2 class="text-h3 font-bold text-ink">BMW 320d (G20)</h2>
+<span class="text-micro font-semibold text-score-good flex items-center gap-1 bg-success-bg px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-score-good animate-pulse"></span>
+              Live sync
+            </span>
+</div>
+<p class="font-code text-xs text-muted mt-0.5">2.0d B47 TwinPower Turbo · 190 HP</p>
+<!-- Spec Chips Row -->
+<div class="flex flex-wrap gap-1.5 mt-2.5">
+<span class="px-2.5 py-1 rounded-lg bg-[#F1F3F6] text-ink text-[12px] font-medium">Diesel</span>
+<span class="px-2.5 py-1 rounded-lg bg-[#F1F3F6] text-ink text-[12px] font-medium">Automatic</span>
+<span class="px-2.5 py-1 rounded-lg bg-[#F1F3F6] text-ink text-[12px] font-medium">Sedan</span>
+<span class="px-2.5 py-1 rounded-lg bg-[#F1F3F6] text-ink text-[12px] font-medium">2020</span>
+</div>
+<!-- Meta line -->
+<div class="mt-3 pt-2.5 border-t border-border/80 flex items-center justify-between text-small text-body">
+<span class="flex items-center gap-1.5 font-medium text-ink">
+<span class="material-symbols-outlined text-[17px] text-primary-600">verified</span>
+              Current odometer: <strong class="font-semibold text-ink">68,400 mi</strong>
+</span>
+<span class="text-micro font-semibold text-muted tracking-wide uppercase">VIN verified</span>
+</div>
+<!-- Actions -->
+<div class="grid grid-cols-2 gap-2 mt-3.5">
+<button class="h-9 px-3 rounded-full border border-border hover:bg-surface-subtle active:scale-[0.98] text-ink font-semibold text-small flex items-center justify-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px] text-muted">sync_alt</span>
+              Change vehicle
+            </button>
+<button class="h-9 px-3 rounded-full border border-border hover:bg-surface-subtle active:scale-[0.98] text-ink font-semibold text-small flex items-center justify-center gap-1.5 transition-all">
+<span class="material-symbols-outlined text-[16px] text-muted">ios_share</span>
+              Share report ↗
+            </button>
+</div>
+</div>
+</section>
+<!-- 3. Reliability Score Card -->
+<section class="bg-surface rounded-2xl p-4 border border-border shadow-xs">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-1.5">
+<h3 class="text-base font-bold text-ink">Reliability Score</h3>
+<span class="material-symbols-outlined text-[18px] text-muted cursor-pointer" title="Calculated from real fleet repair telematics">info</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warning-bg text-warning-text border border-[#F2B705]/20">
+<span class="w-1.5 h-1.5 rounded-full bg-score-fair"></span>
+            Fair condition
+          </span>
+</div>
+<!-- Radial Gauge & Score Display -->
+<div class="flex flex-col items-center my-2">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<!-- Circular SVG Ring (128px) -->
+<svg class="w-32 h-32 -rotate-90" viewbox="0 0 128 128">
+<!-- Background track -->
+<circle cx="64" cy="64" fill="transparent" r="54" stroke="#FFF3C4" stroke-linecap="round" stroke-width="10"></circle>
+<!-- Active meter (58% of 2*PI*54 ~= 339.29 -> dasharray 339.29, dashoffset 142.5) -->
+<circle cx="64" cy="64" fill="transparent" r="54" stroke="#F2B705" stroke-dasharray="339.29" stroke-dashoffset="142.5" stroke-linecap="round" stroke-width="10"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<div class="flex items-baseline">
+<span class="text-metric-l font-bold text-ink tracking-tight font-metric-l">58</span>
+<span class="text-xs font-medium text-muted">/100</span>
+</div>
+<span class="text-micro uppercase font-bold text-warning-text tracking-wider">Fair Score</span>
+</div>
+</div>
+</div>
+<!-- Explainer -->
+<div class="space-y-1.5 mt-2">
+<p class="text-small font-semibold text-ink">What affected the score</p>
+<p class="text-xs text-body leading-relaxed">
+            Two wear items are approaching their service window and one known failure pattern applies to this engine.
+          </p>
+</div>
+<!-- Light-blue Info Panel -->
+<div class="mt-3.5 p-3.5 rounded-xl bg-[#EEF5FF] border border-primary-100 text-[#1D3A6B] text-xs leading-relaxed">
+          This is a <strong class="font-semibold text-primary-800">fair</strong> score for a <strong class="font-semibold text-primary-800">4-year-old diesel sedan</strong>. Owners who service on time typically reach <strong class="font-semibold text-primary-800">70+</strong>.
+        </div>
+<button class="mt-3.5 w-full h-9 rounded-full border border-border text-ink hover:bg-surface-subtle font-semibold text-small flex items-center justify-center gap-1 transition-colors">
+          See score details ↗
+        </button>
+</section>
+<!-- 4. 'Your car today' Control Card -->
+<section class="bg-surface rounded-2xl p-4 border border-border shadow-xs">
+<div>
+<h3 class="text-base font-bold text-ink">Your car today</h3>
+<p class="text-xs text-muted mt-0.5">Adjust current mileage, driving conditions, and climate.</p>
+</div>
+<div class="mt-4 space-y-4">
+<!-- Slider 1: Current mileage -->
+<div>
+<div class="flex justify-between items-center text-xs mb-1.5">
+<span class="font-medium text-body">Current mileage</span>
+<span class="font-code font-semibold px-2 py-0.5 rounded-md bg-surface-subtle border border-border text-ink" id="current-mileage-val">68,400 mi</span>
+</div>
+<input class="w-full" id="mileage-range" max="150000" min="10000" oninput="document.getElementById('current-mileage-val').innerText = Number(this.value).toLocaleString() + ' mi'" step="1000" type="range" value="68400"/>
+<div class="flex justify-between text-[10px] text-faint mt-1">
+<span>10k mi</span>
+<span>80k mi</span>
+<span>150k mi</span>
+</div>
+</div>
+<!-- Slider 2: Annual mileage -->
+<div>
+<div class="flex justify-between items-center text-xs mb-1.5">
+<span class="font-medium text-body">Annual mileage</span>
+<span class="font-code font-semibold px-2 py-0.5 rounded-md bg-surface-subtle border border-border text-ink" id="annual-mileage-val">11,000 mi / yr</span>
+</div>
+<input class="w-full" max="30000" min="3000" oninput="document.getElementById('annual-mileage-val').innerText = Number(this.value).toLocaleString() + ' mi / yr'" step="500" type="range" value="11000"/>
+<div class="flex justify-between text-[10px] text-faint mt-1">
+<span>3k mi</span>
+<span>15k mi</span>
+<span>30k mi</span>
+</div>
+</div>
+<!-- Segmented Control 1: Driving Style -->
+<div>
+<label class="block text-xs font-medium text-body mb-1.5">Driving style</label>
+<div class="grid grid-cols-3 gap-1 p-1 bg-canvas rounded-xl border border-border text-xs font-medium">
+<button class="py-1.5 rounded-lg text-body hover:text-ink transition-colors">City</button>
+<button class="py-1.5 rounded-lg bg-surface text-ink font-semibold shadow-xs border border-border/50">Mixed</button>
+<button class="py-1.5 rounded-lg text-body hover:text-ink transition-colors">Highway</button>
+</div>
+</div>
+<!-- Segmented Control 2: Climate Zone -->
+<div>
+<label class="block text-xs font-medium text-body mb-1.5">Climate zone</label>
+<div class="grid grid-cols-3 gap-1 p-1 bg-canvas rounded-xl border border-border text-xs font-medium">
+<button class="py-1.5 rounded-lg bg-surface text-ink font-semibold shadow-xs border border-border/50">Mild</button>
+<button class="py-1.5 rounded-lg text-body hover:text-ink transition-colors">Hot</button>
+<button class="py-1.5 rounded-lg text-body hover:text-ink transition-colors">Cold</button>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. Urgent Callout Tile -->
+<div class="p-3.5 rounded-2xl bg-danger-bg border border-[#F7C1BB] text-danger-text">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[20px] shrink-0 text-score-poor">warning</span>
+<div class="space-y-1">
+<h4 class="text-xs font-bold uppercase tracking-wide">Top risk: EGR cooler</h4>
+<p class="text-xs text-[#7A1810] leading-snug">
+              Known thermal fatigue and soot clogging on B47 engines. Replace early to prevent intake manifold contamination.
+            </p>
+</div>
+</div>
+</div>
+<!-- 5. 'Component wear timeline' Card -->
+<section class="bg-surface rounded-2xl p-4 border border-border shadow-xs">
+<div>
+<h3 class="text-base font-bold text-ink">Component wear timeline</h3>
+<p class="text-xs text-muted mt-0.5">Mileage-triggered wear status calibrated against 14,200+ BMW B47 engine logs.</p>
+</div>
+<div class="divide-y divide-border/70 mt-2">
+<!-- 1) Timing chain & guides -->
+<div class="py-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-body">link</span>
+<span class="text-small font-semibold text-ink">Timing chain &amp; guides</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-semibold bg-success-bg text-success-text">Healthy</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-good rounded-full" style="width: 48%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-good shadow-xs" style="left: calc(48% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-medium text-muted">48% wear</span>
+<span class="font-code text-small font-bold text-ink tabular-nums">$1,450</span>
+</div>
+</div>
+</div>
+<!-- 2) EGR cooler -->
+<div class="py-3.5 space-y-2 bg-danger-bg/25 -mx-4 px-4 rounded-xl border border-danger-bg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-danger-text">heat_pump</span>
+<span class="text-small font-bold text-danger-text">EGR cooler</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-bold bg-danger-bg text-danger-text border border-danger-text/20">Due now</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-poor rounded-full" style="width: 92%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-poor shadow-xs" style="left: calc(92% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-bold text-danger-text">92% wear</span>
+<span class="font-code text-small font-bold text-danger-text tabular-nums">$980</span>
+</div>
+</div>
+<p class="text-[11px] text-danger-text font-medium flex items-center gap-1 pt-0.5">
+<span class="material-symbols-outlined text-[14px]">error</span>
+              Overdue service window (high carbon buildup risk)
+            </p>
+</div>
+<!-- 3) DPF cleaning -->
+<div class="py-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-body">filter_alt</span>
+<span class="text-small font-semibold text-ink">DPF cleaning</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-semibold bg-warning-bg text-warning-text">Within 12 mos</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-fair rounded-full" style="width: 78%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-fair shadow-xs" style="left: calc(78% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-medium text-muted">78% wear</span>
+<span class="font-code text-small font-bold text-ink tabular-nums">$420</span>
+</div>
+</div>
+</div>
+<!-- 4) Turbocharger -->
+<div class="py-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-body">speed</span>
+<span class="text-small font-semibold text-ink">Turbocharger</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-semibold bg-success-bg text-success-text">Healthy</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-good rounded-full" style="width: 42%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-good shadow-xs" style="left: calc(42% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-medium text-muted">42% wear</span>
+<span class="font-code text-small font-bold text-ink tabular-nums">$2,100</span>
+</div>
+</div>
+</div>
+<!-- 5) Brake discs & pads (front) -->
+<div class="py-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-body">radio_button_checked</span>
+<span class="text-small font-semibold text-ink">Brake discs &amp; pads (front)</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-semibold bg-warning-bg text-warning-text">Within 12 mos</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-fair rounded-full" style="width: 82%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-fair shadow-xs" style="left: calc(82% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-medium text-muted">82% wear</span>
+<span class="font-code text-small font-bold text-ink tabular-nums">$540</span>
+</div>
+</div>
+</div>
+<!-- 6) Automatic transmission fluid -->
+<div class="py-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-body">water_drop</span>
+<span class="text-small font-semibold text-ink">Automatic transmission fluid</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-micro font-semibold bg-warning-bg text-warning-text">Service soon</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex-1 relative h-2 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="h-full bg-score-fair rounded-full" style="width: 74%"></div>
+<!-- Pin marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-score-fair shadow-xs" style="left: calc(74% - 7px)"></div>
+</div>
+<div class="flex items-center gap-2 w-28 justify-end text-right">
+<span class="text-micro font-medium text-muted">74% wear</span>
+<span class="font-code text-small font-bold text-ink tabular-nums">$380</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. Verified Partner Card -->
+<section class="p-3.5 rounded-2xl bg-surface border border-border shadow-xs">
+<div class="flex items-center justify-between mb-2">
+<span class="px-2 py-0.5 rounded-md bg-primary-50 text-primary-700 text-micro font-bold uppercase tracking-wider flex items-center gap-1 border border-primary-100">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+            Verified Partner
+          </span>
+<div class="flex items-center gap-1 text-xs font-bold text-ink tracking-tight font-metric-l">
+<span class="w-5 h-5 rounded-md bg-ink text-surface flex items-center justify-center text-[10px]">CW</span>
+            CarWarranty Pro
+          </div>
+</div>
+<p class="text-xs text-body leading-snug">
+          Comprehensive mechanical coverage for EGR, DPF &amp; turbo assembly from <strong class="font-semibold text-ink font-code">$39/mo</strong>.
+        </p>
+<button class="mt-3 w-full h-8 rounded-full border border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold text-xs flex items-center justify-center gap-1 transition-colors">
+          See plans ↗
+        </button>
+</section>
+<!-- 8. 'Report summary' Card -->
+<section class="bg-surface rounded-2xl p-4 border border-border shadow-xs">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-base font-bold text-ink">Report summary</h3>
+<span class="text-micro font-semibold text-muted bg-surface-subtle px-2 py-0.5 rounded-full border border-border">
+            • 8/8 powertrain systems analysed
+          </span>
+</div>
+<div class="space-y-2.5">
+<!-- 1) Engine -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">settings</span>
+                1. Engine
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-success-bg text-success-text">Healthy</span>
+</div>
+<p class="text-[12px] text-body leading-normal">B47 timing chain tensioner healthy. Oil analysis baseline normal.</p>
+</div>
+<!-- 2) Transmission -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">tune</span>
+                2. Transmission
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-warning-bg text-warning-text">Attention</span>
+</div>
+<p class="text-[12px] text-body leading-normal">ZF 8HP fluid change recommended at 70,000 mi.</p>
+</div>
+<!-- 3) Emissions -->
+<div class="p-3 rounded-xl border border-score-poor/30 bg-danger-bg/30">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-danger-text flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-danger-text">air</span>
+                3. Emissions
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-bold bg-danger-bg text-danger-text border border-danger-text/20">Critical</span>
+</div>
+<p class="text-[12px] text-danger-text font-medium leading-normal">EGR cooler recall check &amp; actuator valve replacement due immediately.</p>
+</div>
+<!-- 4) Cooling -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">device_thermostat</span>
+                4. Cooling
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-success-bg text-success-text">No issues found</span>
+</div>
+<p class="text-[12px] text-body leading-normal">Electric water pump and thermostat operating within optimal temperature range.</p>
+</div>
+<!-- 5) Brakes -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">album</span>
+                5. Brakes
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-warning-bg text-warning-text">Attention</span>
+</div>
+<p class="text-[12px] text-body leading-normal">Front rotors at 22.4mm (minimum 21.8mm). Replacement due within 8,000 miles.</p>
+</div>
+<!-- 6) Suspension -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">horizontal_distribute</span>
+                6. Suspension
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-success-bg text-success-text">No issues found</span>
+</div>
+<p class="text-[12px] text-body leading-normal">Control arm bushings and adaptive dampers firm, zero fluid seepage.</p>
+</div>
+<!-- 7) Electrics -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">bolt</span>
+                7. Electrics
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-success-bg text-success-text">No issues found</span>
+</div>
+<p class="text-[12px] text-body leading-normal">AGM battery state of health at 88%, alternator charging at 14.4V.</p>
+</div>
+<!-- 8) Recalls -->
+<div class="p-3 rounded-xl border border-border bg-surface-subtle/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold text-ink flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-body">checklist</span>
+                8. Recalls
+              </span>
+<span class="px-2 py-0.2 rounded-full text-micro font-semibold bg-success-bg text-success-text">No issues found</span>
+</div>
+<p class="text-[12px] text-body leading-normal">All BMW technical service bulletins (TSBs) cleared at authorized workshop.</p>
+</div>
+</div>
+</section>
+<!-- 9. Single Advertisement Slot -->
+<section class="border-2 border-dashed border-border-strong rounded-2xl p-4 text-center bg-surface-subtle/60">
+<span class="text-[10px] font-bold tracking-widest text-muted uppercase">Advertisement</span>
+<h4 class="text-xs font-bold text-ink mt-1">Certified Workshop Booking &amp; Independent Pre-Purchase Inspections</h4>
+<p class="text-[11px] text-body mt-1">Book an ASE-certified German specialist near you. Instant estimates &amp; warranty coverage.</p>
+<button class="mt-2.5 h-7 px-3.5 rounded-full bg-ink text-surface text-micro font-semibold hover:bg-body transition-colors">
+          Find Local Shop
+        </button>
+</section>
+</main>
+<!-- 10. Sticky Bottom Summary Bar -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-surface/98 backdrop-blur-md border-t border-border px-4 py-3 z-50 shadow-2xl">
+<div class="flex items-center justify-between">
+<!-- Left Cost Metrics -->
+<div class="space-y-0.5">
+<div class="flex items-center gap-1.5">
+<span class="text-micro font-bold text-muted uppercase tracking-wider">Next 24 Months</span>
+<span class="w-1.5 h-1.5 rounded-full bg-score-fair"></span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-metric-l font-bold text-ink font-metric-l tracking-tight">$2,320</span>
+<span class="text-xs text-muted font-medium">total est.</span>
+</div>
+<div class="flex items-center gap-1.5 text-[11px] text-body">
+<span>3 items due</span>
+<span class="text-border-strong">•</span>
+<span class="font-medium text-primary-700">$97/mo to set aside</span>
+</div>
+<!-- Color segment bar -->
+<div class="w-36 h-1.5 bg-[#E4E8EE] rounded-full flex overflow-hidden mt-1">
+<div class="h-full bg-score-poor" style="width: 42%" title="EGR Cooler $980"></div>
+<div class="h-full bg-score-fair" style="width: 23%" title="Brakes $540"></div>
+<div class="h-full bg-[#F2B705]/80" style="width: 18%" title="DPF $420"></div>
+<div class="h-full bg-score-good" style="width: 17%" title="Transmission $380"></div>
+</div>
+</div>
+<!-- Right Action Button -->
+<button class="h-10 px-4 rounded-full border border-primary-600 bg-primary-50 text-primary-700 hover:bg-primary-100 font-semibold text-small flex items-center gap-1 active:scale-95 transition-all shadow-xs" onclick="toggleDetailsSheet()">
+          Details ↑
+        </button>
+</div>
+</div>
+<!-- Interactive Expense Breakdown Bottom Sheet Modal -->
+<div class="fixed inset-0 bg-ink/50 backdrop-blur-xs z-50 hidden transition-opacity flex justify-center items-end" id="details-modal" onclick="if(event.target === this) toggleDetailsSheet()">
+<div class="w-full max-w-[390px] bg-surface rounded-t-2xl p-5 border-t border-border shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+<div class="w-10 h-1 bg-border rounded-full mx-auto -mt-1 mb-2"></div>
+<div class="flex items-center justify-between">
+<h4 class="text-h3 font-bold text-ink">Upcoming Expenses Breakdown</h4>
+<button class="p-1 text-muted hover:text-ink" onclick="toggleDetailsSheet()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<p class="text-xs text-body">Projected maintenance cost for 68,400 mi to 90,400 mi over next 24 months:</p>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between items-center py-1.5 border-b border-border">
+<span class="text-danger-text font-semibold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-score-poor"></span>
+              EGR cooler replacement (Urgent)
+            </span>
+<span class="font-code font-bold text-ink">$980</span>
+</div>
+<div class="flex justify-between items-center py-1.5 border-b border-border">
+<span class="text-body font-medium flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-score-fair"></span>
+              Front brake discs &amp; pads
+            </span>
+<span class="font-code font-bold text-ink">$540</span>
+</div>
+<div class="flex justify-between items-center py-1.5 border-b border-border">
+<span class="text-body font-medium flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-score-fair"></span>
+              DPF ultrasonic cleaning
+            </span>
+<span class="font-code font-bold text-ink">$420</span>
+</div>
+<div class="flex justify-between items-center py-1.5 border-b border-border">
+<span class="text-body font-medium flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-score-fair"></span>
+              ZF transmission fluid service
+            </span>
+<span class="font-code font-bold text-ink">$380</span>
+</div>
+<div class="flex justify-between items-center pt-2 text-small font-bold text-ink">
+<span>Total estimated 24-mo reserve</span>
+<span class="font-code text-base text-primary-700">$2,320</span>
+</div>
+</div>
+<div class="p-3 bg-surface-subtle rounded-xl border border-border text-xs text-muted flex items-center justify-between">
+<span>Warranty partner co-pay covers 80%</span>
+<span class="font-bold text-success-text">- $1,856 savings</span>
+</div>
+<button class="w-full h-10 rounded-full bg-primary-600 text-surface font-semibold text-small hover:bg-primary-700 transition-colors" onclick="toggleDetailsSheet()">
+          Download PDF Schedule
+        </button>
+</div>
+</div>
+</div>
+<script>
+    function toggleDetailsSheet() {
+      const modal = document.getElementById('details-modal');
+      modal.classList.toggle('hidden');
+    }
+  </script>
+</body></html>

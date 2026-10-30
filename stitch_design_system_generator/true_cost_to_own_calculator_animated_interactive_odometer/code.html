@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Odometer — Independent Automotive Cost Intelligence</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+  @layer base {
+    html, body { margin:0; padding:0; }
+    body { overscroll-behavior: none; }
+    main > :first-child { margin-top:0!important; }
+    main > :last-child { margin-bottom:0!important; }
+  }
+  ::-webkit-scrollbar { display:none; }
+
+  /* Motion and physics classes */
+  .motion-card {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .motion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(11, 18, 32, 0.08), 0 8px 10px -6px rgba(11, 18, 32, 0.04);
+  }
+
+  .btn-tactile {
+    transition: transform 120ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  }
+  .btn-tactile:active {
+    transform: scale(0.98);
+  }
+
+  /* Segmented control smooth pill transitions */
+  .segmented-track {
+    position: relative;
+    display: inline-flex;
+    background-color: #F8FAFC;
+    padding: 3px;
+    border-radius: 9999px;
+  }
+  .pill-glider {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    background-color: #FFFFFF;
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 320ms cubic-bezier(0.65, 0, 0.35, 1), width 320ms cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Subnav Glider */
+  .subnav-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+  .subnav-glider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: #0F5BFF;
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: transform 320ms cubic-bezier(0.65, 0, 0.35, 1), width 320ms cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Summary Card recalculation glow pulse */
+  @keyframes summaryFlash {
+    0% {
+      background-color: #EEF3FF;
+      box-shadow: 0 0 0 3px rgba(15, 91, 255, 0.35);
+    }
+    100% {
+      background-color: #FFFFFF;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    }
+  }
+  .flash-update {
+    animation: summaryFlash 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Smooth breakdown bar transition */
+  .tco-bar-slice {
+    transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Staggered entrance animations */
+  .fade-rise {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: entranceFadeRise 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes entranceFadeRise {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Diagnostics interactive tiles */
+  .diag-tile {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+    border: 1px solid transparent;
+  }
+  .diag-tile:hover {
+    transform: translateY(-2px);
+    background-color: #FFFFFF;
+    border-color: #E4E8EE;
+    box-shadow: 0 4px 12px -2px rgba(11, 18, 32, 0.06);
+  }
+
+  /* Custom range thumb styling */
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0F5BFF;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(15, 91, 255, 0.35);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+  input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 5px rgba(15, 91, 255, 0.2);
+  }
+
+  /* Accessibility: Prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-delay: -1ms !important;
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+    .fade-rise {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* Tabular numbers for clean digit rolling without wobble */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+<script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface-variant": "#434656",
+          "secondary": "#006d33",
+          "on-tertiary": "#ffffff",
+          "on-tertiary-fixed": "#3a0b00",
+          "surface-container-lowest": "#ffffff",
+          "success-bg": "#E8F7EE",
+          "canvas": "#F3F5F8",
+          "tertiary-fixed-dim": "#ffb59e",
+          "primary-600": "#0F5BFF",
+          "muted": "#6B7686",
+          "inverse-surface": "#2e303a",
+          "primary-100": "#DCE6FF",
+          "surface-tint": "#004fe6",
+          "warning-text": "#8A5A00",
+          "surface-container-low": "#f3f2ff",
+          "primary-800": "#0838A8",
+          "primary-50": "#EEF3FF",
+          "outline-variant": "#c3c5d9",
+          "on-secondary-fixed": "#00210b",
+          "outline": "#737688",
+          "surface-container-high": "#e7e7f4",
+          "danger-text": "#B42318",
+          "tertiary-fixed": "#ffdbd0",
+          "surface-container-highest": "#e1e1ef",
+          "on-tertiary-fixed-variant": "#842500",
+          "primary-700": "#0A47D1",
+          "on-secondary": "#ffffff",
+          "on-primary-container": "#ebecff",
+          "success-text": "#0E7A3E",
+          "ink": "#0B1220",
+          "surface-dim": "#d9d9e6",
+          "primary": "#0045cd",
+          "inverse-on-surface": "#f0f0fd",
+          "body": "#3D4756",
+          "score-good": "#12A150",
+          "error": "#ba1a1a",
+          "on-error-container": "#93000a",
+          "surface-subtle": "#F8FAFC",
+          "tertiary-container": "#c43b00",
+          "border-strong": "#CDD4DE",
+          "on-error": "#ffffff",
+          "on-primary-fixed": "#00164f",
+          "on-secondary-container": "#007235",
+          "secondary-container": "#7cf99c",
+          "surface-variant": "#e1e1ef",
+          "on-secondary-fixed-variant": "#005225",
+          "warning-bg": "#FFF6D6",
+          "on-primary": "#ffffff",
+          "score-fair": "#F2B705",
+          "surface": "#FFFFFF",
+          "secondary-fixed-dim": "#62de85",
+          "border": "#E4E8EE",
+          "primary-container": "#0f5bff",
+          "surface-bright": "#faf8ff",
+          "primary-fixed-dim": "#b6c4ff",
+          "faint": "#98A2B3",
+          "score-poor": "#F04438",
+          "background": "#faf8ff",
+          "error-container": "#ffdad6",
+          "tertiary": "#9a2d00",
+          "on-tertiary-container": "#ffe9e3",
+          "on-surface": "#191b24",
+          "primary-fixed": "#dce1ff",
+          "on-background": "#191b24",
+          "danger-bg": "#FDECEA",
+          "on-primary-fixed-variant": "#003bb0",
+          "secondary-fixed": "#7ffb9f",
+          "inverse-primary": "#b6c4ff",
+          "surface-container": "#ededfa"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "gutter": "1.5rem",
+          "space-xl": "1.5rem",
+          "space-xs": "0.25rem",
+          "space-2xl": "2rem",
+          "space-3xl": "3rem",
+          "margin": "1.5rem",
+          "space-lg": "1rem",
+          "space-sm": "0.5rem",
+          "space-md": "0.75rem"
+        },
+        "fontFamily": {
+          "small": [
+            "Inter"
+          ],
+          "h1": [
+            "Inter"
+          ],
+          "body-l": [
+            "Inter"
+          ],
+          "h2": [
+            "Inter"
+          ],
+          "metric-xl": [
+            "Inter"
+          ],
+          "micro": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "metric-l": [
+            "Inter"
+          ],
+          "h3": [
+            "Inter"
+          ],
+          "code": [
+            "JetBrains Mono"
+          ],
+          "display": [
+            "Inter"
+          ]
+        },
+        "fontSize": {
+          "small": [
+            "13px",
+            {
+              "lineHeight": "20px",
+              "fontWeight": "400"
+            }
+          ],
+          "h1": [
+            "40px",
+            {
+              "lineHeight": "48px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "700"
+            }
+          ],
+          "body-l": [
+            "18px",
+            {
+              "lineHeight": "28px",
+              "fontWeight": "400"
+            }
+          ],
+          "h2": [
+            "28px",
+            {
+              "lineHeight": "36px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "700"
+            }
+          ],
+          "metric-xl": [
+            "48px",
+            {
+              "lineHeight": "52px",
+              "fontWeight": "700"
+            }
+          ],
+          "micro": [
+            "11px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0.08em",
+              "fontWeight": "600"
+            }
+          ],
+          "body": [
+            "15px",
+            {
+              "lineHeight": "24px",
+              "fontWeight": "400"
+            }
+          ],
+          "metric-l": [
+            "28px",
+            {
+              "lineHeight": "32px",
+              "fontWeight": "700"
+            }
+          ],
+          "h3": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "code": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "fontWeight": "500"
+            }
+          ],
+          "display": [
+            "56px",
+            {
+              "lineHeight": "64px",
+              "letterSpacing": "-0.025em",
+              "fontWeight": "700"
+            }
+          ]
+        }
+      }
+    }
+  }</script></head><body class="bg-canvas font-body text-body min-h-full flex flex-col antialiased selection:bg-primary-100 selection:text-primary-800"><header class="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-border"><div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between"><div class="flex items-center gap-8 lg:gap-10"><a class="flex items-center gap-2.5 text-ink group" data-path="overview" href="#"><span class="flex items-center justify-center w-7 h-7 rounded-full bg-primary-50 text-primary-600 transition-transform duration-200 group-hover:scale-105"><svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M4 15a8 8 0 1 1 16 0"></path><path d="m12 14 3-3"></path></svg></span><span class="font-h3 text-h3 tracking-tight font-bold text-ink">Odometer</span></a><nav class="hidden md:flex items-center gap-7" data-active-classes="text-ink font-semibold"><div class="relative flex items-center gap-1 text-on-surface-variant hover:text-ink cursor-pointer"><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="tools" href="#">Tools</a><span class="material-symbols-outlined text-base leading-none text-muted">arrow_drop_down</span></div><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="methodology" href="#">Methodology</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="reviews" href="#">Reviews</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="blog" href="#">Blog</a></nav></div><div class="flex items-center gap-4"><button class="btn-tactile flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-ink hover:bg-surface-subtle transition-colors text-small font-small" type="button"><span class="text-xs leading-none select-none">🇺🇸</span><span class="font-code text-code text-ink font-medium">US</span><span class="material-symbols-outlined text-[18px] leading-none text-muted">keyboard_arrow_down</span></button><a class="btn-tactile hidden sm:inline-flex items-center justify-center px-5 py-2 rounded-full border border-border-strong text-ink font-small text-small font-medium hover:bg-surface-subtle transition-colors shadow-none" data-path="cost-calculator" href="#">Get started</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer transition-transform hover:scale-105"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 flex-1 bg-canvas"><div class="flex flex-col w-full">
+<!-- Sticky Sub-Navigation Bar with sliding pill -->
+<div class="sticky top-16 z-40 w-full bg-surface shadow-sm">
+<div class="max-w-[1160px] mx-auto px-6 h-14 flex items-center justify-between">
+<div class="subnav-track relative" id="subnav-container">
+<!-- Pill highlight -->
+<div class="subnav-glider" id="subnav-glider"></div>
+<button class="relative z-10 text-on-primary font-small text-small font-medium rounded-full px-5 py-2 transition-colors duration-200" id="subnav-btn-0" type="button">
+    True Cost to Own
+  </button>
+<button class="relative z-10 text-ink font-small text-small font-medium rounded-full px-5 py-2 transition-colors duration-200 hover:text-ink" id="subnav-btn-1" type="button">
+    Maintenance Check
+  </button>
+<button class="relative z-10 text-ink font-small text-small font-medium rounded-full px-5 py-2 transition-colors duration-200 hover:text-ink" id="subnav-btn-2" type="button">
+    OBD2 Repair Estimator
+  </button>
+</div>
+<div class="hidden sm:flex items-center gap-2 font-code text-small text-muted">
+<span class="w-2 h-2 rounded-full bg-score-good animate-pulse"></span>
+<span>VIN: WVWZZZ3CZKE08****</span>
+</div>
+</div>
+</div>
+<!-- Page Content Container -->
+<div class="w-full max-w-[1160px] mx-auto px-6 py-8 flex flex-col gap-8">
+<!-- 1. Hero Row (2 equal cards, 24px gap) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+<!-- a) Vehicle Card -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6 flex flex-col justify-between" style="animation-delay: 40ms;">
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-start">
+<!-- Photo Left -->
+<div class="sm:col-span-5 rounded-lg overflow-hidden bg-surface-subtle aspect-[4/3] sm:h-[156px] relative group">
+<img class="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105" data-alt="Studio quality automotive photography of a contemporary 2019 silver metallic Volkswagen Passat Variant wagon with pristine paintwork, soft even studio lighting against a clean white seamless backdrop, three-quarter front angle shot with crisp details on alloy wheels and front grille." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-GxtLA3xMK9WKXAhkL33n2qnv9tAD2WF_4ZRtLwlPziY_1IXxqAJQME009gONa6_p4b_FEYjpV471KvHZwBeC52vk-hV57bT6PdCnp0P9PzXr_EDCu75_88GeJ3VSQtsaWadoWdphom8koo7wGUrvXC8b8RyesYSw1HOgFALMydTah6eZf3pDYD5tllkKWHrVTL3NTKAbUkQ2cZPzEe0uQ_WfC2HcOB5_ntCyRAXDVIvQX6w-LPspnQ"/>
+</div>
+<!-- Vehicle Specs Right -->
+<div class="sm:col-span-7 flex flex-col">
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-h3 text-h3 text-ink font-semibold">Volkswagen Passat B8</h3>
+<p class="font-code text-small text-muted mt-0.5 tracking-tight">2.0 TDI EA288 evo · 190 HP</p>
+</div>
+</div>
+<!-- Spec Chips -->
+<div class="flex flex-wrap gap-1.5 mt-3">
+<span class="bg-surface-subtle text-ink font-micro text-micro px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors hover:bg-slate-100">
+<span class="material-symbols-outlined text-[15px] text-muted">local_gas_station</span>
+                Diesel
+              </span>
+<span class="bg-surface-subtle text-ink font-micro text-micro px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors hover:bg-slate-100">
+<span class="material-symbols-outlined text-[15px] text-muted">settings</span>
+                DSG Automatic
+              </span>
+<span class="bg-surface-subtle text-ink font-micro text-micro px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors hover:bg-slate-100">
+<span class="material-symbols-outlined text-[15px] text-muted">directions_car</span>
+                Wagon
+              </span>
+<span class="bg-surface-subtle text-ink font-micro text-micro px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-colors hover:bg-slate-100">
+<span class="material-symbols-outlined text-[15px] text-muted">calendar_today</span>
+                2019
+              </span>
+</div>
+<p class="font-micro text-micro text-faint mt-3 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+              Generated on 22 Oct 2026, 15:50
+            </p>
+</div>
+</div>
+<!-- Action Row -->
+<div class="flex items-center gap-2.5 mt-6 pt-4 bg-surface-subtle -mx-6 -mb-6 px-6 py-3.5 rounded-b-xl">
+<button class="btn-tactile bg-surface shadow-sm rounded-full px-4 py-1.5 font-small text-small font-medium text-ink hover:bg-surface-subtle transition-all flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px] text-muted">sync_alt</span>
+            Change vehicle
+          </button>
+<button class="btn-tactile bg-surface shadow-sm rounded-full px-4 py-1.5 font-small text-small font-medium text-ink hover:bg-surface-subtle transition-all flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px] text-muted">ios_share</span>
+            Share report
+          </button>
+<span class="ml-auto font-code text-micro text-muted">EST-2026-B8</span>
+</div>
+</div>
+<!-- b) Ownership Value Score Card -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6 flex flex-col justify-between" style="animation-delay: 90ms;">
+<div>
+<!-- Header -->
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2.5">
+<h3 class="font-h3 text-h3 text-ink font-semibold">Ownership Value Score</h3>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-score-good"></span>
+                Live
+              </span>
+</div>
+<button class="text-faint hover:text-ink transition-colors p-1" title="Score Methodology" type="button">
+<span class="material-symbols-outlined text-[20px]">info</span>
+</button>
+</div>
+<!-- Body Split -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+<!-- Left Radial Gauge -->
+<div class="sm:col-span-5 flex flex-col items-center justify-center py-1">
+<div class="relative w-36 h-36 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 120 120">
+<!-- Track -->
+<circle cx="60" cy="60" fill="none" r="48" stroke="#E8F7EE" stroke-width="11"></circle>
+<!-- Progress Arc Animated from 301.6 down to 84.44 (72%) -->
+<circle cx="60" cy="60" fill="none" id="score-gauge-ring" r="48" stroke="#12A150" stroke-dasharray="301.6" stroke-dashoffset="301.6" stroke-linecap="round" stroke-width="11" style="transition: stroke-dashoffset 1200ms cubic-bezier(0.16, 1, 0.3, 1);"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<div class="flex items-baseline">
+<span class="font-metric-l text-metric-l font-bold font-code text-ink tracking-tight tabular-nums" id="score-number">0</span>
+<span class="font-small text-small text-muted font-medium">/100</span>
+</div>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full mt-0.5 transition-transform duration-300">
+                    Good Value
+                  </span>
+</div>
+</div>
+</div>
+<!-- Right Explanation -->
+<div class="sm:col-span-7 flex flex-col">
+<span class="font-micro text-micro font-semibold text-ink uppercase tracking-wider mb-1">
+                What affected the score
+              </span>
+<p class="font-body text-body text-body leading-relaxed text-sm">
+                Low fuel consumption and resilient market liquidity offset standard EA288 scheduled maintenance cycles.
+              </p>
+<!-- Benchmarking note panel -->
+<div class="mt-3 bg-primary-50 rounded-lg p-3 font-small text-small text-primary-800 leading-normal">
+                This vehicle scores in the top <strong>28th percentile</strong> of <strong>mid-size diesel estates</strong>: ownership costs are <strong>11% below</strong> segment median.
+              </div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<button class="btn-tactile bg-surface shadow-sm rounded-full px-4 py-1.5 font-small text-small font-medium text-ink hover:bg-surface-subtle transition-all inline-flex items-center gap-1 group" type="button">
+<span>See detailed score breakdown</span>
+<span class="material-symbols-outlined text-[16px] text-muted transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+</button>
+<span class="font-code text-micro text-muted">98,200 sample data points</span>
+</div>
+</div>
+</div>
+<!-- 2. Workspace Split (7 cols controls, 5 cols sticky summary card) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN: 7 cols -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<!-- Card 1: Purchase & financing -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6" style="animation-delay: 140ms;">
+<div class="mb-5">
+<h3 class="font-h3 text-h3 text-ink font-semibold">Purchase &amp; financing</h3>
+<p class="font-body text-body text-muted text-sm mt-0.5">Configure acquisition pricing, down payment, and active loan structure.</p>
+</div>
+<!-- Acquisition Type Toggle with Smooth Sliding Pill Indicator -->
+<div class="segmented-track mb-6" id="finance-type-segmented">
+<div class="pill-glider" id="finance-pill"></div>
+<button class="btn-tactile relative z-10 font-small text-small text-muted px-4 py-1.5 rounded-full transition-colors duration-200" data-value="cash" type="button">Cash</button>
+<button class="btn-tactile relative z-10 font-small text-small text-ink font-semibold px-4 py-1.5 rounded-full transition-colors duration-200" data-value="loan" type="button">Loan</button>
+<button class="btn-tactile relative z-10 font-small text-small text-muted px-4 py-1.5 rounded-full transition-colors duration-200" data-value="lease" type="button">Lease</button>
+</div>
+<!-- Sliders -->
+<div class="flex flex-col gap-5">
+<!-- 1. Purchase Price -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Purchase price</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="price-val">$31,500</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="price-slider" max="80000" min="10000" step="500" type="range" value="31500"/>
+<div class="flex justify-between font-code text-micro text-faint">
+<span>$10,000</span>
+<span>$80,000</span>
+</div>
+</div>
+<!-- 2. Down Payment -->
+<div class="flex flex-col gap-2" id="down-payment-group">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Down payment (<span id="down-pct-label">20</span>%)</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="down-val">$6,300</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="down-slider" max="60" min="0" step="5" type="range" value="20"/>
+<div class="flex justify-between font-code text-micro text-faint">
+<span>0% ($0)</span>
+<span id="down-max-label">60% ($18,900)</span>
+</div>
+</div>
+<!-- 3. Loan Term & APR Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1" id="loan-params-group">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Loan term</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="term-val">48 mos</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="term-slider" max="72" min="24" step="12" type="range" value="48"/>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Interest rate (APR)</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="apr-val">6.4%</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="apr-slider" max="15.0" min="1.0" step="0.1" type="range" value="6.4"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Your driving -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6" style="animation-delay: 190ms;">
+<div class="mb-5">
+<h3 class="font-h3 text-h3 text-ink font-semibold">Your driving</h3>
+<p class="font-body text-body text-muted text-sm mt-0.5">Mileage habits and local energy parameters.</p>
+</div>
+<!-- Driving Profile Segmented Control with Smooth Sliding Pill Indicator -->
+<div class="segmented-track mb-6" id="driving-profile-segmented">
+<div class="pill-glider" id="driving-pill"></div>
+<button class="btn-tactile relative z-10 font-small text-small text-muted px-4 py-1.5 rounded-full transition-colors duration-200" data-value="city" type="button">City (65/35)</button>
+<button class="btn-tactile relative z-10 font-small text-small text-ink font-semibold px-4 py-1.5 rounded-full transition-colors duration-200" data-value="mixed" type="button">Mixed (50/50)</button>
+<button class="btn-tactile relative z-10 font-small text-small text-muted px-4 py-1.5 rounded-full transition-colors duration-200" data-value="highway" type="button">Highway (30/70)</button>
+</div>
+<div class="flex flex-col gap-5">
+<!-- 1. Annual Mileage -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Annual mileage</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="mileage-val">12,000 mi / yr</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="mileage-slider" max="30000" min="5000" step="1000" type="range" value="12000"/>
+<div class="flex justify-between font-code text-micro text-faint">
+<span>5k mi</span>
+<span>30k mi</span>
+</div>
+</div>
+<!-- 2. Ownership Period -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Ownership horizon</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="horizon-val">5 years</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="horizon-slider" max="7" min="1" step="1" type="range" value="5"/>
+<div class="flex justify-between font-code text-micro text-faint">
+<span>1 yr</span>
+<span>7 yrs</span>
+</div>
+</div>
+<!-- 3. Fuel Input Field Row (Now Reactive Slider) -->
+<div class="bg-surface-subtle rounded-lg p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-body text-body text-ink text-sm font-medium">Diesel Fuel Price</span>
+<span class="font-small text-small text-muted">National average EIA feed updated today</span>
+</div>
+<div class="flex items-center bg-surface shadow-sm rounded-lg px-3 py-1.5">
+<span class="font-code text-code font-semibold text-ink tabular-nums" id="fuel-val">$3.65</span>
+<span class="font-small text-small text-muted ml-1">/ gal</span>
+</div>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="fuel-slider" max="6.00" min="2.50" step="0.05" type="range" value="3.65"/>
+<div class="flex justify-between font-code text-micro text-faint">
+<span>$2.50</span>
+<span>$6.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Insurance & extras -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6" style="animation-delay: 240ms;">
+<div class="mb-5">
+<h3 class="font-h3 text-h3 text-ink font-semibold">Insurance &amp; extras</h3>
+<p class="font-body text-body text-muted text-sm mt-0.5">Regional insurance rating, toll estimates and protection coverage.</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Insurance premium</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="insurance-val">$1,380 / yr</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="insurance-slider" max="3600" min="600" step="50" type="range" value="1380"/>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-body text-body text-muted text-sm">Parking &amp; tolls</span>
+<span class="font-code text-code font-semibold bg-surface-subtle text-ink px-2.5 py-0.5 rounded-md tabular-nums" id="tolls-val">$40 / mo</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-600" id="tolls-slider" max="300" min="0" step="10" type="range" value="40"/>
+</div>
+</div>
+<!-- Extended Warranty Toggle Row -->
+<div class="bg-surface-subtle rounded-lg p-3.5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div>
+<p class="font-body text-body text-ink text-sm font-medium">Include extended warranty protection</p>
+<p class="font-small text-small text-muted text-xs">Adds powertrain &amp; electronics buffer ($42/mo)</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer select-none">
+<input checked="" class="sr-only peer" id="warranty-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 shadow-inner"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: 5 cols (Sticky Summary) -->
+<div class="lg:col-span-5 sticky top-24">
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6 flex flex-col transition-all duration-300" id="summary-card" style="animation-delay: 200ms;">
+<!-- Eyebrow -->
+<div class="flex items-center justify-between">
+<span class="font-micro text-micro font-semibold text-muted uppercase tracking-wider">
+              Estimated Cost to Own
+            </span>
+<span class="bg-surface-subtle text-muted font-code text-micro px-2 py-0.5 rounded">
+              High Confidence
+            </span>
+</div>
+<!-- Main Metric -->
+<div class="my-4">
+<div class="flex items-baseline gap-1">
+<span class="font-metric-xl text-metric-xl font-bold font-code text-ink tracking-tight leading-none tabular-nums" id="monthly-total">$612</span>
+<span class="font-body-l text-body-l text-muted font-normal">/mo</span>
+</div>
+</div>
+<!-- Secondary Metrics -->
+<div class="flex items-center gap-4 py-3 bg-surface-subtle rounded-lg px-3.5 mb-5">
+<div class="flex items-center gap-1.5">
+<span class="font-code text-small font-bold text-ink tabular-nums" id="five-year-total">$36,720</span>
+<span class="font-small text-small text-muted" id="horizon-label-span">· 5-year total</span>
+</div>
+<div class="w-1 h-1 rounded-full bg-border-strong"></div>
+<div class="flex items-center gap-1.5">
+<span class="font-code text-small font-bold text-ink tabular-nums" id="cost-per-mile">$0.51</span>
+<span class="font-small text-small text-muted">· per mile</span>
+</div>
+</div>
+<!-- Stacked Distribution Bar -->
+<div class="flex flex-col gap-1.5 mb-5">
+<div class="flex justify-between items-center font-micro text-micro uppercase tracking-wider text-muted font-semibold">
+<span>Expense Allocation</span>
+<span>100% of TCO</span>
+</div>
+<div class="h-3 rounded-full overflow-hidden flex bg-surface-container">
+<div class="tco-bar-slice h-full bg-primary-600" id="bar-depreciation" style="width: 38%" title="Depreciation"></div>
+<div class="tco-bar-slice h-full bg-[#5B8CFF]" id="bar-fuel" style="width: 22%" title="Fuel"></div>
+<div class="tco-bar-slice h-full bg-score-good" id="bar-insurance" style="width: 16%" title="Insurance"></div>
+<div class="tco-bar-slice h-full bg-score-fair" id="bar-maintenance" style="width: 14%" title="Maintenance"></div>
+<div class="tco-bar-slice h-full bg-faint" id="bar-financing" style="width: 10%" title="Financing"></div>
+</div>
+</div>
+<!-- Legend Breakdown Rows -->
+<div class="flex flex-col gap-2.5 text-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-600"></span>
+<span class="font-body text-body text-ink text-sm">Depreciation</span>
+</div>
+<span class="font-code text-small font-medium text-ink tabular-nums"><span id="legend-depr-amt">$233/mo</span> <span class="text-muted" id="legend-depr-pct">(38%)</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#5B8CFF]"></span>
+<span class="font-body text-body text-ink text-sm">Fuel / Energy</span>
+</div>
+<span class="font-code text-small font-medium text-ink tabular-nums"><span id="legend-fuel-amt">$135/mo</span> <span class="text-muted" id="legend-fuel-pct">(22%)</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-score-good"></span>
+<span class="font-body text-body text-ink text-sm">Insurance</span>
+</div>
+<span class="font-code text-small font-medium text-ink tabular-nums"><span id="legend-ins-amt">$98/mo</span> <span class="text-muted" id="legend-ins-pct">(16%)</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-score-fair"></span>
+<span class="font-body text-body text-ink text-sm">Maintenance &amp; Tyres</span>
+</div>
+<span class="font-code text-small font-medium text-ink tabular-nums"><span id="legend-maint-amt">$86/mo</span> <span class="text-muted" id="legend-maint-pct">(14%)</span></span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-faint"></span>
+<span class="font-body text-body text-ink text-sm">Financing Interest</span>
+</div>
+<span class="font-code text-small font-medium text-ink tabular-nums"><span id="legend-fin-amt">$60/mo</span> <span class="text-muted" id="legend-fin-pct">(10%)</span></span>
+</div>
+</div>
+<div class="h-px bg-surface-container my-5"></div>
+<!-- Native Partner Tile -->
+<div class="bg-surface-subtle rounded-xl p-3.5">
+<span class="bg-surface text-body font-micro text-micro font-semibold px-2 py-0.5 rounded-md inline-block mb-2 shadow-sm">
+              Verified Partner
+            </span>
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center font-code font-bold text-xs text-muted flex-shrink-0">
+                IN
+              </div>
+<p class="font-body text-body text-ink text-xs font-medium leading-relaxed">
+                Compare auto insurance policies calibrated for EA288 engines — owners save $340/yr on average.
+              </p>
+</div>
+<button class="btn-tactile w-full text-center mt-3 py-2 bg-surface shadow-sm rounded-full font-small text-small font-semibold text-ink hover:bg-surface-subtle transition-all" type="button">
+              Compare quotes
+            </button>
+</div>
+<!-- Bottom PDF Download Link -->
+<div class="mt-4 text-center">
+<button class="btn-tactile font-small text-small text-muted hover:text-ink transition-colors inline-flex items-center gap-1 group" type="button">
+<span class="material-symbols-outlined text-[16px] transition-transform group-hover:translate-y-0.5">download</span>
+              Download audit PDF summary
+            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Report Summary Card -->
+<div class="fade-rise motion-card bg-surface rounded-xl shadow-sm p-6" style="animation-delay: 280ms;">
+<div class="flex items-center justify-between mb-5">
+<div>
+<h2 class="font-h2 text-h2 text-ink font-bold">Report summary</h2>
+<p class="font-body text-body text-muted text-sm mt-0.5">Automated 8-point diagnostic based on VIN registry metrics and historical lifecycle costs.</p>
+</div>
+<span class="hidden sm:inline-flex items-center gap-1 font-code text-micro text-muted">
+<span class="w-2 h-2 rounded-full bg-score-good animate-pulse"></span>
+          8/8 metrics passed audit
+        </span>
+</div>
+<!-- 4-column Grid of Inner Tiles -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Tile 1: Depreciation -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Depreciation</span>
+<span class="bg-warning-bg text-warning-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                Attention
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              Loses 41% of value in 3 years, slightly above mid-size wagon benchmark.
+            </p>
+</div>
+<span class="font-code text-micro text-faint mt-3">-41% @ 36 mo</span>
+</div>
+<!-- Tile 2: Fuel economy -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Fuel economy</span>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                No issues found
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              5.1 L/100km WLTP cycle, 15% more efficient than class average.
+            </p>
+</div>
+<span class="font-code text-micro text-success-text mt-3">+15% vs segment</span>
+</div>
+<!-- Tile 3: Maintenance -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Maintenance</span>
+<span class="bg-warning-bg text-warning-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                Attention
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              DSG wet-clutch fluid flush &amp; timing belt scheduled at year 4.
+            </p>
+</div>
+<span class="font-code text-micro text-warning-text mt-3">Due @ 60k mi</span>
+</div>
+<!-- Tile 4: Insurance -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Insurance</span>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                No issues found
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              Group 22 rating — highly competitive for a European wagon.
+            </p>
+</div>
+<span class="font-code text-micro text-faint mt-3">Group 22 / 50</span>
+</div>
+<!-- Tile 5: Financing -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Financing</span>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                No issues found
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              APR structure sits 0.8% below prevailing used collateral medians.
+            </p>
+</div>
+<span class="font-code text-micro text-success-text mt-3">Sub-prime neutral</span>
+</div>
+<!-- Tile 6: Resale value -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Resale value</span>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                No issues found
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              Strong secondary market liquidity for clean Passat Variant wagons.
+            </p>
+</div>
+<span class="font-code text-micro text-faint mt-3">22 days turn time</span>
+</div>
+<!-- Tile 7: Reliability -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Reliability</span>
+<span class="bg-warning-bg text-warning-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                Attention
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              Check EGR cooler flow and AdBlue dosing pump valve condition.
+            </p>
+</div>
+<span class="font-code text-micro text-warning-text mt-3">Service bulletin #091</span>
+</div>
+<!-- Tile 8: Emissions -->
+<div class="diag-tile bg-surface-subtle rounded-lg p-4 flex flex-col justify-between cursor-pointer">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-body text-body text-ink font-semibold text-sm">Emissions</span>
+<span class="bg-success-bg text-success-text font-micro text-micro font-semibold px-2 py-0.5 rounded-full">
+                No issues found
+              </span>
+</div>
+<p class="font-small text-small text-muted leading-relaxed">
+              CO₂ 129 g/km, fully Euro 6d-TEMP compliant with particulate filter.
+            </p>
+</div>
+<span class="font-code text-micro text-success-text mt-3">Euro 6d certified</span>
+</div>
+</div>
+</div>
+<!-- 4. Ad Slot -->
+<div class="w-full min-h-[96px] bg-surface-subtle rounded-xl flex items-center justify-center p-4">
+<div class="flex flex-col items-center gap-1 text-center">
+<span class="font-micro text-micro font-semibold text-faint uppercase tracking-widest">
+          Advertisement
+        </span>
+<span class="font-small text-small text-muted">
+          Automotive Fleet Financing &amp; Independent Inspection Services
+        </span>
+</div>
+</div>
+<!-- 5. Verification Micro-Footer Note -->
+<div class="flex items-center justify-between text-faint font-micro text-micro pt-2 pb-4">
+<div class="flex items-center gap-3">
+<span>Model ID: Passat-B8-3G5-TDI</span>
+<span>•</span>
+<span>Data verified against Edmunds &amp; Euro NCAP standards</span>
+</div>
+<div class="font-code">
+        CRC-32: A9F42B01
+      </div>
+</div>
+</div>
+</div>
+</main><footer class="w-full bg-surface border-t border-border mt-auto"><div class="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-12"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10 mb-16"><div class="lg:col-span-2 flex flex-col gap-4"><div class="flex items-center gap-2.5 text-ink"><span class="flex items-center justify-center w-7 h-7 rounded-full bg-primary-50 text-primary-600"><svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M4 15a8 8 0 1 1 16 0"></path><path d="m12 14 3-3"></path></svg></span><span class="font-h3 text-h3 tracking-tight font-bold text-ink">Odometer</span></div><p class="font-small text-small text-muted leading-relaxed max-w-sm">Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision VIN cost reports.</p><div class="flex items-center gap-3 pt-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-bg border border-secondary/20 text-success-text font-micro text-micro uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-score-good"></span>Live Data Index</span></div></div><div class="flex flex-col gap-3"><span class="font-micro text-micro uppercase tracking-wider text-ink font-semibold">Tools</span><ul class="flex flex-col gap-2.5 font-small text-small text-muted"><li><a class="hover:text-ink transition-colors" data-path="cost-calculator" href="#">True Cost to Own</a></li><li><a class="hover:text-ink transition-colors" data-path="depreciation-calculator" href="#">Depreciation Curves</a></li><li><a class="hover:text-ink transition-colors" data-path="vin-report" href="#">VIN Cost Audit</a></li><li><a class="hover:text-ink transition-colors" data-path="fuel-economy-audit" href="#">Fuel &amp; Electric Audit</a></li><li><a class="hover:text-ink transition-colors" data-path="maintenance-index" href="#">Maintenance Index</a></li></ul></div><div class="flex flex-col gap-3"><span class="font-micro text-micro uppercase tracking-wider text-ink font-semibold">Popular Cars</span><ul class="flex flex-col gap-2.5 font-small text-small text-muted"><li><a class="hover:text-ink transition-colors" href="#">Tesla Model 3</a></li><li><a class="hover:text-ink transition-colors" href="#">Toyota RAV4 Hybrid</a></li><li><a class="hover:text-ink transition-colors" href="#">Ford F-150 Lightning</a></li><li><a class="hover:text-ink transition-colors" href="#">Porsche 911 (992)</a></li><li><a class="hover:text-ink transition-colors" href="#">Honda Civic Touring</a></li></ul></div><div class="flex flex-col gap-3"><span class="font-micro text-micro uppercase tracking-wider text-ink font-semibold">Company</span><ul class="flex flex-col gap-2.5 font-small text-small text-muted"><li><a class="hover:text-ink transition-colors" data-path="methodology" href="#">Methodology &amp; Sources</a></li><li><a class="hover:text-ink transition-colors" data-path="reviews" href="#">Consumer Reviews</a></li><li><a class="hover:text-ink transition-colors" data-path="blog" href="#">Research Blog</a></li><li><a class="hover:text-ink transition-colors" data-path="press-kit" href="#">Press &amp; Data Feeds</a></li><li><a class="hover:text-ink transition-colors" data-path="contact" href="#">Contact Analyst Team</a></li></ul></div><div class="flex flex-col gap-3"><span class="font-micro text-micro uppercase tracking-wider text-ink font-semibold">Legal</span><ul class="flex flex-col gap-2.5 font-small text-small text-muted"><li><a class="hover:text-ink transition-colors" data-path="privacy-policy" href="#">Privacy Policy</a></li><li><a class="hover:text-ink transition-colors" data-path="terms-of-service" href="#">Terms of Service</a></li><li><a class="hover:text-ink transition-colors" data-path="data-licensing" href="#">Data Licensing</a></li><li><a class="hover:text-ink transition-colors" data-path="disclaimer" href="#">Estimates Disclaimer</a></li></ul></div></div><div class="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 font-small text-small text-muted"><div class="flex items-center gap-2"><span class="font-code text-code">© 2026 Odometer. Estimates only.</span><span class="text-border-strong">•</span><span>Independent benchmark, not affiliated with OEMs.</span></div><div class="flex items-center gap-6"><div class="flex items-center gap-2"><span class="text-xs leading-none">🇺🇸</span><span class="text-ink font-medium">United States (USD)</span><span class="material-symbols-outlined text-[16px] text-muted">expand_more</span></div><span class="text-faint text-xs">v4.14-prod</span></div></div></div></footer>
+<script>
+  // Preferences & Motion checks
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 1. Score Gauge Animation & Count-up
+  const scoreGaugeRing = document.getElementById('score-gauge-ring');
+  const scoreNumber = document.getElementById('score-number');
+  const targetScore = 72;
+  const circumference = 301.6;
+  // 72% offset = 301.6 * (1 - 0.72) = 84.448
+  const targetOffset = circumference * (1 - (targetScore / 100));
+
+  if (prefersReducedMotion) {
+    if (scoreGaugeRing) scoreGaugeRing.style.strokeDashoffset = targetOffset;
+    if (scoreNumber) scoreNumber.textContent = targetScore;
+  } else {
+    // Trigger gauge ring animation
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (scoreGaugeRing) scoreGaugeRing.style.strokeDashoffset = targetOffset;
+      }, 50);
+    });
+
+    // Count-up numbers from 0 to 72 over 1200ms using ease-out
+    const duration = 1200;
+    const startTime = performance.now();
+    function animateScore(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Cubic ease-out: 1 - Math.pow(1 - progress, 3)
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const currentVal = Math.round(easeProgress * targetScore);
+      if (scoreNumber) scoreNumber.textContent = currentVal;
+
+      if (progress < 1) {
+        requestAnimationFrame(animateScore);
+      } else {
+        if (scoreNumber) scoreNumber.textContent = targetScore;
+      }
+    }
+    requestAnimationFrame(animateScore);
+  }
+
+  // 2. Sliding Glider Pill for Segmented Controls
+  function initSegmentedControl(trackId, gliderId, onSelect) {
+    const track = document.getElementById(trackId);
+    const glider = document.getElementById(gliderId);
+    if (!track || !glider) return;
+
+    const buttons = track.querySelectorAll('button');
+    let activeBtn = buttons[1] || buttons[0]; // default second or first
+
+    function updateGlider(btn) {
+      if (!btn) return;
+      const trackRect = track.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const leftOffset = btnRect.left - trackRect.left;
+      glider.style.width = btnRect.width + 'px';
+      glider.style.transform = `translateX(${leftOffset}px)`;
+
+      buttons.forEach(b => {
+        b.classList.remove('text-ink', 'font-semibold');
+        b.classList.add('text-muted');
+      });
+      btn.classList.remove('text-muted');
+      btn.classList.add('text-ink', 'font-semibold');
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeBtn = btn;
+        updateGlider(btn);
+        if (onSelect) onSelect(btn.getAttribute('data-value'));
+      });
+    });
+
+    // Initial position
+    setTimeout(() => updateGlider(activeBtn), 30);
+    window.addEventListener('resize', () => updateGlider(activeBtn));
+  }
+
+  // Subnav pill glider
+  (function initSubnavGlider() {
+    const track = document.getElementById('subnav-container');
+    const glider = document.getElementById('subnav-glider');
+    if (!track || !glider) return;
+
+    const buttons = [
+      document.getElementById('subnav-btn-0'),
+      document.getElementById('subnav-btn-1'),
+      document.getElementById('subnav-btn-2')
+    ].filter(Boolean);
+
+    let activeIndex = 0;
+
+    function renderGlider(idx) {
+      const btn = buttons[idx];
+      if (!btn) return;
+      const trackRect = track.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const offset = btnRect.left - trackRect.left;
+      glider.style.width = btnRect.width + 'px';
+      glider.style.transform = `translateX(${offset}px)`;
+
+      buttons.forEach((b, i) => {
+        if (i === idx) {
+          b.classList.remove('text-ink');
+          b.classList.add('text-on-primary');
+        } else {
+          b.classList.remove('text-on-primary');
+          b.classList.add('text-ink');
+        }
+      });
+    }
+
+    buttons.forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        activeIndex = idx;
+        renderGlider(idx);
+      });
+    });
+
+    setTimeout(() => renderGlider(activeIndex), 30);
+    window.addEventListener('resize', () => renderGlider(activeIndex));
+  })();
+
+  // State
+  let currentFinanceType = 'loan'; // 'cash', 'loan', 'lease'
+  let currentDriveProfile = 'mixed'; // 'city', 'mixed', 'highway'
+
+  initSegmentedControl('finance-type-segmented', 'finance-pill', (val) => {
+    currentFinanceType = val;
+    const loanGroup = document.getElementById('loan-params-group');
+    const downGroup = document.getElementById('down-payment-group');
+    if (loanGroup) {
+      loanGroup.style.opacity = val === 'cash' ? '0.4' : '1';
+      loanGroup.style.pointerEvents = val === 'cash' ? 'none' : 'auto';
+    }
+    if (downGroup) {
+      downGroup.style.opacity = val === 'lease' ? '0.5' : '1';
+    }
+    calculateAll(true);
+  });
+
+  initSegmentedControl('driving-profile-segmented', 'driving-pill', (val) => {
+    currentDriveProfile = val;
+    calculateAll(true);
+  });
+
+  // 3. Reactive Sliders and Elements
+  const priceSlider = document.getElementById('price-slider');
+  const priceVal = document.getElementById('price-val');
+  const downSlider = document.getElementById('down-slider');
+  const downVal = document.getElementById('down-val');
+  const downPctLabel = document.getElementById('down-pct-label');
+  const downMaxLabel = document.getElementById('down-max-label');
+  const termSlider = document.getElementById('term-slider');
+  const termVal = document.getElementById('term-val');
+  const aprSlider = document.getElementById('apr-slider');
+  const aprVal = document.getElementById('apr-val');
+
+  const mileageSlider = document.getElementById('mileage-slider');
+  const mileageVal = document.getElementById('mileage-val');
+  const horizonSlider = document.getElementById('horizon-slider');
+  const horizonVal = document.getElementById('horizon-val');
+  const fuelSlider = document.getElementById('fuel-slider');
+  const fuelVal = document.getElementById('fuel-val');
+
+  const insuranceSlider = document.getElementById('insurance-slider');
+  const insuranceVal = document.getElementById('insurance-val');
+  const tollsSlider = document.getElementById('tolls-slider');
+  const tollsVal = document.getElementById('tolls-val');
+  const warrantyToggle = document.getElementById('warranty-toggle');
+
+  // Summary Elements
+  const summaryCard = document.getElementById('summary-card');
+  const monthlyTotalEl = document.getElementById('monthly-total');
+  const fiveYearTotalEl = document.getElementById('five-year-total');
+  const horizonLabelSpan = document.getElementById('horizon-label-span');
+  const costPerMileEl = document.getElementById('cost-per-mile');
+
+  // Bar and Legend elements
+  const barDepr = document.getElementById('bar-depreciation');
+  const barFuel = document.getElementById('bar-fuel');
+  const barIns = document.getElementById('bar-insurance');
+  const barMaint = document.getElementById('bar-maintenance');
+  const barFin = document.getElementById('bar-financing');
+
+  const legendDeprAmt = document.getElementById('legend-depr-amt');
+  const legendDeprPct = document.getElementById('legend-depr-pct');
+  const legendFuelAmt = document.getElementById('legend-fuel-amt');
+  const legendFuelPct = document.getElementById('legend-fuel-pct');
+  const legendInsAmt = document.getElementById('legend-ins-amt');
+  const legendInsPct = document.getElementById('legend-ins-pct');
+  const legendMaintAmt = document.getElementById('legend-maint-amt');
+  const legendMaintPct = document.getElementById('legend-maint-pct');
+  const legendFinAmt = document.getElementById('legend-fin-amt');
+  const legendFinPct = document.getElementById('legend-fin-pct');
+
+  function triggerSummaryPulse() {
+    if (!summaryCard || prefersReducedMotion) return;
+    summaryCard.classList.remove('flash-update');
+    // Force DOM reflow
+    void summaryCard.offsetWidth;
+    summaryCard.classList.add('flash-update');
+  }
+
+  function calculateAll(triggerPulse = false) {
+    const price = parseFloat(priceSlider.value) || 31500;
+    const downPct = (parseFloat(downSlider.value) || 20) / 100;
+    const term = parseInt(termSlider.value) || 48;
+    const apr = (parseFloat(aprSlider.value) || 6.4) / 100 / 12;
+    const annualMileage = parseFloat(mileageSlider.value) || 12000;
+    const horizonYears = parseInt(horizonSlider.value) || 5;
+    const fuelPrice = parseFloat(fuelSlider.value) || 3.65;
+    const insAnnual = parseFloat(insuranceSlider.value) || 1380;
+    const tollsMonthly = parseFloat(tollsSlider.value) || 40;
+    const hasWarranty = warrantyToggle ? warrantyToggle.checked : true;
+
+    // 1. Depreciation monthly:
+    // Base Passat retains roughly 45% over 5 yrs (deprecates 55% of price / (years * 12))
+    // Standard baseline at 31,500 over 5 yrs is ~233/mo
+    const totalDeprecPct = 0.35 + (horizonYears * 0.04);
+    const deprMonthly = Math.round((price * totalDeprecPct) / (horizonYears * 12));
+
+    // 2. Fuel monthly:
+    // 2.0 TDI EA288 gets ~42 mpg mixed, ~36 city, ~48 hwy
+    let mpg = 42;
+    if (currentDriveProfile === 'city') mpg = 35;
+    if (currentDriveProfile === 'highway') mpg = 48;
+    const gallonsYear = annualMileage / mpg;
+    const fuelMonthly = Math.round((gallonsYear * fuelPrice) / 12);
+
+    // 3. Insurance & Parking monthly:
+    const insMonthly = Math.round((insAnnual / 12) + tollsMonthly * 0.4);
+
+    // 4. Maintenance & Tyres:
+    // Base ~$86/mo + warranty buffer ($42) if checked
+    let baseMaint = Math.round(55 + (annualMileage / 12000) * 31);
+    if (hasWarranty) {
+      baseMaint += 42;
+    }
+    const maintMonthly = baseMaint;
+
+    // 5. Financing:
+    let finMonthly = 0;
+    if (currentFinanceType === 'loan') {
+      const principal = price * (1 - downPct);
+      if (principal > 0 && apr > 0) {
+        const monthlyPayment = (principal * (apr * Math.pow(1 + apr, term))) / (Math.pow(1 + apr, term) - 1);
+        const totalInterestPaid = (monthlyPayment * term) - principal;
+        finMonthly = Math.round(Math.max(0, totalInterestPaid / (horizonYears * 12)));
+      } else {
+        finMonthly = 0;
+      }
+    } else if (currentFinanceType === 'lease') {
+      // Lease rent charge component
+      finMonthly = Math.round(price * 0.0032);
+    } else {
+      // Cash = $0 financing cost
+      finMonthly = 0;
+    }
+
+    const totalMonthly = deprMonthly + fuelMonthly + insMonthly + maintMonthly + finMonthly;
+    const fiveYearSpend = totalMonthly * 12 * horizonYears;
+    const totalMiles = annualMileage * horizonYears;
+    const costPerMile = totalMiles > 0 ? (fiveYearSpend / totalMiles).toFixed(2) : '0.00';
+
+    // Update main readouts
+    if (monthlyTotalEl) monthlyTotalEl.textContent = '$' + totalMonthly.toLocaleString('en-US');
+    if (fiveYearTotalEl) fiveYearTotalEl.textContent = '$' + fiveYearSpend.toLocaleString('en-US');
+    if (horizonLabelSpan) horizonLabelSpan.textContent = `· ${horizonYears}-year total`;
+    if (costPerMileEl) costPerMileEl.textContent = '$' + costPerMile;
+
+    // Calculate percentages
+    const pctDepr = Math.max(1, Math.round((deprMonthly / totalMonthly) * 100));
+    const pctFuel = Math.max(1, Math.round((fuelMonthly / totalMonthly) * 100));
+    const pctIns = Math.max(1, Math.round((insMonthly / totalMonthly) * 100));
+    const pctMaint = Math.max(1, Math.round((maintMonthly / totalMonthly) * 100));
+    const pctFin = Math.max(0, 100 - (pctDepr + pctFuel + pctIns + pctMaint));
+
+    // Update stacked bar widths
+    if (barDepr) barDepr.style.width = pctDepr + '%';
+    if (barFuel) barFuel.style.width = pctFuel + '%';
+    if (barIns) barIns.style.width = pctIns + '%';
+    if (barMaint) barMaint.style.width = pctMaint + '%';
+    if (barFin) barFin.style.width = pctFin + '%';
+
+    // Update legend
+    if (legendDeprAmt) legendDeprAmt.textContent = '$' + deprMonthly + '/mo';
+    if (legendDeprPct) legendDeprPct.textContent = '(' + pctDepr + '%)';
+
+    if (legendFuelAmt) legendFuelAmt.textContent = '$' + fuelMonthly + '/mo';
+    if (legendFuelPct) legendFuelPct.textContent = '(' + pctFuel + '%)';
+
+    if (legendInsAmt) legendInsAmt.textContent = '$' + insMonthly + '/mo';
+    if (legendInsPct) legendInsPct.textContent = '(' + pctIns + '%)';
+
+    if (legendMaintAmt) legendMaintAmt.textContent = '$' + maintMonthly + '/mo';
+    if (legendMaintPct) legendMaintPct.textContent = '(' + pctMaint + '%)';
+
+    if (legendFinAmt) legendFinAmt.textContent = '$' + finMonthly + '/mo';
+    if (legendFinPct) legendFinPct.textContent = '(' + pctFin + '%)';
+
+    if (triggerPulse) {
+      triggerSummaryPulse();
+    }
+  }
+
+  // Attach slider input listeners
+  if (priceSlider && priceVal) {
+    priceSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      priceVal.textContent = '$' + v.toLocaleString('en-US');
+      // Update down payment dollar string too
+      const pct = Number(downSlider.value);
+      const amt = Math.round(v * (pct / 100));
+      downVal.textContent = '$' + amt.toLocaleString('en-US');
+      downMaxLabel.textContent = '60% ($' + Math.round(v * 0.6).toLocaleString('en-US') + ')';
+      calculateAll(false);
+    });
+    priceSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (downSlider && downVal) {
+    downSlider.addEventListener('input', (e) => {
+      const pct = Number(e.target.value);
+      const price = Number(priceSlider.value);
+      const amt = Math.round(price * (pct / 100));
+      downVal.textContent = '$' + amt.toLocaleString('en-US');
+      if (downPctLabel) downPctLabel.textContent = pct;
+      calculateAll(false);
+    });
+    downSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (termSlider && termVal) {
+    termSlider.addEventListener('input', (e) => {
+      termVal.textContent = e.target.value + ' mos';
+      calculateAll(false);
+    });
+    termSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (aprSlider && aprVal) {
+    aprSlider.addEventListener('input', (e) => {
+      aprVal.textContent = e.target.value + '%';
+      calculateAll(false);
+    });
+    aprSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (mileageSlider && mileageVal) {
+    mileageSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      mileageVal.textContent = v.toLocaleString('en-US') + ' mi / yr';
+      calculateAll(false);
+    });
+    mileageSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (horizonSlider && horizonVal) {
+    horizonSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      horizonVal.textContent = v + (v === 1 ? ' year' : ' years');
+      calculateAll(false);
+    });
+    horizonSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (fuelSlider && fuelVal) {
+    fuelSlider.addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value).toFixed(2);
+      fuelVal.textContent = '$' + v;
+      calculateAll(false);
+    });
+    fuelSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (insuranceSlider && insuranceVal) {
+    insuranceSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      insuranceVal.textContent = '$' + v.toLocaleString('en-US') + ' / yr';
+      calculateAll(false);
+    });
+    insuranceSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (tollsSlider && tollsVal) {
+    tollsSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      tollsVal.textContent = '$' + v + ' / mo';
+      calculateAll(false);
+    });
+    tollsSlider.addEventListener('change', () => calculateAll(true));
+  }
+
+  if (warrantyToggle) {
+    warrantyToggle.addEventListener('change', () => {
+      calculateAll(true);
+    });
+  }
+
+  // Initial Calculation to sync state accurately
+  calculateAll(false);
+</script>
+</body></html>

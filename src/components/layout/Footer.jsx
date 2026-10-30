@@ -1,0 +1,347 @@
+import React, { useState } from 'react';
+import { Plus, X, ArrowRight, ShieldCheck, Download } from 'lucide-react';
+import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
+import { OBD_CODES } from '../../data/obdCodes';
+import { PROGRAMMATIC_OBD_MATRIX } from '../../data/seoMatrixData';
+import { useUnits } from '../../context/UnitContext';
+import { Collapse } from '../common/OdometerPrimitives';
+
+const FAQS = [
+  {
+    q: 'How do we calculate 5-year depreciation?',
+    a: 'We apply a brand-specific annual value loss rate to the purchase price, compounded for each year you own the car. Above-average annual mileage lowers the expected resale value further, while low mileage protects it. The difference between what you pay and the estimated resale value is spread across every month of ownership.',
+  },
+  {
+    q: 'Why do short city trips wear out modern engines faster?',
+    a: 'Short trips rarely let the engine, oil and exhaust reach full operating temperature. Diesel particulate filters can’t complete their soot-burning regeneration, EGR valves clog with carbon, and brakes and clutches work far harder in stop-start traffic. That’s why we apply a 1.35x wear multiplier to these systems for mostly-city driving.',
+  },
+  {
+    q: 'Independent specialist vs. Dealership service costs',
+    a: 'Main dealerships typically charge 50–80% more per hour than independent specialists and often fit only branded parts. A good independent using OE-quality parts can usually do the same job, and most regions protect your warranty as long as servicing follows the manufacturer schedule. Keep receipts and stamped records either way.',
+  },
+  {
+    q: 'How to read OBD2 codes before visiting a workshop',
+    a: 'Every car sold since the late 1990s has an OBD2 port under the dashboard. A low-cost Bluetooth scanner and a free phone app will read the stored fault code and live sensor data. Knowing the code, and checking the cheap culprits first, makes it much harder for anyone to sell you parts you don’t need.',
+  },
+  {
+    q: 'How is the Ownership Value Score calculated?',
+    a: 'Our algorithmic scoring engine evaluates 10-year residual decay curves, real-world highway vs urban consumption ratios, known mechanical failure frequencies, and component repair costs relative to the segment median.',
+  },
+];
+
+export default function Footer({
+  onSelectTab,
+  onSelectPreset,
+  onSelectObdCode,
+  onSelectHybridObd,
+  onOpenLegalModal,
+  hideFaq = false,
+}) {
+  const { formatCurrency } = useUnits();
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const benchmarkPresets = [
+    { id: 'toyota-camry-hybrid', name: 'Toyota Camry Hybrid 2.5L', price: 31500 },
+    { id: 'ford-focus-ecoblue', name: 'Ford Focus 2.0 EcoBlue Diesel', price: 24800 },
+    { id: 'tesla-model-3-lr', name: 'Tesla Model 3 Long Range', price: 42900 },
+    { id: 'bmw-330i-g20', name: 'BMW 3 Series 2.0T', price: 43500 },
+    { id: 'vw-golf-20-tdi', name: 'VW Golf 2.0 TDI', price: 27900 },
+  ];
+
+  return (
+    <div className="mt-16 space-y-16">
+      {/* 1. Reserved Zero-CLS Ad Container (Stitch Section 7.10) */}
+      <div
+        className="flex min-h-[90px] items-center justify-center rounded-xl border border-dashed border-border dark:border-slate-800 bg-surface-subtle dark:bg-slate-900/60 p-4"
+        aria-label="Advertisement"
+      >
+        <div className="text-center">
+          <span className="text-[11px] font-micro tracking-widest text-faint dark:text-slate-500 uppercase font-semibold block mb-0.5 font-mono">
+            ADVERTISEMENT · SPONSORED PARTNER PLACEMENT
+          </span>
+          <span className="text-xs text-muted dark:text-slate-400">
+            Google AdSense Zero-CLS Reserved Container (Responsive Leaderboard)
+          </span>
+        </div>
+      </div>
+
+      {/* 2. Collapsible FAQ Accordion with Stitch Clean Styling */}
+      {!hideFaq && (
+        <section aria-labelledby="faq-heading" className="max-w-[1380px] mx-auto w-full">
+          <div className="mb-6">
+            <span className="font-micro text-micro uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold">
+              Common questions
+            </span>
+            <h2 id="faq-heading" className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-slate-100 mt-1">
+              Questions, answered
+            </h2>
+          </div>
+
+          <div className="rounded-xl border border-border dark:border-slate-800 bg-surface dark:bg-slate-900 shadow-sm divide-y divide-border dark:divide-slate-800 overflow-hidden">
+            {FAQS.map((f, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <div key={f.q} className="transition-colors">
+                  <h3>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-${i}`}
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      className="flex w-full items-center justify-between gap-4 px-6 py-4.5 text-left text-sm sm:text-base font-semibold text-ink dark:text-slate-100 hover:bg-surface-subtle dark:hover:bg-slate-800/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-600 transition-colors"
+                    >
+                      <span>{f.q}</span>
+                      <span
+                        className={`flex items-center justify-center w-6 h-6 rounded-full text-muted dark:text-slate-400 transition-transform duration-300 ease-out ${
+                          isOpen ? 'rotate-45 text-primary-600 dark:text-primary-400' : ''
+                        }`}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </span>
+                    </button>
+                  </h3>
+                  <Collapse open={isOpen} id={`faq-${i}`}>
+                    <p className="px-6 pb-5 text-sm leading-relaxed text-body dark:text-slate-300 text-pretty">
+                      {f.a}
+                    </p>
+                  </Collapse>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Deep-Link Presets & Diagnostics Navigation */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-border dark:border-slate-800 text-xs text-muted dark:text-slate-400 max-w-[1380px] mx-auto w-full">
+        <div>
+          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+            Benchmark Vehicle TCO Models
+          </h3>
+          <ul className="space-y-2">
+            {benchmarkPresets.map((v) => (
+              <li key={v.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectPreset) {
+                      onSelectPreset(v.id);
+                    } else if (onSelectTab) {
+                      onSelectTab('tco');
+                    }
+                    if (typeof window !== 'undefined' && window.scrollTo) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="flex items-center justify-between w-full hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors py-0.5"
+                >
+                  <span className="font-medium text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">{v.name}</span>
+                  <span className="font-code tabular-nums text-muted dark:text-slate-400">{formatCurrency(v.price)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+            High-Frequency OBD-II Fault Dossiers
+          </h3>
+          <ul className="space-y-2">
+            {OBD_CODES.slice(0, 5).map((item) => (
+              <li key={item.code}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectObdCode) {
+                      onSelectObdCode(item.code);
+                    } else if (onSelectTab) {
+                      onSelectTab('obd');
+                    }
+                    if (typeof window !== 'undefined' && window.scrollTo) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="flex items-center gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors py-0.5"
+                >
+                  <span className="font-code font-bold text-primary-600 dark:text-primary-400">{item.code}</span>
+                  <span className="truncate text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">{item.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+            Programmatic Vehicle × OBD-II Matrix
+          </h3>
+          <ul className="space-y-2">
+            {PROGRAMMATIC_OBD_MATRIX.slice(0, 6).map((item) => (
+              <li key={item.id}>
+                <a
+                  href={item.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (typeof onSelectHybridObd === 'function') {
+                      onSelectHybridObd(item.presetId, item.code);
+                    } else {
+                      if (typeof onSelectPreset === 'function') {
+                        onSelectPreset(item.presetId);
+                      }
+                      if (typeof onSelectObdCode === 'function') {
+                        onSelectObdCode(item.code);
+                      } else if (typeof onSelectTab === 'function') {
+                        onSelectTab('obd');
+                      }
+                    }
+                    if (typeof window !== 'undefined' && window.scrollTo) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="flex items-center justify-between gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors py-0.5"
+                >
+                  <span className="truncate text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
+                    {item.anchorText}
+                  </span>
+                  <span className="font-code font-bold text-primary-600 dark:text-primary-400 shrink-0">
+                    {item.code}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* 4. Stitch Master Footer */}
+      <footer className="w-full bg-surface dark:bg-slate-900 border-t border-border dark:border-slate-800 -mx-4 sm:-mx-6 px-6 lg:px-12 pt-14 pb-10">
+        <div className="max-w-[1380px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+            {/* Brand Col */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <div className="flex items-center gap-2.5 text-ink dark:text-slate-100 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
+                  <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path d="M4 15a8 8 0 1 1 16 0" />
+                    <path d="m12 14 3-3" />
+                  </svg>
+                </span>
+                <span className="font-h3 text-h3 tracking-tight font-bold text-ink dark:text-slate-100">ShiftMetric</span>
+              </div>
+              <p className="text-xs sm:text-sm text-body dark:text-slate-300 leading-relaxed max-w-sm">
+                Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success-bg border border-[#BFE8CF] text-success-text dark:bg-emerald-950/70 dark:border-emerald-800/80 dark:text-emerald-400 font-micro text-micro uppercase tracking-wider font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-score-good" />
+                  Live Data Index
+                </span>
+              </div>
+            </div>
+
+            {/* Tools Col */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Tools</span>
+              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('overview')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    Platform Overview
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('tco')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    5-Year True Cost to Own
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('risk')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    Maintenance Risk Matrix
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('obd')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    OBD2 Repair Estimator
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company Col */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Platform</span>
+              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('blog')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    From the Garage (Blog)
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('reviews')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    Driver Reviews
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('methodology')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    Methodology &amp; White Paper
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onOpenLegalModal && onOpenLegalModal('about')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                    About
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal Col */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Legal</span>
+              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegalModal && onOpenLegalModal('privacy')}
+                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                  >
+                    Privacy Policy
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegalModal && onOpenLegalModal('terms')}
+                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                  >
+                    Terms
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegalModal && onOpenLegalModal('affiliate')}
+                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                  >
+                    Affiliate Disclosure
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-6 border-t border-border dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="font-code">© 2026 ShiftMetric. Estimates only.</span>
+              <span>•</span>
+              <span>Independent benchmark, not affiliated with OEMs.</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-faint dark:text-slate-500 font-code">v4.14-prod</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

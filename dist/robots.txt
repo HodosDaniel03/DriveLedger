@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /tco
+Allow: /risk-matrix
+Allow: /obd-estimator
+Allow: /methodology
+
+# Programmatic SEO query parameters allowed for vehicle presets and OBD-II fault codes
+Sitemap: https://shiftmetric.io/sitemap.xml

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Odometer - Precision Vehicle Intelligence</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>
+  @layer base {
+    html, body { margin: 0; padding: 0; }
+    body { overscroll-behavior: none; }
+    main > :first-child { margin-top: 0 !important; }
+    main > :last-child { margin-bottom: 0 !important; }
+  }
+  ::-webkit-scrollbar { display: none; }
+
+  /* Tabular numbers & micro animations */
+  .tnum { font-feature-settings: 'tnum' on, 'lnum' on; font-variant-numeric: tabular-nums; }
+
+  /* Calm breathing pulse for Due Now item */
+  @keyframes alert-breathe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.2); }
+    50% { box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.08); }
+  }
+  .breathe-pulse {
+    animation: alert-breathe 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Spend flash recalculation feedback */
+  @keyframes spend-flash {
+    0% { background-color: rgba(220, 230, 255, 0.85); transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
+  }
+  .flash-recalc {
+    animation: spend-flash 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Custom styled ranges with active track gradient */
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0F5BFF;
+    border: 2.5px solid #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 6px rgba(15, 91, 255, 0.45);
+  }
+  input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(0.95);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0F5BFF;
+    border: 2.5px solid #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  /* Interactive component row transition */
+  .component-row {
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .component-row:hover {
+    background-color: #F8FAFC;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -2px rgba(16, 24, 40, 0.06);
+    border-color: #CDD4DE !important;
+  }
+
+  /* Subsystem tile interactive hover */
+  .subsystem-tile {
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  }
+  .subsystem-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    border-color: #CDD4DE;
+  }
+
+  /* Bar segment hover highlights */
+  .bar-seg {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .legend-item {
+    transition: background-color 0.2s ease, transform 0.15s ease;
+  }
+  .legend-item:hover {
+    background-color: #F1F3F6;
+    border-radius: 6px;
+  }
+
+  /* Tactile button active physics */
+  .tactile-btn {
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .tactile-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* Accessibility respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "on-tertiary-fixed-variant": "#842500",
+        "faint": "#98A2B3",
+        "tertiary-fixed-dim": "#ffb59e",
+        "inverse-primary": "#b6c4ff",
+        "success-text": "#0E7A3E",
+        "on-error": "#ffffff",
+        "surface-container-low": "#f3f2ff",
+        "score-good": "#12A150",
+        "danger-bg": "#FDECEA",
+        "primary-100": "#DCE6FF",
+        "primary-700": "#0A47D1",
+        "surface-container": "#ededfa",
+        "surface-variant": "#e1e1ef",
+        "on-secondary-container": "#007235",
+        "ink": "#0B1220",
+        "on-secondary-fixed-variant": "#005225",
+        "background": "#faf8ff",
+        "surface-bright": "#faf8ff",
+        "inverse-on-surface": "#f0f0fd",
+        "on-primary": "#ffffff",
+        "border": "#E4E8EE",
+        "on-secondary": "#ffffff",
+        "surface-container-high": "#e7e7f4",
+        "secondary": "#006d33",
+        "on-primary-fixed": "#00164f",
+        "on-tertiary": "#ffffff",
+        "warning-bg": "#FFF6D6",
+        "score-poor": "#F04438",
+        "tertiary": "#9a2d00",
+        "surface-subtle": "#F8FAFC",
+        "surface-tint": "#004fe6",
+        "outline-variant": "#c3c5d9",
+        "secondary-container": "#7cf99c",
+        "on-error-container": "#93000a",
+        "primary-800": "#0838A8",
+        "error-container": "#ffdad6",
+        "on-surface": "#191b24",
+        "secondary-fixed": "#7ffb9f",
+        "on-surface-variant": "#434656",
+        "on-tertiary-container": "#ffe9e3",
+        "on-tertiary-fixed": "#3a0b00",
+        "border-strong": "#CDD4DE",
+        "muted": "#6B7686",
+        "canvas": "#F3F5F8",
+        "primary-50": "#EEF3FF",
+        "primary-container": "#0f5bff",
+        "primary-fixed-dim": "#b6c4ff",
+        "warning-text": "#8A5A00",
+        "on-primary-container": "#ebecff",
+        "secondary-fixed-dim": "#62de85",
+        "success-bg": "#E8F7EE",
+        "danger-text": "#B42318",
+        "primary": "#0045cd",
+        "error": "#ba1a1a",
+        "surface-dim": "#d9d9e6",
+        "surface": "#FFFFFF",
+        "outline": "#737688",
+        "score-fair": "#F2B705",
+        "on-primary-fixed-variant": "#003bb0",
+        "tertiary-fixed": "#ffdbd0",
+        "surface-container-lowest": "#ffffff",
+        "tertiary-container": "#c43b00",
+        "body": "#3D4756",
+        "surface-container-highest": "#e1e1ef",
+        "primary-fixed": "#dce1ff",
+        "primary-600": "#0F5BFF",
+        "on-background": "#191b24",
+        "on-secondary-fixed": "#00210b",
+        "inverse-surface": "#2e303a"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-xl": "1.5rem",
+        "space-3xl": "3rem",
+        "gutter": "1.5rem",
+        "space-2xl": "2rem",
+        "space-lg": "1rem",
+        "space-xs": "0.25rem",
+        "space-md": "0.75rem",
+        "space-sm": "0.5rem",
+        "margin": "1.5rem"
+      },
+      "fontFamily": {
+        "body-l": ["Inter"],
+        "display": ["Inter"],
+        "micro": ["Inter"],
+        "h2": ["Inter"],
+        "metric-xl": ["Inter"],
+        "h1": ["Inter"],
+        "small": ["Inter"],
+        "body": ["Inter"],
+        "code": ["JetBrains Mono"],
+        "h3": ["Inter"],
+        "metric-l": ["Inter"]
+      },
+      "fontSize": {
+        "body-l": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+        "display": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.025em", "fontWeight": "700"}],
+        "micro": ["11px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+        "h2": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "metric-xl": ["48px", {"lineHeight": "52px", "fontWeight": "700"}],
+        "h1": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+        "small": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+        "body": ["15px", {"lineHeight": "24px", "fontWeight": "400"}],
+        "code": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+        "h3": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+        "metric-l": ["28px", {"lineHeight": "32px", "fontWeight": "700"}]
+      }
+    }
+  }
+}</script></head><body class="bg-canvas font-body text-body min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface shadow-[0_1px_0_0_#E4E8EE]"><div class="h-16 max-w-[1160px] mx-auto px-6 flex items-center justify-between"><div class="flex items-center gap-10"><a class="flex items-center gap-2 text-ink hover:opacity-90 transition-opacity" data-path="overview" href="#"><div class="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-primary-600"><span class="material-symbols-outlined text-[20px]">speed</span></div><span class="font-h3 text-h3 text-ink tracking-tight">Odometer</span></a><nav class="hidden md:flex items-center gap-7" data-active-classes="text-primary-600 font-semibold"><div class="relative group flex items-center"><button class="flex items-center gap-1 font-body text-body text-on-surface-variant hover:text-ink transition-colors" type="button"><span>Tools</span><span class="material-symbols-outlined text-[16px]">expand_more</span></button></div><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="methodology" href="#">Methodology</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="reviews" href="#">Reviews</a><a class="font-body text-body text-on-surface-variant hover:text-ink transition-colors" data-path="blog" href="#">Blog</a></nav></div><div class="flex items-center gap-4"><button class="tactile-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-surface text-ink font-small text-small hover:border-border-strong hover:bg-surface-subtle transition-all" type="button"><span class="font-micro text-micro bg-primary-100 text-primary-700 px-1 rounded">US</span><span>US</span><span class="material-symbols-outlined text-[16px] text-faint">keyboard_arrow_down</span></button><button class="tactile-btn px-5 py-2 rounded-full border border-border-strong text-ink font-small text-small font-semibold hover:border-ink hover:bg-surface-subtle transition-all" type="button">Get started</button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="h-14 bg-surface shadow-[0_1px_0_0_#E4E8EE]"><div class="max-w-[1160px] mx-auto px-6 h-full flex items-center"><nav class="flex items-center gap-3 overflow-x-auto py-1" data-active-classes="bg-primary-600 text-on-primary border-primary-600 font-semibold shadow-sm"><a class="tactile-btn inline-flex items-center px-4 py-1.5 rounded-full border border-border-strong text-on-surface font-small text-small hover:border-ink hover:bg-surface-subtle transition-all whitespace-nowrap" data-path="true-cost-to-own" href="#">True Cost to Own</a><a aria-current="page" class="tactile-btn inline-flex items-center px-4 py-1.5 rounded-full transition-all whitespace-nowrap bg-primary-600 text-on-primary border-primary-600 font-semibold shadow-sm" data-path="maintenance-check" href="#">Maintenance Check</a><a class="tactile-btn inline-flex items-center px-4 py-1.5 rounded-full border border-border-strong text-on-surface font-small text-small hover:border-ink hover:bg-surface-subtle transition-all whitespace-nowrap" data-path="obd2-repair-estimator" href="#">OBD2 Repair Estimator</a></nav></div></div></header><main class="w-full pt-[120px] bg-canvas"><div class="flex flex-col w-full">
+<div class="max-w-[1160px] mx-auto w-full px-6 py-8 space-y-6">
+<!-- 1. Hero Row (2 equal white cards, 16px radius, soft elevation, 24px gap) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- a) Vehicle Card (left) -->
+<div class="bg-surface rounded-xl p-6 shadow-sm flex flex-col justify-between transition-shadow hover:shadow-md">
+<div class="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+<!-- 40% width left: studio photo -->
+<div class="w-full sm:w-[40%] rounded-lg overflow-hidden bg-surface-subtle flex-shrink-0 group relative">
+<img alt="BMW 320d G20" class="w-full h-40 object-cover object-center group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida/AEtjO1XVo9RpBv_jdqCpFyd2RFBXJ7j9euPnplq-9_tozZa3ky1JCytXOLBopLiqBSawPcq0EKR7j_i9w3sE2iGwVVgKSYweaUIpGeurWdrBC-V5baaFW7nDtH0LqzVziW_S50Dr73SwNU56XWwkaMwPlE8y9c-n9CbA8U2u1P6mmNvu6z_geinR7ExbpZo0aIjQ9DVI572Z038AvrhG0e0VkNSwktG3O1Ru3j03S9KpzBPpkQ-ykJFortvi7Izv"/>
+</div>
+<!-- 60% width right -->
+<div class="w-full sm:w-[60%] flex flex-col gap-2.5 min-w-0">
+<div>
+<h3 class="font-h3 text-h3 text-ink tracking-tight">BMW 320d (G20)</h3>
+<p class="font-code text-code text-muted tracking-tight mt-0.5">2.0d B47 TwinPower Turbo · 190 HP</p>
+</div>
+<!-- Spec chips row -->
+<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 bg-[#F1F3F6] text-ink font-small text-small px-2.5 py-0.5 rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-faint">local_gas_station</span>
+                Diesel
+              </span>
+<span class="inline-flex items-center gap-1 bg-[#F1F3F6] text-ink font-small text-small px-2.5 py-0.5 rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-faint">settings_input_component</span>
+                Automatic
+              </span>
+<span class="inline-flex items-center gap-1 bg-[#F1F3F6] text-ink font-small text-small px-2.5 py-0.5 rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-faint">directions_car</span>
+                Sedan
+              </span>
+<span class="inline-flex items-center gap-1 bg-[#F1F3F6] text-ink font-small text-small px-2.5 py-0.5 rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[14px] text-faint">calendar_today</span>
+                2020
+              </span>
+</div>
+<!-- Meta info -->
+<div class="flex items-center gap-1.5 text-muted font-small text-small pt-0.5">
+<span class="material-symbols-outlined text-[16px] text-faint">speed</span>
+<span>Current odometer: <strong class="text-ink font-semibold tnum" id="vehicle-card-odometer">68,400 mi</strong> · VIN verified</span>
+</div>
+</div>
+</div>
+<!-- Bottom actions row -->
+<div class="flex items-center justify-between pt-5 mt-5 shadow-[0_-1px_0_0_#E4E8EE]">
+<div class="flex items-center gap-2">
+<button class="tactile-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border-strong text-ink font-small text-small font-medium hover:border-ink hover:bg-surface-subtle transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-muted">sync</span>
+<span>Change vehicle</span>
+</button>
+<button class="tactile-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border-strong text-ink font-small text-small font-medium hover:border-ink hover:bg-surface-subtle transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-muted">share</span>
+<span>Share</span>
+</button>
+</div>
+<span class="font-code text-micro text-faint tracking-wider">EST-2026-B47</span>
+</div>
+</div>
+<!-- b) Score Card (right) -->
+<div class="bg-surface rounded-xl p-6 shadow-sm flex flex-col justify-between transition-shadow hover:shadow-md">
+<div>
+<!-- Header -->
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2.5">
+<h3 class="font-h3 text-h3 text-ink tracking-tight">Reliability Score</h3>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text font-micro text-micro border border-[#F5DE8A] font-semibold opacity-0 transition-opacity duration-700 ease-out" id="score-condition-pill">
+<span class="w-1.5 h-1.5 rounded-full bg-score-fair"></span>
+                Fair condition
+              </span>
+</div>
+<button class="text-faint hover:text-ink transition-colors cursor-pointer" title="Score methodology info" type="button">
+<span class="material-symbols-outlined text-[18px]">info</span>
+</button>
+</div>
+<!-- Gauge and affected factors -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center pt-2">
+<!-- Radial Gauge with stroke-dashoffset animation -->
+<div class="sm:col-span-5 flex flex-col items-center justify-center">
+<div class="relative w-[152px] h-[152px] flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 120 120">
+<circle cx="60" cy="60" fill="none" r="48" stroke="#FFF3C4" stroke-width="10"></circle>
+<circle class="transition-all duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)]" cx="60" cy="60" fill="none" id="radial-score-ring" r="48" stroke="#F2B705" stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round" stroke-width="10"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-metric-xl text-metric-xl text-ink tracking-tight leading-none tnum" id="radial-score-number">0</span>
+<span class="font-small text-small text-faint leading-none mt-1">/ 100</span>
+</div>
+</div>
+</div>
+<!-- Right details -->
+<div class="sm:col-span-7 flex flex-col gap-2">
+<span class="font-micro text-micro uppercase tracking-wider text-ink font-bold">What affected the score</span>
+<p class="font-small text-small text-body leading-snug">
+                Two wear items are approaching their service window and one known failure pattern applies to this engine.
+              </p>
+<!-- Benchmark banner -->
+<div class="rounded-lg bg-[#EEF5FF] p-3 text-[#1D3A6B] font-small text-small leading-relaxed mt-1">
+                This is a <strong class="font-semibold">fair</strong> score for a <strong class="font-semibold">4-year-old diesel sedan</strong>. Owners who service on time typically reach <strong class="font-semibold">70+</strong>.
+              </div>
+</div>
+</div>
+</div>
+<!-- Bottom details and sample counts -->
+<div class="flex items-center justify-between pt-4 mt-4 shadow-[0_-1px_0_0_#E4E8EE]">
+<button class="tactile-btn inline-flex items-center gap-1 font-small text-small text-primary-600 font-semibold hover:text-primary-700 transition-colors" type="button">
+<span>See score details</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+<span class="font-small text-small text-muted">84,300 sample data points</span>
+</div>
+</div>
+</div>
+<!-- 2. Workspace Split (7 cols left / 5 cols right, 24px gap) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (7 cols, 2 stacked white cards, 24px gap) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Card 1: Your car today -->
+<div class="bg-surface rounded-xl p-6 shadow-sm space-y-6">
+<div>
+<h3 class="font-h3 text-h3 text-ink tracking-tight">Your car today</h3>
+<p class="font-small text-small text-muted mt-0.5">Adjust current mileage, driving conditions, and climate to recalibrate component wear intervals.</p>
+</div>
+<!-- Sliders -->
+<div class="space-y-5">
+<!-- Current mileage -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="font-small text-small font-medium text-ink cursor-pointer" for="input-current-mileage">Current mileage</label>
+<span class="font-code text-small font-semibold bg-[#F1F3F6] text-ink px-2.5 py-0.5 rounded-lg tnum transition-colors" id="badge-current-mileage">68,400 mi</span>
+</div>
+<input class="w-full h-2 rounded-lg appearance-none cursor-pointer focus:outline-none" id="input-current-mileage" max="150000" min="10000" step="500" type="range" value="68400"/>
+<div class="flex justify-between font-micro text-micro text-faint">
+<span>10,000 mi</span>
+<span>80,000 mi</span>
+<span>150,000 mi</span>
+</div>
+</div>
+<!-- Annual mileage -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="font-small text-small font-medium text-ink cursor-pointer" for="input-annual-mileage">Annual mileage</label>
+<span class="font-code text-small font-semibold bg-[#F1F3F6] text-ink px-2.5 py-0.5 rounded-lg tnum transition-colors" id="badge-annual-mileage">11,000 mi / yr</span>
+</div>
+<input class="w-full h-2 rounded-lg appearance-none cursor-pointer focus:outline-none" id="input-annual-mileage" max="30000" min="3000" step="500" type="range" value="11000"/>
+<div class="flex justify-between font-micro text-micro text-faint">
+<span>3,000 mi</span>
+<span>15,000 mi</span>
+<span>30,000 mi</span>
+</div>
+</div>
+</div>
+<!-- Segmented Controls -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+<!-- Driving Style -->
+<div class="space-y-1.5">
+<label class="font-small text-small font-medium text-ink">Driving style</label>
+<div class="grid grid-cols-3 bg-[#F1F3F6] p-1 rounded-full text-center font-small text-small" id="segmented-driving-style">
+<button class="py-1 px-2 rounded-full text-muted hover:text-ink transition-all cursor-pointer font-medium" data-val="city" type="button">City</button>
+<button class="py-1 px-2 rounded-full bg-surface text-ink font-semibold shadow-sm transition-all cursor-pointer" data-val="mixed" type="button">Mixed</button>
+<button class="py-1 px-2 rounded-full text-muted hover:text-ink transition-all cursor-pointer font-medium" data-val="highway" type="button">Highway</button>
+</div>
+</div>
+<!-- Climate -->
+<div class="space-y-1.5">
+<label class="font-small text-small font-medium text-ink">Climate zone</label>
+<div class="grid grid-cols-3 bg-[#F1F3F6] p-1 rounded-full text-center font-small text-small" id="segmented-climate">
+<button class="py-1 px-2 rounded-full bg-surface text-ink font-semibold shadow-sm transition-all cursor-pointer" data-val="mild" type="button">Mild</button>
+<button class="py-1 px-2 rounded-full text-muted hover:text-ink transition-all cursor-pointer font-medium" data-val="hot" type="button">Hot</button>
+<button class="py-1 px-2 rounded-full text-muted hover:text-ink transition-all cursor-pointer font-medium" data-val="cold" type="button">Cold</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Component wear timeline -->
+<div class="bg-surface rounded-xl p-6 shadow-sm">
+<div class="pb-5 shadow-[0_1px_0_0_#E4E8EE]">
+<h3 class="font-h3 text-h3 text-ink tracking-tight">Component wear timeline</h3>
+<p class="font-small text-small text-muted mt-0.5">Mileage-triggered wear status calibrated against 14,200+ BMW B47 engine logs.</p>
+</div>
+<!-- Component Rows with interactive hover, animated wear tracks & pins -->
+<div class="space-y-0.5 divide-y divide-border">
+<!-- 1. Timing chain & guides -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-surface-subtle flex items-center justify-center text-muted flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">link</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">Timing chain &amp; guides</h4>
+<span class="font-micro text-micro text-faint">Inspect at 90k mi</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-score-good tnum wear-pct-val" data-target="48">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-score-good rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="48" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="48" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold whitespace-nowrap">
+                  Healthy
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$1,450</span>
+</div>
+</div>
+<!-- 2. EGR cooler (Due Now / high risk row with calm breathing pulse accent indicator) -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-danger-bg flex items-center justify-center text-danger-text flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">EGR cooler</h4>
+<span class="font-micro text-micro text-danger-text font-medium">Overdue service window</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-danger-text tnum wear-pct-val" data-target="92">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-[#B42318] rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="92" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="92" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="breathe-pulse inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-danger-bg text-danger-text border border-[#F7C1BB] font-micro text-micro font-semibold whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-[#B42318]"></span>
+                  Due now
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$980</span>
+</div>
+</div>
+<!-- 3. DPF cleaning -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center text-warning-text flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">air</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">DPF cleaning</h4>
+<span class="font-micro text-micro text-muted">Soot loading threshold</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-warning-text tnum wear-pct-val" data-target="78">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-[#8A5A00] rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="78" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="78" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text border border-[#F5DE8A] font-micro text-micro font-semibold whitespace-nowrap">
+                  Within 12 mos
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$420</span>
+</div>
+</div>
+<!-- 4. Turbocharger -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-surface-subtle flex items-center justify-center text-muted flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">mode_fan</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">Turbocharger</h4>
+<span class="font-micro text-micro text-faint">Shaft play nominal</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-score-good tnum wear-pct-val" data-target="42">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-score-good rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="42" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="42" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold whitespace-nowrap">
+                  Healthy
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$2,100</span>
+</div>
+</div>
+<!-- 5. Brake discs & pads (front) -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center text-warning-text flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">motion_sensor_active</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">Brake discs &amp; pads (front)</h4>
+<span class="font-micro text-micro text-muted">Rotor thickness 22.4mm</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-warning-text tnum wear-pct-val" data-target="82">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-[#8A5A00] rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="82" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="82" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text border border-[#F5DE8A] font-micro text-micro font-semibold whitespace-nowrap">
+                  Within 12 mos
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$540</span>
+</div>
+</div>
+<!-- 6. Automatic transmission fluid -->
+<div class="component-row p-3 -mx-3 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-transparent">
+<div class="flex items-center gap-3 min-w-[210px]">
+<div class="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center text-warning-text flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">opacity</span>
+</div>
+<div>
+<h4 class="font-body text-body font-semibold text-ink leading-tight">Automatic transmission fluid</h4>
+<span class="font-micro text-micro text-muted">ZF 8HP service window</span>
+</div>
+</div>
+<!-- Wear Track -->
+<div class="flex-1 max-w-[240px] px-2">
+<div class="flex items-center justify-between text-micro font-micro text-faint mb-1">
+<span>Wear level</span>
+<span class="font-semibold text-warning-text tnum wear-pct-val" data-target="74">0%</span>
+</div>
+<div class="relative w-full h-1.5 bg-[#E4E8EE] rounded-full overflow-visible">
+<div class="wear-bar-fill h-full bg-[#8A5A00] rounded-full transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-width="74" style="width: 0%;"></div>
+<div class="wear-pin absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ink border-2 border-surface shadow-sm transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]" data-left="74" style="left: 0%; transform: translate(-50%, -50%);" title="You are here (68,400 mi)"></div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text border border-[#F5DE8A] font-micro text-micro font-semibold whitespace-nowrap">
+                  Service soon
+                </span>
+<span class="font-code text-body font-semibold text-ink tnum w-16 text-right">$380</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (5 cols, sticky summary card, top: 136px) -->
+<div class="lg:col-span-5 sticky top-[136px] space-y-6">
+<div class="bg-surface rounded-xl p-6 shadow-sm space-y-5 transition-shadow hover:shadow-md">
+<!-- Spend Eyebrow and Headline Metric with live recalculation pulse -->
+<div class="p-2 -m-2 rounded-lg transition-all" id="spend-summary-header">
+<span class="font-micro text-micro uppercase tracking-wider text-muted font-bold">Expected spend · next 24 months</span>
+<div class="flex items-baseline gap-3 mt-1">
+<span class="font-metric-xl text-metric-xl text-ink font-bold tnum tracking-tight" id="metric-expected-spend">$2,320</span>
+<span class="font-small text-small text-muted">est. parts &amp; labor</span>
+</div>
+<div class="flex items-center gap-2 font-small text-small text-muted mt-1">
+<span class="inline-flex items-center gap-1 text-danger-text font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#B42318]"></span>
+<span id="items-due-count">3 items due</span>
+</span>
+<span>·</span>
+<span class="text-ink font-medium tnum" id="metric-monthly-setaside">$97/mo to set aside</span>
+</div>
+</div>
+<!-- Stacked Component Spend Bar with animated width expansion & hover interaction -->
+<div class="space-y-3">
+<div class="w-full h-3 rounded-full flex overflow-hidden gap-[2px] bg-canvas" id="stacked-spend-bar">
+<div class="bar-seg h-full bg-[#B42318] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer" data-key="egr" data-target-width="42" style="width: 0%;" title="EGR Cooler: $980 (42%)"></div>
+<div class="bar-seg h-full bg-[#F2B705] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer" data-key="brakes" data-target-width="23" style="width: 0%;" title="Front Brakes: $540 (23%)"></div>
+<div class="bar-seg h-full bg-[#0F5BFF] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer" data-key="dpf" data-target-width="18" style="width: 0%;" title="DPF Cleaning: $420 (18%)"></div>
+<div class="bar-seg h-full bg-[#98A2B3] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer" data-key="atf" data-target-width="17" style="width: 0%;" title="ATF Fluid: $380 (17%)"></div>
+</div>
+<!-- Spend breakdown legend with synced hover states -->
+<div class="grid grid-cols-2 gap-2 text-small font-small pt-1">
+<div class="legend-item flex items-center justify-between p-1 cursor-pointer" data-key="egr">
+<span class="flex items-center gap-1.5 truncate">
+<span class="w-2 h-2 rounded-full bg-[#B42318] flex-shrink-0"></span>
+<span class="text-body truncate">EGR Cooler</span>
+</span>
+<span class="font-code text-ink font-semibold tnum" id="cost-egr">$980</span>
+</div>
+<div class="legend-item flex items-center justify-between p-1 cursor-pointer" data-key="brakes">
+<span class="flex items-center gap-1.5 truncate">
+<span class="w-2 h-2 rounded-full bg-[#F2B705] flex-shrink-0"></span>
+<span class="text-body truncate">Front Brakes</span>
+</span>
+<span class="font-code text-ink font-semibold tnum" id="cost-brakes">$540</span>
+</div>
+<div class="legend-item flex items-center justify-between p-1 cursor-pointer" data-key="dpf">
+<span class="flex items-center gap-1.5 truncate">
+<span class="w-2 h-2 rounded-full bg-[#0F5BFF] flex-shrink-0"></span>
+<span class="text-body truncate">DPF Cleaning</span>
+</span>
+<span class="font-code text-ink font-semibold tnum" id="cost-dpf">$420</span>
+</div>
+<div class="legend-item flex items-center justify-between p-1 cursor-pointer" data-key="atf">
+<span class="flex items-center gap-1.5 truncate">
+<span class="w-2 h-2 rounded-full bg-[#98A2B3] flex-shrink-0"></span>
+<span class="text-body truncate">ATF Fluid</span>
+</span>
+<span class="font-code text-ink font-semibold tnum" id="cost-atf">$380</span>
+</div>
+</div>
+</div>
+<!-- Hairline Divider -->
+<div class="h-[1px] bg-border w-full"></div>
+<!-- High-Priority Risk Alert tile with gentle entrance animation -->
+<div class="bg-danger-bg border border-[#F7C1BB] rounded-xl p-3.5 space-y-1.5 transition-all duration-700 ease-out opacity-0 translate-y-2" id="top-risk-alert-box">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-danger-text">report_problem</span>
+<h5 class="font-small text-small font-bold text-danger-text">Top risk: EGR cooler</h5>
+</div>
+<p class="font-small text-small text-body leading-snug">
+              Known thermal fatigue and soot clogging on B47 engines. Replace early to prevent intake manifold contamination.
+            </p>
+</div>
+<!-- Hairline Divider -->
+<div class="h-[1px] bg-border w-full"></div>
+<!-- Native verified partner card -->
+<div class="border border-border rounded-xl p-4 bg-surface space-y-3 transition-colors hover:border-border-strong">
+<div class="flex items-center justify-between">
+<span class="font-micro text-micro bg-[#F1F3F6] text-body px-2 py-0.5 rounded font-semibold uppercase tracking-wider">Verified Partner</span>
+<span class="font-micro text-micro text-faint">Warranty Coverage</span>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-subtle border border-border flex items-center justify-center font-h3 text-h3 text-primary-700 flex-shrink-0 font-bold">
+                CW
+              </div>
+<div>
+<h5 class="font-body text-body font-semibold text-ink leading-tight">Extended warranty from $39/mo</h5>
+<p class="font-small text-small text-muted mt-0.5">Comprehensive mechanical coverage for EGR, DPF &amp; turbo assembly.</p>
+</div>
+</div>
+<div class="pt-1">
+<button class="tactile-btn w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-border-strong text-ink font-small text-small font-semibold hover:border-ink hover:bg-surface-subtle transition-all" type="button">
+<span>See plans</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Action PDF link with subtle tactile interaction -->
+<div class="text-center pt-1">
+<a class="tactile-btn inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-small text-small font-medium transition-colors group" href="#">
+<span class="group-hover:underline">Download maintenance schedule PDF</span>
+<span class="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">north_east</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Report summary Card (Full container width white card) -->
+<div class="bg-surface rounded-xl p-7 shadow-sm space-y-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+<h2 class="font-h2 text-h2 text-ink tracking-tight">Report summary</h2>
+<div class="inline-flex items-center gap-1.5 text-success-text font-small text-small font-semibold">
+<span class="w-2 h-2 rounded-full bg-score-good"></span>
+<span>8/8 powertrain systems analysed</span>
+</div>
+</div>
+<!-- 4-column, 2-row grid of bordered inner tiles with staggered entrance and hover lift -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="subsystem-grid">
+<!-- 1. Engine -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">hardware</span>
+<h4 class="font-body text-body font-semibold text-ink">Engine</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold">Healthy</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              B47 timing chain tensioner healthy. Oil analysis baseline normal.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Updated 24h ago</span>
+</div>
+<!-- 2. Transmission -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">settings</span>
+<h4 class="font-body text-body font-semibold text-ink">Transmission</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-warning-bg text-warning-text border border-[#F5DE8A] font-micro text-micro font-semibold">Attention</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              ZF 8HP fluid change recommended at 70,000 mi to avoid mechatronic slip.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Service window open</span>
+</div>
+<!-- 3. Emissions system -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-danger-text">eco</span>
+<h4 class="font-body text-body font-semibold text-ink">Emissions</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-danger-bg text-danger-text border border-[#F7C1BB] font-micro text-micro font-semibold">Critical</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              EGR cooler recall check &amp; actuator valve replacement due immediately.
+            </p>
+</div>
+<span class="font-micro text-micro text-danger-text font-medium">Action recommended</span>
+</div>
+<!-- 4. Cooling -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">thermostat</span>
+<h4 class="font-body text-body font-semibold text-ink">Cooling</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold">No issues</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              Electric water pump and thermostat operating within optimal temperature range.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Operating temp 92°C</span>
+</div>
+<!-- 5. Brakes -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">radio_button_checked</span>
+<h4 class="font-body text-body font-semibold text-ink">Brakes</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-warning-bg text-warning-text border border-[#F5DE8A] font-micro text-micro font-semibold">Attention</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              Front rotors at 22.4mm (minimum 21.8mm). Replacement due within 8,000 miles.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Pad wear 68%</span>
+</div>
+<!-- 6. Suspension -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">tune</span>
+<h4 class="font-body text-body font-semibold text-ink">Suspension</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold">No issues</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              Control arm bushings and adaptive dampers firm, zero fluid seepage.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Geometry calibrated</span>
+</div>
+<!-- 7. Electrics -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">bolt</span>
+<h4 class="font-body text-body font-semibold text-ink">Electrics</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold">No issues</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              AGM battery state of health at 88%, alternator charging at 14.4V.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">Battery SoH 88%</span>
+</div>
+<!-- 8. Recalls -->
+<div class="subsystem-tile border border-border rounded-xl p-4 bg-surface flex flex-col justify-between space-y-3 opacity-0 translate-y-3">
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-muted">verified_user</span>
+<h4 class="font-body text-body font-semibold text-ink">Recalls</h4>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-success-bg text-success-text border border-[#BFE8CF] font-micro text-micro font-semibold">No issues</span>
+</div>
+<p class="font-small text-small text-body leading-relaxed">
+              All BMW technical service bulletins (TSBs) cleared at authorized workshop.
+            </p>
+</div>
+<span class="font-micro text-micro text-faint">NHTSA Registry clean</span>
+</div>
+</div>
+</div>
+<!-- 4. Advertisement Slot -->
+<div class="w-full min-h-[90px] border border-dashed border-border rounded-xl bg-surface-subtle flex items-center justify-center p-4">
+<div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+<span class="font-micro text-micro uppercase tracking-wider text-faint font-semibold">ADVERTISEMENT</span>
+<span class="hidden sm:inline text-faint">·</span>
+<span class="font-small text-small text-muted">Certified Workshop Booking &amp; Independent Pre-Purchase Inspections • Special rates for Odometer members</span>
+</div>
+</div>
+</div>
+<!-- Interactive Engine & Animation Script adhering to Section 9 of DESIGN.md -->
+<script>
+  (function() {
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Helper: update slider track fill gradient
+    function updateRangeTrack(slider) {
+      if (!slider) return;
+      const min = Number(slider.min) || 0;
+      const max = Number(slider.max) || 100;
+      const val = Number(slider.value);
+      const percentage = ((val - min) / (max - min)) * 100;
+      slider.style.background = `linear-gradient(to right, #0F5BFF 0%, #0F5BFF ${percentage}%, #E4E8EE ${percentage}%, #E4E8EE 100%)`;
+    }
+
+    // 1. Radial Score Gauge Animation & Count-Up
+    const scoreRing = document.getElementById('radial-score-ring');
+    const scoreNum = document.getElementById('radial-score-number');
+    const scorePill = document.getElementById('score-condition-pill');
+    const targetScore = 58;
+    const circumference = 301.59;
+    const targetOffset = circumference - (circumference * targetScore / 100); // 126.66
+
+    if (isReducedMotion) {
+      if (scoreRing) scoreRing.style.strokeDashoffset = targetOffset;
+      if (scoreNum) scoreNum.textContent = targetScore;
+      if (scorePill) scorePill.style.opacity = '1';
+    } else {
+      setTimeout(() => {
+        if (scoreRing) {
+          scoreRing.style.strokeDashoffset = targetOffset;
+        }
+        if (scorePill) {
+          scorePill.style.opacity = '1';
+        }
+        if (scoreNum) {
+          const duration = 1200;
+          const startTime = performance.now();
+          function step(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out cubic
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const currentVal = Math.round(easeOut * targetScore);
+            scoreNum.textContent = currentVal;
+            if (progress < 1) {
+              requestAnimationFrame(step);
+            } else {
+              scoreNum.textContent = targetScore;
+            }
+          }
+          requestAnimationFrame(step);
+        }
+      }, 150);
+    }
+
+    // 2. Component Wear Timeline Animations
+    const wearBars = document.querySelectorAll('.wear-bar-fill');
+    const wearPins = document.querySelectorAll('.wear-pin');
+    const wearPcts = document.querySelectorAll('.wear-pct-val');
+
+    wearBars.forEach((bar, idx) => {
+      const targetW = bar.getAttribute('data-width');
+      const pin = wearPins[idx];
+      const pctEl = wearPcts[idx];
+      const targetNum = Number(targetW);
+
+      if (isReducedMotion) {
+        bar.style.width = targetW + '%';
+        if (pin) pin.style.left = targetW + '%';
+        if (pctEl) pctEl.textContent = targetW + '%';
+      } else {
+        setTimeout(() => {
+          bar.style.width = targetW + '%';
+          if (pin) pin.style.left = targetW + '%';
+          if (pctEl) {
+            const dur = 950;
+            const startT = performance.now();
+            function countPct(now) {
+              const elapsed = now - startT;
+              const prog = Math.min(elapsed / dur, 1);
+              const ease = 1 - Math.pow(1 - prog, 3);
+              pctEl.textContent = Math.round(ease * targetNum) + '%';
+              if (prog < 1) {
+                requestAnimationFrame(countPct);
+              } else {
+                pctEl.textContent = targetNum + '%';
+              }
+            }
+            requestAnimationFrame(countPct);
+          }
+        }, 200 + (idx * 60)); // staggered 60ms delay
+      }
+    });
+
+    // Top risk alert box gentle entrance
+    const topRiskBox = document.getElementById('top-risk-alert-box');
+    if (topRiskBox) {
+      if (isReducedMotion) {
+        topRiskBox.style.opacity = '1';
+        topRiskBox.style.transform = 'translateY(0)';
+      } else {
+        setTimeout(() => {
+          topRiskBox.style.opacity = '1';
+          topRiskBox.style.transform = 'translateY(0)';
+        }, 400);
+      }
+    }
+
+    // 3. Stacked Spend Bar expansion
+    const barSegments = document.querySelectorAll('.bar-seg');
+    barSegments.forEach((seg, i) => {
+      const targetW = seg.getAttribute('data-target-width');
+      if (isReducedMotion) {
+        seg.style.width = targetW + '%';
+      } else {
+        setTimeout(() => {
+          seg.style.width = targetW + '%';
+        }, 250 + (i * 80));
+      }
+    });
+
+    // 4. Interactive Sliders & Live Recalibration Feedback
+    const curSlider = document.getElementById('input-current-mileage');
+    const curBadge = document.getElementById('badge-current-mileage');
+    const odoBadge = document.getElementById('vehicle-card-odometer');
+    const annSlider = document.getElementById('input-annual-mileage');
+    const annBadge = document.getElementById('badge-annual-mileage');
+    const spendHeader = document.getElementById('spend-summary-header');
+    const spendMetric = document.getElementById('metric-expected-spend');
+    const monthlySetaside = document.getElementById('metric-monthly-setaside');
+
+    function recalibrateSpend() {
+      if (!curSlider || !annSlider || !spendMetric) return;
+      const curMi = Number(curSlider.value);
+      const annMi = Number(annSlider.value);
+
+      // Baseline calculation: at 68,400 mi & 11,000 ann = $2,320
+      const baseMileage = 68400;
+      const baseAnnual = 11000;
+      const ratio = 0.5 * (curMi / baseMileage) + 0.5 * (annMi / baseAnnual);
+      const calculatedSpend = Math.round(2320 * ratio);
+      const monthly = Math.round(calculatedSpend / 24);
+
+      spendMetric.textContent = '$' + calculatedSpend.toLocaleString();
+      if (monthlySetaside) {
+        monthlySetaside.textContent = '$' + monthly + '/mo to set aside';
+      }
+
+      // Flash pulse visual feedback
+      if (spendHeader && !isReducedMotion) {
+        spendHeader.classList.remove('flash-recalc');
+        void spendHeader.offsetWidth; // trigger reflow
+        spendHeader.classList.add('flash-recalc');
+      }
+    }
+
+    if (curSlider) {
+      updateRangeTrack(curSlider);
+      curSlider.addEventListener('input', function(e) {
+        const val = Number(e.target.value);
+        const formatted = val.toLocaleString() + ' mi';
+        if (curBadge) curBadge.textContent = formatted;
+        if (odoBadge) odoBadge.textContent = formatted;
+        updateRangeTrack(curSlider);
+        recalibrateSpend();
+      });
+    }
+
+    if (annSlider) {
+      updateRangeTrack(annSlider);
+      annSlider.addEventListener('input', function(e) {
+        const val = Number(e.target.value);
+        const formatted = val.toLocaleString() + ' mi / yr';
+        if (annBadge) annBadge.textContent = formatted;
+        updateRangeTrack(annSlider);
+        recalibrateSpend();
+      });
+    }
+
+    // Segmented Controls (Driving style & Climate zone)
+    function setupSegmentedControl(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const buttons = container.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => {
+            b.className = 'py-1 px-2 rounded-full text-muted hover:text-ink transition-all cursor-pointer font-medium';
+          });
+          btn.className = 'py-1 px-2 rounded-full bg-surface text-ink font-semibold shadow-sm transition-all cursor-pointer';
+          recalibrateSpend();
+        });
+      });
+    }
+    setupSegmentedControl('segmented-driving-style');
+    setupSegmentedControl('segmented-climate');
+
+    // 5. Spend Bar & Legend Cross-Hover Highlighting
+    const legendItems = document.querySelectorAll('.legend-item');
+    legendItems.forEach(item => {
+      const key = item.getAttribute('data-key');
+      const matchingSeg = document.querySelector(`.bar-seg[data-key="${key}"]`);
+      item.addEventListener('mouseenter', () => {
+        barSegments.forEach(s => {
+          if (s !== matchingSeg) s.style.opacity = '0.35';
+        });
+        if (matchingSeg) matchingSeg.style.transform = 'scaleY(1.35)';
+      });
+      item.addEventListener('mouseleave', () => {
+        barSegments.forEach(s => s.style.opacity = '1');
+        if (matchingSeg) matchingSeg.style.transform = 'scaleY(1)';
+      });
+    });
+
+    barSegments.forEach(seg => {
+      const key = seg.getAttribute('data-key');
+      const matchingLegend = document.querySelector(`.legend-item[data-key="${key}"]`);
+      seg.addEventListener('mouseenter', () => {
+        barSegments.forEach(s => {
+          if (s !== seg) s.style.opacity = '0.35';
+        });
+        seg.style.transform = 'scaleY(1.35)';
+        if (matchingLegend) matchingLegend.classList.add('bg-[#EEF5FF]');
+      });
+      seg.addEventListener('mouseleave', () => {
+        barSegments.forEach(s => s.style.opacity = '1');
+        seg.style.transform = 'scaleY(1)';
+        if (matchingLegend) matchingLegend.classList.remove('bg-[#EEF5FF]');
+      });
+    });
+
+    // 6. Subsystem Grid Staggered Entrance
+    const subsystemTiles = document.querySelectorAll('.subsystem-tile');
+    subsystemTiles.forEach((tile, index) => {
+      if (isReducedMotion) {
+        tile.style.opacity = '1';
+        tile.style.transform = 'translateY(0)';
+      } else {
+        setTimeout(() => {
+          tile.style.transition = 'opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1), box-shadow 0.24s cubic-bezier(0.16,1,0.3,1), border-color 0.2s ease';
+          tile.style.opacity = '1';
+          tile.style.transform = 'translateY(0)';
+        }, 280 + (index * 50));
+      }
+    });
+
+  })();
+</script>
+</div></main><footer class="w-full bg-surface shadow-[0_-1px_0_0_#E4E8EE] mt-16"><div class="max-w-[1160px] mx-auto px-6 pt-12 pb-8"><div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 shadow-[0_1px_0_0_#E4E8EE]"><div class="md:col-span-4 space-y-4"><div class="flex items-center gap-2 text-ink"><div class="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-primary-600"><span class="material-symbols-outlined text-[18px]">speed</span></div><span class="font-h3 text-h3 text-ink tracking-tight">Odometer</span></div><p class="font-small text-small text-muted max-w-sm">Clinical-grade vehicle telemetry, operating cost forecasts, and verified diagnostic benchmarks built on multi-tier vehicle history registries.</p><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-bg border border-secondary-container"><span class="w-2 h-2 rounded-full bg-score-good animate-pulse"></span><span class="font-micro text-micro text-success-text uppercase tracking-wider">Live Data Index • Verified</span></div></div><div class="md:col-span-2 space-y-3"><h4 class="font-micro text-micro uppercase tracking-wider text-faint">Tools</h4><ul class="space-y-2.5 font-small text-small"><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="true-cost-to-own" href="#">True Cost to Own</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="maintenance-check" href="#">Maintenance Check</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="obd2-repair-estimator" href="#">OBD2 Diagnostic</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="vin-decoder" href="#">VIN Telemetry</a></li></ul></div><div class="md:col-span-2 space-y-3"><h4 class="font-micro text-micro uppercase tracking-wider text-faint">Popular cars</h4><ul class="space-y-2.5 font-small text-small"><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="popular-f-150" href="#">Ford F-150 Series</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="popular-model-y" href="#">Tesla Model Y</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="popular-rav4" href="#">Toyota RAV4 Hybrid</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="popular-silverado" href="#">Chevy Silverado</a></li></ul></div><div class="md:col-span-2 space-y-3"><h4 class="font-micro text-micro uppercase tracking-wider text-faint">Company</h4><ul class="space-y-2.5 font-small text-small"><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="methodology" href="#">Methodology</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="reviews" href="#">Verified Reviews</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="blog" href="#">Research Blog</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="api-access" href="#">API Access</a></li></ul></div><div class="md:col-span-2 space-y-3"><h4 class="font-micro text-micro uppercase tracking-wider text-faint">Legal</h4><ul class="space-y-2.5 font-small text-small"><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="privacy-policy" href="#">Privacy Policy</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="terms-of-service" href="#">Terms of Service</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="data-sources" href="#">Data Accuracy</a></li><li class="flex items-center"><a class="text-body hover:text-primary-600 transition-colors" data-path="disclaimer" href="#">Disclaimers</a></li></ul></div></div><div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-small text-small text-muted"><div>© 2026 Odometer. Estimates only.</div><div class="flex items-center gap-6"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-score-good"></span><span class="font-micro text-micro text-muted">Systems Operational</span></div><button class="tactile-btn flex items-center gap-1 text-body hover:text-ink font-small text-small transition-colors" type="button"><span class="font-micro text-micro bg-primary-100 text-primary-700 px-1 rounded">US</span><span>United States (USD)</span><span class="material-symbols-outlined text-[16px]">expand_more</span></button></div></div></div></footer></body></html>
