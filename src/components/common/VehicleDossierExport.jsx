@@ -235,30 +235,30 @@ export default function VehicleDossierExport({
       aria-label="Buyer's Inspection & Telemetry Dossier Export"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm overflow-y-auto print:static print:inset-auto print:p-0 print:bg-white print:backdrop-none print:z-auto print:overflow-visible"
     >
-      <div className="relative w-full max-w-4xl rounded-2xl border border-border dark:border-slate-800 bg-surface dark:bg-slate-900 text-ink dark:text-slate-100 p-5 sm:p-7 shadow-2xl max-h-[92vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:shadow-none print:border-0 print:w-full print:max-w-none print:bg-white print:text-black">
+      <div className="relative w-full max-w-4xl rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-5 sm:p-7 shadow-2xl max-h-[92vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:shadow-none print:border-0 print:w-full print:max-w-none print:bg-white print:text-black">
         {/* Top Action & Mode Switcher Bar (hidden in print) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-border dark:border-slate-800 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-border dark:border-zinc-800 print:hidden">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-sm text-ink dark:text-slate-100">
+            <span className="font-sans font-bold text-sm text-ink dark:text-zinc-100">
               Executive Telemetry Dossier
             </span>
-            <Pill tone="brand" className="text-[10px] font-mono">
-              PRINT READY 1-PAGE
+            <Pill tone="brand">
+              Print Ready 1-Page
             </Pill>
             <div
               role="tablist"
               aria-label="Export Document Mode"
-              className="inline-flex items-center rounded-xl bg-surface-subtle dark:bg-slate-800 p-1 border border-border dark:border-slate-700"
+              className="inline-flex items-center rounded-xl bg-surface-subtle dark:bg-zinc-800 p-1 border border-border dark:border-zinc-700"
             >
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeMode === 'negotiation'}
                 onClick={() => setActiveMode('negotiation')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-sans text-xs font-semibold transition-colors duration-150 ${
                   activeMode === 'negotiation'
                     ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-muted dark:text-slate-300 hover:text-ink dark:hover:text-white'
+                    : 'text-muted dark:text-zinc-300 hover:text-ink dark:hover:text-white'
                 }`}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
@@ -269,10 +269,10 @@ export default function VehicleDossierExport({
                 role="tab"
                 aria-selected={activeMode === 'dossier'}
                 onClick={() => setActiveMode('dossier')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-sans text-xs font-semibold transition-colors duration-150 ${
                   activeMode === 'dossier'
                     ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-muted dark:text-slate-300 hover:text-ink dark:hover:text-white'
+                    : 'text-muted dark:text-zinc-300 hover:text-ink dark:hover:text-white'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -285,7 +285,7 @@ export default function VehicleDossierExport({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 font-sans text-xs font-semibold text-white hover:bg-primary-700 shadow-sm transition-colors duration-150"
             >
               <Printer className="w-4 h-4" />
               <span>Print / Save PDF</span>
@@ -293,7 +293,7 @@ export default function VehicleDossierExport({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-1.5 text-muted dark:text-slate-400 hover:bg-surface-subtle dark:hover:bg-slate-800 hover:text-ink dark:hover:text-white transition-colors"
+              className="rounded-lg p-1.5 text-muted dark:text-zinc-400 hover:bg-surface-subtle dark:hover:bg-zinc-800 hover:text-ink dark:hover:text-white transition-colors"
               aria-label="Close dossier"
             >
               <X className="w-5 h-5" />
@@ -304,25 +304,25 @@ export default function VehicleDossierExport({
         {/* Printable Document Body */}
         <div
           id="printable-dossier"
-          className="mt-5 space-y-5 text-ink dark:text-slate-100 print:mt-0 print:space-y-3 print:text-black print:bg-white"
+          className="mt-5 space-y-5 text-ink dark:text-zinc-100 print:mt-0 print:space-y-3 print:text-black print:bg-white"
         >
           {/* Shared Vehicle Summary Header, Odometer & Reliability Score (0-100) Badge */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b-2 border-primary-600 print:pb-2.5 print:border-black">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[11px] font-mono uppercase tracking-widest text-primary-600 dark:text-primary-400 print:text-black font-bold">
+                <p className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 print:text-black font-bold">
                   SHIFTMETRIC AUTOMOTIVE TELEMETRY REPORT
                 </p>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-subtle dark:bg-slate-800 text-muted dark:text-slate-300 border border-border dark:border-slate-700 print:border-black/40 print:text-black print:bg-transparent">
+                <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/40 print:text-black print:bg-transparent">
                   SHIFTMETRIC TELEMETRY DOSSIER
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-slate-100 print:text-black mt-1">
+              <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 print:text-black mt-1">
                 {vehicle?.name || 'Automotive Inspection Report'}
               </h1>
-              <p className="text-xs text-muted dark:text-slate-400 print:text-black/80 mt-0.5 font-mono">
+              <p className="text-xs text-muted dark:text-zinc-400 print:text-black/80 mt-0.5 font-sans font-medium">
                 Powertrain: {vehicle?.powertrainLabel || vehicle?.powertrain || 'Internal Combustion'} ·{' '}
-                {vehicle?.powerHp ? `${vehicle.powerHp} HP · ` : ''}
+                {vehicle?.powerHp ? <><span className="font-mono tabular-nums">{vehicle.powerHp}</span> HP · </> : ''}
                 {vehicle?.fuelType || 'Gasoline / Diesel'} · Schedule:{' '}
                 {scheduleMode === 'oem' ? 'OEM Marketing Intervals' : 'Engineering Preventative'}
               </p>
@@ -331,22 +331,22 @@ export default function VehicleDossierExport({
             <div className="flex items-center sm:flex-col sm:items-end justify-between gap-3">
               {/* Reliability Score (0-100) Badge */}
               <div
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono ${scoreToneClass} print:border-black print:text-black print:bg-transparent`}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-sans ${scoreToneClass} print:border-black print:text-black print:bg-transparent`}
               >
                 <Gauge className="w-4 h-4 shrink-0" />
                 <div className="text-left sm:text-right">
-                  <span className="block text-[10px] uppercase tracking-wider opacity-80">
+                  <span className="block text-[10px] font-medium uppercase tracking-wider opacity-80">
                     Reliability Score
                   </span>
-                  <span className="text-sm font-bold tabular-nums">
+                  <span className="text-sm font-mono font-bold tabular-nums">
                     {resolvedReliabilityScore}/100
                   </span>
                 </div>
               </div>
-              <div className="text-right text-xs font-mono text-muted dark:text-slate-400 print:text-black">
+              <div className="text-right text-xs font-sans text-muted dark:text-zinc-400 print:text-black">
                 <p>Generated: {currentDate}</p>
-                <p className="font-semibold text-ink dark:text-slate-200 print:text-black">
-                  Inspection Mileage: {formatDistance(physicalOdometerMiles)}
+                <p className="font-semibold text-ink dark:text-zinc-200 print:text-black">
+                  Inspection Mileage: <span className="font-mono tabular-nums">{formatDistance(physicalOdometerMiles)}</span>
                 </p>
               </div>
             </div>
@@ -365,54 +365,54 @@ export default function VehicleDossierExport({
             {/* Price Negotiation & Immediate Risk Deduction Table */}
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5" />
                   <span>Price Negotiation &amp; Immediate Risk Deduction Table</span>
                 </h2>
-                <span className="text-[11px] font-mono text-muted dark:text-slate-400 print:text-black">
+                <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
                   Independent Specialist Benchmark Rates
                 </span>
               </div>
 
-              <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/40 overflow-hidden bg-surface dark:bg-slate-900 print:bg-white">
+              <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/40 overflow-hidden bg-surface dark:bg-[#121215] print:bg-white">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
+                  <table className="w-full text-left border-collapse text-xs font-sans">
                     <thead>
-                      <tr className="border-b border-border dark:border-slate-800 print:border-black/30 bg-surface-subtle dark:bg-slate-800/80 print:bg-transparent text-[11px] font-mono uppercase text-muted dark:text-slate-300 print:text-black">
+                      <tr className="border-b border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/80 print:bg-transparent text-[11px] font-sans font-semibold uppercase text-muted dark:text-zinc-300 print:text-black">
                         <th className="py-2.5 px-3">Component / Assembly</th>
                         <th className="py-2.5 px-3">Risk Status</th>
                         <th className="py-2.5 px-3 text-right">Est. Repair Range</th>
                         <th className="py-2.5 px-3 text-right">Negotiation Deduction</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border dark:divide-slate-800 print:divide-black/20">
+                    <tbody className="divide-y divide-border dark:divide-zinc-800 print:divide-black/20">
                       {negotiationAnalysis.rows.map((row) => (
                         <tr
                           key={row.id}
-                          className="hover:bg-surface-subtle/50 dark:hover:bg-slate-800/40"
+                          className="hover:bg-surface-subtle/50 dark:hover:bg-zinc-800/40"
                         >
                           <td className="py-2.5 px-3">
-                            <p className="font-semibold text-ink dark:text-slate-100 print:text-black">
+                            <p className="font-semibold text-ink dark:text-zinc-100 print:text-black">
                               {row.name}
                             </p>
-                            <p className="text-[11px] text-muted dark:text-slate-400 print:text-black/75 font-mono">
-                              {row.category} · Effective Wear: {formatDistance(row.effectiveWearMiles)} ({row.wearPct}% of limit)
+                            <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black/75 font-sans">
+                              {row.category} · Effective Wear: <span className="font-mono tabular-nums">{formatDistance(row.effectiveWearMiles)} ({row.wearPct}%</span> of limit)
                             </p>
                           </td>
-                          <td className="py-2.5 px-3 font-mono">
+                          <td className="py-2.5 px-3 font-sans">
                             <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-sans font-medium ${
                                 row.status === 'CRITICAL'
-                                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+                                  ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
                                   : row.status === 'WARNING'
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+                                    : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
                               } print:border-black print:text-black print:bg-transparent`}
                             >
-                              {row.status} ({row.weightPct}% Weight)
+                              {row.status} (<span className="font-mono tabular-nums">{row.weightPct}%</span> Weight)
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono tabular-nums text-body dark:text-slate-300 print:text-black">
+                          <td className="py-2.5 px-3 text-right font-mono tabular-nums text-body dark:text-zinc-300 print:text-black">
                             {formatCurrency(row.minCostUsd)} – {formatCurrency(row.maxCostUsd)}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400 print:text-black">
@@ -425,17 +425,17 @@ export default function VehicleDossierExport({
                 </div>
 
                 {/* Offer Summary Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-surface-subtle dark:bg-slate-800/90 print:bg-transparent border-t border-border dark:border-slate-700 print:border-black">
-                  <div className="rounded-lg border border-border dark:border-slate-700 print:border-black/40 bg-surface dark:bg-slate-900 print:bg-white p-2.5">
-                    <p className="text-[10px] font-mono uppercase text-muted dark:text-slate-400 print:text-black">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-surface-subtle dark:bg-zinc-800/90 print:bg-transparent border-t border-border dark:border-zinc-700 print:border-black">
+                  <div className="rounded-lg border border-border dark:border-zinc-700 print:border-black/40 bg-surface dark:bg-[#121215] print:bg-white p-2.5">
+                    <p className="text-[10px] font-sans font-medium uppercase text-muted dark:text-zinc-400 print:text-black">
                       Seller Asking / Reference Price
                     </p>
-                    <p className="text-base font-bold font-mono tabular-nums text-ink dark:text-slate-100 print:text-black mt-0.5">
+                    <p className="text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
                       {formatCurrency(negotiationAnalysis.askingPriceUsd)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-rose-500/30 dark:border-rose-500/40 print:border-black/40 bg-rose-500/5 dark:bg-rose-950/30 print:bg-white p-2.5">
-                    <p className="text-[10px] font-mono uppercase text-rose-700 dark:text-rose-300 print:text-black font-semibold">
+                    <p className="text-[10px] font-sans uppercase text-rose-700 dark:text-rose-300 print:text-black font-semibold">
                       Recommended Price Negotiation Deduction ($)
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 print:text-black mt-0.5">
@@ -443,7 +443,7 @@ export default function VehicleDossierExport({
                     </p>
                   </div>
                   <div className="rounded-lg border border-emerald-500/40 dark:border-emerald-500/40 print:border-black bg-emerald-500/10 dark:bg-emerald-950/30 print:bg-white p-2.5">
-                    <p className="text-[10px] font-mono uppercase text-emerald-800 dark:text-emerald-300 print:text-black font-semibold">
+                    <p className="text-[10px] font-sans uppercase text-emerald-800 dark:text-emerald-300 print:text-black font-semibold">
                       Target Walk-Away / Fair Offer Price ($)
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300 print:text-black mt-0.5">
@@ -457,47 +457,47 @@ export default function VehicleDossierExport({
             {/* On-Site Physical & OBD2 Pre-Purchase Inspection Checklist */}
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
                   <CheckSquare className="w-3.5 h-3.5" />
                   <span>On-Site Physical &amp; OBD2 Pre-Purchase Inspection Checklist</span>
                 </h2>
-                <span className="text-[11px] font-mono font-semibold text-primary-600 dark:text-primary-400 print:text-black">
-                  {checkedCount}/{DEFAULT_INSPECTION_CHECKLIST.length} Verified
+                <span className="text-[11px] font-sans font-semibold text-primary-600 dark:text-primary-400 print:text-black">
+                  <span className="font-mono tabular-nums">{checkedCount}/{DEFAULT_INSPECTION_CHECKLIST.length}</span> Verified
                 </span>
               </div>
 
-              <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/40 divide-y divide-border dark:divide-slate-800 print:divide-black/20 bg-surface dark:bg-slate-900 print:bg-white">
+              <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/40 divide-y divide-border dark:divide-zinc-800 print:divide-black/20 bg-surface dark:bg-[#121215] print:bg-white">
                 {DEFAULT_INSPECTION_CHECKLIST.map((item) => {
                   const isChecked = !!checkedItems[item.id];
                   return (
                     <label
                       key={item.id}
                       htmlFor={`inspection-check-${item.id}`}
-                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-surface-subtle/60 dark:hover:bg-slate-800/50 transition-colors"
+                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-surface-subtle/60 dark:hover:bg-zinc-800/50 transition-colors font-sans"
                     >
                       <input
                         id={`inspection-check-${item.id}`}
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleChecklistItem(item.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-border dark:border-slate-600 text-primary-600 focus:ring-primary-500 print:border-black"
+                        className="mt-0.5 h-4 w-4 rounded border-border dark:border-zinc-600 text-primary-600 focus:ring-primary-500 print:border-black"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span
                             className={`text-xs font-semibold ${
                               isChecked
-                                ? 'line-through text-muted dark:text-slate-400 print:no-underline print:text-black'
-                                : 'text-ink dark:text-slate-100 print:text-black'
+                                ? 'line-through text-muted dark:text-zinc-400 print:no-underline print:text-black'
+                                : 'text-ink dark:text-zinc-100 print:text-black'
                             }`}
                           >
                             {item.label}
                           </span>
-                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-subtle dark:bg-slate-800 text-muted dark:text-slate-300 border border-border dark:border-slate-700 print:border-black/30 print:text-black print:bg-transparent">
+                          <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/30 print:text-black print:bg-transparent">
                             {item.tag}
                           </span>
                         </div>
-                        <p className="text-[11px] text-body dark:text-slate-300 print:text-black/80 mt-0.5 leading-snug">
+                        <p className="text-[11px] text-body dark:text-zinc-300 print:text-black/80 mt-0.5 leading-snug">
                           {item.detail}
                         </p>
                       </div>
@@ -520,36 +520,36 @@ export default function VehicleDossierExport({
           >
             {/* Section 1: Financial Ownership Summary */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
                 1. 5-Year True Cost of Ownership Projections (5-Year TCO Projections)
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 bg-surface-subtle dark:bg-slate-800/70 print:bg-white p-3 text-center">
-                  <p className="text-[11px] text-muted dark:text-slate-400 print:text-black">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-sans">
+                <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
+                  <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
                     Monthly Cost
                   </p>
-                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-slate-100 print:text-black mt-0.5">
+                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
                     {formatCurrency(tco?.monthlyEconomicCostUsd || 540)}/mo
                   </p>
                 </div>
-                <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 bg-surface-subtle dark:bg-slate-800/70 print:bg-white p-3 text-center">
-                  <p className="text-[11px] text-muted dark:text-slate-400 print:text-black">
+                <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
+                  <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
                     Cost per {distanceUnit}
                   </p>
-                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-slate-100 print:text-black mt-0.5">
+                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
                     {formatCurrency(tco?.costPerMileUsd || 0.45)}/{distanceUnit}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 bg-surface-subtle dark:bg-slate-800/70 print:bg-white p-3 text-center">
-                  <p className="text-[11px] text-muted dark:text-slate-400 print:text-black">
+                <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
+                  <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
                     5-Year Total Cost
                   </p>
-                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-slate-100 print:text-black mt-0.5">
+                  <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
                     {formatCurrency(tco?.totalEconomicCostUsd || 32400)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 bg-surface-subtle dark:bg-slate-800/70 print:bg-white p-3 text-center">
-                  <p className="text-[11px] text-muted dark:text-slate-400 print:text-black">
+                <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
+                  <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
                     Residual Retention
                   </p>
                   <p className="text-lg font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400 print:text-black mt-0.5">
@@ -561,31 +561,31 @@ export default function VehicleDossierExport({
 
             {/* Section 2: Mechanical Wear & Maintenance Reserve */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
                 2. Mechanical Wear &amp; Maintenance Reserve (12-Month Maintenance Reserve &amp; Critical Known Defects)
               </h2>
-              <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 p-4 bg-surface-subtle dark:bg-slate-800/70 print:bg-white space-y-3">
+              <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 p-4 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white space-y-3 font-sans">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-ink dark:text-slate-100 print:text-black">
+                  <span className="font-semibold text-ink dark:text-zinc-100 print:text-black">
                     12-Month Recommended Service Reserve:
                   </span>
-                  <span className="font-bold font-mono tabular-nums text-ink dark:text-slate-100 print:text-black text-sm">
+                  <span className="font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black text-sm">
                     {formatCurrency(resolvedReserveUsd)}
                   </span>
                 </div>
-                <p className="text-xs text-body dark:text-slate-300 print:text-black/80 leading-relaxed">
+                <p className="text-xs text-body dark:text-zinc-300 print:text-black/80 leading-relaxed">
                   Calculated using statistical failure distributions, urban duty cycle thermal penalties, and component wear curves calibrated against real-world fleet maintenance datasets.
                 </p>
 
                 {/* Critical Known Defects Callout */}
                 {(vehicle?.criticalDefectTag || vehicle?.knownRiskNotes) && (
-                  <div className="mt-2.5 pt-2.5 border-t border-border dark:border-slate-700 print:border-black/30 text-xs">
+                  <div className="mt-2.5 pt-2.5 border-t border-border dark:border-zinc-700 print:border-black/30 text-xs">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-danger-text dark:text-rose-400 print:text-black font-mono text-[11px]">
+                      <span className="font-bold text-danger-text dark:text-rose-400 print:text-black font-sans text-[11px]">
                         {vehicle?.criticalDefectTag || '⚠️ KNOWN POWERTRAIN RISK ADVISORY'}
                       </span>
                     </div>
-                    <p className="text-body dark:text-slate-300 print:text-black leading-relaxed">
+                    <p className="text-body dark:text-zinc-300 print:text-black leading-relaxed">
                       {vehicle?.knownRiskNotes ||
                         'Routine inspection of turbo oil feed lines, DPF differential pressure, and transmission solenoids recommended.'}
                     </p>
@@ -596,31 +596,31 @@ export default function VehicleDossierExport({
 
             {/* Section 3: Diagnostic Telemetry Protocol & Known Faults */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
                 3. Master Diagnostic Verification Protocol
               </h2>
-              <div className="rounded-xl border border-border dark:border-slate-800 print:border-black/30 p-4 space-y-2 text-xs bg-surface dark:bg-slate-900 print:bg-white">
-                <div className="flex items-center justify-between py-1 border-b border-border dark:border-slate-800 print:border-black/20">
-                  <span className="text-body dark:text-slate-300 print:text-black">
+              <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 p-4 space-y-2 text-xs font-sans bg-surface dark:bg-[#121215] print:bg-white">
+                <div className="flex items-center justify-between py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
+                  <span className="text-body dark:text-zinc-300 print:text-black">
                     Common Marque OBD-II Codes to Scan:
                   </span>
-                  <span className="font-mono font-semibold text-primary-600 dark:text-primary-400 print:text-black">
+                  <span className="font-mono tabular-nums font-semibold text-primary-600 dark:text-primary-400 print:text-black">
                     {(vehicle?.commonObdCodes || ['P0420', 'P2002', 'P0171']).join(' · ')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-1 border-b border-border dark:border-slate-800 print:border-black/20">
-                  <span className="text-body dark:text-slate-300 print:text-black">
+                <div className="flex items-center justify-between py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
+                  <span className="text-body dark:text-zinc-300 print:text-black">
                     Live Sensor PIDs to Monitor:
                   </span>
-                  <span className="font-mono text-muted dark:text-slate-400 print:text-black">
+                  <span className="font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
                     MAF, Boost Pressure, DPF Delta-P, Fuel Rail Pressure, STFT/LTFT
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-body dark:text-slate-300 print:text-black">
+                  <span className="text-body dark:text-zinc-300 print:text-black">
                     Odometer Rollback Inspection:
                   </span>
-                  <span className="font-mono text-success-text dark:text-emerald-400 print:text-black font-semibold">
+                  <span className="font-sans text-success-text dark:text-emerald-400 print:text-black font-semibold">
                     Cross-verify ECU hours vs transmission control module log
                   </span>
                 </div>
@@ -629,18 +629,18 @@ export default function VehicleDossierExport({
           </div>
 
           {/* Shared Master Inspector & Buyer Sign-Off Footer */}
-          <div className="pt-3 border-t border-border dark:border-slate-800 print:border-black grid grid-cols-2 gap-6 text-xs font-mono">
+          <div className="pt-3 border-t border-border dark:border-zinc-800 print:border-black grid grid-cols-2 gap-6 text-xs font-sans">
             <div>
-              <p className="text-faint dark:text-slate-400 print:text-black uppercase tracking-wider text-[10px]">
+              <p className="text-faint dark:text-zinc-400 print:text-black uppercase tracking-wider text-[10px]">
                 INSPECTION TECHNICIAN / BUYER SIGN-OFF
               </p>
-              <div className="mt-3 border-b border-border dark:border-slate-700 print:border-black h-5"></div>
-              <p className="mt-1 text-muted dark:text-slate-400 print:text-black">
+              <div className="mt-3 border-b border-border dark:border-zinc-700 print:border-black h-5"></div>
+              <p className="mt-1 text-muted dark:text-zinc-400 print:text-black">
                 Signature, VIN &amp; Agreed Offer Price
               </p>
             </div>
             <div>
-              <p className="text-faint dark:text-slate-400 print:text-black uppercase tracking-wider text-[10px]">
+              <p className="text-faint dark:text-zinc-400 print:text-black uppercase tracking-wider text-[10px]">
                 VERIFICATION STATUS
               </p>
               <div className="mt-2.5 flex items-center gap-2">
@@ -649,8 +649,8 @@ export default function VehicleDossierExport({
                   TELEMETRY VERIFIED
                 </span>
               </div>
-              <p className="mt-1 text-muted dark:text-slate-400 print:text-black">
-                Odometer &amp; Title Authentic · Score {resolvedReliabilityScore}/100
+              <p className="mt-1 text-muted dark:text-zinc-400 print:text-black">
+                Odometer &amp; Title Authentic · Score <span className="font-mono tabular-nums">{resolvedReliabilityScore}/100</span>
               </p>
             </div>
           </div>

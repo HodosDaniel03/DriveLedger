@@ -1050,6 +1050,8 @@ const ORIGINAL_PRESETS = [
     bodyType: 'sedan',
     segment: 'Global EV Benchmark Sedan',
     powertrain: 'ev',
+    powertrainType: 'EV',
+    batteryChemistry: 'NMC',
     powertrainLabel: 'Dual-Motor AWD (82 kWh NMC Pack)',
     transmission: 'direct-drive',
     transmissionLabel: 'Single-Speed Fixed Reduction Gear (9:1)',
@@ -1067,7 +1069,7 @@ const ORIGINAL_PRESETS = [
     residualCurve10Yr: [0.83, 0.71, 0.60, 0.51, 0.43, 0.36, 0.30, 0.25, 0.21, 0.18],
     knownRiskNotes:
       'Zero engine oil or spark plug maintenance; front upper suspension control arm ball-joint rubber boot cracks causing loud creaking ($650 replacement); rapid inside shoulder rear tire wear; Octovalve heat pump refrigerant leaks.',
-    commonObdCodes: ['U0100', 'P0A80', 'P0128', 'P0700'],
+    commonObdCodes: ['U0100', 'P0A80'],
   },
   {
     id: 'tesla-model-y-lr',
@@ -1082,6 +1084,8 @@ const ORIGINAL_PRESETS = [
     bodyType: 'suv',
     segment: 'Best-Selling Global EV Crossover',
     powertrain: 'ev',
+    powertrainType: 'EV',
+    batteryChemistry: 'NMC',
     powertrainLabel: 'Dual-Motor AWD (75 kWh Pack)',
     transmission: 'direct-drive',
     transmissionLabel: 'Direct-Drive Reduction',
@@ -1099,7 +1103,7 @@ const ORIGINAL_PRESETS = [
     residualCurve10Yr: [0.85, 0.74, 0.64, 0.55, 0.47, 0.40, 0.34, 0.29, 0.24, 0.20],
     knownRiskNotes:
       'Friction brake calipers seize and rotors rust due to strong 100% regenerative braking without mechanical friction use; suspension firmness over rough roads; control arm bushing creaks.',
-    commonObdCodes: ['U0100', 'P0A80', 'P0128', 'P0700'],
+    commonObdCodes: ['U0100', 'P0A80'],
   },
 
   // ==================== VOLVO ====================
@@ -1355,6 +1359,13 @@ export const VEHICLE_PRESETS = [
 ];
 
 export { POWERTRAIN_ARCHETYPES, BRAND_TIER_MULTIPLIERS, hydrateVehiclePreset };
+export {
+  POWERTRAIN_TYPES,
+  PowertrainType,
+  resolvePowertrainType,
+  normalizePowertrainType,
+  isPureElectric,
+} from './powertrainTypes.js';
 
 export const BODY_TYPES = [
   { id: 'all', label: 'All Body Styles', count: VEHICLE_PRESETS.length },

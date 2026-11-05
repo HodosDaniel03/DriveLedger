@@ -52,14 +52,14 @@ export default function Footer({
     <div className="mt-16 space-y-16">
       {/* 1. Reserved Zero-CLS Ad Container (Stitch Section 7.10) */}
       <div
-        className="flex min-h-[90px] items-center justify-center rounded-xl border border-dashed border-border dark:border-slate-800 bg-surface-subtle dark:bg-slate-900/60 p-4"
+        className="flex min-h-[90px] items-center justify-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4"
         aria-label="Advertisement"
       >
         <div className="text-center">
-          <span className="text-[11px] font-micro tracking-widest text-faint dark:text-slate-500 uppercase font-semibold block mb-0.5 font-mono">
+          <span className="text-[11px] font-sans tracking-widest text-faint dark:text-zinc-500 uppercase font-semibold block mb-0.5">
             ADVERTISEMENT · SPONSORED PARTNER PLACEMENT
           </span>
-          <span className="text-xs text-muted dark:text-slate-400">
+          <span className="text-xs font-sans text-muted dark:text-zinc-400">
             Google AdSense Zero-CLS Reserved Container (Responsive Leaderboard)
           </span>
         </div>
@@ -69,30 +69,30 @@ export default function Footer({
       {!hideFaq && (
         <section aria-labelledby="faq-heading" className="max-w-[1380px] mx-auto w-full">
           <div className="mb-6">
-            <span className="font-micro text-micro uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold">
+            <span className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold">
               Common questions
             </span>
-            <h2 id="faq-heading" className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-slate-100 mt-1">
+            <h2 id="faq-heading" className="scroll-mt-28 lg:scroll-mt-32 text-2xl sm:text-3xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50 mt-1">
               Questions, answered
             </h2>
           </div>
 
-          <div className="rounded-xl border border-border dark:border-slate-800 bg-surface dark:bg-slate-900 shadow-sm divide-y divide-border dark:divide-slate-800 overflow-hidden">
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800 overflow-hidden">
             {FAQS.map((f, i) => {
               const isOpen = openFaq === i;
               return (
-                <div key={f.q} className="transition-colors">
+                <div key={f.q} className="transition-colors duration-150">
                   <h3>
                     <button
                       type="button"
                       aria-expanded={isOpen}
                       aria-controls={`faq-${i}`}
                       onClick={() => setOpenFaq(isOpen ? null : i)}
-                      className="flex w-full items-center justify-between gap-4 px-6 py-4.5 text-left text-sm sm:text-base font-semibold text-ink dark:text-slate-100 hover:bg-surface-subtle dark:hover:bg-slate-800/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-600 transition-colors"
+                      className="flex w-full items-center justify-between gap-4 px-6 py-4.5 text-left text-sm sm:text-base font-sans font-semibold text-ink dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-600 transition-colors duration-150"
                     >
                       <span>{f.q}</span>
                       <span
-                        className={`flex items-center justify-center w-6 h-6 rounded-full text-muted dark:text-slate-400 transition-transform duration-300 ease-out ${
+                        className={`flex items-center justify-center w-6 h-6 rounded-md text-muted dark:text-zinc-400 transition-transform duration-300 ease-out ${
                           isOpen ? 'rotate-45 text-primary-600 dark:text-primary-400' : ''
                         }`}
                       >
@@ -101,7 +101,7 @@ export default function Footer({
                     </button>
                   </h3>
                   <Collapse open={isOpen} id={`faq-${i}`}>
-                    <p className="px-6 pb-5 text-sm leading-relaxed text-body dark:text-slate-300 text-pretty">
+                    <p className="px-6 pb-5 text-sm font-sans leading-relaxed text-body dark:text-zinc-300 text-pretty">
                       {f.a}
                     </p>
                   </Collapse>
@@ -113,9 +113,9 @@ export default function Footer({
       )}
 
       {/* 3. Deep-Link Presets & Diagnostics Navigation */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-border dark:border-slate-800 text-xs text-muted dark:text-slate-400 max-w-[1380px] mx-auto w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-zinc-200 dark:border-zinc-800 text-xs font-sans text-muted dark:text-zinc-400 max-w-[1380px] mx-auto w-full">
         <div>
-          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+          <h3 className="font-sans font-semibold text-xs uppercase tracking-wider text-ink dark:text-zinc-50 mb-3">
             Benchmark Vehicle TCO Models
           </h3>
           <ul className="space-y-2">
@@ -133,10 +133,10 @@ export default function Footer({
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className="flex items-center justify-between w-full hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors py-0.5"
+                  className="flex items-center justify-between w-full hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors duration-150 py-0.5"
                 >
-                  <span className="font-medium text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">{v.name}</span>
-                  <span className="font-code tabular-nums text-muted dark:text-slate-400">{formatCurrency(v.price)}</span>
+                  <span className="font-sans font-medium text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400">{v.name}</span>
+                  <span className="font-mono tabular-nums text-muted dark:text-zinc-400">{formatCurrency(v.price)}</span>
                 </button>
               </li>
             ))}
@@ -144,7 +144,7 @@ export default function Footer({
         </div>
 
         <div>
-          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+          <h3 className="font-sans font-semibold text-xs uppercase tracking-wider text-ink dark:text-zinc-50 mb-3">
             High-Frequency OBD-II Fault Dossiers
           </h3>
           <ul className="space-y-2">
@@ -162,10 +162,10 @@ export default function Footer({
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className="flex items-center gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors py-0.5"
+                  className="flex items-center gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors duration-150 py-0.5"
                 >
-                  <span className="font-code font-bold text-primary-600 dark:text-primary-400">{item.code}</span>
-                  <span className="truncate text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">{item.title}</span>
+                  <span className="font-mono tabular-nums font-bold text-primary-600 dark:text-primary-400">{item.code}</span>
+                  <span className="truncate font-sans text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">{item.title}</span>
                 </button>
               </li>
             ))}
@@ -173,7 +173,7 @@ export default function Footer({
         </div>
 
         <div>
-          <h3 className="font-semibold text-xs uppercase tracking-wider text-ink dark:text-slate-100 mb-3 font-code">
+          <h3 className="font-sans font-semibold text-xs uppercase tracking-wider text-ink dark:text-zinc-50 mb-3">
             Programmatic Vehicle × OBD-II Matrix
           </h3>
           <ul className="space-y-2">
@@ -199,12 +199,12 @@ export default function Footer({
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className="flex items-center justify-between gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors py-0.5"
+                  className="flex items-center justify-between gap-2 w-full hover:text-primary-600 dark:hover:text-primary-400 text-left transition-colors duration-150 py-0.5"
                 >
-                  <span className="truncate text-body dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
+                  <span className="truncate font-sans text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
                     {item.anchorText}
                   </span>
-                  <span className="font-code font-bold text-primary-600 dark:text-primary-400 shrink-0">
+                  <span className="font-mono tabular-nums font-bold text-primary-600 dark:text-primary-400 shrink-0">
                     {item.code}
                   </span>
                 </a>
@@ -215,53 +215,62 @@ export default function Footer({
       </div>
 
       {/* 4. Stitch Master Footer */}
-      <footer className="w-full bg-surface dark:bg-slate-900 border-t border-border dark:border-slate-800 -mx-4 sm:-mx-6 px-6 lg:px-12 pt-14 pb-10">
+      <footer className="w-full bg-surface dark:bg-[#121215] border-t border-zinc-200 dark:border-zinc-800 -mx-4 sm:-mx-6 px-6 lg:px-12 pt-14 pb-10">
         <div className="max-w-[1380px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
             {/* Brand Col */}
             <div className="lg:col-span-2 flex flex-col gap-3">
-              <div className="flex items-center gap-2.5 text-ink dark:text-slate-100 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
-                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
+              <div className="flex items-center gap-2.5 text-ink dark:text-zinc-50 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
                   <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path d="M4 15a8 8 0 1 1 16 0" />
                     <path d="m12 14 3-3" />
                   </svg>
                 </span>
-                <span className="font-h3 text-h3 tracking-tight font-bold text-ink dark:text-slate-100">ShiftMetric</span>
+                <span className="font-sans text-h3 tracking-tight font-bold text-ink dark:text-zinc-50">ShiftMetric</span>
               </div>
-              <p className="text-xs sm:text-sm text-body dark:text-slate-300 leading-relaxed max-w-sm">
+              <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-sm">
                 Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.
               </p>
               <div className="flex items-center gap-2 pt-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success-bg border border-[#BFE8CF] text-success-text dark:bg-emerald-950/70 dark:border-emerald-800/80 dark:text-emerald-400 font-micro text-micro uppercase tracking-wider font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-score-good" />
-                  Live Data Index
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-sans font-medium">
+                  Verified Automotive Data Index
                 </span>
               </div>
             </div>
 
             {/* Tools Col */}
             <div className="flex flex-col gap-2.5">
-              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Tools</span>
-              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+              <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Tools</span>
+              <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('overview')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('overview')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Platform Overview
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('tco')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('tco')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     5-Year True Cost to Own
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('risk')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('risk')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Maintenance Risk Matrix
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('obd')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('obd')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     OBD2 Repair Estimator
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('compare')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    Vehicle Comparator
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('checklist')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    Pre-Purchase Inspection (PPI)
                   </button>
                 </li>
               </ul>
@@ -269,25 +278,25 @@ export default function Footer({
 
             {/* Company Col */}
             <div className="flex flex-col gap-2.5">
-              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Platform</span>
-              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+              <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Platform</span>
+              <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('blog')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('blog')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     From the Garage (Blog)
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('reviews')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('reviews')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Driver Reviews
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('methodology')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onSelectTab && onSelectTab('methodology')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Methodology &amp; White Paper
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onOpenLegalModal && onOpenLegalModal('about')} className="hover:text-ink dark:hover:text-slate-100 transition-colors">
+                  <button type="button" onClick={() => onOpenLegalModal && onOpenLegalModal('about')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     About
                   </button>
                 </li>
@@ -296,13 +305,13 @@ export default function Footer({
 
             {/* Legal Col */}
             <div className="flex flex-col gap-2.5">
-              <span className="font-micro text-micro uppercase tracking-wider text-ink dark:text-slate-100 font-semibold">Legal</span>
-              <ul className="flex flex-col gap-2 text-xs text-muted dark:text-slate-400">
+              <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Legal</span>
+              <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
                   <button
                     type="button"
                     onClick={() => onOpenLegalModal && onOpenLegalModal('privacy')}
-                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Privacy Policy
                   </button>
@@ -311,7 +320,7 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={() => onOpenLegalModal && onOpenLegalModal('terms')}
-                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Terms
                   </button>
@@ -320,7 +329,7 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={() => onOpenLegalModal && onOpenLegalModal('affiliate')}
-                    className="hover:text-ink dark:hover:text-slate-100 transition-colors text-left"
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Affiliate Disclosure
                   </button>
@@ -330,14 +339,14 @@ export default function Footer({
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-6 border-t border-border dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted dark:text-slate-400">
+          <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-sans text-muted dark:text-zinc-400">
             <div className="flex items-center gap-2">
-              <span className="font-code">© 2026 ShiftMetric. Estimates only.</span>
+              <span className="font-sans">© 2026 ShiftMetric. Estimates only.</span>
               <span>•</span>
               <span>Independent benchmark, not affiliated with OEMs.</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-faint dark:text-slate-500 font-code">v4.14-prod</span>
+              <span className="text-faint dark:text-zinc-500 font-mono tabular-nums">v4.14-prod</span>
             </div>
           </div>
         </div>

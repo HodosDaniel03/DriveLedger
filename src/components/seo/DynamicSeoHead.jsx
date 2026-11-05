@@ -4,6 +4,7 @@ import { OBD_CODES } from '../../data/obdCodes';
 import { MAINTENANCE_COMPONENTS, evaluateComponentHealth } from '../../data/maintenanceData';
 import { calculateTcoProjection } from '../calculators/TcoCalculator';
 import { FAQ_ITEMS } from './TechnicalMethodologyGuide';
+import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
 
 const SITE_ORIGIN = 'https://shiftmetric.com';
 
@@ -12,6 +13,8 @@ const CANONICAL_TAB_PATHS = {
   tco: '/tco',
   risk: '/risk-matrix',
   obd: '/obd-estimator',
+  compare: '/compare',
+  checklist: '/checklist',
   methodology: '/methodology',
   reviews: '/reviews',
   blog: '/blog',
@@ -112,16 +115,47 @@ function upsertCanonicalLink(href) {
     document.head.appendChild(link);
   }
   link.setAttribute('href', href);
+
+  // Upsert regional hreflang alternates for US, UK, EU, and x-default
+  const hreflangs = ['en-us', 'en-gb', 'en-ie', 'x-default'];
+  for (const lang of hreflangs) {
+    let alt = document.head.querySelector(`link[rel="alternate"][hreflang="${lang}"]`);
+    if (!alt) {
+      alt = document.createElement('link');
+      alt.setAttribute('rel', 'alternate');
+      alt.setAttribute('hreflang', lang);
+      document.head.appendChild(alt);
+    }
+    alt.setAttribute('href', href);
+  }
 }
 
 export default function DynamicSeoHead({
   activeTab = 'overview',
   selectedPresetId,
+  secondaryPresetId,
+  mileageBracketSlug,
   selectedObdCode = 'P2002',
 }) {
   const preset = useMemo(
     () => getPresetById(selectedPresetId) || VEHICLE_PRESETS[0],
     [selectedPresetId]
+  );
+
+  const secondaryPreset = useMemo(() => {
+    if (!secondaryPresetId || secondaryPresetId === preset.id) return null;
+    const found = VEHICLE_PRESETS.find((p) => p.id === secondaryPresetId);
+    return found || null;
+  }, [secondaryPresetId, preset.id]);
+
+  const secondaryTelemetry = useMemo(
+    () => (secondaryPreset ? computePresetSeoTelemetry(secondaryPreset) : null),
+    [secondaryPreset]
+  );
+
+  const activeMileageBracket = useMemo(
+    () => (mileageBracketSlug ? MILEAGE_BRACKET_SLUGS[mileageBracketSlug] || null : null),
+    [mileageBracketSlug]
   );
 
   const obdDossier = useMemo(() => {
@@ -163,9 +197,60 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'risk') {
+      if (activeMileageBracket) {
+        const canonicalPath = `/risk-matrix/${preset.id}/${activeMileageBracket.slug}`;
+        const title = `${preset.name} at ${activeMileageBracket.label}: Reliability Risk & Maintenance Costs | ShiftMetric`;
+        const description = `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect imminent timing, transmission, DPF, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
+        return {
+          title,
+          description,
+          canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+          canonicalPath,
+        };
+      }
       const canonicalPath = `/risk-matrix?preset=${preset.id}`;
       const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | ShiftMetric`;
       const description = `${preset.name} achieves a ${telemetry.reliabilityScore}/100 Engineering Reliability Score at ${telemetry.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
+      return {
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+      };
+    }
+
+    if (activeTab === 'compare') {
+      if (secondaryPreset && secondaryTelemetry) {
+        const canonicalPath = `/compare/${preset.id}-vs-${secondaryPreset.id}`;
+        const delta5Yr = Math.abs(telemetry.total5YrTcoUsd - secondaryTelemetry.total5YrTcoUsd);
+        const cheaperName =
+          secondaryTelemetry.total5YrTcoUsd < telemetry.total5YrTcoUsd
+            ? secondaryPreset.name
+            : preset.name;
+        const title = `${preset.name} vs ${secondaryPreset.name}: 5-Year TCO & Reliability Comparison | ShiftMetric`;
+        const description = `${preset.name} ($${telemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telemetry.reliabilityScore}/100 reliability) vs ${secondaryPreset.name} ($${secondaryTelemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${secondaryTelemetry.reliabilityScore}/100 reliability). ${cheaperName} saves $${delta5Yr.toLocaleString()} over 5 years.`;
+        return {
+          title,
+          description,
+          canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+          canonicalPath,
+        };
+      }
+      const canonicalPath = `/compare?presetA=${preset.id}`;
+      const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | ShiftMetric`;
+      const description = `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
+      return {
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+      };
+    }
+
+    if (activeTab === 'checklist') {
+      const canonicalPath = `/checklist?preset=${preset.id}`;
+      const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | ShiftMetric`;
+      const description = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
       return {
         title,
         description,
@@ -183,7 +268,7 @@ export default function DynamicSeoHead({
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
     };
-  }, [activeTab, preset, obdDossier, telemetry]);
+  }, [activeTab, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -351,6 +436,71 @@ export default function DynamicSeoHead({
     };
   }, [preset, obdDossier, telemetry]);
 
+  // 4. Pre-Purchase Inspection (PPI) HowTo Schema
+  const ppiChecklistSchema = useMemo(() => {
+    if (activeTab !== 'checklist') return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'HowTo',
+      name: `Pre-Purchase Vehicle Inspection Checklist: ${preset.name}`,
+      description: `Step-by-step on-site inspection protocol for ${preset.name} (${preset.engineCode}) condition assessment and known vulnerability detection.`,
+      step: [
+        {
+          '@type': 'HowToStep',
+          name: 'OBD-II DTC & Freeze Frame Diagnostic Scan',
+          text: 'Scan active and pending trouble codes and verify distance traveled since DTCs were cleared.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Engine Bay & Vulnerability Inspection',
+          text: 'Check timing belt/chain wear, high-pressure fuel pump condition (e.g. CP4), and fluid leaks.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Paint Depth & Structural Alignment Inspection',
+          text: 'Measure coating thickness across outer panels and pillars to detect hidden collision repairs.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Transmission & Clutch Load Dynamic Road Test',
+          text: 'Evaluate clutch slip, dual-mass flywheel shudder, and mechatronic shift quality under acceleration.',
+        },
+      ],
+    };
+  }, [activeTab, preset]);
+
+  // 5. Head-to-Head Vehicle Comparison ItemList Schema
+  const compareItemListSchema = useMemo(() => {
+    if (activeTab !== 'compare' || !secondaryPreset || !secondaryTelemetry) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `${preset.name} vs ${secondaryPreset.name} 5-Year Ownership Comparison`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: {
+            '@type': 'Vehicle',
+            name: preset.name,
+            fuelType: preset.fuelType,
+            description: `5-Year TCO: $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/mo) · Reliability Score: ${telemetry.reliabilityScore}/100`,
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          item: {
+            '@type': 'Vehicle',
+            name: secondaryPreset.name,
+            fuelType: secondaryPreset.fuelType,
+            description: `5-Year TCO: $${secondaryTelemetry.total5YrTcoUsd.toLocaleString()} ($${secondaryTelemetry.monthlyTcoUsd}/mo) · Reliability Score: ${secondaryTelemetry.reliabilityScore}/100`,
+          },
+        },
+      ],
+    };
+  }, [activeTab, preset, telemetry, secondaryPreset, secondaryTelemetry]);
+
   return (
     <>
       <script
@@ -368,6 +518,20 @@ export default function DynamicSeoHead({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
+      {ppiChecklistSchema && (
+        <script
+          id="schema-ppi-checklist"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ppiChecklistSchema) }}
+        />
+      )}
+      {compareItemListSchema && (
+        <script
+          id="schema-compare-itemlist"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(compareItemListSchema) }}
+        />
+      )}
     </>
   );
 }

@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/generate-sitemap-seo.mjs && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/*.test.js",
+    "sitemap": "node scripts/generate-sitemap-seo.mjs",
+    "test": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js && vitest run",
+    "test:vitest": "vitest run",
+    "test:node": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js",
     "test:jev": "node --test tests/jevCatalogJudge.test.js",
     "jev:audit": "node scripts/jev-evaluator.mjs"
   },
@@ -15,7 +18,8 @@
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
@@ -25,6 +29,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
   }
 }

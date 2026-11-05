@@ -45,9 +45,18 @@ export const COMPONENT_MILESTONE_TRIGGERS = {
   'suspension-brakes-chassis': ['30k-brake-fluid', '90k-rotors', '120k-shocks'],
   'hv-battery-thermal-loop': ['60k-coolant', '90k-cooling-hoses'],
   'gdi-intake-pcv-ignition': ['120k-pcv', '150k-carbon'],
+  // EV Component Triggers (supports checklist item IDs and milestone interval triggers)
+  'ev-battery-soh': ['90k-ev-soh', '150k-ev-pack-integrity', 'ev-mile-60k', 'ev-mile-120k'],
+  'ev-obc-iccu': ['90k-ev-obc-iccu', '150k-ev-power-electronics', 'ev-mile-60k', 'ev-mile-120k'],
+  'ev-thermal-heatpump': ['60k-ev-coolant', '90k-ev-valve-actuator', '120k-ev-chiller-flush', 'ev-mile-30k', 'ev-mile-60k', 'ev-mile-90k', 'ev-mile-120k'],
+  'ev-reduction-gear': ['60k-ev-reduction-oil', '150k-ev-drive-unit-seals', 'ev-mile-60k', 'ev-mile-120k'],
+  'ev-curb-suspension': ['30k-ev-suspension', '120k-ev-subframe-mounts', '120k-ev-shocks', '150k-ev-chassis-refresh', 'ev-mile-30k', 'ev-mile-60k', 'ev-mile-90k', 'ev-mile-120k', 'ev-mile-150k'],
+  'ev-torque-tires': ['15k-ev-tires', 'ev-mile-15k', 'ev-mile-30k', 'ev-mile-60k'],
+  'ev-regen-brake-corrosion': ['15k-ev-brakes', '30k-ev-brake-fluid', '60k-ev-rotor-rust', '90k-ev-rotors', 'ev-mile-15k', 'ev-mile-30k', 'ev-mile-60k', 'ev-mile-90k', 'ev-mile-120k', 'ev-mile-150k'],
 };
 
 const DEFAULT_GARAGE_STATE = {
+  selectedPresetId: null,
   completedMilestonesByPreset: {},
   servicedComponentsByPreset: {},
   savedVehicles: [],
@@ -61,6 +70,8 @@ function loadGarageState() {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
           return {
+            selectedPresetId:
+              typeof parsed.selectedPresetId === 'string' ? parsed.selectedPresetId : null,
             completedMilestonesByPreset:
               parsed.completedMilestonesByPreset && typeof parsed.completedMilestonesByPreset === 'object'
                 ? parsed.completedMilestonesByPreset
@@ -82,6 +93,9 @@ function loadGarageState() {
 
 const GarageContext = createContext({
   isProviderActive: false,
+  selectedPresetId: null,
+  setSelectedPresetId: () => {},
+  selectVehicle: () => {},
   completedMilestonesByPreset: {},
   servicedComponentsByPreset: {},
   savedVehicles: [],
@@ -183,10 +197,24 @@ export function GarageProvider({ children }) {
 
       return {
         ...prev,
+        selectedPresetId: presetId,
         savedVehicles: nextSavedVehicles,
       };
     });
   }, []);
+
+  const setSelectedPresetId = useCallback((presetId) => {
+    if (!presetId) return;
+    setGarageState((prev) => {
+      if (prev.selectedPresetId === presetId) return prev;
+      return {
+        ...prev,
+        selectedPresetId: presetId,
+      };
+    });
+  }, []);
+
+  const selectVehicle = setSelectedPresetId;
 
   const removeVehicleFromGarage = useCallback((presetId) => {
     if (!presetId) return;
@@ -215,6 +243,9 @@ export function GarageProvider({ children }) {
   const value = useMemo(
     () => ({
       isProviderActive: true,
+      selectedPresetId: garageState.selectedPresetId,
+      setSelectedPresetId,
+      selectVehicle,
       completedMilestonesByPreset: garageState.completedMilestonesByPreset,
       servicedComponentsByPreset: garageState.servicedComponentsByPreset,
       savedVehicles: garageState.savedVehicles,
@@ -227,6 +258,8 @@ export function GarageProvider({ children }) {
     }),
     [
       garageState,
+      setSelectedPresetId,
+      selectVehicle,
       toggleMilestoneItem,
       toggleServicedComponent,
       saveVehicleToGarage,

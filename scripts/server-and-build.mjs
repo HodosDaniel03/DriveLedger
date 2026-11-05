@@ -137,6 +137,9 @@ export const React = {
     const idx = (inst.idCursor = (inst.idCursor || 0) + 1);
     return ':r' + idx + ':';
   },
+  useRef(initialValue) {
+    return React.useMemo(() => ({ current: initialValue }), []);
+  },
   __batch(fn) {
     batchDepth++;
     try {
@@ -218,6 +221,7 @@ export const {
   useMemo,
   useCallback,
   useId,
+  useRef,
 } = React;
 
 export function __setRootRender(fn) {

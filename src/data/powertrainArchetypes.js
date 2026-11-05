@@ -5,6 +5,28 @@
  * to hydrate dynamically into full ShiftMetric TCO & Risk Matrix telemetry presets.
  */
 
+export {
+  POWERTRAIN_TYPES,
+  PowertrainType,
+  resolvePowertrainType,
+  normalizePowertrainType,
+  isPureElectric,
+  calculateEvEnergyCost,
+  calculatePhevEnergyCost,
+  calculateVehicleEnergyCost,
+  calculateBatterySoh,
+  convertKwh100MiToKwh100Km,
+  convertKwh100KmToKwh100Mi,
+  convertKwh100MiToMiPerKwh,
+  convertMiPerKwhToKwh100Mi,
+} from './powertrainTypes.js';
+
+import {
+  POWERTRAIN_TYPES,
+  resolvePowertrainType,
+  isPureElectric,
+} from './powertrainTypes.js';
+
 const VALID_CATALOG_OBD_CODES = new Set([
   'P0420', 'P2002', 'P0299', 'P0171', 'P0300',
   'P0401', 'P0087', 'P0700', 'P2463', 'P0128',
@@ -104,6 +126,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'Ford 2.0 EcoBlue / PSA 1.5 & 2.0 BlueHDi / Renault 1.5 dCi',
     fuelType: 'Diesel',
     powertrain: 'diesel',
+    powertrainType: POWERTRAIN_TYPES.ICE_DIESEL,
     transmission: 'dct-dsg',
     transmissionLabel: '8-Speed Auto / 6-Speed Dual-Clutch',
     oemIntervalMiles: 120000,
@@ -132,6 +155,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'VAG EA288 / EA288 evo 2.0 TDI + DQ250/DQ381 Wet-Clutch DSG',
     fuelType: 'Diesel',
     powertrain: 'diesel',
+    powertrainType: POWERTRAIN_TYPES.ICE_DIESEL,
     transmission: 'dct-dsg',
     transmissionLabel: '7-Speed DSG Wet-Clutch (DQ381)',
     oemIntervalMiles: 80000,
@@ -160,6 +184,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'BMW B47/B57 + ZF 8HP / Mercedes OM654 + 9G-Tronic',
     fuelType: 'Diesel',
     powertrain: 'diesel',
+    powertrainType: POWERTRAIN_TYPES.ICE_DIESEL,
     transmission: 'torque-converter',
     transmissionLabel: 'ZF 8HP 8-Speed Steptronic Automatic',
     oemIntervalMiles: 100000,
@@ -188,6 +213,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'VAG EA211/EA888 TSI, BMW B48, Honda 1.5 VTEC Turbo, Renault 1.3 TCe',
     fuelType: 'Gasoline',
     powertrain: 'gasoline-turbo',
+    powertrainType: POWERTRAIN_TYPES.ICE_PETROL,
     transmission: 'dct-dsg',
     transmissionLabel: '7-Speed Dual-Clutch / 8-Speed Automatic',
     oemIntervalMiles: 90000,
@@ -216,6 +242,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'Ford 1.0L Fox EcoBoost / Stellantis 1.2L EB2 PureTech',
     fuelType: 'Gasoline',
     powertrain: 'gasoline-turbo',
+    powertrainType: POWERTRAIN_TYPES.ICE_PETROL,
     transmission: 'manual',
     transmissionLabel: '6-Speed Manual / 8-Speed EAT8 Automatic',
     oemIntervalMiles: 100000,
@@ -245,6 +272,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'Toyota 1.8/2.0/2.5 Dynamic Force HSD / Lexus 300h / Honda 2.0 e:HEV',
     fuelType: 'Hybrid',
     powertrain: 'hybrid',
+    powertrainType: POWERTRAIN_TYPES.HEV,
     transmission: 'cvt-ecvt',
     transmissionLabel: 'Planetary Power-Split e-CVT (Zero Clutches/Belts)',
     oemIntervalMiles: 100000,
@@ -273,6 +301,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'VAG 1.4/1.5 eHybrid GTE, BMW 330e/X5 45e, Volvo T6/T8 Recharge, Stellantis Hybrid4',
     fuelType: 'Plug-in Hybrid',
     powertrain: 'hybrid',
+    powertrainType: POWERTRAIN_TYPES.PHEV,
     transmission: 'dct-dsg',
     transmissionLabel: '6/7-Speed Hybrid Dual-Clutch / 8-Speed Hybrid Auto',
     oemIntervalMiles: 75000,
@@ -301,6 +330,7 @@ export const POWERTRAIN_ARCHETYPES = {
     exemplarEngines: 'Tesla 3/Y Dual-Motor, VW MEB ID.3/ID.4, Hyundai/Kia E-GMP, BMW eDrive',
     fuelType: 'Electric',
     powertrain: 'ev',
+    powertrainType: POWERTRAIN_TYPES.EV,
     transmission: 'direct-drive',
     transmissionLabel: 'Single-Speed Fixed Reduction Gear',
     oemIntervalMiles: 120000,
@@ -311,9 +341,9 @@ export const POWERTRAIN_ARCHETYPES = {
     criticalDefectTag: '⚠️ HV CHILLER VALVE & CONTROL ARM HYDRO-BUSHINGS',
     knownRiskNotes:
       'Zero engine oil or spark plug maintenance; HV chiller thermal expansion valve / heat pump refrigerant issues; reduction gear oil shear; heavy curb weight accelerates lower control arm hydro-bushings and inner tire shoulder wear.',
-    commonObdCodes: ['P0A80', 'P0AA6', 'P0562'],
-    catalogObdCodes: ['U0100', 'P0A80', 'P0128', 'P0700'],
-    diagnosticCodes: ['P0A80', 'P0AA6', 'P0562'],
+    commonObdCodes: ['U0100', 'P0A80'],
+    catalogObdCodes: ['U0100', 'P0A80'],
+    diagnosticCodes: ['U0100', 'P0A80'],
     residualCurve10Yr: [0.83, 0.71, 0.60, 0.51, 0.43, 0.36, 0.30, 0.25, 0.21, 0.18],
     keyFailureModes: [
       'HV chiller thermal expansion valve / heat pump manifold faults',
@@ -354,44 +384,60 @@ export function resolveArchetypeIdForPreset(preset = {}) {
   }
 
   const brand = String(preset.brand || preset.make || '').trim();
-  const fuelType = String(preset.fuelType || '').toLowerCase();
-  const powertrain = String(preset.powertrain || '').toLowerCase();
+  const fuelType = String(preset.fuelType || '').trim().toLowerCase();
+  const powertrain = String(preset.powertrain || '').trim().toLowerCase();
+
+  // Explicitly exclude knownRiskNotes and transmissionLabel from searchBlob
+  // to prevent collisions (e.g. EAT8 matching 't8 ', SkyActiv-Drive matching 'skyactiv-d', or electrical notes matching 'electric')
   const searchBlob = [
     preset.id,
     preset.name,
     preset.shortName,
     preset.engineCode,
     preset.powertrainLabel,
-    preset.transmissionLabel,
-    preset.knownRiskNotes,
+    preset.segment,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
-  if (preset.isEv || fuelType === 'electric' || powertrain === 'ev') {
+  // 1. BEV
+  if (preset.isEv || fuelType === 'electric' || powertrain === 'ev' || powertrain === 'electric') {
     return 'bev-lithium';
   }
 
+  // 2. PHEV
   if (
     fuelType === 'plug-in hybrid' ||
-    searchBlob.includes('phev') ||
-    searchBlob.includes('plug-in') ||
-    searchBlob.includes('ehybrid') ||
-    searchBlob.includes('e-hybrid') ||
-    searchBlob.includes('gte') ||
-    searchBlob.includes('330e') ||
-    searchBlob.includes('45e') ||
-    searchBlob.includes('t8 ')
+    fuelType === 'phev' ||
+    fuelType.includes('plug-in') ||
+    fuelType.includes('plugin') ||
+    powertrain === 'phev' ||
+    /\b(phev|plug-in|plugin|ehybrid|e-hybrid|gte|330e|45e)\b/i.test(searchBlob) ||
+    /\bt8\s+(recharge|twin|awd|phev)\b/i.test(searchBlob) ||
+    /\bt8\b/i.test(searchBlob) ||
+    /\btfsi\s+e\b/i.test(searchBlob)
   ) {
     return 'phev-turbo-dct';
   }
 
-  if (fuelType === 'hybrid' || powertrain === 'hybrid') {
+  // 3. HEV
+  if (
+    fuelType === 'hybrid' ||
+    fuelType === 'hev' ||
+    powertrain === 'hybrid' ||
+    powertrain === 'mhev' ||
+    /\b(hybrid|hsd|e:hev|e-tech)\b/i.test(searchBlob)
+  ) {
     return 'toyota-hybrid-ecvt';
   }
 
-  if (fuelType === 'diesel' || powertrain === 'diesel') {
+  // 4. Diesel
+  if (
+    fuelType === 'diesel' ||
+    powertrain === 'diesel' ||
+    /\b(diesel|tdi|bluehdi|ecoblue|crdi|d-4d|dci|multijet|cdi|did|skyactiv-d|ea288|ea189|b47|b57|om654)\b/i.test(searchBlob)
+  ) {
     const vagBrands = new Set(['Volkswagen', 'Audi', 'Skoda', 'Škoda', 'SEAT', 'Cupra']);
     if (vagBrands.has(brand) || searchBlob.includes('tdi') || searchBlob.includes('ea288') || searchBlob.includes('ea189')) {
       return 'vag-2.0-tdi-dsg';
@@ -409,6 +455,7 @@ export function resolveArchetypeIdForPreset(preset = {}) {
     return 'euro6-diesel-dpf-wetbelt';
   }
 
+  // 5. Wet Belt Gasoline
   if (
     searchBlob.includes('puretech') ||
     searchBlob.includes('1.0 ecoboost') ||
@@ -420,6 +467,7 @@ export function resolveArchetypeIdForPreset(preset = {}) {
     return 'puretech-ecoboost-wetbelt';
   }
 
+  // 6. Default Petrol
   return 'direct-inj-turbo-petrol';
 }
 
@@ -442,6 +490,12 @@ export function hydrateVehiclePreset(presetOrCompactRecord) {
   const brandTierObj = getBrandTierForMake(brand);
 
   const isEv = merged.isEv ?? (archetype.powertrain === 'ev' || archetype.fuelType === 'Electric');
+  const fuelType = merged.fuelType || archetype.fuelType || (isEv ? 'Electric' : 'Gasoline');
+  const powertrain = merged.powertrain || archetype.powertrain || (isEv ? 'ev' : 'gasoline-turbo');
+  const powertrainType =
+    merged.powertrainType ||
+    archetype.powertrainType ||
+    resolvePowertrainType({ ...merged, isEv, fuelType, powertrain, archetypeId });
   const purchasePriceUsd = merged.purchasePriceUsd ?? merged.basePrice ?? 28500;
   const powerHp = merged.powerHp ?? 150;
   const mpgUs = merged.mpgUs ?? (isEv ? 29.0 : archetype.fuelType === 'Diesel' ? 47.0 : 38.0);
@@ -466,10 +520,13 @@ export function hydrateVehiclePreset(presetOrCompactRecord) {
   );
 
   const rawObdCodes =
-    merged.commonObdCodes || archetype.catalogObdCodes || archetype.commonObdCodes || ['P0171'];
-  const commonObdCodes = Array.isArray(merged.commonObdCodes)
+    merged.commonObdCodes || archetype.catalogObdCodes || archetype.commonObdCodes || (isEv ? ['U0100', 'P0A80'] : ['P0171']);
+  const sanitized = Array.isArray(merged.commonObdCodes)
     ? merged.commonObdCodes
-    : sanitizeCatalogObdCodes(rawObdCodes, ['P0171', 'P0299']);
+    : sanitizeCatalogObdCodes(rawObdCodes, isEv ? ['U0100', 'P0A80'] : ['P0171', 'P0299']);
+  const commonObdCodes = isEv
+    ? sanitized.filter((c) => c !== 'P0128' && c !== 'P0700')
+    : sanitized;
 
   return {
     ...merged,
@@ -490,6 +547,7 @@ export function hydrateVehiclePreset(presetOrCompactRecord) {
     fuelType: merged.fuelType || archetype.fuelType,
     segment: merged.segment || `${brandTierObj.label} — ${archetype.shortLabel}`,
     powertrain: merged.powertrain || archetype.powertrain,
+    powertrainType,
     powertrainLabel: merged.powertrainLabel || archetype.label,
     transmission: merged.transmission || archetype.transmission,
     transmissionLabel: merged.transmissionLabel || archetype.transmissionLabel,
@@ -630,6 +688,7 @@ export const NORMALIZED_COMPACT_MODELS = [
     years: '2021-2024',
     bodyStyle: 'suv',
     archetypeId: 'phev-turbo-dct',
+    powertrainType: POWERTRAIN_TYPES.PHEV,
     basePrice: 49500,
     powerHp: 455,
     mpgUs: 34.0,
@@ -646,6 +705,8 @@ export const NORMALIZED_COMPACT_MODELS = [
     years: '2021-2024',
     bodyStyle: 'suv',
     archetypeId: 'bev-lithium',
+    powertrainType: POWERTRAIN_TYPES.EV,
+    isEv: true,
     basePrice: 38900,
     powerHp: 286,
     mpgUs: 29.0,

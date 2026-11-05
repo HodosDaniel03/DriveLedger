@@ -556,7 +556,7 @@ export default function VehicleSelect({
           Quick search vehicle make, model, engine code, or fault
         </label>
         <div className="relative flex items-center">
-          <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted dark:text-slate-400" />
+          <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted dark:text-zinc-400" />
           <input
             id="vehicle-command-search"
             type="text"
@@ -571,7 +571,7 @@ export default function VehicleSelect({
             aria-expanded={showAutocompleteDropdown}
             aria-controls="vehicle-command-search-results"
             autoComplete="off"
-            className="h-11 w-full rounded-xl border border-border bg-surface pr-10 pl-10 text-xs sm:text-sm font-medium text-ink placeholder:text-muted/80 shadow-sm transition-all duration-200 hover:border-border-strong focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 dark:hover:border-slate-700"
+            className="h-11 w-full rounded-xl border border-border bg-surface pr-10 pl-10 text-xs sm:text-sm font-medium text-ink placeholder:text-muted/80 shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-border-strong focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:hover:border-zinc-700"
           />
           {searchQuery && (
             <button
@@ -579,7 +579,7 @@ export default function VehicleSelect({
               type="button"
               onClick={handleClearSearch}
               aria-label="Clear vehicle search"
-              className="absolute right-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-surface-subtle hover:text-ink transition-colors dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              className="absolute right-2.5 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-surface-subtle hover:text-ink transition-colors dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -592,14 +592,14 @@ export default function VehicleSelect({
             id="vehicle-command-search-results"
             role="listbox"
             aria-label="Matching vehicle presets"
-            className="absolute z-40 mt-1.5 max-h-96 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-xl dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+            className="absolute z-40 mt-1.5 max-h-96 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-xl dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100"
           >
             {autocompleteMatches.length === 0 ? (
-              <div className="px-3.5 py-4 text-center text-xs text-muted dark:text-slate-400">
+              <div className="px-3.5 py-4 text-center text-xs text-muted dark:text-zinc-400">
                 No vehicles matched &ldquo;{effectiveSearchQuery}&rdquo;. Try an engine code (e.g. EA888, B48, EcoBlue) or OBD fault (e.g. P2002).
               </div>
             ) : (
-              <div className="divide-y divide-border/50 dark:divide-slate-800/80">
+              <div className="divide-y divide-border/50 dark:divide-zinc-800/80">
                 {autocompleteMatches.map(({ preset: item, arch, tier }, idx) => {
                   const isHighlighted = idx === highlightedIndex;
                   const isCurrent = item.id === selectedPresetId;
@@ -614,28 +614,28 @@ export default function VehicleSelect({
                       onClick={() => handleSelectAutocomplete(item.id)}
                       className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors flex flex-col gap-1.5 ${
                         isHighlighted
-                          ? 'bg-primary-50/90 dark:bg-slate-800/95'
-                          : 'hover:bg-surface-subtle dark:hover:bg-slate-800/60'
+                          ? 'bg-primary-50/90 dark:bg-zinc-800/95'
+                          : 'hover:bg-surface-subtle dark:hover:bg-zinc-800/60'
                       }`}
                     >
                       {/* Row 1: Vehicle Name, Year & Base Price */}
-                      <div className="flex items-baseline justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                          <span className="font-semibold text-xs sm:text-sm text-ink dark:text-slate-100 truncate">
+                      <div className="flex items-baseline justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <span className="font-semibold text-xs sm:text-sm text-ink dark:text-zinc-100 truncate">
                             {item.name}
                           </span>
                           {item.year && (
-                            <span className="shrink-0 rounded bg-surface-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted border border-border/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                            <span className="shrink-0 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 font-mono tabular-nums text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
                               {item.year}
                             </span>
                           )}
                           {isCurrent && (
-                            <span className="shrink-0 rounded-full bg-primary-600 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
-                              ACTIVE
+                            <span className="shrink-0 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 font-sans text-[11px] font-medium">
+                              Active
                             </span>
                           )}
                         </div>
-                        <span className="shrink-0 font-mono text-xs sm:text-sm font-bold tabular-nums text-ink dark:text-slate-100">
+                        <span className="shrink-0 font-mono text-xs sm:text-sm font-bold tabular-nums text-ink dark:text-zinc-100">
                           {formatVehiclePrice(item.purchasePriceUsd)}
                         </span>
                       </div>
@@ -643,27 +643,27 @@ export default function VehicleSelect({
                       {/* Row 2: Engine code, HP, Fuel pill, Brand tier / Archetype badge & Critical defect tag */}
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                         {item.engineCode && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-surface-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-ink border border-border/60 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
                             <Cpu className="h-3 w-3 text-primary-600 dark:text-primary-400" />
                             <span>{item.engineCode}</span>
                           </span>
                         )}
                         {item.powerHp && (
-                          <span className="rounded-md bg-surface-subtle px-1.5 py-0.5 font-mono text-[10px] font-medium text-body border border-border/50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
-                            {item.powerHp} HP
+                          <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
+                            <span className="font-mono tabular-nums">{item.powerHp}</span> HP
                           </span>
                         )}
                         {item.fuelType && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 font-mono text-[10px] font-semibold text-blue-700 border border-blue-200 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-800/80">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
                             <Fuel className="h-2.5 w-2.5" />
                             <span>{item.fuelType}</span>
                           </span>
                         )}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-medium text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
                           {tier.label} · {arch.id}
                         </span>
                         {item.criticalDefectTag && (
-                          <span className="inline-flex items-center rounded-full bg-amber-50/90 px-2 py-0.5 font-mono text-[10px] font-semibold text-amber-800 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/70">
+                          <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
                             {item.criticalDefectTag}
                           </span>
                         )}
@@ -708,30 +708,30 @@ export default function VehicleSelect({
       {/* Compact Active Archetype & Brand-Tier Telemetry Pill Strip */}
       <div
         id="vehicle-telemetry-strip"
-        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-surface-subtle/70 px-3 py-2 text-xs dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-surface-subtle/70 px-3 py-2 text-xs dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 min-w-0"
       >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-md bg-surface px-2 py-0.5 font-mono text-[11px] font-semibold text-ink border border-border/70 shadow-2xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
             <Cpu className="h-3 w-3 text-primary-600 dark:text-primary-400" />
             <span>{activeArchetype.label}</span>
-            <span className="text-[10px] text-muted dark:text-slate-400">({activeArchetype.id})</span>
+            <span className="text-[10px] text-muted dark:text-zinc-400">({activeArchetype.id})</span>
           </span>
 
-          <span className="inline-flex items-center gap-1 rounded-md bg-surface px-2 py-0.5 font-mono text-[11px] font-medium text-body border border-border/70 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200">
+          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
             <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
             <span>{activeBrandTier.label}</span>
-            <span className="text-[10px] text-muted dark:text-slate-400">· {activeBrandTier.multiplierLabel}</span>
+            <span className="font-mono tabular-nums text-[10px] text-muted dark:text-zinc-400">· {activeBrandTier.multiplierLabel}</span>
           </span>
 
           {activePreset.engineCode && (
-            <span className="inline-flex items-center rounded-md bg-surface px-2 py-0.5 font-mono text-[11px] font-medium text-muted border border-border/60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+            <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
               {activePreset.engineCode}
             </span>
           )}
         </div>
 
         {activePreset.criticalDefectTag && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-amber-900 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/80">
+          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
             <ShieldAlert className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
             <span>{activePreset.criticalDefectTag}</span>
           </span>

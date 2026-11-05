@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Wrench, ShieldAlert, Cpu, ArrowRight, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { RiskBadge } from '../components/common/OdometerPrimitives';
 
 export const BLOG_POSTS = [
   {
@@ -10,12 +11,12 @@ export const BLOG_POSTS = [
     date: '18 Oct 2026',
     author: 'Daniel R., Powertrain Specialist',
     summary:
-      'Dual-clutch transmissions (DSG, S-Tronic, PDK) offer lightning-fast shifts, but skipping the 40,000-mile fluid service is the #1 cause of $2,500+ mechatronic unit failure. Here is what actually happens inside the gearbox.',
+      'Skipping the 40,000-mile fluid renewal triggers costly $2,500+ mechatronic unit failure.',
     keyPoints: [
-      'Dual wet clutches share oil with hydraulic valves; micro-clutch dust clogs solenoids over time.',
-      'A preventative fluid and filter renewal costs $240–$320 at an independent specialist.',
-      'Replacing a ruined mechatronic unit costs $1,800–$2,800 plus labor.',
-      'Recommended interval: every 38,000–40,000 miles (60,000 km) regardless of manufacturer "lifetime" claims.',
+      'Micro-clutch wear debris clogs delicate hydraulic mechatronic solenoids.',
+      'Preventative fluid replacement costs $240–$320 at independent shops.',
+      'Replacing a damaged mechatronic unit costs $1,800–$2,800 plus labor.',
+      'Recommended service interval is strictly every 40,000 miles (60,000 km).',
     ],
     content: `
 Modern dual-clutch transmissions (like Volkswagen's 6-speed DQ250 and 7-speed DQ381, Audi's S-Tronic, and BMW's DKG) rely on a wet clutch pack immersed in hydraulic fluid. Every time the car pulls away or shifts gears, microscopic friction material sheds into the oil.
@@ -45,12 +46,12 @@ The takeaway is simple: servicing your dual-clutch gearbox on time is the single
     date: '12 Oct 2026',
     author: 'Marcus K., Fleet Inspector',
     summary:
-      'Looking at a used BMW 3 Series Touring, Audi A4 Avant, or VW Passat Variant with 100k+ miles? These 5 tell-tale red flags can save you thousands in hidden workshop bills before you make an offer.',
+      'Key pre-purchase red flags to inspect on high-mileage German estate cars before buying.',
     keyPoints: [
-      'Cold-start rattle lasting more than 2 seconds points to a worn timing chain tensioner ($1,400+).',
-      'Uneven rear ride height after parked overnight reveals leaking air suspension bellows.',
-      'Soot dusting around the turbocharger or DPF flange indicates exhaust backpressure leaks.',
-      'Oil residue in the coolant expansion tank signals an oil cooler core leak.',
+      'Cold-start rattle indicates worn timing chain tensioner liability.',
+      'Overnight rear sag reveals leaking air suspension bellows.',
+      'Soot around turbo flange exposes exhaust backpressure leaks.',
+      'Coolant reservoir oil film signals failing oil cooler core.',
     ],
     content: `
 German estate cars (Tourings, Avants, and Variants) make fantastic long-distance cruisers, but their sophisticated engineering means neglected maintenance cascades into enormous repair bills.
@@ -81,12 +82,12 @@ Check receipts, not just dealer stamps. Look for specific line items: transmissi
     date: '04 Oct 2026',
     author: 'Sarah M., Master Technician',
     summary:
-      'Got fault code P0420 ("Catalyst System Efficiency Below Threshold")? Quick-lube shops will immediately quote you $1,500+ for a new catalytic converter. Here is how to test the cheap culprits first.',
+      'Diagnose oxygen sensors and exhaust leaks before replacing an expensive catalytic converter.',
     keyPoints: [
-      'Downstream oxygen sensor drift causes 40% of false P0420 catalyst efficiency codes.',
-      'An exhaust pinhole or cracked flex pipe before the sensor pulls in fresh air, tricking the ECU.',
-      'Uncorrected engine misfires (P0300) or rich fuel trims will ruin a new converter within weeks.',
-      'Test downstream sensor voltage with an inexpensive OBD2 scanner before buying expensive parts.',
+      'Downstream oxygen sensor drift causes 40% of false codes.',
+      'Exhaust pinholes suck fresh air, tricking the ECU sensor.',
+      'Unresolved misfires rapidly destroy replacement catalytic converters.',
+      'Verify live sensor voltages with scanner before ordering parts.',
     ],
     content: `
 P0420 is the most commonly triggered OBD-II trouble code in the automotive industry. It simply means the downstream oxygen sensor (after the catalyst) is cycling too similarly to the upstream sensor (before the catalyst), indicating the converter is not storing sufficient oxygen.
@@ -129,18 +130,17 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
   return (
     <div className="space-y-10 animate-fade-in">
       {/* Header Banner */}
-      <div className="bg-surface dark:bg-slate-900 rounded-2xl border border-border dark:border-slate-800 p-8 sm:p-10 shadow-sm">
+      <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-border dark:border-zinc-800 p-8 sm:p-10 shadow-sm">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 text-[11px] font-sans font-medium mb-3">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Independent Automotive Field Notes</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-ink dark:text-slate-100 mb-3 font-h1">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-ink dark:text-zinc-100 mb-3 font-h1">
             From the Garage
           </h1>
-          <p className="text-base text-body dark:text-slate-300 leading-relaxed">
-            Straightforward, practical guides written by automotive engineers and fleet inspectors.
-            No mechanic jargon, no dealer markups—just what you need to know before spending your money.
+          <p className="text-sm text-body dark:text-zinc-300 leading-relaxed">
+            Engineering guides covering maintenance schedules, vehicle inspection, and real-world diagnostics.
           </p>
 
           {/* Category Filter Pills */}
@@ -150,10 +150,10 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-150 ${
                   selectedCategory === cat
                     ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-surface-subtle dark:bg-slate-800 text-muted dark:text-slate-300 border border-border dark:border-slate-700 hover:text-ink dark:hover:text-slate-100 hover:border-border-strong dark:hover:border-slate-600'
+                    : 'bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 hover:text-ink dark:hover:text-zinc-100 hover:border-border-strong dark:hover:border-zinc-600'
                 }`}
               >
                 {cat}
@@ -170,33 +170,39 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
           return (
             <article
               key={post.id}
-              className="bg-surface dark:bg-slate-900 rounded-2xl border border-border dark:border-slate-800 p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:shadow-card-hover transition-all duration-300"
+              className="bg-surface dark:bg-[#121215] rounded-2xl border border-border dark:border-zinc-800 p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:shadow-card-hover transition-[transform,box-shadow] duration-200 ease-out"
             >
               <div>
-                <div className="flex items-center justify-between text-xs text-muted dark:text-slate-400 mb-4 pb-3 border-b border-border/70 dark:border-slate-800">
-                  <span className="font-semibold px-2.5 py-0.5 rounded-full bg-surface-subtle dark:bg-slate-800 border border-border dark:border-slate-700 text-ink dark:text-slate-200">
-                    {post.category}
-                  </span>
-                  <span className="flex items-center gap-1 font-medium">
-                    <Clock className="w-3 h-3 text-muted dark:text-slate-400" />
+                <div className="flex items-center justify-between text-xs text-muted dark:text-zinc-400 mb-4 pb-3 border-b border-border/70 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <span className="font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-[11px]">
+                      {post.category}
+                    </span>
+                    <RiskBadge
+                      level={post.id === 'dsg-service-cost' ? 'critical' : post.id === 'high-mileage-german-estate' ? 'moderate' : 'low'}
+                      label={post.id === 'dsg-service-cost' ? 'Critical' : post.id === 'high-mileage-german-estate' ? 'Moderate' : 'Low'}
+                    />
+                  </div>
+                  <span className="flex items-center gap-1 font-sans font-medium">
+                    <Clock className="w-3 h-3 text-muted dark:text-zinc-400" />
                     {post.readTime}
                   </span>
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-ink dark:text-slate-100 mb-3 leading-snug">
+                <h2 className="text-lg sm:text-xl font-bold text-ink dark:text-zinc-100 mb-3 leading-snug">
                   {post.title}
                 </h2>
 
-                <p className="text-sm text-body dark:text-slate-300 leading-relaxed mb-5">
+                <p className="text-sm text-body dark:text-zinc-300 leading-relaxed mb-5">
                   {post.summary}
                 </p>
 
                 {/* Key Takeaways */}
-                <div className="bg-surface-subtle dark:bg-slate-800/80 rounded-xl p-4 border border-border/70 dark:border-slate-700 mb-5">
-                  <span className="text-xs font-bold text-ink dark:text-slate-100 uppercase tracking-wider block mb-2 font-micro">
+                <div className="bg-surface-subtle dark:bg-zinc-800/80 rounded-xl p-4 border border-border/70 dark:border-zinc-700 mb-5">
+                  <span className="text-xs font-bold text-ink dark:text-zinc-100 uppercase tracking-wider block mb-2 font-micro">
                     Key takeaways:
                   </span>
-                  <ul className="space-y-1.5 text-xs text-body dark:text-slate-300">
+                  <ul className="space-y-1.5 text-xs text-body dark:text-zinc-300">
                     {post.keyPoints.map((kp, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 text-score-good shrink-0 mt-0.5" />
@@ -208,19 +214,19 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
 
                 {/* Expanded Article Content */}
                 {isExpanded && (
-                  <div className="pt-4 border-t border-border dark:border-slate-800 text-sm text-body dark:text-slate-300 leading-relaxed space-y-4 mb-5 animate-fade-in">
+                  <div className="pt-4 border-t border-border dark:border-zinc-800 text-sm text-body dark:text-zinc-300 leading-relaxed space-y-4 mb-5 animate-fade-in">
                     {post.content.split('\n\n').map((paragraph, pIdx) => {
                       if (paragraph.startsWith('### ')) {
                         return (
-                          <h3 key={pIdx} className="font-bold text-base text-ink dark:text-slate-100 pt-2">
+                          <h3 key={pIdx} className="font-bold text-base text-ink dark:text-zinc-100 pt-2">
                             {paragraph.replace('### ', '')}
                           </h3>
                         );
                       }
                       if (paragraph.startsWith('1. ') || paragraph.startsWith('- ')) {
                         return (
-                          <div key={pIdx} className="bg-canvas dark:bg-slate-950 p-3 rounded-lg border border-border/60 dark:border-slate-800 text-xs">
-                            <pre className="whitespace-pre-wrap font-sans text-body dark:text-slate-300">{paragraph}</pre>
+                          <div key={pIdx} className="bg-canvas dark:bg-zinc-950 p-3 rounded-lg border border-border/60 dark:border-zinc-800 text-xs">
+                            <pre className="whitespace-pre-wrap font-sans text-body dark:text-zinc-300">{paragraph}</pre>
                           </div>
                         );
                       }
@@ -230,11 +236,11 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
                 )}
               </div>
 
-              <div className="pt-4 border-t border-border dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+              <div className="pt-4 border-t border-border dark:border-zinc-800 flex items-center justify-between gap-3 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setExpandedArticleId(isExpanded ? null : post.id)}
-                  className="text-xs font-semibold text-ink dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  className="text-xs font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   {isExpanded ? 'Show less ↑' : 'Read full guide →'}
                 </button>
@@ -242,7 +248,7 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
                 <button
                   type="button"
                   onClick={() => handleCtaClick(post.relatedTab)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors"
                 >
                   <span>{post.relatedCta}</span>
                   <ArrowRight className="w-3 h-3" />

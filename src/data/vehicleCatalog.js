@@ -1,6 +1,6 @@
 /**
  * ShiftMetric — Comprehensive Automotive Workshop Hierarchy Database
- * Organized hierarchically: Brand (Márka) ➔ Model (Modell) ➔ Engine / Powertrain (Motor)
+ * Organized hierarchically: Brand ➔ Model ➔ Engine / Powertrain
  * Covering 35 global & European automotive marques with verified engineering telemetry.
  */
 
@@ -232,7 +232,7 @@ export const VEHICLE_CATALOG = [
             "bodyType": "hatchback",
             "segment": "Classic EU Diesel Hatch",
             "powertrain": "diesel",
-            "powertrainLabel": "1.9L Turbo Diesel Pumpe-Düse (PD)",
+            "powertrainLabel": "1.9L Turbo Diesel Pumpe-Duse (PD)",
             "transmission": "manual",
             "transmissionLabel": "6-Speed Manual (02M)",
             "purchasePriceUsd": 4800,
@@ -1643,8 +1643,8 @@ export const VEHICLE_CATALOG = [
         "engines": [
           {
             "id": "bmw-218i-gran-coupe",
-            "name": "BMW 2 Series 218i Gran Coupé (136 HP)",
-            "shortName": "BMW 218i Gran Coupé",
+            "name": "BMW 2 Series 218i Gran Coupe (136 HP)",
+            "shortName": "BMW 218i Gran Coupe",
             "brand": "BMW",
             "modelName": "2 Series",
             "engineCode": "B38 1.5L Turbo 3-Cyl",
@@ -1743,8 +1743,8 @@ export const VEHICLE_CATALOG = [
         "engines": [
           {
             "id": "bmw-420d-gran-coupe",
-            "name": "BMW 4 Series 420d Gran Coupé (190 HP)",
-            "shortName": "BMW 420d Gran Coupé",
+            "name": "BMW 4 Series 420d Gran Coupe (190 HP)",
+            "shortName": "BMW 420d Gran Coupe",
             "brand": "BMW",
             "modelName": "4 Series",
             "engineCode": "B47D20 2.0L Diesel",
@@ -1752,7 +1752,7 @@ export const VEHICLE_CATALOG = [
             "fuelType": "Diesel",
             "year": 2022,
             "bodyType": "sedan",
-            "segment": "Premium Executive 4-Door Coupé",
+            "segment": "Premium Executive 4-Door Coupe",
             "powertrain": "diesel",
             "powertrainLabel": "2.0L TwinPower Turbo Diesel (B47)",
             "transmission": "automatic",
@@ -2169,7 +2169,7 @@ export const VEHICLE_CATALOG = [
             "fuelType": "Gasoline",
             "year": 2022,
             "bodyType": "sedan",
-            "segment": "Premium 4-Door Coupé",
+            "segment": "Premium 4-Door Coupe",
             "powertrain": "gasoline-turbo",
             "powertrainLabel": "2.0L Turbo Direct Injection + quattro ultra",
             "transmission": "dct-dsg",
@@ -2701,7 +2701,7 @@ export const VEHICLE_CATALOG = [
             "fuelType": "Gasoline",
             "year": 2022,
             "bodyType": "sedan",
-            "segment": "Compact Premium 4-Door Coupé",
+            "segment": "Compact Premium 4-Door Coupe",
             "powertrain": "gasoline-turbo",
             "powertrainLabel": "1.33L Turbo Direct-Injection Gasoline",
             "transmission": "dct-dsg",
@@ -4548,7 +4548,7 @@ export const VEHICLE_CATALOG = [
             "fuelType": "Hybrid",
             "year": 2020,
             "bodyType": "suv",
-            "segment": "Coupé-SUV Hybrid Crossover",
+            "segment": "Coupe-SUV Hybrid Crossover",
             "powertrain": "hybrid",
             "powertrainLabel": "1.8L Atkinson + Hybrid Synergy Drive e-CVT",
             "transmission": "cvt",
@@ -9461,7 +9461,7 @@ export const VEHICLE_CATALOG = [
 
 /**
  * Normalizes search text by removing diacritics/accents, lowercasing, and trimming whitespace.
- * e.g., 'Citroën' -> 'citroen', 'Škoda' -> 'skoda', 'dízel' -> 'dizel'.
+ * e.g., 'Citroen' -> 'citroen', 'Skoda' -> 'skoda', 'diesel' -> 'diesel'.
  */
 export function normalizeSearchText(str) {
   return (str || '')

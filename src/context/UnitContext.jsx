@@ -50,67 +50,81 @@ export const UNIT_SYSTEMS = {
 };
 
 export function convertUsdToRegion(usdAmount, regionId = 'US') {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const num = Number(usdAmount) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const num = Number(usdAmount);
+  if (!Number.isFinite(num)) return 0;
   return num * sys.currencyRate;
 }
 
 export function convertRegionToUsd(localAmount, regionId = 'US') {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const num = Number(localAmount) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const num = Number(localAmount);
+  if (!Number.isFinite(num) || sys.currencyRate <= 0) return 0;
   return num / sys.currencyRate;
 }
 
 export function convertMilesToRegion(miles, regionId = 'US') {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const num = Number(miles) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const num = Number(miles);
+  if (!Number.isFinite(num)) return 0;
   return num * sys.distanceFactor;
 }
 
 export function convertRegionToMiles(distance, regionId = 'US') {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const num = Number(distance) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const num = Number(distance);
+  if (!Number.isFinite(num) || sys.distanceFactor <= 0) return 0;
   return num / sys.distanceFactor;
 }
 
 export function convertMpgUsToRegion(mpgUs, regionId = 'US', isEv = false) {
-  const val = Math.max(1, Number(mpgUs) || 30);
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const raw = Number(mpgUs);
+  const val = Number.isFinite(raw) && raw > 0 ? raw : 30;
   if (isEv) {
     // For EV, canonical value stored is kWh/100mi (e.g. 26 kWh/100mi)
-    if (regionId === 'EU') {
+    if (regKey === 'EU') {
       return +(val / 1.609344).toFixed(1); // kWh/100km
     }
     return +val.toFixed(1); // kWh/100mi
   }
-  if (regionId === 'UK') {
+  if (regKey === 'UK') {
     return +(val * 1.20095).toFixed(1);
   }
-  if (regionId === 'EU') {
+  if (regKey === 'EU') {
     return +(235.21458 / val).toFixed(1);
   }
   return +val.toFixed(1);
 }
 
 export function convertRegionToMpgUs(displayVal, regionId = 'US', isEv = false) {
-  const val = Math.max(0.5, Number(displayVal) || 30);
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const raw = Number(displayVal);
+  const val = Number.isFinite(raw) && raw > 0 ? raw : 30;
   if (isEv) {
-    if (regionId === 'EU') {
+    if (regKey === 'EU') {
       return +(val * 1.609344).toFixed(2);
     }
     return +val.toFixed(2);
   }
-  if (regionId === 'UK') {
+  if (regKey === 'UK') {
     return +(val / 1.20095).toFixed(2);
   }
-  if (regionId === 'EU') {
+  if (regKey === 'EU') {
     return +(235.21458 / val).toFixed(2);
   }
   return +val.toFixed(2);
 }
 
 export function convertFuelPriceUsdGalToRegion(usdPerGal, regionId = 'US', isEv = false) {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const val = Number(usdPerGal) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const raw = Number(usdPerGal);
+  const val = Number.isFinite(raw) ? raw : 0;
   if (isEv) {
     // EV energy price is per kWh in all regions, just converted for currency
     return +(val * sys.currencyRate).toFixed(2);
@@ -120,12 +134,14 @@ export function convertFuelPriceUsdGalToRegion(usdPerGal, regionId = 'US', isEv 
 }
 
 export function convertRegionFuelPriceToUsdGal(localPrice, regionId = 'US', isEv = false) {
-  const sys = UNIT_SYSTEMS[regionId] || UNIT_SYSTEMS.US;
-  const val = Number(localPrice) || 0;
+  const regKey = typeof regionId === 'string' ? regionId.toUpperCase() : 'US';
+  const sys = UNIT_SYSTEMS[regKey] || UNIT_SYSTEMS.US;
+  const raw = Number(localPrice);
+  const val = Number.isFinite(raw) ? raw : 0;
   if (isEv) {
-    return +(val / sys.currencyRate).toFixed(3);
+    return sys.currencyRate > 0 ? +(val / sys.currencyRate).toFixed(3) : 0;
   }
-  return +((val * sys.fuelVolumeFactor) / sys.currencyRate).toFixed(3);
+  return sys.currencyRate > 0 ? +((val * sys.fuelVolumeFactor) / sys.currencyRate).toFixed(3) : 0;
 }
 
 const UnitContext = createContext(null);
@@ -166,11 +182,22 @@ export function UnitProvider({ children }) {
     }
   }, [region]);
 
+  const setRegion = (newRegion) => {
+    if (!newRegion) return;
+    const upper = String(newRegion).toUpperCase();
+    if (UNIT_SYSTEMS[upper]) {
+      setRegionState(upper);
+    }
+  };
+
   const value = useMemo(() => {
     const activeSystem = UNIT_SYSTEMS[region] || UNIT_SYSTEMS.US;
 
     const formatCurrency = (usdAmount, decimals = 0) => {
       const converted = convertUsdToRegion(usdAmount, region);
+      if (!Number.isFinite(converted)) {
+        return `${activeSystem.currencySymbol}0`;
+      }
       const isNeg = converted < -0.001;
       const absVal = Math.abs(converted);
       return `${isNeg ? '-' : ''}${activeSystem.currencySymbol}${absVal.toLocaleString('en-US', {
@@ -182,26 +209,30 @@ export function UnitProvider({ children }) {
     const formatCostPerDistance = (usdPerMile) => {
       // Convert USD/mile -> LocalCurrency / LocalDistanceUnit
       // Note: 1 mile = 1.609344 km, so cost per km = cost per mile / 1.609344
-      const localCurrencyPerMile = (Number(usdPerMile) || 0) * activeSystem.currencyRate;
-      const localPerUnit = localCurrencyPerMile / activeSystem.distanceFactor;
+      const num = Number(usdPerMile);
+      const safeNum = Number.isFinite(num) ? Math.max(0, num) : 0;
+      const localCurrencyPerMile = safeNum * activeSystem.currencyRate;
+      const localPerUnit = activeSystem.distanceFactor > 0 ? localCurrencyPerMile / activeSystem.distanceFactor : 0;
       return `${activeSystem.currencySymbol}${localPerUnit.toFixed(2)} / ${activeSystem.distanceUnit}`;
     };
 
     const formatDistance = (miles, includeUnit = true) => {
       const converted = Math.round(convertMilesToRegion(miles, region));
-      const formatted = converted.toLocaleString('en-US');
+      const safeVal = Number.isFinite(converted) ? Math.max(0, converted) : 0;
+      const formatted = safeVal.toLocaleString('en-US');
       return includeUnit ? `${formatted} ${activeSystem.distanceUnit}` : formatted;
     };
 
     const formatEfficiency = (mpgUs, isEv = false) => {
       const val = convertMpgUsToRegion(mpgUs, region, isEv);
+      const safeVal = Number.isFinite(val) ? Math.max(0, val) : (isEv ? 28 : 30);
       const unit = isEv ? activeSystem.evEfficiencyUnit : activeSystem.efficiencyUnit;
-      return `${val.toFixed(1)} ${unit}`;
+      return `${safeVal.toFixed(1)} ${unit}`;
     };
 
     return {
       region,
-      setRegion: setRegionState,
+      setRegion,
       theme,
       resolvedTheme,
       setTheme,

@@ -50,7 +50,7 @@ export const OBD_CODES = [
     symptoms: [
       'Illuminated Check Engine Light (MIL) without immediate drivability loss',
       'Sulfur / rotten-egg exhaust odor after highway load',
-      'Failed state/MOT/TÜV OBD emissions readiness inspection',
+      'Failed state / MOT / TUV OBD emissions readiness inspection',
       'Slight reduction in high-RPM exhaust flow if monolith is partially melted',
     ],
     laborHoursRange: [1.0, 3.8],

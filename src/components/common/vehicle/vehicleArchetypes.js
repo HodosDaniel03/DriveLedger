@@ -7,6 +7,20 @@
  *  3. 4-Tier Mechanical Specification Badges (Emissions, Injection, Aftertreatment, Transmission)
  */
 
+export {
+  POWERTRAIN_TYPES,
+  PowertrainType,
+  resolvePowertrainType,
+  normalizePowertrainType,
+  isPureElectric,
+} from '../../../data/powertrainTypes.js';
+
+import {
+  POWERTRAIN_TYPES,
+  resolvePowertrainType,
+  isPureElectric,
+} from '../../../data/powertrainTypes.js';
+
 /**
  * Normalizes vehicle object / style strings into one of the 7 canonical body archetypes.
  * @param {object|string} vehicle - Vehicle preset or catalog object, or body type string

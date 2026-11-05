@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 const THEME_STORAGE_KEY = 'shiftmetric_theme';
 
 const ThemeContext = createContext({
-  theme: 'system',
+  theme: 'light',
   resolvedTheme: 'light',
   setTheme: () => {},
   toggleTheme: () => {},
@@ -33,7 +33,7 @@ export function ThemeProvider({ children }) {
     } catch {
       // ignore
     }
-    return 'system';
+    return 'light';
   });
 
   const [systemTheme, setSystemTheme] = useState(getSystemTheme);
@@ -66,8 +66,10 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
+      if (root.style) root.style.colorScheme = 'dark';
     } else {
       root.classList.remove('dark');
+      if (root.style) root.style.colorScheme = 'light';
     }
   }, [resolvedTheme]);
 

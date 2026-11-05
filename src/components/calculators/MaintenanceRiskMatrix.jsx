@@ -8,18 +8,25 @@ import {
   MAINTENANCE_COMPONENTS,
   calculateOemRiskMultiplier,
   evaluateComponentHealth,
+  filterComponentsForPowertrain,
+  resolvePowertrainType,
+  isPureElectric,
 } from '../../data/maintenanceData';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP, COMPONENT_MILESTONE_TRIGGERS } from '../../context/GarageContext';
-import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, PartnerCard, RadialScoreGauge } from '../common/OdometerPrimitives';
+import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, PartnerCard, RadialScoreGauge, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
 import VehicleSelect from '../common/VehicleSelect';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
-import MaintenanceMilestones from './MaintenanceMilestones';
+import MaintenanceMilestones, { EV_MILESTONE_IMPACT_MAP } from './MaintenanceMilestones';
 import VehicleComparator from './VehicleComparator';
 import VehicleDossierExport from '../common/VehicleDossierExport';
 import ForumShareModal from '../common/ForumShareModal';
 import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
+import KnownIssuesDossier from '../common/KnownIssuesDossier';
+import FixOrSellCalculator from './FixOrSellCalculator';
+import AdUnit from '../monetization/AdUnit';
+import { REGIONAL_PARTNER_URLS } from '../../data/affiliatePartners';
 
 const BAR_COLOR = {
   OPTIMAL: '#12A150',
@@ -31,8 +38,11 @@ export default function MaintenanceRiskMatrix({
   selectedPresetId,
   onSelectPreset,
   onNavigateToObd,
+  onNavigateToCompare,
+  initialOdometerMiles,
 }) {
   const {
+    region,
     distanceUnit,
     formatCurrency,
     formatDistance,
@@ -47,9 +57,10 @@ export default function MaintenanceRiskMatrix({
     [selectedPresetId]
   );
 
-  const [physicalOdometerMiles, setPhysicalOdometerMiles] = useState(
-    Math.max(38000, activePreset.defaultOdometerMiles || 58000)
-  );
+  const [physicalOdometerMiles, setPhysicalOdometerMiles] = useState(() => {
+    if (Number(initialOdometerMiles) > 0) return Math.round(Number(initialOdometerMiles));
+    return Math.max(0, Number(activePreset.defaultOdometerMiles) >= 0 ? Number(activePreset.defaultOdometerMiles) : 58000);
+  });
   const [scheduleMode, setScheduleMode] = useState('preventative'); // 'preventative' | 'oem'
   const [drivingStyle, setDrivingStyle] = useState('mixed'); // 'highway' | 'mixed' | 'city'
   const [workshopTier, setWorkshopTier] = useState('independent'); // 'independent' | 'dealership'
@@ -64,9 +75,15 @@ export default function MaintenanceRiskMatrix({
   const [localServicedByPreset, setLocalServicedByPreset] = useState({});
 
   useEffect(() => {
-    setPhysicalOdometerMiles(Math.max(38000, activePreset.defaultOdometerMiles || 58000));
+    if (Number(initialOdometerMiles) > 0) {
+      setPhysicalOdometerMiles(Math.round(Number(initialOdometerMiles)));
+    } else {
+      setPhysicalOdometerMiles(
+        Math.max(0, Number(activePreset.defaultOdometerMiles) >= 0 ? Number(activePreset.defaultOdometerMiles) : 58000)
+      );
+    }
     setJustSavedGarage(false);
-  }, [activePreset]);
+  }, [activePreset, initialOdometerMiles]);
 
   const completedMilestones = garage?.isProviderActive
     ? garage.getCompletedMilestones(activePreset.id)
@@ -135,36 +152,48 @@ export default function MaintenanceRiskMatrix({
 
   // Evaluate applicable mechanical components
   const evaluatedComponents = useMemo(() => {
-    const relevant = MAINTENANCE_COMPONENTS.filter((comp) =>
-      comp.applicablePowertrains.includes(activePreset.powertrain || 'diesel')
-    );
+    const pType = resolvePowertrainType(activePreset);
+    const isEv = isPureElectric(pType);
+
+    const relevant = MAINTENANCE_COMPONENTS.filter((comp) => {
+      if (isEv) {
+        return Array.isArray(comp.applicablePowertrains) && comp.applicablePowertrains.includes('ev');
+      }
+      return Array.isArray(comp.applicablePowertrains) && comp.applicablePowertrains.includes(activePreset.powertrain || 'diesel');
+    });
 
     // In OEM schedule mode, evaluate wear using extended oil drain interval (1.38x accelerated wear)
     const oilIntervalId = scheduleMode === 'oem' ? 'extended' : 'standard';
 
-    return relevant.map((comp) => {
-      const health = evaluateComponentHealth({
-        component: comp,
-        physicalOdometerMiles,
-        urbanTripSharePct,
-        oilIntervalId,
-        serviceHistoryId: 'verified',
-        transmissionId: activePreset.transmission || 'dct-dsg',
-      });
+    return relevant
+      .map((comp) => {
+        const health = evaluateComponentHealth({
+          component: comp,
+          physicalOdometerMiles,
+          urbanTripSharePct,
+          oilIntervalId,
+          serviceHistoryId: 'verified',
+          transmissionId: activePreset.transmission || 'dct-dsg',
+          powertrainType: pType,
+          vehicle: activePreset,
+        });
 
-      const triggerMilestones = COMPONENT_MILESTONE_TRIGGERS[comp.id] || [];
-      const isMilestoneVerified = triggerMilestones.some((mId) => !!completedMilestones[mId]);
-      const isDirectlyServiced = !!servicedComponents[comp.id];
-      const isRecentlyServiced = isDirectlyServiced || isMilestoneVerified;
+        if (!health) return null;
 
-      return {
-        ...comp,
-        health,
-        isRecentlyServiced,
-        isDirectlyServiced,
-        isMilestoneVerified,
-      };
-    });
+        const triggerMilestones = COMPONENT_MILESTONE_TRIGGERS[comp.id] || [];
+        const isMilestoneVerified = triggerMilestones.some((mId) => !!completedMilestones[mId]);
+        const isDirectlyServiced = !!servicedComponents[comp.id];
+        const isRecentlyServiced = isDirectlyServiced || isMilestoneVerified;
+
+        return {
+          ...comp,
+          health,
+          isRecentlyServiced,
+          isDirectlyServiced,
+          isMilestoneVerified,
+        };
+      })
+      .filter(Boolean);
   }, [activePreset, physicalOdometerMiles, urbanTripSharePct, scheduleMode, completedMilestones, servicedComponents]);
 
   // Compute 12-month service reserve estimate (scaled by dynamic OEM risk multiplier in OEM mode)
@@ -181,6 +210,8 @@ export default function MaintenanceRiskMatrix({
     let rawServiceCredit = 0;
     let bonusPts = 0;
     const creditedComponentIds = new Set();
+    const annualDistanceMiles = Math.max(500, Number(activePreset.annualDistanceMiles) || 12000);
+    const annualMileageScale = Math.min(2.5, Math.max(0.25, annualDistanceMiles / 12000));
 
     for (const item of evaluatedComponents) {
       if (item.health.effectiveWearMiles > maxEff) {
@@ -191,14 +222,20 @@ export default function MaintenanceRiskMatrix({
 
       let itemReserve = 0;
       if (item.health.status === 'CRITICAL') {
-        itemReserve = avgCost * 0.75;
+        itemReserve = avgCost * 0.75 * annualMileageScale;
       } else if (item.health.status === 'WARNING') {
-        itemReserve = avgCost * 0.35;
+        itemReserve = avgCost * 0.35 * annualMileageScale;
       } else {
-        itemReserve = avgCost * 0.12;
+        const projectedEffectiveWear =
+          item.health.effectiveWearMiles + annualDistanceMiles * (item.health.combinedMultiplier || 1.0);
+        if (projectedEffectiveWear >= item.serviceIntervalMiles * 0.72) {
+          itemReserve = avgCost * 0.22 * annualMileageScale;
+        } else {
+          itemReserve = avgCost * 0.10 * annualMileageScale;
+        }
       }
 
-      reserve += itemReserve;
+      reserve += Math.min(avgCost * 1.25, itemReserve);
 
       if (item.isRecentlyServiced) {
         creditedComponentIds.add(item.id);
@@ -211,7 +248,7 @@ export default function MaintenanceRiskMatrix({
     // Add credits for checked milestone items whose parent component wasn't already credited above
     for (const [mId, isChecked] of Object.entries(completedMilestones)) {
       if (!isChecked) continue;
-      const impact = MILESTONE_IMPACT_MAP[mId];
+      const impact = MILESTONE_IMPACT_MAP[mId] || EV_MILESTONE_IMPACT_MAP[mId];
       if (!impact) continue;
       if (!impact.componentId || !creditedComponentIds.has(impact.componentId)) {
         rawServiceCredit += impact.creditUsd;
@@ -231,7 +268,7 @@ export default function MaintenanceRiskMatrix({
       verifiedServiceCreditUsd: creditRounded,
       maintenanceBonusPts: Math.min(25, bonusPts),
     };
-  }, [evaluatedComponents, physicalOdometerMiles, workshopTier, scheduleMode, oemRiskMultiplier, completedMilestones]);
+  }, [evaluatedComponents, physicalOdometerMiles, workshopTier, scheduleMode, oemRiskMultiplier, completedMilestones, activePreset]);
 
   // Dynamic 18-25 points penalty scaling with physical mileage in OEM mode
   const oemScoreDeduction = useMemo(() => {
@@ -243,25 +280,85 @@ export default function MaintenanceRiskMatrix({
   // and restoring up to 95 when verified maintenance items are checked off
   const reliabilityScore = useMemo(() => {
     if (!evaluatedComponents.length) return 75;
-    const avgWear = evaluatedComponents.reduce((acc, c) => acc + c.health.wearPctOfCritical, 0) / evaluatedComponents.length;
+    const avgWear = evaluatedComponents.reduce((acc, c) => acc + (Number(c.health?.wearPctOfCritical) || 0), 0) / evaluatedComponents.length;
     // Score declines with average wear, penalty for critical components
-    const criticalCount = evaluatedComponents.filter((c) => c.health.status === 'CRITICAL').length;
-    const warningCount = evaluatedComponents.filter((c) => c.health.status === 'WARNING').length;
+    const criticalCount = evaluatedComponents.filter((c) => c.health?.status === 'CRITICAL').length;
+    const warningCount = evaluatedComponents.filter((c) => c.health?.status === 'WARNING').length;
     const penalty = criticalCount * 14 + warningCount * 6;
     const raw = 100 - avgWear * 0.45 - penalty;
-    const adjusted = raw - oemScoreDeduction + maintenanceBonusPts;
-    return Math.min(95, Math.max(18, Math.round(adjusted)));
+    const adjusted = raw - (Number(oemScoreDeduction) || 0) + (Number(maintenanceBonusPts) || 0);
+    return Math.min(95, Math.max(18, Math.round(Number.isFinite(adjusted) ? adjusted : 75)));
   }, [evaluatedComponents, oemScoreDeduction, maintenanceBonusPts]);
 
   const toggleTip = (id) => {
     setOpenTips((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const criticalItems = useMemo(
+    () => evaluatedComponents.filter((c) => c.health.status === 'CRITICAL' && !c.isRecentlyServiced),
+    [evaluatedComponents]
+  );
+  const warningItems = useMemo(
+    () => evaluatedComponents.filter((c) => c.health.status === 'WARNING' && !c.isRecentlyServiced),
+    [evaluatedComponents]
+  );
+  const topCriticalItem = criticalItems[0] || warningItems[0] || evaluatedComponents[0];
+
+  const riskTldrFacts = useMemo(() => [
+    {
+      label: '12-Month Service Reserve',
+      value: formatCurrency(serviceReserveUsd),
+      subtext: scheduleMode === 'oem'
+        ? `OEM deferrals add +${oemRiskMultiplier.toFixed(2)}x risk multiplier!`
+        : `Expected wear reserve at ${formatDistance(physicalOdometerMiles)}.`,
+      badge: (
+        <RiskBadge
+          level={serviceReserveUsd > 2200 ? 'critical' : serviceReserveUsd > 1000 ? 'moderate' : 'low'}
+          label={serviceReserveUsd > 2200 ? 'Critical Reserve' : serviceReserveUsd > 1000 ? 'Moderate Reserve' : 'Low Reserve'}
+        />
+      ),
+    },
+    {
+      label: 'Risk Status',
+      value: `${criticalItems.length} Critical · ${warningItems.length} Due`,
+      subtext: criticalItems.length > 0
+        ? `Immediate service advised: ${topCriticalItem?.name || 'Wear item'}.`
+        : 'All monitored assemblies operate within safety tolerances.',
+      badge: (
+        <RiskBadge
+          level={criticalItems.length > 0 ? 'critical' : warningItems.length > 0 ? 'moderate' : 'low'}
+          label={criticalItems.length > 0 ? 'Critical Risk' : warningItems.length > 0 ? 'Moderate Risk' : 'Low Risk'}
+        />
+      ),
+    },
+    {
+      label: 'Reliability Verdict',
+      value: `${reliabilityScore}/100 pts`,
+      subtext: scheduleMode === 'oem'
+        ? 'OEM marketing interval: elevated risk of timing and transmission failure.'
+        : 'Preventative servicing prevents multi-thousand-dollar major component overhauls.',
+      badge: (
+        <RiskBadge
+          level={reliabilityScore >= 75 ? 'low' : reliabilityScore >= 50 ? 'moderate' : 'critical'}
+          label={reliabilityScore >= 75 ? 'Reliable' : reliabilityScore >= 50 ? 'Monitor' : 'Critical'}
+        />
+      ),
+    },
+  ], [serviceReserveUsd, scheduleMode, oemRiskMultiplier, formatCurrency, physicalOdometerMiles, formatDistance, criticalItems, warningItems, topCriticalItem, reliabilityScore]);
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Upcoming maintenance & wear"
         subtitle="See which mechanical parts wear out next based on your odometer reading and driving habits."
+      />
+
+      {/* TL;DR Verdict Box: Top 3 service takeaways */}
+      <TldrVerdictBox
+        title="Key Takeaways"
+        subtitle="Top 3 service and mechanical risk indicators"
+        badge="Telemetry Synthesis"
+        facts={riskTldrFacts}
       />
 
       {/* 1. Hero Row: 2 Equal Cards */}
@@ -285,27 +382,25 @@ export default function MaintenanceRiskMatrix({
         />
 
         {/* Hero Card 2: Reliability Score Card */}
-        <div className="bg-surface dark:bg-slate-900 rounded-2xl border border-border/80 dark:border-slate-800 shadow-card p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5">
+        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-border/80 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-h3 text-h3 text-ink dark:text-slate-100 font-semibold">Reliability Score</h3>
+                <h3 className="font-sans text-h3 text-ink dark:text-zinc-50 font-bold tracking-tight">Reliability Score</h3>
                 {scheduleMode === 'oem' ? (
-                  <span className="bg-danger-bg text-danger-text font-micro text-micro font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 border border-danger-border">
-                    <span className="w-1.5 h-1.5 rounded-full bg-danger-text"></span>
+                  <span className="bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium rounded-md inline-flex items-center">
                     OEM Risk Multiplier Active
                   </span>
                 ) : (
-                  <span className="bg-warning-bg text-warning-text font-micro text-micro font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 border border-[#F5DE8A]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-score-fair"></span>
+                  <span className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 px-2 py-0.5 text-[11px] font-sans font-medium rounded-md inline-flex items-center">
                     Engineering Telemetry
                   </span>
                 )}
                 {maintenanceBonusPts > 0 && (
                   <span
                     data-testid="maintenance-bonus-badge"
-                    className="bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700 inline-flex items-center gap-1"
+                    className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 font-sans font-medium text-[11px] px-2 py-0.5 rounded-md inline-flex items-center gap-1"
                   >
                     <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     +{maintenanceBonusPts} pts Maintenance Bonus
@@ -314,7 +409,7 @@ export default function MaintenanceRiskMatrix({
               </div>
               <button
                 type="button"
-                className="text-faint hover:text-ink dark:hover:text-slate-100 transition-colors"
+                className="text-faint hover:text-ink dark:hover:text-zinc-100 transition-colors"
                 title="Reliability Methodology"
                 onClick={() => {
                   const g = document.getElementById('methodology-guide');
@@ -333,22 +428,22 @@ export default function MaintenanceRiskMatrix({
 
               <div className="sm:col-span-7 flex flex-col justify-center">
                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                  <span className="font-micro text-micro font-semibold text-ink dark:text-slate-200 uppercase tracking-wider">
+                  <span className="font-micro text-micro font-semibold text-ink dark:text-zinc-200 uppercase tracking-wider">
                     What affected the score
                   </span>
                   {scheduleMode === 'oem' && (
-                    <span className="text-[10px] bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300 font-mono font-bold px-1.5 py-0.2 rounded border border-red-200 dark:border-red-800">
-                      -{oemScoreDeduction} PTS OEM PENALTY
+                    <span className="text-[10px] bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 font-sans font-semibold px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800/40">
+                      <span className="font-mono tabular-nums">-{oemScoreDeduction}</span> PTS OEM PENALTY
                     </span>
                   )}
                 </div>
 
                 {scheduleMode === 'oem' ? (
-                  <p className="font-body text-body dark:text-slate-300 leading-relaxed text-sm">
+                  <p className="font-body text-body dark:text-zinc-300 leading-relaxed text-sm">
                     Automaker OEM marketing schedules defer transmission fluid, omit GDI intake walnut decoking, and stretch oil intervals to 20,000 mi. This compounds unaddressed carbon buildup, sheared ATF viscosity, and timing chain friction — multiplying catastrophic failure risk by <strong>{oemRiskMultiplier.toFixed(2)}x</strong>.
                   </p>
                 ) : (
-                  <p className="font-body text-body dark:text-slate-300 leading-relaxed text-sm">
+                  <p className="font-body text-body dark:text-zinc-300 leading-relaxed text-sm">
                     {evaluatedComponents.some((c) => c.health.status === 'CRITICAL' && !c.isRecentlyServiced)
                       ? 'High-priority components have reached their engineering preventative threshold and require timely servicing.'
                       : evaluatedComponents.some((c) => c.health.status === 'WARNING' && !c.isRecentlyServiced)
@@ -371,33 +466,33 @@ export default function MaintenanceRiskMatrix({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-border/60 dark:border-slate-800 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-border/60 dark:border-zinc-800 flex items-center justify-between">
             <button
               type="button"
               onClick={() => {
                 const el = document.getElementById('schedule-heading');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="bg-surface dark:bg-slate-800 shadow-sm rounded-full px-4 py-1.5 font-small text-small font-medium text-ink dark:text-slate-100 hover:bg-surface-subtle dark:hover:bg-slate-700 border border-border-strong dark:border-slate-700 transition-all inline-flex items-center gap-1.5"
+              className="bg-surface dark:bg-zinc-800 shadow-sm rounded-lg px-4 py-1.5 font-sans text-small font-medium text-ink dark:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-700 border border-border-strong dark:border-zinc-700 transition-colors duration-150 inline-flex items-center gap-1.5"
             >
               <span>See score details</span>
               <ArrowRight className="w-3.5 h-3.5 text-muted" />
             </button>
-            <span className="font-code text-micro text-muted">84,300 sample logs</span>
+            <span className="font-sans text-micro text-muted"><span className="font-mono tabular-nums">84,300</span> sample logs</span>
           </div>
         </div>
       </div>
 
       {/* Quick Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-surface dark:bg-slate-900 rounded-2xl border border-border dark:border-slate-800 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-surface dark:bg-[#121215] rounded-2xl border border-border dark:border-zinc-800 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowComparator((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all border ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
               showComparator
                 ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                : 'bg-surface dark:bg-slate-800 text-ink dark:text-slate-100 border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700'
+                : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700'
             }`}
           >
             <GitCompare className="w-4 h-4" />
@@ -407,10 +502,10 @@ export default function MaintenanceRiskMatrix({
           <button
             type="button"
             onClick={handleSaveToGarage}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all border ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
               isSavedInGarage
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
-                : 'bg-surface dark:bg-slate-800 text-ink dark:text-slate-100 border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700'
+                : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700'
             }`}
           >
             {isSavedInGarage ? (
@@ -426,7 +521,7 @@ export default function MaintenanceRiskMatrix({
             )}
           </button>
 
-          <p className="hidden xl:inline text-xs font-mono text-muted dark:text-slate-400 ml-2">
+          <p className="hidden xl:inline text-xs font-sans font-medium text-muted dark:text-zinc-400 ml-2">
             Powertrain wear simulation calibrated for {activePreset.name} · Protocol: {scheduleMode === 'oem' ? 'OEM Marketing (Dealer)' : 'Engineering Preventative (Specialist)'}
           </p>
         </div>
@@ -436,7 +531,7 @@ export default function MaintenanceRiskMatrix({
             type="button"
             data-testid="open-forum-share-btn"
             onClick={() => setShowForumShareModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-surface dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-ink dark:text-slate-100 border border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700 shadow-sm transition-all"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-surface dark:bg-zinc-800 px-4 py-2 font-sans text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 shadow-sm transition-colors duration-150"
           >
             <Share2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             <span>Share for Reddit / Forums</span>
@@ -448,7 +543,7 @@ export default function MaintenanceRiskMatrix({
               setDossierInitialMode('negotiation');
               setShowDossierModal(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-surface dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-ink dark:text-slate-100 border border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700 shadow-sm transition-all"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-surface dark:bg-zinc-800 px-4 py-2 font-sans text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 shadow-sm transition-colors duration-150"
           >
             <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>Export Buyer&apos;s Inspection Sheet (PDF)</span>
@@ -460,7 +555,7 @@ export default function MaintenanceRiskMatrix({
               setDossierInitialMode('dossier');
               setShowDossierModal(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-surface dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-ink dark:text-slate-100 border border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700 shadow-sm transition-all"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-surface dark:bg-zinc-800 px-4 py-2 font-sans text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 shadow-sm transition-colors duration-150"
           >
             <Printer className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             <span>Export Dossier / Print</span>
@@ -516,7 +611,7 @@ export default function MaintenanceRiskMatrix({
         {/* Left Column: 5 cols controls (sticky) */}
         <div className="lg:col-span-5">
           <Card className="h-fit lg:sticky lg:top-24 lg:top-[136px]" aria-labelledby="profile-heading">
-            <h2 id="profile-heading" className="mb-5 font-h3 text-h3 text-ink dark:text-slate-100 font-semibold tracking-tight">
+            <h2 id="profile-heading" className="mb-5 font-h3 text-h3 text-ink dark:text-zinc-100 font-semibold tracking-tight scroll-mt-28 lg:scroll-mt-32">
               Vehicle &amp; driving profile
             </h2>
 
@@ -529,18 +624,18 @@ export default function MaintenanceRiskMatrix({
 
             <div className="mt-8 flex flex-col gap-7">
               {/* High-Visibility Segmented Control: Preventative vs OEM Telemetry Toggle */}
-              <div className="rounded-2xl p-4 bg-surface-subtle dark:bg-slate-800/70 border border-border dark:border-slate-700 shadow-xs space-y-3">
+              <div className="rounded-2xl p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink dark:text-slate-100 font-mono flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-ink dark:text-zinc-50 font-sans flex items-center gap-1.5">
                     <Wrench className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                     <span>Service Schedule Protocol</span>
                   </span>
                   {scheduleMode === 'oem' ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-danger-bg text-danger-text border border-danger-border font-mono">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40">
                       +{oemRiskMultiplier.toFixed(2)}x RISK EXPOSURE
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 font-mono">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
                       SPECIALIST STANDARD
                     </span>
                   )}
@@ -563,13 +658,13 @@ export default function MaintenanceRiskMatrix({
                   ]}
                 />
 
-                <p className="text-xs text-muted dark:text-slate-400 leading-relaxed">
+                <p className="text-xs font-sans text-muted dark:text-zinc-400 leading-relaxed">
                   {scheduleMode === 'preventative' ? (
                     <span>
                       <strong>Specialist Standard:</strong> Independent failure prevention thresholds from component manufacturers (ZF 50k–60k ATF, 85k timing, GDI walnut decoking).
                     </span>
                   ) : (
-                    <span className="text-red-700 dark:text-red-300">
+                    <span className="text-rose-700 dark:text-rose-300">
                       <strong>OEM Marketing Schedule:</strong> Dealership warranty-minimum intervals, "sealed for life" transmission fluid, and 20k-mi extended oil changes.
                     </span>
                   )}
@@ -577,33 +672,55 @@ export default function MaintenanceRiskMatrix({
               </div>
 
               {/* Current Odometer Slider */}
-              <div>
-                <div className="mb-2.5 flex items-baseline justify-between gap-4">
-                  <label htmlFor="risk-odometer-slider" className="text-sm font-medium text-body dark:text-slate-300">
-                    Current odometer
-                  </label>
-                  <span className="text-base font-semibold tabular-nums tracking-tight text-ink dark:text-slate-100 font-mono bg-surface-subtle dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-border/50 dark:border-slate-700">
-                    {formatDistance(physicalOdometerMiles)}
-                  </span>
-                </div>
-                <input
-                  id="risk-odometer-slider"
-                  type="range"
-                  min={10000}
-                  max={200000}
-                  step={1000}
-                  value={Math.min(200000, Math.max(10000, displayOdometer))}
-                  onChange={(e) => setPhysicalOdometerMiles(convertRegionToMiles(Number(e.target.value)))}
-                  className="odo-range telemetry-slider"
-                  style={{
-                    '--fill': `${((Math.min(200000, Math.max(10000, displayOdometer)) - 10000) / (200000 - 10000)) * 100}%`,
-                  }}
-                />
-                <div className="mt-1.5 flex justify-between text-xs tabular-nums text-faint font-mono">
-                  <span>10,000 {distanceUnit}</span>
-                  <span>200,000 {distanceUnit}</span>
-                </div>
-              </div>
+              {(() => {
+                const maxDisplayOdometer = region === 'EU' ? 500000 : 310000;
+                const clampedDisplayOdo = Math.min(maxDisplayOdometer, Math.max(0, displayOdometer));
+                const sliderFillPct = maxDisplayOdometer > 0 ? (clampedDisplayOdo / maxDisplayOdometer) * 100 : 0;
+                return (
+                  <div>
+                    <div className="mb-2.5 flex items-baseline justify-between gap-4">
+                      <label htmlFor="risk-odometer-slider" className="text-sm font-sans font-medium text-body dark:text-zinc-300">
+                        Current odometer
+                      </label>
+                      <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
+                        <input
+                          id="risk-odometer-input"
+                          type="number"
+                          min={0}
+                          max={maxDisplayOdometer}
+                          step={1000}
+                          value={clampedDisplayOdo}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && val >= 0) {
+                              setPhysicalOdometerMiles(convertRegionToMiles(Math.min(maxDisplayOdometer, val)));
+                            }
+                          }}
+                          className="w-24 text-right bg-transparent outline-none font-mono text-base font-semibold tabular-nums tracking-tight text-ink dark:text-zinc-50"
+                        />
+                        <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">{distanceUnit}</span>
+                      </div>
+                    </div>
+                    <input
+                      id="risk-odometer-slider"
+                      type="range"
+                      min={0}
+                      max={maxDisplayOdometer}
+                      step={1000}
+                      value={clampedDisplayOdo}
+                      onChange={(e) => setPhysicalOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))}
+                      className="odo-range telemetry-slider"
+                      style={{
+                        '--fill': `${sliderFillPct}%`,
+                      }}
+                    />
+                    <div className="mt-1.5 flex justify-between text-xs tabular-nums text-faint font-mono">
+                      <span>0 {distanceUnit}</span>
+                      <span>{maxDisplayOdometer.toLocaleString()} {distanceUnit}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* 3-way Driving Profile Selector */}
               <Segmented
@@ -635,16 +752,16 @@ export default function MaintenanceRiskMatrix({
         <div className="lg:col-span-7">
           <Card aria-labelledby="schedule-heading">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="schedule-heading" className="font-h3 text-h3 text-ink dark:text-slate-100 font-semibold tracking-tight">
+              <h2 id="schedule-heading" className="font-sans text-h3 text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
                 POWERTRAIN TELEMETRY DOSSIER · {evaluatedComponents.length} Assemblies
               </h2>
               {scheduleMode === 'oem' ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-900 border border-red-300 dark:bg-red-950/70 dark:text-red-200 dark:border-red-800 text-xs font-semibold">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/40 text-xs font-sans font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
                   <span>OEM Marketing Schedule Active ({oemRiskMultiplier.toFixed(2)}x Risk)</span>
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800 text-xs font-semibold">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40 text-xs font-sans font-medium">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Engineering Preventative Active</span>
                 </div>
@@ -652,26 +769,26 @@ export default function MaintenanceRiskMatrix({
             </div>
 
             {/* Estimated 12-month service reserve banner */}
-            <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#0B1220] p-6 text-white sm:flex-row sm:items-end sm:justify-between shadow-sm relative overflow-hidden">
+            <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#18181B] border border-zinc-800 p-6 text-white sm:flex-row sm:items-end sm:justify-between shadow-sm relative overflow-hidden">
               {scheduleMode === 'oem' && (
-                <div className="absolute top-0 right-0 bg-red-600 text-white font-mono text-[10px] font-bold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                <div className="absolute top-0 right-0 bg-rose-600 text-white font-sans text-[10px] font-bold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
                   Risk Exposure (+{oemRiskMultiplier.toFixed(2)}x)
                 </div>
               )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs text-white/70 uppercase font-semibold tracking-wider font-mono">
+                  <p className="text-xs text-white/70 uppercase font-semibold tracking-wider font-sans">
                     Estimated 12-month service reserve
                   </p>
                   {scheduleMode === 'oem' && (
-                    <span className="text-[10px] font-mono bg-red-500/30 text-red-300 px-2 py-0.5 rounded border border-red-500/50">
+                    <span className="text-[11px] font-sans font-medium bg-rose-950/40 text-rose-300 px-2 py-0.5 rounded-md border border-rose-800/50">
                       OEM Deferral Scaled
                     </span>
                   )}
                   {verifiedServiceCreditUsd > 0 && (
                     <span
                       data-testid="verified-service-credit-badge"
-                      className="text-[10px] font-mono font-bold bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/50 inline-flex items-center gap-1"
+                      className="text-[11px] font-sans font-medium bg-emerald-950/40 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-800/50 inline-flex items-center gap-1"
                     >
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       -{formatCurrency(verifiedServiceCreditUsd)} Verified Service Credit
@@ -682,25 +799,25 @@ export default function MaintenanceRiskMatrix({
                   {formatCurrency(serviceReserveUsd)}
                 </p>
                 {scheduleMode === 'oem' && (
-                  <p className="text-xs text-slate-400 font-mono mt-1">
-                    Base preventative: {formatCurrency(baseReserveUsd)} · Scaled by {oemRiskMultiplier.toFixed(2)}x dynamic risk
+                  <p className="text-xs text-zinc-400 font-sans mt-1">
+                    Base preventative: <span className="font-mono tabular-nums">{formatCurrency(baseReserveUsd)}</span> · Scaled by <span className="font-mono tabular-nums">{oemRiskMultiplier.toFixed(2)}x</span> dynamic risk
                   </p>
                 )}
               </div>
               <dl className="flex gap-6 text-sm border-t sm:border-t-0 sm:border-l border-white/10 pt-3 sm:pt-0 sm:pl-6">
                 <div>
-                  <dt className="text-xs text-white/60">Effective wear</dt>
+                  <dt className="text-xs font-sans text-white/60">Effective wear</dt>
                   <dd className="font-semibold tabular-nums font-mono text-white mt-0.5">{formatDistance(effectiveWearMax)}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-white/60">Odometer</dt>
+                  <dt className="text-xs font-sans text-white/60">Odometer</dt>
                   <dd className="font-semibold tabular-nums font-mono text-white mt-0.5">{formatDistance(physicalOdometerMiles)}</dd>
                 </div>
               </dl>
             </div>
 
             {/* Component Wear Rows */}
-            <ul className="mt-4 divide-y divide-border dark:divide-slate-800">
+            <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
               {evaluatedComponents.map((item) => {
                 const status = item.health.status; // 'OPTIMAL' | 'WARNING' | 'CRITICAL'
                 const pct = item.health.wearPctOfCritical;
@@ -731,21 +848,37 @@ export default function MaintenanceRiskMatrix({
                 return (
                   <li key={item.id} className="py-5">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-body text-body font-semibold text-ink dark:text-slate-100 leading-tight">
-                          {item.name}
-                        </h3>
-                        <p className="text-xs text-muted dark:text-slate-400 mt-0.5">{item.category}</p>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-sans text-body font-bold tracking-tight text-ink dark:text-zinc-50 leading-tight">
+                            {item.name}
+                          </h3>
+                          <RiskBadge
+                            level={isServiced ? 'low' : status === 'CRITICAL' ? 'critical' : status === 'WARNING' ? 'moderate' : 'low'}
+                            label={isServiced ? 'Serviced' : status === 'CRITICAL' ? 'Critical' : status === 'WARNING' ? 'Moderate' : 'Low'}
+                          />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted dark:text-zinc-400 mt-1 font-sans">
+                          <span>{item.category}</span>
+                          <span>·</span>
+                          <span className="font-medium text-ink dark:text-zinc-200">
+                            Expected replacement: <strong className="font-mono tabular-nums">{formatDistance(item.criticalLimitMiles || item.serviceIntervalMiles)}</strong>
+                          </span>
+                          <span>·</span>
+                          <span className="font-medium text-primary-600 dark:text-primary-400">
+                            Estimated repair: Indie <strong className="font-mono tabular-nums">{formatCurrency(item.costsUsd.independent[0])}–{formatCurrency(item.costsUsd.independent[1])}</strong> · Dealer <strong className="font-mono tabular-nums">{formatCurrency(item.costsUsd.dealership[0])}–{formatCurrency(item.costsUsd.dealership[1])}</strong>
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleToggleComponentServiced(item.id)}
                           aria-pressed={isServiced}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold transition-all border ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-sans font-medium transition-colors duration-150 border ${
                             isServiced
-                              ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700 shadow-xs'
-                              : 'bg-surface-subtle text-muted border-border hover:border-border-strong hover:text-ink dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:text-slate-100'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40 shadow-xs'
+                              : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:text-ink dark:bg-zinc-800/80 dark:text-zinc-300 dark:border-zinc-700/60 dark:hover:text-zinc-50'
                           }`}
                         >
                           <CheckCircle2 className={`w-3.5 h-3.5 ${isServiced ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted'}`} />
@@ -771,12 +904,12 @@ export default function MaintenanceRiskMatrix({
                     {/* OEM Fallacy warning badge on component card */}
                     {scheduleMode === 'oem' && item.oemFallacyBadge && (
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono tracking-tight bg-red-100 text-red-900 border border-red-300 dark:bg-red-950/70 dark:text-red-200 dark:border-red-800 shadow-xs">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/40 shadow-xs">
                           {item.oemFallacyBadge}
                         </span>
                         {item.oemIntervalDisplay && (
-                          <span className="text-xs text-muted dark:text-slate-400 font-mono">
-                            OEM Spec: <span className="line-through text-red-700 dark:text-red-400 font-semibold">{item.oemIntervalDisplay}</span>
+                          <span className="text-xs text-muted dark:text-zinc-400 font-sans">
+                            OEM Spec: <span className="line-through text-rose-700 dark:text-rose-400 font-mono tabular-nums font-semibold">{item.oemIntervalDisplay}</span>
                           </span>
                         )}
                       </div>
@@ -807,42 +940,42 @@ export default function MaintenanceRiskMatrix({
                         aria-valuenow={pct}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        className="h-2 flex-1 overflow-hidden rounded-full bg-border dark:bg-slate-800"
+                        className="h-2 flex-1 overflow-hidden rounded-full bg-border dark:bg-zinc-800"
                       >
                         <div
-                          className="h-full rounded-full transition-all duration-300"
+                          className="h-full rounded-full transition-[width] duration-200 ease-out"
                           style={{
                             width: `${pct}%`,
                             backgroundColor: isServiced ? '#12A150' : BAR_COLOR[status] || '#12A150',
                           }}
                         />
                       </div>
-                      <span className="w-24 text-right text-xs tabular-nums text-muted dark:text-slate-400 font-mono font-medium">
-                        {pct}% life used
+                      <span className="w-24 text-right text-xs text-muted dark:text-zinc-400 font-sans font-medium">
+                        <span className="font-mono tabular-nums">{pct}%</span> life used
                       </span>
                     </div>
 
                     {/* Cost comparison & Next service */}
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                      <p className="flex items-baseline gap-2 text-sm">
-                        <span className="text-base font-semibold tabular-nums text-ink dark:text-slate-100 font-mono">
+                      <p className="flex flex-wrap items-baseline gap-2 text-sm font-sans">
+                        <span className="text-base font-semibold tabular-nums text-ink dark:text-zinc-100 font-mono">
                           {formatCurrency(primaryCost)}
                         </span>
-                        <span className="text-muted dark:text-slate-400 text-xs">
+                        <span className="text-muted dark:text-zinc-400 text-xs font-sans">
                           {workshopTier === 'dealership' ? 'Dealer rate' : 'Independent'}
                         </span>
                         {workshopTier === 'dealership' ? (
-                          <span className="text-success-text tabular-nums font-mono text-xs font-medium">
-                            · Indie {formatCurrency(indieCostAvg)}
+                          <span className="text-success-text font-sans text-xs font-medium">
+                            · Indie <span className="font-mono tabular-nums">{formatCurrency(indieCostAvg)}</span>
                           </span>
                         ) : (
-                          <s className="text-faint tabular-nums font-mono text-xs">
-                            {formatCurrency(dealerCostAvg)} Dealer
+                          <s className="text-faint font-sans text-xs">
+                            <span className="font-mono tabular-nums">{formatCurrency(dealerCostAvg)}</span> Dealer
                           </s>
                         )}
                       </p>
-                      <span className="text-xs tabular-nums text-muted dark:text-slate-400 font-mono">
-                        Next service in ~{formatDistance(item.health.remainingPhysicalMiles)}
+                      <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">
+                        Next service in <span className="font-mono tabular-nums">~{formatDistance(item.health.remainingPhysicalMiles)}</span>
                       </span>
                     </div>
 
@@ -858,7 +991,7 @@ export default function MaintenanceRiskMatrix({
                       <span>Quick preventative tip</span>
                     </button>
                     <Collapse open={isTipOpen} id={`tip-${item.id}`}>
-                      <p className="rounded-xl bg-surface-subtle dark:bg-slate-800/80 border border-border/60 dark:border-slate-700 px-3.5 py-2.5 text-xs text-body dark:text-slate-300 leading-relaxed mt-1">
+                      <p className="rounded-xl bg-surface-subtle dark:bg-zinc-800/80 border border-border/60 dark:border-zinc-700 px-3.5 py-2.5 text-xs text-body dark:text-zinc-300 leading-relaxed mt-1">
                         {item.preventativeAdvice}
                       </p>
                     </Collapse>
@@ -872,24 +1005,51 @@ export default function MaintenanceRiskMatrix({
               <PartnerCard
                 text="Prevent $2,500+ surprise workshop bills — scan live engine & DPF health from your phone."
                 cta="Compare OBD2 Scanners"
-                href="https://www.amazon.com/s?k=bluetooth+obd2+scanner"
+                href={(REGIONAL_PARTNER_URLS['obd-scanner'][region] || REGIONAL_PARTNER_URLS['obd-scanner'].US).href}
               />
             </div>
           </Card>
         </div>
       </div>
 
-      {/* 3. Manufacturer Maintenance Milestone Roadmap */}
+      {/* 3. Interactive "Should I Fix It or Sell It?" Decision Engine */}
+      <FixOrSellCalculator
+        vehicle={activePreset}
+        initialRepairQuoteUsd={Math.max(850, serviceReserveUsd)}
+        initialOdometerMiles={physicalOdometerMiles}
+        sourceLabel="12-Month Service & Wear Reserve"
+        onNavigateToCompare={onNavigateToCompare}
+      />
+
+      {/* 4. Known Issues & Live NHTSA/EPA Telemetry Dossier */}
+      <KnownIssuesDossier
+        presetId={activePreset.id}
+        vehicleName={activePreset.name}
+        brand={activePreset.brand}
+        model={activePreset.modelName}
+      />
+
+      {/* 5. Manufacturer Maintenance Milestone Roadmap */}
       <MaintenanceMilestones
         presetId={activePreset.id}
         currentOdometerMiles={physicalOdometerMiles}
         scheduleMode={scheduleMode}
+        drivingStyle={drivingStyle}
+        workshopTier={workshopTier}
       />
 
-      {/* 4. Contextual Repair Protection & Warranty Banner */}
+      {/* 6. Contextual Repair Protection & Warranty Banner + Zero-CLS AdSense Slot */}
       <TopTabAffiliateBanner
         type="warranty"
         vehicleName={activePreset.name}
+        odometerMiles={physicalOdometerMiles}
+        serviceReserveUsd={serviceReserveUsd}
+      />
+
+      <AdUnit
+        slotId="risk-bottom-leaderboard"
+        variant="leaderboard"
+        contextLabel={`${activePreset.name} Powertrain Wear & Risk Matrix`}
       />
     </div>
   );

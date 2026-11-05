@@ -407,7 +407,7 @@ export function getPidsForCode(code) {
  * Computes the overall diagnostic verdict and narrowed repair cost range
  * based on individual PID evaluations and the active OBD dossier.
  */
-export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier, workshopRate = 115) {
+export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier, workshopRate = 115, laborTierId) {
   const evaluations = pidConfigs.map((cfg) => {
     const val = pidValues[cfg.id] ?? cfg.defaultValue;
     return cfg.evaluate(Number(val));
@@ -431,13 +431,25 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
     badgeLabel = 'Service / Active Regen needed';
   }
 
-  // Compute root-cause cost brackets using workshopRate
-  const markupFactor = workshopRate >= 160 ? 1.25 : workshopRate === 0 ? 0.85 : 1.0;
+  // Resolve effective rate and parts markup factor based on workshop tier
+  const safeRate = Math.max(0, Number(workshopRate) || 0);
+  const markupFactor =
+    laborTierId === 'dealership' || safeRate >= 160
+      ? 1.25
+      : laborTierId === 'diy' || safeRate === 0
+      ? 0.85
+      : 1.0;
+
   const rootCauses = activeDossier?.rootCauses || [];
 
   const causeEstimates = rootCauses.map((rc) => {
-    const minCost = Math.round(rc.partsCostUsd[0] * markupFactor + rc.laborHours[0] * workshopRate);
-    const maxCost = Math.round(rc.partsCostUsd[1] * markupFactor + rc.laborHours[1] * workshopRate);
+    const p0 = Array.isArray(rc.partsCostUsd) ? Math.max(0, Number(rc.partsCostUsd[0]) || 0) : 0;
+    const p1 = Array.isArray(rc.partsCostUsd) ? Math.max(p0, Number(rc.partsCostUsd[1]) || p0) : p0;
+    const l0 = Array.isArray(rc.laborHours) ? Math.max(0, Number(rc.laborHours[0]) || 0) : 0;
+    const l1 = Array.isArray(rc.laborHours) ? Math.max(l0, Number(rc.laborHours[1]) || l0) : l0;
+
+    const minCost = Math.round(p0 * markupFactor + l0 * safeRate);
+    const maxCost = Math.round(p1 * markupFactor + l1 * safeRate);
     const avgCost = Math.round((minCost + maxCost) / 2);
     return {
       ...rc,
@@ -450,8 +462,13 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
   // Sort causes from least expensive (sensor/hose/wiring) to most expensive (core assembly)
   const sortedByCost = [...causeEstimates].sort((a, b) => a.avgCost - b.avgCost);
 
-  const fallbackMin = Math.round((activeDossier?.partsCostRangeUsd?.[0] || 90) * markupFactor + (activeDossier?.laborHoursRange?.[0] || 1) * workshopRate);
-  const fallbackMax = Math.round((activeDossier?.partsCostRangeUsd?.[1] || 1500) * markupFactor + (activeDossier?.laborHoursRange?.[1] || 4) * workshopRate);
+  const fbParts0 = Math.max(0, Number(activeDossier?.partsCostRangeUsd?.[0]) || 90);
+  const fbParts1 = Math.max(fbParts0, Number(activeDossier?.partsCostRangeUsd?.[1]) || 1500);
+  const fbLabor0 = Math.max(0, Number(activeDossier?.laborHoursRange?.[0]) || 1);
+  const fbLabor1 = Math.max(fbLabor0, Number(activeDossier?.laborHoursRange?.[1]) || 4);
+
+  const fallbackMin = Math.round(fbParts0 * markupFactor + fbLabor0 * safeRate);
+  const fallbackMax = Math.round(fbParts1 * markupFactor + fbLabor1 * safeRate);
 
   let narrowedMinUsd = fallbackMin;
   let narrowedMaxUsd = fallbackMax;
@@ -492,6 +509,9 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
     }
   }
 
+  // Ensure calculations never produce NaN, Infinity, or negative values
+  narrowedMinUsd = Math.max(0, Number.isFinite(narrowedMinUsd) ? narrowedMinUsd : 0);
+  narrowedMaxUsd = Math.max(narrowedMinUsd, Number.isFinite(narrowedMaxUsd) ? narrowedMaxUsd : narrowedMinUsd);
   const narrowedExpectedUsd = Math.round((narrowedMinUsd + narrowedMaxUsd) / 2);
   const savingsVsMaxUsd = Math.max(0, fallbackMax - narrowedMaxUsd);
 
@@ -514,6 +534,7 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
 export default function LivePidEvaluator({
   activeDossier,
   workshopRate = 115,
+  laborTierId = 'independent',
   onVerdictChange,
 }) {
   const { formatCurrency } = useUnits();
@@ -539,7 +560,7 @@ export default function LivePidEvaluator({
 
   const handlePidChange = (id, rawVal, min, max) => {
     const parsed = Number(rawVal);
-    if (Number.isNaN(parsed)) return;
+    if (!Number.isFinite(parsed)) return;
     const clamped = Math.min(max, Math.max(min, parsed));
     setPidValues((prev) => ({
       ...prev,
@@ -575,8 +596,8 @@ export default function LivePidEvaluator({
   };
 
   const verdict = useMemo(
-    () => evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier, workshopRate),
-    [pidConfigs, pidValues, activeDossier, workshopRate]
+    () => evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier, workshopRate, laborTierId),
+    [pidConfigs, pidValues, activeDossier, workshopRate, laborTierId]
   );
 
   useEffect(() => {
@@ -590,6 +611,7 @@ export default function LivePidEvaluator({
     verdict.primarySuspectCause,
     code,
     workshopRate,
+    laborTierId,
   ]);
 
   const STATUS_DOT = {
@@ -608,28 +630,27 @@ export default function LivePidEvaluator({
     <div
       id="live-pid-evaluator"
       data-testid="live-pid-evaluator"
-      className="mt-5 pt-5 border-t border-border/80 dark:border-slate-800 space-y-5"
+      className="mt-5 pt-5 border-t border-border/80 dark:border-zinc-800 space-y-5"
     >
       {/* Header Row with Real-Time Verdict Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle dark:bg-slate-950 p-4 rounded-xl border border-border/70 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle dark:bg-zinc-950 p-4 rounded-xl border border-border/70 dark:border-zinc-800">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-            <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-ink dark:text-slate-100">
-              Interactive Live OBD2 PID Evaluator ({code})
+            <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-ink dark:text-zinc-100">
+              Interactive Live OBD2 PID Evaluator (<span className="font-mono tabular-nums">{code}</span>)
             </h4>
           </div>
-          <p className="text-xs text-muted dark:text-slate-400">
+          <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
             Dial in your OBD-II scanner readings below to isolate sensor faults from costly hardware failures.
           </p>
         </div>
 
         <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted dark:text-slate-400">
+          <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400">
             Live Telemetry Verdict
           </span>
-          <Pill tone={verdict.tone} className="gap-1.5 py-1 px-3 text-xs shadow-sm">
-            <span className={`w-2 h-2 rounded-full ${STATUS_DOT[verdict.tone]}`} />
+          <Pill tone={verdict.tone}>
             <span data-testid="pid-verdict-badge">{verdict.badgeLabel}</span>
           </Pill>
         </div>
@@ -637,7 +658,7 @@ export default function LivePidEvaluator({
 
       {/* Quick Telemetry Scenario Presets */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-[11px] font-mono uppercase tracking-wider text-muted dark:text-slate-400 font-semibold">
+        <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold">
           Simulate Scanner Feed:
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -645,10 +666,10 @@ export default function LivePidEvaluator({
             type="button"
             id="pid-preset-good"
             onClick={() => applyScenario('good')}
-            className={`px-2.5 py-1 rounded-lg font-medium border text-xs transition-colors ${
+            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
               verdict.tone === 'good'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'bg-surface dark:bg-slate-900 text-body dark:text-slate-300 border-border dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-800'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
             }`}
           >
             Sensor Fault / Healthy Core
@@ -657,10 +678,10 @@ export default function LivePidEvaluator({
             type="button"
             id="pid-preset-warn"
             onClick={() => applyScenario('warn')}
-            className={`px-2.5 py-1 rounded-lg font-medium border text-xs transition-colors ${
+            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
               verdict.tone === 'warn'
-                ? 'bg-amber-500 text-slate-950 border-amber-500 font-semibold shadow-sm'
-                : 'bg-surface dark:bg-slate-900 text-body dark:text-slate-300 border-border dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-800'
+                ? 'bg-amber-500 text-zinc-950 border-amber-500 font-semibold shadow-sm'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
             }`}
           >
             Service / Regen Needed
@@ -669,10 +690,10 @@ export default function LivePidEvaluator({
             type="button"
             id="pid-preset-risk"
             onClick={() => applyScenario('risk')}
-            className={`px-2.5 py-1 rounded-lg font-medium border text-xs transition-colors ${
+            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
               verdict.tone === 'risk'
                 ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                : 'bg-surface dark:bg-slate-900 text-body dark:text-slate-300 border-border dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-800'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
             }`}
           >
             Clogged Core / Hardware Fail
@@ -681,7 +702,7 @@ export default function LivePidEvaluator({
             type="button"
             onClick={() => setPidValues(defaultMap)}
             title="Reset PIDs to baseline"
-            className="p-1.5 rounded-lg border border-border dark:border-slate-700 bg-surface dark:bg-slate-900 text-muted dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 transition-colors"
+            className="p-1.5 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -701,13 +722,13 @@ export default function LivePidEvaluator({
           return (
             <div
               key={cfg.id}
-              className="p-4 rounded-xl border border-border/70 dark:border-slate-800 bg-surface dark:bg-slate-900/90 space-y-2.5"
+              className="p-4 rounded-xl border border-border/70 dark:border-zinc-800 bg-surface dark:bg-zinc-900/90 space-y-2.5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor={`pid-slider-${cfg.id}`}
-                    className="text-xs sm:text-sm font-semibold text-ink dark:text-slate-100"
+                    className="font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100"
                   >
                     {cfg.label}
                   </label>
@@ -727,9 +748,9 @@ export default function LivePidEvaluator({
                     value={val}
                     aria-label={`${cfg.label} numeric input`}
                     onChange={(e) => handlePidChange(cfg.id, e.target.value, cfg.min, cfg.max)}
-                    className="w-20 h-8 rounded-lg border border-border-strong dark:border-slate-700 bg-surface-subtle dark:bg-slate-950 px-2 text-right font-mono text-xs sm:text-sm font-bold tabular-nums text-ink dark:text-slate-100 focus-visible:border-primary-600 focus-visible:outline-none"
+                    className="w-20 h-8 rounded-lg border border-border-strong dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-950 px-2 text-right font-mono text-xs sm:text-sm font-bold tabular-nums text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-none"
                   />
-                  <span className="font-mono text-xs font-semibold text-muted dark:text-slate-400 min-w-[2.25rem]">
+                  <span className="font-sans text-xs font-semibold text-muted dark:text-zinc-400 min-w-[2.25rem]">
                     {cfg.unit}
                   </span>
                 </div>
@@ -749,23 +770,20 @@ export default function LivePidEvaluator({
               />
 
               {/* Threshold Legend Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted dark:text-slate-400 pt-0.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-sans font-medium text-muted dark:text-zinc-400 pt-0.5">
                 <span className="inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Normal: {cfg.normalRangeLabel}
+                  Normal: <span className="font-mono tabular-nums">{cfg.normalRangeLabel}</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Warn: {cfg.warnRangeLabel}
+                  Warn: <span className="font-mono tabular-nums">{cfg.warnRangeLabel}</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  Critical: {cfg.critRangeLabel}
+                  Critical: <span className="font-mono tabular-nums">{cfg.critRangeLabel}</span>
                 </span>
               </div>
 
               {cfg.hint && (
-                <p className="text-[11px] text-muted dark:text-slate-400 leading-relaxed pt-0.5">
+                <p className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 leading-relaxed pt-0.5">
                   {cfg.hint}
                 </p>
               )}
@@ -788,28 +806,28 @@ export default function LivePidEvaluator({
             ) : (
               <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
             )}
-            <span className="text-xs font-bold uppercase tracking-wider font-mono">
+            <span className="text-xs font-bold uppercase tracking-wider font-sans">
               Live Telemetry Cost Impact
             </span>
           </div>
 
-          <div className="font-mono text-sm sm:text-base font-bold tabular-nums" data-testid="telemetry-narrowed-cost">
-            Narrowed Estimate: {formatCurrency(verdict.narrowedMinUsd)} – {formatCurrency(verdict.narrowedMaxUsd)}
+          <div className="font-sans text-sm sm:text-base font-bold" data-testid="telemetry-narrowed-cost">
+            Narrowed Estimate: <span className="font-mono tabular-nums">{formatCurrency(verdict.narrowedMinUsd)} – {formatCurrency(verdict.narrowedMaxUsd)}</span>
           </div>
         </div>
 
-        <p className="text-xs leading-relaxed">
+        <p className="text-xs font-sans leading-relaxed">
           <strong className="font-semibold">Primary Telemetry Suspect:</strong> {verdict.primarySuspectCause}
         </p>
 
-        <p className="text-xs leading-relaxed opacity-90">
+        <p className="text-xs font-sans leading-relaxed opacity-90">
           {verdict.recommendation}
         </p>
 
         {verdict.savingsVsMaxUsd > 0 && verdict.tone !== 'risk' && (
-          <div className="pt-1.5 border-t border-current/15 flex items-center justify-between text-xs font-mono font-semibold">
+          <div className="pt-1.5 border-t border-current/15 flex items-center justify-between text-xs font-sans font-semibold">
             <span>Potential Unnecessary Assembly Savings:</span>
-            <span className="tabular-nums">Up to {formatCurrency(verdict.savingsVsMaxUsd)} saved</span>
+            <span>Up to <span className="font-mono tabular-nums">{formatCurrency(verdict.savingsVsMaxUsd)}</span> saved</span>
           </div>
         )}
       </div>

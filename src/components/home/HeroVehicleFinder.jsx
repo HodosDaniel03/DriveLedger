@@ -5,6 +5,7 @@ import { useUnits } from '../../context/UnitContext';
 import VehicleHierarchySelector from '../common/VehicleHierarchySelector';
 import VehicleSilhouette from '../common/vehicle/VehicleSilhouette.jsx';
 import VehicleTechnicalBadges from '../common/vehicle/VehicleTechnicalBadges.jsx';
+import { RiskBadge } from '../common/OdometerPrimitives';
 
 export default function HeroVehicleFinder({
   selectedPresetId,
@@ -75,42 +76,41 @@ export default function HeroVehicleFinder({
   };
 
   return (
-    <section className="w-full bg-surface dark:bg-slate-900 rounded-2xl border border-border dark:border-slate-800 shadow-sm p-6 sm:p-10 lg:p-12 mb-10 relative overflow-hidden">
+    <section className="w-full bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-10 lg:p-12 mb-10 relative overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
         {/* Left Column: Hero Copy & Search Bar */}
         <div className="lg:col-span-7 flex flex-col items-start">
-          {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-canvas dark:bg-slate-800 border border-border dark:border-slate-700 text-body dark:text-slate-300 text-xs font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 dark:bg-primary-500" />
+          {/* Eyebrow Micro-Tag */}
+          <div className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-[11px] font-sans font-medium">
             <span>Free · Independent · No sign-up</span>
           </div>
 
           {/* Main Title */}
-          <h1 className="text-3xl sm:text-4xl lg:text-[46px] leading-[1.12] tracking-tight font-bold text-ink dark:text-slate-100 mt-4 mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-[46px] leading-[1.12] tracking-tight font-sans font-bold text-ink dark:text-zinc-50 mt-4 mb-3">
             Know what your car really costs — <span className="text-primary-600 dark:text-primary-400">before it costs you.</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm sm:text-base text-body dark:text-slate-300 leading-relaxed mb-6 max-w-xl">
-            5-year ownership costs, upcoming repairs, and fair workshop prices for any check-engine code. In seconds.
+          <p className="text-sm sm:text-base font-sans text-body dark:text-zinc-300 leading-relaxed mb-6 max-w-xl">
+            Real 5-year ownership costs, upcoming maintenance, and fair repair pricing in seconds.
           </p>
 
-          {/* Search Field Pill */}
+          {/* Search Field */}
           <form
             onSubmit={handleSearchSubmit}
-            className="w-full max-w-xl h-14 bg-surface dark:bg-slate-900 rounded-full shadow-sm flex items-center pl-5 pr-1.5 py-1.5 border border-border-strong dark:border-slate-700 focus-within:border-primary-600 dark:focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-600/15 transition-all"
+            className="w-full max-w-xl h-14 bg-white dark:bg-zinc-900 rounded-xl shadow-sm flex items-center pl-4 pr-1.5 py-1.5 border border-zinc-300 dark:border-zinc-800 focus-within:border-primary-600 dark:focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-600/15 transition-[border-color,box-shadow] duration-150"
           >
-            <Search className="w-5 h-5 text-muted dark:text-slate-400 shrink-0" />
+            <Search className="w-5 h-5 text-muted dark:text-zinc-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Enter a car model or engine (e.g. Golf 2.0 TDI, Passat B8)..."
-              className="flex-1 ml-3 bg-transparent text-ink dark:text-slate-100 placeholder:text-faint dark:placeholder:text-slate-500 text-sm focus:outline-none"
+              className="flex-1 ml-3 bg-transparent font-sans text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 text-sm focus:outline-none"
             />
             <button
               type="submit"
-              className="bg-primary-600 text-white font-semibold text-xs sm:text-sm px-5 h-11 rounded-full shadow-sm hover:bg-primary-700 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="bg-primary-600 text-white font-sans font-semibold text-xs sm:text-sm px-5 h-11 rounded-lg shadow-sm hover:bg-primary-700 transition-colors duration-150 flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <span>Check now</span>
               <ArrowRight className="w-4 h-4" />
@@ -118,8 +118,8 @@ export default function HeroVehicleFinder({
           </form>
 
           {/* Popular Shortcuts */}
-          <div className="mt-4 flex items-center gap-2 text-xs flex-wrap">
-            <span className="text-muted dark:text-slate-400 font-medium">Popular:</span>
+          <div className="mt-4 flex items-center gap-2 text-xs font-sans flex-wrap">
+            <span className="text-muted dark:text-zinc-400 font-medium">Popular:</span>
             {[
               { label: 'VW Golf 8', id: 'vw-golf-20-tdi' },
               { label: 'BMW 320d', id: 'bmw-320d-b47' },
@@ -133,7 +133,7 @@ export default function HeroVehicleFinder({
                   onSelectPreset(item.id);
                   onNavigateToTco(item.id);
                 }}
-                className="bg-surface dark:bg-slate-800 border border-border dark:border-slate-700 text-ink dark:text-slate-200 rounded-full px-3 py-1 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
+                className="bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 rounded-md px-2.5 py-0.5 text-[11px] font-sans font-medium hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
               >
                 {item.label}
               </button>
@@ -147,8 +147,8 @@ export default function HeroVehicleFinder({
                 <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
               ))}
             </div>
-            <span className="text-xs sm:text-sm font-medium text-body dark:text-slate-300">
-              <strong className="text-ink dark:text-slate-100 font-semibold">4.8/5</strong> from 2,400+ verified drivers
+            <span className="text-xs sm:text-sm font-sans font-medium text-body dark:text-zinc-300">
+              <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums font-semibold">4.8/5</strong> from <span className="font-mono tabular-nums">2,400+</span> verified drivers
             </span>
           </div>
 
@@ -161,14 +161,14 @@ export default function HeroVehicleFinder({
                   key={bt.id}
                   type="button"
                   onClick={() => setSelectedBodyType(bt.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-sans font-medium transition-colors duration-150 border ${
                     isActive
                       ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                      : 'bg-surface-subtle dark:bg-slate-800 text-muted dark:text-slate-300 border-border dark:border-slate-700 hover:text-ink dark:hover:text-slate-100 hover:border-border-strong dark:hover:border-slate-600'
+                      : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60 hover:text-ink dark:hover:text-zinc-50'
                   }`}
                 >
                   <span>{bt.label}</span>
-                  <span className="ml-1 text-[10px] font-mono opacity-80">({bt.count})</span>
+                  <span className="ml-1 text-[10px] font-mono tabular-nums opacity-80">({bt.count})</span>
                 </button>
               );
             })}
@@ -179,70 +179,66 @@ export default function HeroVehicleFinder({
         <div className="lg:col-span-5 relative flex justify-center">
           <div className="relative w-full max-w-[460px]">
             {/* Main Vehicle Showcase Card */}
-            <div className="rounded-2xl border border-border dark:border-slate-800 shadow-md bg-surface dark:bg-slate-900 p-5 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border dark:border-slate-800">
-                <div>
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted dark:text-slate-400 font-bold block">
-                    TELEMETRY PRESET BENCHMARK
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-ink dark:text-slate-100">
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md bg-surface dark:bg-[#121215] p-5 space-y-4">
+              <div className="flex items-start justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <RiskBadge
+                      level={activePreset.maintenanceWearFactor > 1.3 ? 'critical' : activePreset.maintenanceWearFactor > 1.05 ? 'moderate' : 'low'}
+                      label={activePreset.maintenanceWearFactor > 1.3 ? 'Critical' : activePreset.maintenanceWearFactor > 1.05 ? 'Moderate' : 'Low'}
+                    />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate">
                     {activePreset.name}
                   </h3>
-                  <p className="font-code text-xs text-muted dark:text-slate-400 mt-0.5">
+                  <p className="font-sans font-medium text-xs text-muted dark:text-zinc-400 mt-0.5 truncate">
                     {activePreset.powertrainLabel || `${activePreset.powerHp} HP · ${activePreset.fuelType}`}
                   </p>
                 </div>
-                <span className="font-code text-xs text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 px-2 py-1 rounded-lg border border-primary-100 dark:border-primary-900/60 font-bold">
+                <span className="font-mono tabular-nums text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-800/40 font-bold shrink-0">
                   {formatCurrency(activePreset.purchasePriceUsd)}
                 </span>
               </div>
 
-              {/* Studio Canvas Silhouette */}
-              <div className="rounded-xl overflow-hidden bg-surface-subtle dark:bg-slate-950/80 aspect-[16/7] relative border border-border/60 dark:border-slate-800 shadow-inner flex items-center justify-center p-2 group">
+              {/* Real Automotive Studio Photography Frame */}
+              <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200 dark:border-zinc-800 group">
                 <VehicleSilhouette vehicle={activePreset} className="w-full h-full" interactive />
               </div>
 
-              {/* Spec Chips Row */}
-              <div className="flex flex-wrap gap-1.5">
-                <span className="bg-surface-subtle dark:bg-slate-800 text-ink dark:text-slate-200 font-micro text-micro px-2.5 py-1 rounded-md border border-border/50 dark:border-slate-700">
+              {/* Strictly Single Row of Max 4 Neutral Micro-Tags */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
                   {activePreset.fuelType}
                 </span>
-                <span className="bg-surface-subtle dark:bg-slate-800 text-ink dark:text-slate-200 font-micro text-micro px-2.5 py-1 rounded-md border border-border/50 dark:border-slate-700">
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
                   {activePreset.transmission || 'Automatic'}
                 </span>
-                <span className="bg-surface-subtle dark:bg-slate-800 text-ink dark:text-slate-200 font-micro text-micro px-2.5 py-1 rounded-md border border-border/50 dark:border-slate-700">
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium capitalize">
                   {activePreset.bodyType || 'Sedan'}
                 </span>
-                <span className="bg-surface-subtle dark:bg-slate-800 text-ink dark:text-slate-200 font-micro text-micro px-2.5 py-1 rounded-md border border-border/50 dark:border-slate-700 font-mono">
-                  {formatDistance(activePreset.defaultOdometerMiles)}
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
+                  <span className="font-mono tabular-nums">{activePreset.mpgUs}</span> {activePreset.isEv ? 'kWh' : 'MPG'}
                 </span>
-              </div>
-
-              {/* 4-Tier Mechanical Technical Badges */}
-              <div className="pt-0.5">
-                <VehicleTechnicalBadges vehicle={activePreset} maxBadges={4} size="sm" />
               </div>
 
               {/* Key Indicators 3-Col Mini Strip */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-surface-subtle dark:bg-slate-800/80 border border-border dark:border-slate-700 text-center font-code text-xs">
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
                 <div>
-                  <span className="text-[10px] text-muted dark:text-slate-400 block">Baseline Odo</span>
-                  <strong className="text-ink dark:text-slate-100 text-xs font-bold">
+                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Odometer</span>
+                  <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
                     {formatDistance(activePreset.defaultOdometerMiles)}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-muted dark:text-slate-400 block">Efficiency</span>
-                  <strong className="text-ink dark:text-slate-100 text-xs font-bold">
+                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Economy</span>
+                  <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
                     {activePreset.isEv ? `${activePreset.mpgUs} kWh` : `${activePreset.mpgUs} MPG`}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-muted dark:text-slate-400 block">Wear Rate</span>
-                  <strong className={`text-xs font-bold ${
-                    activePreset.maintenanceWearFactor > 1.3 ? 'text-score-poor' : 'text-score-good'
-                  }`}>
-                    {activePreset.maintenanceWearFactor.toFixed(2)}x
+                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Annual Service</span>
+                  <strong className="text-primary-600 dark:text-primary-400 text-xs font-mono tabular-nums font-bold">
+                    {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr
                   </strong>
                 </div>
               </div>
@@ -252,7 +248,7 @@ export default function HeroVehicleFinder({
                 <button
                   type="button"
                   onClick={() => onNavigateToTco(activePreset.id)}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-sans font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors duration-150"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Simulate 5-Yr TCO</span>
@@ -260,7 +256,7 @@ export default function HeroVehicleFinder({
                 <button
                   type="button"
                   onClick={() => onNavigateToRisk(activePreset)}
-                  className="bg-surface dark:bg-slate-800 hover:bg-surface-subtle dark:hover:bg-slate-700 text-ink dark:text-slate-200 font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-full border border-border-strong dark:border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                  className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-sans font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-1.5 transition-colors duration-150"
                 >
                   <span>Risk Matrix</span>
                 </button>

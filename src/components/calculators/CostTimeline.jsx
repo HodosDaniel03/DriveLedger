@@ -67,13 +67,13 @@ export default function CostTimeline({
       : DEFAULT_CATEGORIES;
 
   return (
-    <Card className={className} aria-labelledby="timeline-heading">
+    <Card className={`rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-5 sm:p-6 ${className}`} aria-labelledby="timeline-heading">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="font-micro text-micro uppercase tracking-widest text-primary-600 font-semibold block">
+          <span className="font-micro text-micro uppercase tracking-widest text-[#183D22] font-semibold block">
             Lifecycle trajectory
           </span>
-          <h2 id="timeline-heading" className="text-lg sm:text-xl font-bold tracking-tight text-ink mt-0.5">
+          <h2 id="timeline-heading" className="text-lg sm:text-xl font-bold tracking-tight text-ink mt-0.5 scroll-mt-28 lg:scroll-mt-32">
             Cost over time
           </h2>
           <p className="mt-0.5 text-xs sm:text-sm text-muted">Cumulative cost of ownership, year by year.</p>
@@ -87,7 +87,7 @@ export default function CostTimeline({
           </div>
           <div className="hidden sm:block">
             <dt className="text-xs text-muted">Depreciation share</dt>
-            <dd className="text-xl font-bold tabular-nums tracking-tight text-primary-600 font-code">
+            <dd className="text-xl font-bold tabular-nums tracking-tight text-[#183D22] font-code">
               {depSharePct}%
             </dd>
           </div>
@@ -150,7 +150,7 @@ export default function CostTimeline({
                 {/* Rich Floating Tooltip Card */}
                 {isActive && showTooltip && (
                   <div
-                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-56 sm:w-64 rounded-xl border border-border/80 bg-surface/98 backdrop-blur-md p-3 shadow-xl transition-all duration-150 ${alignmentClass}`}
+                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-56 sm:w-64 rounded-xl border border-border/80 bg-surface/98 backdrop-blur-md p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
                     role="tooltip"
                     aria-hidden="false"
                   >
@@ -175,11 +175,11 @@ export default function CostTimeline({
                         return (
                           <div
                             key={b.id}
-                            className={`flex items-center justify-between py-0.5 px-1 rounded transition-opacity duration-150 ${
+                            className={`flex items-center justify-between py-0.5 px-1 rounded transition-opacity duration-150 min-w-0 ${
                               isDimmed ? 'opacity-35' : 'opacity-100'
                             } ${isCatHighlighted ? 'bg-primary-50/70 font-semibold' : ''}`}
                           >
-                            <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
                               <span
                                 className="w-2 h-2 rounded-sm shrink-0"
                                 style={{ backgroundColor: b.color }}
@@ -206,7 +206,7 @@ export default function CostTimeline({
 
                 {/* 5 Stacked Bar Layers (Bottom to Top via flex-col-reverse) */}
                 <div
-                  className={`flex w-full h-full flex-col-reverse overflow-hidden rounded-t-lg transition-all duration-300 ${
+                  className={`flex w-full h-full flex-col-reverse overflow-hidden rounded-t-lg transition-[height,opacity] duration-200 ease-out ${
                     isBarHighlighted ? 'ring-2 ring-primary-600/50 shadow-sm' : 'opacity-85 group-hover:opacity-100'
                   }`}
                   onMouseLeave={() => handleHighlight(null)}
@@ -269,7 +269,7 @@ export default function CostTimeline({
               onMouseLeave={() => handleHighlight(null)}
               onFocus={() => handleHighlight(cat.id)}
               onBlur={() => handleHighlight(null)}
-              className={`flex items-center gap-1.5 font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-0.5 -mx-1.5 ${
+              className={`flex items-center gap-1.5 min-w-0 font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-0.5 -mx-1.5 ${
                 isCategoryDimmed ? 'opacity-25' : 'opacity-100'
               } ${isCategoryHighlighted ? 'bg-surface-subtle font-semibold scale-105' : 'text-body hover:text-ink'}`}
             >
@@ -278,7 +278,7 @@ export default function CostTimeline({
                 style={{ backgroundColor: cat.color }}
                 aria-hidden="true"
               />
-              <span>{cat.label}</span>
+              <span className="truncate">{cat.label}</span>
             </button>
           );
         })}

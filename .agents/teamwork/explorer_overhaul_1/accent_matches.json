@@ -1,0 +1,2020 @@
+[
+  {
+    "file": "src/App.jsx",
+    "count": 2,
+    "matches": [
+      {
+        "lineNum": 314,
+        "text": "{/* TAB 4: MELYIKET VEGYEM? SIDE-BY-SIDE AUTÓ ÖSSZEHASONLÍTÓ */}"
+      },
+      {
+        "lineNum": 324,
+        "text": "{/* TAB 5: HASZNÁLTAUTÓ VÁSÁRLÁS ELŐTTI ELLENŐRZŐLISTA (PPI) */}"
+      }
+    ]
+  },
+  {
+    "file": "src/components/calculators/EvBreakEvenCalculator.jsx",
+    "count": 17,
+    "matches": [
+      {
+        "lineNum": 116,
+        "text": "label: 'Megtérülési Időtáv',"
+      },
+      {
+        "lineNum": 117,
+        "text": "value: isCheaperUpfront ? 'Azonnali (0 év)' : isNegativeSavings ? 'Nem térül meg' : `${breakEvenYears} év (${breakEvenDistanceLocal.toLocaleString()} ${distanceUnit})`,"
+      },
+      {
+        "lineNum": 119,
+        "text": "? 'Az elektromos autó vételi ára már induláskor alacsonyabb.'"
+      },
+      {
+        "lineNum": 121,
+        "text": "? 'A jelenlegi áramtarifa mellett nincs üzemeltetési megtakarítás.'"
+      },
+      {
+        "lineNum": 122,
+        "text": ": 'Az alacsonyabb üzemeltetés eddigre hozza vissza a vételár-felárat.',"
+      },
+      {
+        "lineNum": 126,
+        "text": "label={isCheaperUpfront ? 'Azonnali' : breakEvenYears <= 4 ? 'Gyors megtérülés' : 'Hosszú megtérülés'}"
+      },
+      {
+        "lineNum": 131,
+        "text": "label: 'Éves Energiamegtakarítás',"
+      },
+      {
+        "lineNum": 132,
+        "text": "value: `${currencySymbol}${annualSavingsLocal.toLocaleString()} / év`,"
+      },
+      {
+        "lineNum": 133,
+        "text": "subtext: `${pctCheaper}%-kal alacsonyabb km-költség (${currencySymbol}${Math.round(annualSavingsLocal / 12).toLocaleString()} / hó).`,"
+      },
+      {
+        "lineNum": 134,
+        "text": "badge: <RiskBadge level={annualSavingsLocal > 0 ? 'low' : 'critical'} label={`${pctCheaper}% olcsóbb`} />,"
+      },
+      {
+        "lineNum": 137,
+        "text": "label: 'Szükséges Éves Futás',"
+      },
+      {
+        "lineNum": 138,
+        "text": "value: isCheaperUpfront ? 'Bármely futás' : `${requiredAnnualDist5Yr.toLocaleString()} ${distanceUnit} / év`,"
+      },
+      {
+        "lineNum": 139,
+        "text": "subtext: 'Minimum ennyit kell évente vezetni az 5 éves megtérüléshez.',"
+      },
+      {
+        "lineNum": 140,
+        "text": "badge: <RiskBadge level=\"moderate\" label=\"5-éves küszöb\" />,"
+      },
+      {
+        "lineNum": 172,
+        "text": "{/* TL;DR Verdikt Box: 3 legfontosabb EV megtérülési mutató */}"
+      },
+      {
+        "lineNum": 175,
+        "text": "subtitle=\"3 legfontosabb elektromos megtérülési tény (Zero Fluff)\""
+      },
+      {
+        "lineNum": 176,
+        "text": "badge=\"Megtérülési Mérleg\""
+      }
+    ]
+  },
+  {
+    "file": "src/components/calculators/MaintenanceRiskMatrix.jsx",
+    "count": 19,
+    "matches": [
+      {
+        "lineNum": 299,
+        "text": "label: '12 Hónapos Várható Szerviz',"
+      },
+      {
+        "lineNum": 302,
+        "text": "? `OEM halasztások miatt +${oemRiskMultiplier.toFixed(2)}x kockázati szorzó!`"
+      },
+      {
+        "lineNum": 303,
+        "text": ": `Várható kopási tartalék ${formatDistance(physicalOdometerMiles)} óraállásnál.`,"
+      },
+      {
+        "lineNum": 307,
+        "text": "label={serviceReserveUsd > 2200 ? 'Kritikus Tartalék' : serviceReserveUsd > 1000 ? 'Közepes Tartalék' : 'Alacsony Tartalék'}"
+      },
+      {
+        "lineNum": 312,
+        "text": "label: 'Kockázati Állapot',"
+      },
+      {
+        "lineNum": 313,
+        "text": "value: `${criticalItems.length} Kritikus · ${warningItems.length} Esedékes`,"
+      },
+      {
+        "lineNum": 315,
+        "text": "? `Azonnali csere javasolt: ${topCriticalItem?.name || 'Kopóelem'}.`"
+      },
+      {
+        "lineNum": 316,
+        "text": ": 'Valamennyi részegység a gyártói biztonsági határokon belül.',"
+      },
+      {
+        "lineNum": 320,
+        "text": "label={criticalItems.length > 0 ? 'Kritikus Kockázat' : warningItems.length > 0 ? 'Közepes Kockázat' : 'Alacsony Kockázat'}"
+      },
+      {
+        "lineNum": 325,
+        "text": "label: 'Megbízhatósági Verdikt',"
+      },
+      {
+        "lineNum": 328,
+        "text": "? 'OEM marketing periódus: fokozott vezérlés- és váltóhiba kockázat.'"
+      },
+      {
+        "lineNum": 329,
+        "text": ": 'Megelőző szervizeléssel elkerülhetők a több ezer dolláros fődarabcserék.',"
+      },
+      {
+        "lineNum": 333,
+        "text": "label={reliabilityScore >= 75 ? 'Megbízható' : reliabilityScore >= 50 ? 'Figyelendő' : 'Kritikus'}"
+      },
+      {
+        "lineNum": 349,
+        "text": "subtitle=\"3 legfontosabb szerviz- és kockázati mutató (Zero Fluff)\""
+      },
+      {
+        "lineNum": 350,
+        "text": "badge=\"Telemetria Szintézis\""
+      },
+      {
+        "lineNum": 850,
+        "text": "label={isServiced ? 'Szervizelve' : status === 'CRITICAL' ? 'Kritikus' : status === 'WARNING' ? 'Közepes' : 'Alacsony'}"
+      },
+      {
+        "lineNum": 857,
+        "text": "Várható csereperiódus: {formatDistance(item.criticalWearMileage)}"
+      },
+      {
+        "lineNum": 861,
+        "text": "Becsült javítás: {formatCurrency(item.costsUsd.independent[0])} – {formatCurrency(item.costsUsd.dealership[1])}"
+      },
+      {
+        "lineNum": 1007,
+        "text": "{/* 3. Known Issues (\"Gyermekbetegségek\") & Live NHTSA/EPA Telemetry Dossier */}"
+      }
+    ]
+  },
+  {
+    "file": "src/components/calculators/ObdEstimator.jsx",
+    "count": 12,
+    "matches": [
+      {
+        "lineNum": 145,
+        "text": "label: 'Becsült Műhelyköltség',"
+      },
+      {
+        "lineNum": 147,
+        "text": "subtext: `Tipikus elvárt kiadás: ${formatCurrency(est.weightedExpectedUsd)} (${est.tierLabel}).`,"
+      },
+      {
+        "lineNum": 156,
+        "text": "label: 'Súlyosság & Vezethetőség',"
+      },
+      {
+        "lineNum": 157,
+        "text": "value: activeDossier.severity?.includes('CRITICAL') ? 'Kritikus (Azonnal állj meg)' : activeDossier.severity?.includes('HIGH') ? 'Közepes (1–2 héten belül javítsd)' : 'Alacsony (Rövid távon használható)',"
+      },
+      {
+        "lineNum": 159,
+        "text": "? 'További vezetés maradandó motor- vagy katalizátorkárosodást okoz!'"
+      },
+      {
+        "lineNum": 160,
+        "text": ": 'Katalizátor és emissziós egységek védelme érdekében mielőbb vizsgálandó.',"
+      },
+      {
+        "lineNum": 169,
+        "text": "label: 'Leggyakoribb Kiváltó Ok',"
+      },
+      {
+        "lineNum": 171,
+        "text": "subtext: 'Ne cserélj azonnal drága főegységet: először ellenőrizd az élő PID adatokat!',"
+      },
+      {
+        "lineNum": 172,
+        "text": "badge: <RiskBadge level=\"low\" label=\"Fő gyanúsított\" />,"
+      },
+      {
+        "lineNum": 183,
+        "text": "{/* TL;DR Verdikt Box: 3 legfontosabb diagnosztikai tény */}"
+      },
+      {
+        "lineNum": 186,
+        "text": "subtitle=\"3 legfontosabb diagnosztikai és javítási adatpont (Zero Fluff)\""
+      },
+      {
+        "lineNum": 187,
+        "text": "badge=\"Hibakód Elemzés\""
+      }
+    ]
+  },
+  {
+    "file": "src/components/calculators/TcoCalculator.jsx",
+    "count": 14,
+    "matches": [
+      {
+        "lineNum": 227,
+        "text": "label: 'Havi & 5-Éves Összköltség',"
+      },
+      {
+        "lineNum": 228,
+        "text": "value: `${formatCurrency(tco.monthlyEconomicCostUsd)} / hó`,"
+      },
+      {
+        "lineNum": 229,
+        "text": "subtext: `${horizonYears} évre összesen: ${formatCurrency(tco.totalEconomicCostUsd)} · ${formatCurrency(tco.costPerDistanceUnit)} / ${distanceUnit}`,"
+      },
+      {
+        "lineNum": 230,
+        "text": "badge: <RiskBadge level=\"low\" label=\"Kalkulált\" />,"
+      },
+      {
+        "lineNum": 233,
+        "text": "label: 'Fő Költségtényező',"
+      },
+      {
+        "lineNum": 234,
+        "text": "value: `${primaryExpense?.label || 'Értékvesztés'}: ${primaryExpense?.sharePct || 0}%`,"
+      },
+      {
+        "lineNum": 235,
+        "text": "subtext: `${formatCurrency(primaryExpense?.amountUsd || 0)} várható kiadás ${horizonYears} év alatt.`,"
+      },
+      {
+        "lineNum": 236,
+        "text": "badge: <RiskBadge level={(primaryExpense?.sharePct || 0) > 40 ? 'critical' : 'moderate'} label={`${primaryExpense?.sharePct || 0}% arány`} />,"
+      },
+      {
+        "lineNum": 239,
+        "text": "label: 'Kockázati Szint & Értékelés',"
+      },
+      {
+        "lineNum": 241,
+        "text": "subtext: 'Kategória mediánhoz képest 11%-kal alacsonyabb fenntartási költség.',"
+      },
+      {
+        "lineNum": 245,
+        "text": "label={ownershipValueScore >= 70 ? 'Alacsony Kockázat' : ownershipValueScore >= 45 ? 'Közepes Kockázat' : 'Kritikus Kockázat'}"
+      },
+      {
+        "lineNum": 258,
+        "text": "{/* TL;DR Verdikt Box: 3 legfontosabb tény */}"
+      },
+      {
+        "lineNum": 261,
+        "text": "subtitle=\"3 legfontosabb pénzügyi mutató (Zero Fluff)\""
+      },
+      {
+        "lineNum": 262,
+        "text": "badge=\"Valós Adatok\""
+      }
+    ]
+  },
+  {
+    "file": "src/components/calculators/VehicleComparator.jsx",
+    "count": 69,
+    "matches": [
+      {
+        "lineNum": 304,
+        "text": "label: '5-Éves Költségkülönbözet',"
+      },
+      {
+        "lineNum": 306,
+        "text": "? `${vehicleB.name} olcsóbb`"
+      },
+      {
+        "lineNum": 307,
+        "text": ": `${vehicleA.name} olcsóbb`,"
+      },
+      {
+        "lineNum": 308,
+        "text": "subtext: `Havi eltérés: ${formatCurrency(Math.abs(monthlySavingsB))}/hó · 5-éves megtakarítás: ${formatCurrency(Math.abs(total5YrSavingsB))}.`,"
+      },
+      {
+        "lineNum": 312,
+        "text": "label={monthlySavingsB >= 0 ? `${vehicleB.name} előny` : `${vehicleA.name} előny`}"
+      },
+      {
+        "lineNum": 317,
+        "text": "label: 'Megtérülési Küszöb (Break-Even)',"
+      },
+      {
+        "lineNum": 319,
+        "text": "? `${(region === 'EU' ? breakEvenTrajectory.breakEvenKm : breakEvenTrajectory.breakEvenMiles).toLocaleString()} ${distanceUnit} (${breakEvenTrajectory.breakEvenYears} év)`"
+      },
+      {
+        "lineNum": 321,
+        "text": "? `${vehicleB.name} mindvégig olcsóbb (0 km)`"
+      },
+      {
+        "lineNum": 322,
+        "text": ": `${vehicleA.name} mindvégig olcsóbb`,"
+      },
+      {
+        "lineNum": 324,
+        "text": "? 'A magasabb vételárat eddigre kompenzálja az alacsonyabb üzemeltetés.'"
+      },
+      {
+        "lineNum": 325,
+        "text": ": 'Nincs keresztezési pont a vizsgált kilométertartományban.',"
+      },
+      {
+        "lineNum": 329,
+        "text": "label={breakEvenTrajectory.status === 'crossover' ? `${breakEvenTrajectory.breakEvenYears} év alatt megtérül` : 'Domináns modell'}"
+      },
+      {
+        "lineNum": 334,
+        "text": "label: 'Típushiba Kockázat & Szerviztartalék',"
+      },
+      {
+        "lineNum": 337,
+        "text": "? `${vehicleB.name} ${formatCurrency(Math.abs(riskExposureDeltaB))}-ral kisebb szerviztartalék.`"
+      },
+      {
+        "lineNum": 338,
+        "text": ": `${vehicleA.name} ${formatCurrency(Math.abs(riskExposureDeltaB))}-ral kisebb szerviztartalék.`,"
+      },
+      {
+        "lineNum": 399,
+        "text": "5-éves TCO összevetés, dinamikus megtérülési grafikon (Break-even pont) és kilométer-arányos típushibák"
+      },
+      {
+        "lineNum": 417,
+        "text": "title=\"TL;DR Összehasonlító Verdikt\""
+      },
+      {
+        "lineNum": 418,
+        "text": "subtitle=\"3 kulcsfontosságú összehasonlító adatpont (Zero Fluff)\""
+      },
+      {
+        "lineNum": 419,
+        "text": "badge=\"Döntési Mérleg\""
+      },
+      {
+        "lineNum": 426,
+        "text": "NÉPSZERŰ PÁROK:"
+      },
+      {
+        "lineNum": 459,
+        "text": "aria-label=\"Válassz első autót\""
+      },
+      {
+        "lineNum": 473,
+        "text": "Vételár: {formatCurrency(vehicleA.purchasePriceUsd)} · {vehicleA.powerHp ? `${vehicleA.powerHp} LE` : ''} · {vehicleA.engineCode}"
+      },
+      {
+        "lineNum": 483,
+        "text": "<p className=\"text-xs text-muted dark:text-slate-400\">Havi Üzemeltetési Költség</p>"
+      },
+      {
+        "lineNum": 486,
+        "text": "<span className=\"text-sm font-normal text-muted dark:text-slate-400 font-body\">/hó</span>"
+      },
+      {
+        "lineNum": 489,
+        "text": "{formatCurrency(tcoA.totalEconomicCostUsd)} 5 év alatt ({formatDistance(odoA)}-nál)"
+      },
+      {
+        "lineNum": 495,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Megbízhatóság</span>"
+      },
+      {
+        "lineNum": 501,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Szervizkockázat</span>"
+      },
+      {
+        "lineNum": 507,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Típushibák</span>"
+      },
+      {
+        "lineNum": 509,
+        "text": "{knownIssuesA.length} regisztrált"
+      },
+      {
+        "lineNum": 526,
+        "text": "aria-label=\"Válassz alternatív autót\""
+      },
+      {
+        "lineNum": 540,
+        "text": "Vételár: {formatCurrency(vehicleB.purchasePriceUsd)} · {vehicleB.powerHp ? `${vehicleB.powerHp} LE` : ''} · {vehicleB.engineCode}"
+      },
+      {
+        "lineNum": 551,
+        "text": "<p className=\"text-xs text-muted dark:text-slate-400\">Havi Üzemeltetési Költség</p>"
+      },
+      {
+        "lineNum": 560,
+        "text": "? `-${formatCurrency(Math.abs(monthlyCostDeltaB))}/hó`"
+      },
+      {
+        "lineNum": 561,
+        "text": ": `+${formatCurrency(monthlyCostDeltaB)}/hó`}"
+      },
+      {
+        "lineNum": 566,
+        "text": "<span className=\"text-sm font-normal text-muted dark:text-slate-400 font-body\">/hó</span>"
+      },
+      {
+        "lineNum": 569,
+        "text": "{formatCurrency(tcoB.totalEconomicCostUsd)} 5 év alatt ({formatDistance(odoA)}-nál)"
+      },
+      {
+        "lineNum": 575,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Megbízhatóság</span>"
+      },
+      {
+        "lineNum": 581,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Szervizkockázat</span>"
+      },
+      {
+        "lineNum": 587,
+        "text": "<span className=\"block text-[10px] font-code uppercase text-muted dark:text-slate-400\">Típushibák</span>"
+      },
+      {
+        "lineNum": 589,
+        "text": "{knownIssuesB.length} regisztrált"
+      },
+      {
+        "lineNum": 604,
+        "text": "5-Éves Megtérülési Pont (Break-Even Crossover Grafikon)"
+      },
+      {
+        "lineNum": 608,
+        "text": "Kumulatív TCO költségek a megtett kilométer függvényében (Vételár + Értékvesztés + Üzemanyag + Karbantartás)"
+      },
+      {
+        "lineNum": 674,
+        "text": "Ön 5-éves futása ({formatDistance(breakEvenTrajectory.user5YrMiles)})"
+      },
+      {
+        "lineNum": 736,
+        "text": "<strong>Megtérülési Küszöb:</strong>{' '}"
+      },
+      {
+        "lineNum": 738,
+        "text": "{formatDistance(breakEvenTrajectory.breakEvenMiles)} (~{breakEvenTrajectory.breakEvenYears} év)"
+      },
+      {
+        "lineNum": 740,
+        "text": ". Ennél a futásteljesítménynél válik a(z) {vehicleB.name} anyagilag kedvezőbbé az alacsonyabb fogyasztás és szervizigény miatt."
+      },
+      {
+        "lineNum": 744,
+        "text": "<strong>Azonnali Megtakarítás:</strong> A(z) <strong>{vehicleB.name}</strong> vételára és üzemeltetése is kedvezőbb, így már a 0. kilométertől kezdve olcsóbb."
+      },
+      {
+        "lineNum": 748,
+        "text": "<strong>{vehicleA.name} Gazdaságosabb:</strong> A vizsgált futási profil mellett a(z) {vehicleA.name} teljes birtoklási költsége alacsonyabb marad."
+      },
+      {
+        "lineNum": 756,
+        "text": "{/* Side-by-Side Known Issues (\"Gyermekbetegségek\") at Current Mileage */}"
+      },
+      {
+        "lineNum": 763,
+        "text": "Várható Típushibák (&quot;Gyermekbetegségek&quot;) {currentKm.toLocaleString()} km-nél"
+      },
+      {
+        "lineNum": 767,
+        "text": "A kiválasztott motorváltozatok dokumentált konstrukciós hibái és kockázati ablakai"
+      },
+      {
+        "lineNum": 771,
+        "text": "Adatbázis: ShiftMetric Curated Dossier"
+      },
+      {
+        "lineNum": 780,
+        "text": "<span className=\"text-muted dark:text-slate-400\">{knownIssuesA.length} típushiba</span>"
+      },
+      {
+        "lineNum": 785,
+        "text": "Nincs dokumentált súlyos típushiba ebben a futásteljesítmény-sávban."
+      },
+      {
+        "lineNum": 806,
+        "text": "Aktív ablak"
+      },
+      {
+        "lineNum": 818,
+        "text": "<span>Javítás: {issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</span>"
+      },
+      {
+        "lineNum": 831,
+        "text": "<span className=\"text-muted dark:text-slate-400\">{knownIssuesB.length} típushiba</span>"
+      },
+      {
+        "lineNum": 836,
+        "text": "Nincs dokumentált súlyos típushiba ebben a futásteljesítmény-sávban."
+      },
+      {
+        "lineNum": 857,
+        "text": "Aktív ablak"
+      },
+      {
+        "lineNum": 869,
+        "text": "<span>Javítás: {issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</span>"
+      },
+      {
+        "lineNum": 885,
+        "text": "<th className=\"py-3 px-3\">Költség &amp; Telemetria Kategória</th>"
+      },
+      {
+        "lineNum": 888,
+        "text": "<th className=\"py-3 px-3 text-right\">Eltérés (Delta)</th>"
+      },
+      {
+        "lineNum": 893,
+        "text": "<td className=\"py-3 px-3 font-body text-xs font-medium text-ink dark:text-slate-200\">Vételár</td>"
+      },
+      {
+        "lineNum": 902,
+        "text": "<td className=\"py-3 px-3 font-body text-xs font-medium text-ink dark:text-slate-200\">5-Éves Értékvesztés</td>"
+      },
+      {
+        "lineNum": 918,
+        "text": "Üzemanyag / Energia ({horizonYears} év)"
+      },
+      {
+        "lineNum": 935,
+        "text": "Karbantartási Tartalék"
+      },
+      {
+        "lineNum": 952,
+        "text": "Biztosítás ({horizonYears} év)"
+      },
+      {
+        "lineNum": 966,
+        "text": "{formatCurrency(tcoA.totalEconomicCostUsd)} ({formatCurrency(tcoA.monthlyEconomicCostUsd)}/hó)"
+      },
+      {
+        "lineNum": 969,
+        "text": "{formatCurrency(tcoB.totalEconomicCostUsd)} ({formatCurrency(tcoB.monthlyEconomicCostUsd)}/hó)"
+      }
+    ]
+  },
+  {
+    "file": "src/components/common/KnownIssuesDossier.jsx",
+    "count": 32,
+    "matches": [
+      {
+        "lineNum": 34,
+        "text": "label: 'Kritikus kockázat',"
+      },
+      {
+        "lineNum": 41,
+        "text": "label: 'Magas kockázat',"
+      },
+      {
+        "lineNum": 48,
+        "text": "label: 'Közepes kockázat',"
+      },
+      {
+        "lineNum": 55,
+        "text": "label: 'Enyhe kockázat',"
+      },
+      {
+        "lineNum": 193,
+        "text": "Típushiba Dosszié"
+      },
+      {
+        "lineNum": 203,
+        "text": "{(metadata.source === 'memory-cache' || metadata.source === 'storage-cache') && `⚡ Gyorsítótár (<1ms)`}"
+      },
+      {
+        "lineNum": 204,
+        "text": "{metadata.source === 'curated-fallback' && `🛡️ Kurált Adatbázis (<50ms)`}"
+      },
+      {
+        "lineNum": 208,
+        "text": "Motorspecifikus \"Gyermekbetegségek\" &amp; Gyári Visszahívások"
+      },
+      {
+        "lineNum": 220,
+        "text": "<span>Élő Adatok Frissítése</span>"
+      },
+      {
+        "lineNum": 229,
+        "text": "Generáció:"
+      },
+      {
+        "lineNum": 261,
+        "text": "Motorkód / Hajtáslánc:"
+      },
+      {
+        "lineNum": 321,
+        "text": "<span>Azonosított Konstrukciós Hibák ({knownIssues.length})</span>"
+      },
+      {
+        "lineNum": 324,
+        "text": "Alkatrész + Munkadíj kalkulációval"
+      },
+      {
+        "lineNum": 330,
+        "text": "Nincs kritikus ismert hiba rögzítve ehhez a konfigurációhoz."
+      },
+      {
+        "lineNum": 367,
+        "text": "Alkatrész + Munkadíj"
+      },
+      {
+        "lineNum": 376,
+        "text": "<strong className=\"font-semibold text-ink dark:text-slate-200\">Tünetek: </strong>"
+      },
+      {
+        "lineNum": 389,
+        "text": "<span>{isExpanded ? 'Részletek elrejtése' : 'Megelőzési útmutató és költségek'}</span>"
+      },
+      {
+        "lineNum": 395,
+        "text": "<span className=\"text-[10px] font-mono text-muted\">DTC kódok:</span>"
+      },
+      {
+        "lineNum": 412,
+        "text": "🛡️ Megelőzési javaslat:"
+      },
+      {
+        "lineNum": 421,
+        "text": "<span className=\"text-muted block\">Alkatrész sáv:</span>"
+      },
+      {
+        "lineNum": 427,
+        "text": "<span className=\"text-muted block\">Munkadíj sáv:</span>"
+      },
+      {
+        "lineNum": 433,
+        "text": "<span className=\"text-muted block\">Érintett alkatrészek:</span>"
+      },
+      {
+        "lineNum": 452,
+        "text": "<span>Valós Külső Telemetria (NHTSA &amp; EPA FuelEconomy)</span>"
+      },
+      {
+        "lineNum": 458,
+        "text": "<span className=\"text-[11px] text-muted dark:text-slate-400 block\">Gyári Visszahívások (NHTSA)</span>"
+      },
+      {
+        "lineNum": 468,
+        "text": "{showRecalls ? 'Elrejtés' : 'Kampányok'}"
+      },
+      {
+        "lineNum": 485,
+        "text": "{showComplaints ? 'Elrejtés' : 'Gyakori hibák'}"
+      },
+      {
+        "lineNum": 492,
+        "text": "<span className=\"text-[11px] text-muted dark:text-slate-400 block\">Gyári EPA Fogyasztás</span>"
+      },
+      {
+        "lineNum": 508,
+        "text": "Gyári Visszahívási Kampányok ({nhtsaRecalls.length})"
+      },
+      {
+        "lineNum": 511,
+        "text": "<p className=\"text-xs text-muted\">Nincs rögzített gyári visszahívás ehhez a modellévhez.</p>"
+      },
+      {
+        "lineNum": 529,
+        "text": "<strong>Javítás:</strong> {recall.remedy}"
+      },
+      {
+        "lineNum": 543,
+        "text": "Gyakran Bejelentett Alkatrészek (NHTSA Complaints)"
+      },
+      {
+        "lineNum": 549,
+        "text": "<span className=\"font-bold text-primary-600 dark:text-primary-400\">{comp.count} bejelentés</span>"
+      }
+    ]
+  },
+  {
+    "file": "src/components/common/OdometerPrimitives.jsx",
+    "count": 4,
+    "matches": [
+      {
+        "lineNum": 343,
+        "text": "const isModerate = normalized.includes('mod') || normalized.includes('warn') || normalized.includes('köz') || normalized.includes('koz');"
+      },
+      {
+        "lineNum": 360,
+        "text": "? 'Közepes / Moderate'"
+      },
+      {
+        "lineNum": 375,
+        "text": "subtitle = '3 legfontosabb adatpont azonnali áttekintéshez (Zero Fluff)',"
+      },
+      {
+        "lineNum": 376,
+        "text": "badge = 'Gyors áttekintés',"
+      }
+    ]
+  },
+  {
+    "file": "src/components/home/HeroVehicleFinder.jsx",
+    "count": 5,
+    "matches": [
+      {
+        "lineNum": 192,
+        "text": "label={activePreset.maintenanceWearFactor > 1.3 ? 'Kritikus' : activePreset.maintenanceWearFactor > 1.05 ? 'Közepes' : 'Alacsony'}"
+      },
+      {
+        "lineNum": 236,
+        "text": "<span className=\"text-[10px] text-muted dark:text-slate-400 block\">Futás / Odo</span>"
+      },
+      {
+        "lineNum": 242,
+        "text": "<span className=\"text-[10px] text-muted dark:text-slate-400 block\">Fogyasztás</span>"
+      },
+      {
+        "lineNum": 248,
+        "text": "<span className=\"text-[10px] text-muted dark:text-slate-400 block\">Várható szerviz</span>"
+      },
+      {
+        "lineNum": 250,
+        "text": "{formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/év"
+      }
+    ]
+  },
+  {
+    "file": "src/components/home/PreInspectionChecklist.jsx",
+    "count": 28,
+    "matches": [
+      {
+        "lineNum": 108,
+        "text": "Használtautó Átvizsgálási Protokoll (PPI Checklist)"
+      },
+      {
+        "lineNum": 111,
+        "text": "Helyszíni Segédlet"
+      },
+      {
+        "lineNum": 115,
+        "text": "{selectedPreset.name} — Vásárlás Előtti Helyszíni Ellenőrzőlista"
+      },
+      {
+        "lineNum": 128,
+        "text": "title=\"Állapot megosztása URL linkként\""
+      },
+      {
+        "lineNum": 133,
+        "text": "<span className=\"text-emerald-700 dark:text-emerald-400 font-bold\">Link vágólapon!</span>"
+      },
+      {
+        "lineNum": 138,
+        "text": "<span>Megosztás linkként</span>"
+      },
+      {
+        "lineNum": 147,
+        "text": "title=\"Nyomtatás vagy mentés PDF formátumban\""
+      },
+      {
+        "lineNum": 150,
+        "text": "<span>Nyomtatható / PDF Riport</span>"
+      },
+      {
+        "lineNum": 159,
+        "text": "<span>OBD Hibakód Kereső</span>"
+      },
+      {
+        "lineNum": 171,
+        "text": "<span>Autómodell:</span>"
+      },
+      {
+        "lineNum": 182,
+        "text": "aria-label=\"Válassz jármű modellt\""
+      },
+      {
+        "lineNum": 195,
+        "text": "Jelenlegi km-óra állás:"
+      },
+      {
+        "lineNum": 218,
+        "text": "Helyszíni Haladás: {checkedCount} / {totalCount} pont kipipálva"
+      },
+      {
+        "lineNum": 222,
+        "text": "? '✓ Minden ellenőrzési pont átvizsgálva! Megkezdheted az ártárgyalást.'"
+      },
+      {
+        "lineNum": 223,
+        "text": ": 'Minden pontot vizsgálj meg a helyszínen az eladó jelenlétében!'}"
+      },
+      {
+        "lineNum": 236,
+        "text": "<span>Visszaállítás</span>"
+      },
+      {
+        "lineNum": 247,
+        "text": "ShiftMetric — Használtautó Átvizsgálási Jegyzőkönyv"
+      },
+      {
+        "lineNum": 250,
+        "text": "Jármű: <strong>{selectedPreset.name}</strong> · Motorkód: <strong>{selectedPreset.engineCode}</strong> · Hajtás: <strong>{selectedPreset.fuelType}</strong>"
+      },
+      {
+        "lineNum": 253,
+        "text": "Vizsgált futásteljesítmény: <strong>{odometerKm.toLocaleString()} km</strong> · Dátum: <strong>{new Date().toLocaleDateString('hu-HU')}</strong>"
+      },
+      {
+        "lineNum": 308,
+        "text": "Modell-típushiba"
+      },
+      {
+        "lineNum": 314,
+        "text": "Kockázat: {s.estSaving}"
+      },
+      {
+        "lineNum": 325,
+        "text": "<strong>Helyszíni vizsgálat módja:</strong> {s.inspectionMethod}"
+      },
+      {
+        "lineNum": 345,
+        "text": "Helyszíni Észrevételek, Hibák és Alkupozíció (Kézírásos Jegyzetek):"
+      },
+      {
+        "lineNum": 348,
+        "text": "Megjegyzések: ...................................................................................................................................................................."
+      },
+      {
+        "lineNum": 352,
+        "text": "<p>Átvizsgáló szakember / Vevő aláírása: ___________________________</p>"
+      },
+      {
+        "lineNum": 355,
+        "text": "<p>Eladó / Kereskedő tudomásulvétele: ___________________________</p>"
+      },
+      {
+        "lineNum": 363,
+        "text": "Tipp: A mentett ellenőrzőlistát telefonodon is megnyithatod a helyszínen a <strong>Megosztás linkként</strong> gombbal."
+      },
+      {
+        "lineNum": 372,
+        "text": "<span>5-Éves TCO Számítás</span>"
+      }
+    ]
+  },
+  {
+    "file": "src/components/home/ReviewsSection.jsx",
+    "count": 2,
+    "matches": [
+      {
+        "lineNum": 136,
+        "text": "<span>${Number(rev.amountPaid || 0).toLocaleString()} Számla</span>"
+      },
+      {
+        "lineNum": 139,
+        "text": "<RiskBadge level=\"low\" label=\"Hitelesített\" />"
+      }
+    ]
+  },
+  {
+    "file": "src/components/home/SubsystemGrid.jsx",
+    "count": 17,
+    "matches": [
+      {
+        "lineNum": 11,
+        "text": "typicalIssues: 'Nagynyomású szivattyú kopás, VNT geometria lekormolódás, PCV szelephiba.',"
+      },
+      {
+        "lineNum": 16,
+        "text": "riskLabel: 'Közepes Kockázat',"
+      },
+      {
+        "lineNum": 17,
+        "text": "statusBadge: 'Közepes / Moderate',"
+      },
+      {
+        "lineNum": 24,
+        "text": "typicalIssues: 'DSG mechatronika nyomáscsökkenés, kettőstömegű lendkerék fáradás.',"
+      },
+      {
+        "lineNum": 29,
+        "text": "riskLabel: 'Kritikus Kockázat',"
+      },
+      {
+        "lineNum": 37,
+        "text": "typicalIssues: 'Koromtelítődés rövid városi utak miatt, differenciálnyomás-szenzor hiba.',"
+      },
+      {
+        "lineNum": 42,
+        "text": "riskLabel: 'Közepes Kockázat',"
+      },
+      {
+        "lineNum": 43,
+        "text": "statusBadge: 'Közepes / Moderate',"
+      },
+      {
+        "lineNum": 50,
+        "text": "typicalIssues: 'Cella feszültségeltérés (delta mV), inverter hűtőkör degradáció.',"
+      },
+      {
+        "lineNum": 55,
+        "text": "riskLabel: 'Alacsony Kockázat',"
+      },
+      {
+        "lineNum": 63,
+        "text": "typicalIssues: 'Hidroszilentek repedése, lengőkar gömbfej lógás, toronycsapágy kopás.',"
+      },
+      {
+        "lineNum": 68,
+        "text": "riskLabel: 'Közepes Kockázat',"
+      },
+      {
+        "lineNum": 69,
+        "text": "statusBadge: 'Közepes / Moderate',"
+      },
+      {
+        "lineNum": 76,
+        "text": "typicalIssues: 'Féktárcsa vetemedés, féknyereg vezetőcsap korrózió, regeneratív fékátmenet.',"
+      },
+      {
+        "lineNum": 81,
+        "text": "riskLabel: 'Alacsony Kockázat',"
+      },
+      {
+        "lineNum": 144,
+        "text": "Várható csere: {sub.expectedInterval}"
+      },
+      {
+        "lineNum": 148,
+        "text": "Becsült javítás: {formatCurrency(sub.typicalCostUsd)}"
+      }
+    ]
+  },
+  {
+    "file": "src/components/layout/Footer.jsx",
+    "count": 2,
+    "matches": [
+      {
+        "lineNum": 269,
+        "text": "Melyiket vegyem? (Összehasonlító)"
+      },
+      {
+        "lineNum": 274,
+        "text": "Vásárlás Előtti Csekklista (PPI)"
+      }
+    ]
+  },
+  {
+    "file": "src/components/layout/Navbar.jsx",
+    "count": 2,
+    "matches": [
+      {
+        "lineNum": 13,
+        "text": "{ id: 'compare', label: 'Compare', fullLabel: 'Melyiket vegyem? Autó Összehasonlító', icon: GitCompare, desc: '5-éves TCO Break-even grafikon és típushiba összevetés' },"
+      },
+      {
+        "lineNum": 14,
+        "text": "{ id: 'checklist', label: 'PPI Checklist', fullLabel: 'Használtautó Átvizsgálási Csekklista', icon: CheckCircle2, desc: 'Helyszíni ellenőrzőlista, linkmegosztás és PDF riport' },"
+      }
+    ]
+  },
+  {
+    "file": "src/components/seo/DynamicSeoHead.jsx",
+    "count": 14,
+    "matches": [
+      {
+        "lineNum": 181,
+        "text": "const title = `Melyiket vegyem? ${preset.name} Összehasonlítás, TCO & Megtérülési Pont | ShiftMetric`;"
+      },
+      {
+        "lineNum": 182,
+        "text": "const description = `Hasonlítsd össze a(z) ${preset.name} (${preset.engineCode}) modellt más járművekkel: 5-éves TCO Break-even megtérülési grafikon, üzemeltetési költségek és típushibák.`;"
+      },
+      {
+        "lineNum": 193,
+        "text": "const title = `Használtautó Vásárlás Előtti Ellenőrzőlista (PPI) – ${preset.name} | ShiftMetric`;"
+      },
+      {
+        "lineNum": 194,
+        "text": "const description = `Helyszíni ellenőrzőlista használt ${preset.name} (${preset.engineCode}) vásárlása előtt: kritikus konstrukciós hibák, motortér- és futómű-vizsgálat, OBD-II diagnosztika és azonnali nyomtatható riport.`;"
+      },
+      {
+        "lineNum": 386,
+        "text": "name: `Használtautó vásárlás előtti átvizsgálási jegyzőkönyv: ${preset.name}`,"
+      },
+      {
+        "lineNum": 387,
+        "text": "description: `Lépésről-lépésre helyszíni ellenőrzőlista a(z) ${preset.name} (${preset.engineCode}) állapotfelméréséhez és típushibáinak kiszűréséhez.`,"
+      },
+      {
+        "lineNum": 391,
+        "text": "name: 'OBD-II DTC és Freeze Frame hibatároló olvasás',"
+      },
+      {
+        "lineNum": 392,
+        "text": "text: 'Aktív és tárolt hibakódok, valamint a hibatörlés óta megtett kilométer ellenőrzése.',"
+      },
+      {
+        "lineNum": 396,
+        "text": "name: 'Motortér és Típushibák ellenőrzése',"
+      },
+      {
+        "lineNum": 397,
+        "text": "text: 'Vezérműszíj/lánc állapot, üzemanyagszivattyú (pl. CP4) és szivárgások vizsgálata.',"
+      },
+      {
+        "lineNum": 401,
+        "text": "name: 'Festékvastagság és karosszéria illesztések mérése',"
+      },
+      {
+        "lineNum": 402,
+        "text": "text: 'Rétegvastagság-mérés az elemeken és oszlopokon a rejtett töréskárok felderítésére.',"
+      },
+      {
+        "lineNum": 406,
+        "text": "name: 'Váltó- és kuplungterheléses próbateszt',"
+      },
+      {
+        "lineNum": 407,
+        "text": "text: 'Kuplungcsúszás, kettőstömegű lendkerék és mechatronika ellenőrzése menet közben.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/breakEvenAndPpi.js",
+    "count": 35,
+    "matches": [
+      {
+        "lineNum": 129,
+        "text": "// 1. Synthesize targeted checks from specific Known Issues (\"Gyermekbetegségek\")"
+      },
+      {
+        "lineNum": 136,
+        "text": "let keyPids = 'OBD Mode 01/02 & Fizikai szemrevételezés';"
+      },
+      {
+        "lineNum": 142,
+        "text": "keyPids = 'Rail Pressure PID 0x22, Injektor korrekciók';"
+      },
+      {
+        "lineNum": 144,
+        "text": "keyPids = 'Cam/Crank Correlation PID, Hidegindítási akusztika';"
+      },
+      {
+        "lineNum": 150,
+        "text": "title: `${issue.name} (${issue.criticalMileage?.display || 'Konstrukciós hiba'})`,"
+      },
+      {
+        "lineNum": 153,
+        "text": "riskLabel: isMileageActive ? 'Aktív Kilométer-kockázat' : `${issue.severity.toUpperCase()} Kockázat`,"
+      },
+      {
+        "lineNum": 155,
+        "text": "focus: `Tünet: ${issue.symptoms} | Megelőzés: ${issue.prevention}`,"
+      },
+      {
+        "lineNum": 156,
+        "text": "inspectionMethod: `Helyszíni ellenőrzés: Vizsgáld meg a részegységet (${issue.affectedComponents.join(', ')}). ${"
+      },
+      {
+        "lineNum": 158,
+        "text": "? 'Világíts be az olajbeöntő sapkán a szíj hátát repedések és levált foszlányok után keresve!'"
+      },
+      {
+        "lineNum": 160,
+        "text": "? 'Kérd el az üzemanyagszűrő fedelét, vagy ellenőrizd a szűrőház alját csillogó fémreszelék (spén) után!'"
+      },
+      {
+        "lineNum": 162,
+        "text": "? 'Mérj rá a 12V-os akkumulátor feszültségére, és próbáld ki az AC töltést a helyszínen!'"
+      },
+      {
+        "lineNum": 164,
+        "text": "? 'Hidegindításnál figyelj az első 5 másodpercben a vezérműlánc csörgő/surrogó hangjára!'"
+      },
+      {
+        "lineNum": 165,
+        "text": ": 'Fizikai vizsgálat és diagnosztikai hibatároló olvasás javasolt.'"
+      },
+      {
+        "lineNum": 177,
+        "text": "title: 'OBD-II DTC & Freeze Frame Élőadat Kiolvasás',"
+      },
+      {
+        "lineNum": 180,
+        "text": "riskLabel: 'Kritikus / Kötelező',"
+      },
+      {
+        "lineNum": 182,
+        "text": "focus: 'Aktív, tárolt és függőben lévő (Pending) hibakódok kiolvasása a törlés óta eltelt km (Distance since DTC cleared) ellenőrzésével.',"
+      },
+      {
+        "lineNum": 183,
+        "text": "inspectionMethod: 'Csatlakoztass OBD2 szkennert: ha a \"Distance since codes cleared\" < 50 km, az eladó közvetlenül a találkozó előtt törölhette a vészjelzéseket!',"
+      },
+      {
+        "lineNum": 189,
+        "text": "title: 'Hidegindítás, Kartergáz és Olajsapka Nyomásteszt',"
+      },
+      {
+        "lineNum": 192,
+        "text": "riskLabel: 'Közepes / Fontos',"
+      },
+      {
+        "lineNum": 194,
+        "text": "focus: 'Kizárólag teljesen hideg motor indítása. Füstképződés (fehér/kék/fekete) és motorzajok megfigyelése alapjáraton.',"
+      },
+      {
+        "lineNum": 195,
+        "text": "inspectionMethod: 'Érkezéskor tapintsd meg a motorblokkot (nem lehet meleg!). Járó motornál óvatosan nyisd meg az olajbeöntőt: enyhe vákuum normális, túlzott kartergáz-nyomás vagy füsthengerek kompresszióvesztést jeleznek.',"
+      },
+      {
+        "lineNum": 201,
+        "text": "title: 'Karosszéria Festékvastagság & Rejtett Töréskár Szűrés',"
+      },
+      {
+        "lineNum": 204,
+        "text": "riskLabel: 'Kritikus / Értékvesztés',"
+      },
+      {
+        "lineNum": 206,
+        "text": "focus: 'Rétegvastagság-mérés minden elemen (gyári: 80–140 µm). A/B/C oszlopok és csomagtértalaj ponthegesztéseinek épsége.',"
+      },
+      {
+        "lineNum": 207,
+        "text": "inspectionMethod: 'Mérj rá az A-oszlopokra és küszöbökre (>200 µm újrafényezést, >450 µm gittet és komoly szerkezeti sérülést jelent). Ellenőrizd az összes fényszóró és üveg gyártási évszámának egyezését.',"
+      },
+      {
+        "lineNum": 208,
+        "text": "keyPids: 'Mágneses / Digitális rétegvastagság mérő, Üveg DOT kódok',"
+      },
+      {
+        "lineNum": 213,
+        "text": "title: 'Váltópróba, Kuplungcsúszás & Kettőstömegű Lendkerék Terhelésteszt',"
+      },
+      {
+        "lineNum": 216,
+        "text": "riskLabel: 'Kritikus / Drága javítás',"
+      },
+      {
+        "lineNum": 218,
+        "text": "focus: 'Fokozatok akadálymentes kapcsolása, kúszási hajlam (automata), és leállításkori fém csattanás szűrése.',"
+      },
+      {
+        "lineNum": 219,
+        "text": "inspectionMethod: 'Próbakörön 4. fokozatban 1500 RPM-ről adj padlógázt: ha a fordulatszám meglódul sebességgyorsulás nélkül, a kuplung csúszik. Motor leállításakor lenyomott és felengedett kuplunggal is figyeld a lendkerék csattogását.',"
+      },
+      {
+        "lineNum": 225,
+        "text": "title: 'Futómű, Lengőkarszilentek & Féktárcsa Peremkopás',"
+      },
+      {
+        "lineNum": 228,
+        "text": "riskLabel: 'Közepes / Futómű',"
+      },
+      {
+        "lineNum": 230,
+        "text": "focus: 'Egyenetlen gumikopás (belső vállak lekopása futómű-elállítódást jelez), lengéscsillapító olajfolyás, féktárcsa válla.',"
+      },
+      {
+        "lineNum": 231,
+        "text": "inspectionMethod: 'Kitekerett kormánynál nézd meg a gumiabroncsok profilmélységét és egyenletességét. Erős fékezéskor engedd el a kormányt: nem húzhat félre és nem rázhatja a pedált!',"
+      },
+      {
+        "lineNum": 232,
+        "text": "keyPids: 'Fékfolyadék forráspont mérő, Futómű geometria szimmetria',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/obdCodes.js",
+    "count": 1,
+    "matches": [
+      {
+        "lineNum": 53,
+        "text": "'Failed state/MOT/TÜV OBD emissions readiness inspection',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicleCatalog.js",
+    "count": 11,
+    "matches": [
+      {
+        "lineNum": 3,
+        "text": "* Organized hierarchically: Brand (Márka) ➔ Model (Modell) ➔ Engine / Powertrain (Motor)"
+      },
+      {
+        "lineNum": 235,
+        "text": "\"powertrainLabel\": \"1.9L Turbo Diesel Pumpe-Düse (PD)\","
+      },
+      {
+        "lineNum": 1646,
+        "text": "\"name\": \"BMW 2 Series 218i Gran Coupé (136 HP)\","
+      },
+      {
+        "lineNum": 1647,
+        "text": "\"shortName\": \"BMW 218i Gran Coupé\","
+      },
+      {
+        "lineNum": 1746,
+        "text": "\"name\": \"BMW 4 Series 420d Gran Coupé (190 HP)\","
+      },
+      {
+        "lineNum": 1747,
+        "text": "\"shortName\": \"BMW 420d Gran Coupé\","
+      },
+      {
+        "lineNum": 1755,
+        "text": "\"segment\": \"Premium Executive 4-Door Coupé\","
+      },
+      {
+        "lineNum": 2172,
+        "text": "\"segment\": \"Premium 4-Door Coupé\","
+      },
+      {
+        "lineNum": 2704,
+        "text": "\"segment\": \"Compact Premium 4-Door Coupé\","
+      },
+      {
+        "lineNum": 4551,
+        "text": "\"segment\": \"Coupé-SUV Hybrid Crossover\","
+      },
+      {
+        "lineNum": 9464,
+        "text": "* e.g., 'Citroën' -> 'citroen', 'Škoda' -> 'skoda', 'dízel' -> 'dizel'."
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/bmw.js",
+    "count": 25,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: 'Kormánymű persely kopás és hidegben hallható kattogás',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Apró egyenetlenségeken és macskakövön halk kopogás a kormányoszlop aljából.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'BMW javítókészletes kormánymű támasztópersely hézagolás vagy cseredarabos felújítás.',"
+      },
+      {
+        "lineNum": 61,
+        "text": "criticalDefectTag: '🚨 EGR HŰTŐ TŰZVESZÉLY VISSZAHÍVÁS & KOROM',"
+      },
+      {
+        "lineNum": 71,
+        "text": "name: 'EGR hűtő belső glikolszivárgás és szívósor műanyag átolvadás / tűzveszély',"
+      },
+      {
+        "lineNum": 79,
+        "text": "symptoms: 'Lassú hűtőfolyadék-fogyás külső nyom nélkül, jellegzetes égett szag motortérből, P0401 hibakód.',"
+      },
+      {
+        "lineNum": 80,
+        "text": "prevention: 'Hivatalos BMW gyári visszahívásos EGR hűtő csere BorgWarner/Korens módosított változatra! Dióhéjas szívósor tisztítás 80e km-nél.',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'SCR AdBlue tartály fűtőelem és szintérzékelő meghibásodás',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'Figyelmeztetés a műszerfalon: \"Nem indul újra 1000 km múlva\", nem törölhető SCR hibakód hidegben.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'Kiváló minőségű ISO 22241 AdBlue folyadék, kristályosodásgátló adalékolás.',"
+      },
+      {
+        "lineNum": 127,
+        "text": "criticalDefectTag: '⚠️ PCV SZELEPFEDÉL MEMBRÁN & HŰTŐVÍZ CSATLAKOZÓK',"
+      },
+      {
+        "lineNum": 137,
+        "text": "name: 'PCV kartergáz-membrán szakadás a szelepfedélben és műanyag vízcsatlakozó repedés',"
+      },
+      {
+        "lineNum": 145,
+        "text": "symptoms: 'Sípoló szívóhang az olajbeöntő környékén, kékesfehér füstfelhő hidegindításkor, vákuum az olajsapka levételekor.',"
+      },
+      {
+        "lineNum": 146,
+        "text": "prevention: 'Alumínium utángyártott hűtővíz-csatlakozó beépítése, PCV membrán felújítás vagy szelepfedél csere 100e km-nél.',"
+      },
+      {
+        "lineNum": 181,
+        "text": "criticalDefectTag: '🚨 N47 HÁTSÓ VEZÉRMŰLÁNC SZAKADÁS & CP4 SPÉM',"
+      },
+      {
+        "lineNum": 191,
+        "text": "name: 'Hátsó elhelyezésű vezérműlánc nyúlás és feszítőpatron gyengülés / láncszakadás',"
+      },
+      {
+        "lineNum": 199,
+        "text": "symptoms: 'Súrlódó, csörgő fémes hang a motor hátsó (váltó felőli) oldaláról 1500–2000 RPM között gázadáskor és elvételkor.',"
+      },
+      {
+        "lineNum": 200,
+        "text": "prevention: 'Gyári 30e km helyett szigorú 10-12,000 km olajcsere, megelőző lánc és feszítő készlet csere 120-140e km-nél!',"
+      },
+      {
+        "lineNum": 214,
+        "text": "name: 'CP4 magasnyomású szivattyú mikrogörgő elfordulás és alumínium spém képződés',"
+      },
+      {
+        "lineNum": 222,
+        "text": "symptoms: 'Railnyomás hiány (P0087), az autó hirtelen leáll és nem indul, üzemanyagszűrő tele ezüstös fémreszelékkel.',"
+      },
+      {
+        "lineNum": 223,
+        "text": "prevention: 'Kizárólag prémium gázolaj, üzemanyagszűrő csere minden második olajcserénél, CP4 szivattyú felújítás 150e km-nél.',"
+      },
+      {
+        "lineNum": 264,
+        "text": "criticalDefectTag: '⚠️ EGR HŰTŐ TŰZVESZÉLY VISSZAHÍVÁS & LÉGRUGO',"
+      },
+      {
+        "lineNum": 274,
+        "text": "name: 'Hátsó légrugó ballon kirepedés és kompresszor túlterhelés (Touring G31)',"
+      },
+      {
+        "lineNum": 282,
+        "text": "symptoms: 'Éjszaka leülő hátsó futómű, reggeli indításkor folyamatosan zúgó légrugó kompresszor.',"
+      },
+      {
+        "lineNum": 283,
+        "text": "prevention: 'Légrugó ballonok tisztítása és gumiápolása sózás után, csere párban Arnott megerősített változatra.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/ford.js",
+    "count": 27,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: 'Hátsó lengőkar szilent szakadás és futómű elmászás',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Kopogó tompa hang hátulról úthibákon, bizonytalan hátsó futás, belső fűrészfogas gumikopás.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'Éves lengőkarszilent szemrevételezés, megerősített poliuretán vagy Lemförder csere.',"
+      },
+      {
+        "lineNum": 51,
+        "text": "name: 'Sync 3/4 APIM infotainment fejegység lefagyás és fekete képernyő',"
+      },
+      {
+        "lineNum": 59,
+        "text": "symptoms: 'Késleltetett tolatókamera kép, érintőképernyő érzéketlenség, Bluetooth szétkapcsolás.',"
+      },
+      {
+        "lineNum": 60,
+        "text": "prevention: 'Hivatalos Ford USB vagy OTA szoftverfrissítés, 12V akkumulátorfeszültség stabilizálása.',"
+      },
+      {
+        "lineNum": 84,
+        "text": "criticalDefectTag: '⚠️ CP4 SPÉM & OLAJBAN FUTÓ OLAJSZIVATTYÚ SZÍJ',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'CP4 magasnyomású szivattyú rugótörés / fémforgácsképződés (spém)',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'Nehéz melegindítás, hirtelen Limp Mode gyorsításkor, mikroszkopikus alumínium fémforgács az üzemanyagszűrőben.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'Prémium gázolaj használata kenésjavító adalékkal, üzemanyagszűrő csere max 15,000 km-enként, CP4 adagoló felújítás 150e km-nél.',"
+      },
+      {
+        "lineNum": 117,
+        "text": "name: 'Olajban futó olajszivattyú szíj (wet belt) degradáció és olajszűrő kosár dugulás',"
+      },
+      {
+        "lineNum": 125,
+        "text": "symptoms: 'Alacsony olajnyomás figyelmeztetés meleg motornál alapjáraton, turbófeltöltő tengelylógás és fütyülés.',"
+      },
+      {
+        "lineNum": 126,
+        "text": "prevention: 'Szigorúan Ford WSS-M2C950-A olaj, olajcsere 10-12,000 km-enként (gyári 30e km helyett), karter levétel és kosártisztítás 120e km-nél.',"
+      },
+      {
+        "lineNum": 140,
+        "text": "name: 'SCR AdBlue adagoló fúvóka kristályosodás és fűtőszál leégés',"
+      },
+      {
+        "lineNum": 148,
+        "text": "symptoms: 'Check Engine lámpa, sárga motorfigyelmeztető, \"Motorindítás megtagadva 800 km múlva\" műszerfali számláló.',"
+      },
+      {
+        "lineNum": 149,
+        "text": "prevention: 'AdBlue kristályosodásgátló adalék betöltése minden folyadék utántöltéskor, szoftveres regeneráció.',"
+      },
+      {
+        "lineNum": 173,
+        "text": "criticalDefectTag: '🚨 ECOBOOM: OLAJBAN FUTÓ SZÍJ (WET BELT) DEGRADÁCIÓ',"
+      },
+      {
+        "lineNum": 183,
+        "text": "name: 'Olajban futó vezérműszíj (wet belt) degradáció/elkopás és olajszivattyú szűrő eltömődés',"
+      },
+      {
+        "lineNum": 191,
+        "text": "symptoms: 'Olajnyomás hibalámpa felvillanása fékezéskor, fékpedál felkeményedése (vákuumszivattyú eldugulás), morajló motorhang.',"
+      },
+      {
+        "lineNum": 192,
+        "text": "prevention: 'Gyári 200e km helyett 100-120e km-enként vezérléscsere! Szigorúan csak WSS-M2C948-B olaj, max 10,000 km vagy 1 év csereintervallum.',"
+      },
+      {
+        "lineNum": 206,
+        "text": "name: 'Hűtőfolyadék légtelenítő műanyag cső elridegülés és hirtelen elfolyás',"
+      },
+      {
+        "lineNum": 214,
+        "text": "symptoms: 'Hirtelen elfolyó hűtőfolyadék, fehér füst a motortérből, azonnali hengerfej túlmelegedés.',"
+      },
+      {
+        "lineNum": 215,
+        "text": "prevention: 'Megerősített szilikon/alumínium revíziós cső beépítése még a gyári műanyag elfáradása előtt.',"
+      },
+      {
+        "lineNum": 256,
+        "text": "criticalDefectTag: '⚠️ POWERSHIFT 6DCT450 OLAJSZIVÁRGÁS & DPF',"
+      },
+      {
+        "lineNum": 266,
+        "text": "name: 'PowerShift 6DCT450 nedveskuplungos mechatronika szelep kopás',"
+      },
+      {
+        "lineNum": 274,
+        "text": "symptoms: 'Rángatás 1-es és 2-es fokozat között dugóban, csúszó kuplung érzet, hibaüzenet: \"Transmission limited function\".',"
+      },
+      {
+        "lineNum": 275,
+        "text": "prevention: 'Szigorúan 60,000 km-enként olaj és külső-belső szűrőcsere gyári Ford specifikációjú folyadékkal.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/hyundaiKia.js",
+    "count": 20,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: 'ICCU (Integrated Charging Control Unit) belső túláram, FET tranzisztor és 12V leégés',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Hangos pukkanó hang lassú AC töltés vagy menet közben, \"Check EV System\" riasztás, 12V akkumulátor azonnali lemerülése.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'Sürgősségi gyári szoftverfrissítés (visszahívás 24V-204), túlfeszültség-védett fali töltő, revíziós hardver beépítése.',"
+      },
+      {
+        "lineNum": 51,
+        "text": "name: 'AC töltőaljzat túláram-érzékelő túlmelegedés és töltés-visszaszabályozás (throttling)',"
+      },
+      {
+        "lineNum": 59,
+        "text": "symptoms: '11 kW-os (3x16A) vagy 48A töltés elindulása után 30 perccel a töltés leáll vagy 3.5 kW-ra esik vissza 100°C port hőmérsékletnél.',"
+      },
+      {
+        "lineNum": 60,
+        "text": "prevention: 'Töltőáram szoftveres korlátozása 32A-ra a kijelzőn, csatlakozótüskék oxidációmentesítése.',"
+      },
+      {
+        "lineNum": 83,
+        "text": "criticalDefectTag: '🚨 ICCU 12V KONVERTER LEÉGÉS VISSZAHÍVÁS & TÖLTŐPORT',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'Hátsó reduktor / hajtómű csapágyhang (gear reducer whine)',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'Éles, magas frekvenciájú sípolás vagy fütyülés 60-90 km/h között gázelvételkor és regeneratív fékezéskor.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'Hajtómű olajcsere 30,000 km-nél (gyári élettartam-folyadék jelölés ellenére!), fémrészecskék korai kiszűrése.',"
+      },
+      {
+        "lineNum": 137,
+        "text": "name: 'ICCU (Integrated Charging Control Unit) belső túláram és 12V leállás',"
+      },
+      {
+        "lineNum": 145,
+        "text": "symptoms: 'AC töltés közben lecsapódó kismegszakító, hibakód: \"Stop vehicle and check power supply\", teljesen lebénult 12V rendszer.',"
+      },
+      {
+        "lineNum": 146,
+        "text": "prevention: 'Hivatalos Kia SC302 szervizkampány elvégzése, ICCU szoftveres és hardveres revízió.',"
+      },
+      {
+        "lineNum": 169,
+        "text": "criticalDefectTag: '🚨 ICCU TÖLTÉSVEZÉRLŐ LEÉGÉS VISSZAHÍVÁS & 12V MERÜLÉS',"
+      },
+      {
+        "lineNum": 180,
+        "text": "name: 'ICCU (Integrated Charging Control Unit) belső túláram és 12V leállás',"
+      },
+      {
+        "lineNum": 188,
+        "text": "symptoms: 'AC töltés közben lecsapódó kismegszakító, hibakód: \"Stop vehicle and check power supply\", teljesen lebénult 12V rendszer.',"
+      },
+      {
+        "lineNum": 189,
+        "text": "prevention: 'Hivatalos Kia SC302 szervizkampány elvégzése, ICCU szoftveres és hardveres revízió.',"
+      },
+      {
+        "lineNum": 203,
+        "text": "name: 'Alacsony vezetőképességű kék akkumulátor hűtőfolyadék kristályosodás és szivattyú dugulás',"
+      },
+      {
+        "lineNum": 211,
+        "text": "symptoms: '\"Refill Inverter Coolant\" műszerfali figyelmeztetés, csökkent töltési teljesítmény forró időben.',"
+      },
+      {
+        "lineNum": 212,
+        "text": "prevention: 'Szigorúan 60,000 km-enként gyári kék hűtőfolyadék csere és átöblítés.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/index.js",
+    "count": 2,
+    "matches": [
+      {
+        "lineNum": 2,
+        "text": "* ShiftMetric — Central Vehicle Known Issues (\"Gyermekbetegségek\") & Modular Catalog Registry"
+      },
+      {
+        "lineNum": 272,
+        "text": "* Returns known issues (\"Gyermekbetegségek\") for a specific engine and model generation"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/mercedes.js",
+    "count": 7,
+    "matches": [
+      {
+        "lineNum": 37,
+        "text": "criticalDefectTag: '🚨 SZELEPHIMBA TŰGÖRGŐCSAPÁGY HULLÁS & VÍZPUMPA',"
+      },
+      {
+        "lineNum": 47,
+        "text": "name: 'Szelephimbák (camshaft rocker arm bearings) tűgörgőscsapágy szétesése és vezérműtengely lemaródás',"
+      },
+      {
+        "lineNum": 55,
+        "text": "symptoms: 'Ütemes fémes csattogás a hengerfej felől fordulatszám-arányosan, finom fémrészecskék az olajszűrőben.',"
+      },
+      {
+        "lineNum": 56,
+        "text": "prevention: 'Megelőző módosított gyári szelephimba készlet beépítése 130,000 km-nél, olajcsere szigorúan 15,000 km-enként (MB 229.71 szerint).',"
+      },
+      {
+        "lineNum": 70,
+        "text": "name: 'Vákuumvezérelt vízpumpa kapcsolóhüvely szivárgás és fagyálló bejutása a vákuumrendszerbe',"
+      },
+      {
+        "lineNum": 78,
+        "text": "symptoms: 'Hűtővíz-fogyás, vákuumszelepek meghibásodása (fűtés vagy turbóvezérlés tiltás a bejutó hűtőfolyadék miatt).',"
+      },
+      {
+        "lineNum": 79,
+        "text": "prevention: 'Módosított tömítésű vízpumpa és vákuumszelep csere az első folyadékszint-csökkenéskor.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/schema.js",
+    "count": 1,
+    "matches": [
+      {
+        "lineNum": 4,
+        "text": "* Zod Schema for Vehicle Known Issues (\"Gyermekbetegségek\" / Red Flags)"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/stellantis.js",
+    "count": 11,
+    "matches": [
+      {
+        "lineNum": 37,
+        "text": "criticalDefectTag: '🚨 SEVERE: WET BELT OLDÓDÁS & FÉKVÁKUUM VESZTÉS',"
+      },
+      {
+        "lineNum": 47,
+        "text": "name: 'Olajban futó vezérműszíj (wet belt) feloldódása, degradációja és vákuumszivattyú / olajszivattyú eltömődés',"
+      },
+      {
+        "lineNum": 55,
+        "text": "symptoms: 'Olajnyomás figyelmeztető lámpa, kemény fékpedál (vákuumvesztés a fékrásegítőben), megnövekedett szíjszélesség.',"
+      },
+      {
+        "lineNum": 56,
+        "text": "prevention: 'PSA B71 2010 specifikációjú olaj max 10,000 km-enként, szíj megelőző csere módosított szövetbetétes szíjra 60,000 km-nél!',"
+      },
+      {
+        "lineNum": 80,
+        "text": "criticalDefectTag: '🚨 7MM VEZÉRMŰTENGELY LÁNC SZAKADÁS & SZELEPGÖRBÜLÉS',"
+      },
+      {
+        "lineNum": 90,
+        "text": "name: 'Vezérműtengelyeket összekötő 7 mm-es lánc szakadás / láncfeszítő törés',"
+      },
+      {
+        "lineNum": 98,
+        "text": "symptoms: 'Fémes csörgő hang a szelepfedél felől alapjáraton, hirtelen motorleállás és szelepelgörbülés.',"
+      },
+      {
+        "lineNum": 99,
+        "text": "prevention: 'Megelőző módosítás a gyári 8 mm-es lánccal és megerősített házzal szerelt revíziós készletre 90,000 km-nél.',"
+      },
+      {
+        "lineNum": 113,
+        "text": "name: 'AdBlue tartály és szivattyú modul nyomásvesztés és kristályosodás',"
+      },
+      {
+        "lineNum": 121,
+        "text": "symptoms: '\"UREA\" hibajelzés és indításmegtagadási visszaszámláló a műszerfalon, szivattyú nyomáshiba.',"
+      },
+      {
+        "lineNum": 122,
+        "text": "prevention: 'Kristályosodásgátló adalék minden tankoláskor, nyomásszelep szellőzőcső ellenőrzése.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/tesla.js",
+    "count": 17,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: 'Első felső lengőkar gömbfej beázás, kenőanyag kimosódás és nyikorgás',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Hangos, száraz \"nyikorgó kanapé\" hang kormányzáskor és alacsony sebességű rugózáskor.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'Módosított tömítésű Meyle-HD lengőkar beépítése vagy a porvédő gumi alatti zsírzás garanciában.',"
+      },
+      {
+        "lineNum": 51,
+        "text": "name: 'Hátsó lengőkar szilent szakadás és futómű instabilitás',"
+      },
+      {
+        "lineNum": 59,
+        "text": "symptoms: 'Autópályán hirtelen gázelvételkor enyhe oldalirányú kitörés, belső abroncsélek rendellenes kopása.',"
+      },
+      {
+        "lineNum": 60,
+        "text": "prevention: 'Futómű geometria és szilent ellenőrzés 40,000 km-enként, megerősített poliuretán szilentek.',"
+      },
+      {
+        "lineNum": 83,
+        "text": "criticalDefectTag: '⚠️ LFP TÉLI BMS KALIBRÁCIÓ & HIDEG DC TÖLTÉSI SEBESSÉG',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'Téli hidegben BMS (akkukezelő) töltöttségi szint téves kalibráció és hirtelen leállás 10% alatt',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'Hideg téli időben a műszerfali hatótáv 8-12%-ról hirtelen 0-ra ugrik, az autó leáll.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'Hetente legalább 1x 100%-ra tölteni a járművet a cellafeszültség lapos görbéjének felső kalibrálásához!',"
+      },
+      {
+        "lineNum": 126,
+        "text": "criticalDefectTag: '🚨 NMC GYORS DC CELLADEGRADÁCIÓ & HŐSZIVATTYÚ OCTOVALVE',"
+      },
+      {
+        "lineNum": 137,
+        "text": "name: 'Gyakori 250 kW-os Supercharger DC gyorstöltés miatti NMC celladegradáció',"
+      },
+      {
+        "lineNum": 145,
+        "text": "symptoms: 'Látható hatótávvesztés (12-18% SoH esés), ha tartósan 100%-ra töltve és melegben parkol a jármű.',"
+      },
+      {
+        "lineNum": 146,
+        "text": "prevention: 'Napi töltési limit szigorúan 80%-ra állítása, 100%-os töltés csak közvetlenül hosszú utazás előtt.',"
+      },
+      {
+        "lineNum": 160,
+        "text": "name: 'Hőszivattyú (Octovalve) hűtőközeg-szelep megszorulás és fűtésvesztés fagypont alatt',"
+      },
+      {
+        "lineNum": 168,
+        "text": "symptoms: '\"Cabin climate keeper unavailable\" hiba, azonnali kabinfűtés elvesztése téli fagyban, kompresszor tiltás.',"
+      },
+      {
+        "lineNum": 169,
+        "text": "prevention: 'Garanciális szoftveres védelmi frissítés és módosított nyomásszenzor/Octovalve szelepcsere.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/toyota.js",
+    "count": 20,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: '12V segédakkumulátor mélykisülés ritka használat vagy rövid utak esetén',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Az autó nem kapcsol READY állapotba, gyenge műszerfal világítás 1-2 hét állás után.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'Havi legalább 1x 45 perces READY üzemmódban tartás, AGM segédakkumulátor csere.',"
+      },
+      {
+        "lineNum": 61,
+        "text": "criticalDefectTag: '⚠️ EGR KOROMLERAKÓDÁS & HV VENTILÁTOR SZŰRŐ',"
+      },
+      {
+        "lineNum": 71,
+        "text": "name: 'EGR hűtő és csatorna koromlerakódás miatti hengerfejtömítés átégés',"
+      },
+      {
+        "lineNum": 79,
+        "text": "symptoms: 'Intenzív kopogás és motordadogás hidegindítás utáni első 15 másodpercben, hűtőfolyadék-fogyás.',"
+      },
+      {
+        "lineNum": 80,
+        "text": "prevention: 'EGR szelep, fémcsövek és szívósori kivezetések ultrahangos tisztítása 100,000 km-enként!',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'Hibrid akkumulátor hűtőventilátor szűrő elporolódás és cella túlmelegedés',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'P0A80 hibakód, a hibrid akkumulátor hűtőventilátora folyamatosan maximális hangerővel süvít a hátsó ülésnél.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'Hátsó ülés alatti hűtőrács és ventilátorszűrő ellenőrzése és tisztítása minden éves olajcserénél.',"
+      },
+      {
+        "lineNum": 137,
+        "text": "name: 'Cablegate — Hátsó MGR villanymotor nagyfeszültségű kábelcsatlakozó beázása és korróziója (AWD-i)',"
+      },
+      {
+        "lineNum": 145,
+        "text": "symptoms: 'Check Hybrid System figyelmeztetés esős/havas időben, AM rádióadás sistergése gázadáskor, hajtásletiltás.',"
+      },
+      {
+        "lineNum": 146,
+        "text": "prevention: 'Alvázvédelmi nyitott revíziós védőburkolat és korróziógátló viasz (T-SB-0030-22 szervizkampány).',"
+      },
+      {
+        "lineNum": 170,
+        "text": "criticalDefectTag: '🚨 CABLEGATE HÁTSÓ HV KÁBELKORRÓZIÓ VISSZAHÍVÁS',"
+      },
+      {
+        "lineNum": 180,
+        "text": "name: 'Cablegate — Hátsó MGR villanymotor nagyfeszültségű kábelcsatlakozó beázása és korróziója (AWD-i)',"
+      },
+      {
+        "lineNum": 188,
+        "text": "symptoms: 'Check Hybrid System figyelmeztetés esős/havas időben, AM rádióadás sistergése gázadáskor, hajtásletiltás.',"
+      },
+      {
+        "lineNum": 189,
+        "text": "prevention: 'Alvázvédelmi nyitott revíziós védőburkolat és korróziógátló viasz (T-SB-0030-22 szervizkampány).',"
+      },
+      {
+        "lineNum": 203,
+        "text": "name: 'Hűtőfolyadék bypass szabályozószelep elektromos meghibásodás és szivárgás',"
+      },
+      {
+        "lineNum": 211,
+        "text": "symptoms: '\"Engine Maintenance Required\" figyelmeztetés a központi kijelzőn, lassan melegedő utastér.',"
+      },
+      {
+        "lineNum": 212,
+        "text": "prevention: 'Módosított cikkszámú víz bypass szelep csere a hibakód megjelenésekor.',"
+      }
+    ]
+  },
+  {
+    "file": "src/data/vehicles/vag.js",
+    "count": 24,
+    "matches": [
+      {
+        "lineNum": 28,
+        "text": "name: 'MIB3 érintőképernyős infotainment fagyások és szoftveres újraindulások',"
+      },
+      {
+        "lineNum": 36,
+        "text": "symptoms: 'Klímavezérlés nem reagál, fekete központi kijelző, Travel Assist figyelmeztető hangok csipogása.',"
+      },
+      {
+        "lineNum": 37,
+        "text": "prevention: 'Hivatalos szerviz általi 1896 vagy 1941+ firmware verzióra frissítés és OCU vezérlő csere.',"
+      },
+      {
+        "lineNum": 61,
+        "text": "criticalDefectTag: '⚠️ VÍZPUMPA PALÁST MEGSZORULÁS & TWINDOSING SCR',"
+      },
+      {
+        "lineNum": 71,
+        "text": "name: 'Vízpumpa vákuumos áramlásszabályozó gallér (shroud) megszorulása és hirtelen túlmelegedés',"
+      },
+      {
+        "lineNum": 79,
+        "text": "symptoms: 'A hűtővíz hőmérsékletjelző hirtelen felugrik 120-130°C-ra autópálya terhelésnél, majd gázelvételre visszahűl.',"
+      },
+      {
+        "lineNum": 80,
+        "text": "prevention: 'Megelőző vezérléscsere és megerősített, folyamatos átfolyású prémium vízpumpa beépítése 90,000 km-nél.',"
+      },
+      {
+        "lineNum": 94,
+        "text": "name: 'DPF nyomáskülönbség szenzor (G450) elhalálozás és AdBlue kristályosodás',"
+      },
+      {
+        "lineNum": 102,
+        "text": "symptoms: 'Check Engine és izzításjelző villogás, DPF telítettség hibakód (P2002), limp mode.',"
+      },
+      {
+        "lineNum": 103,
+        "text": "prevention: 'G450 szenzor megelőző csere 120e km-nél, AdBlue kristályosodásgátló adalék minden tankolásnál.',"
+      },
+      {
+        "lineNum": 117,
+        "text": "name: 'Bosch CP4 magasnyomású szivattyú görgőkopás és fémforgácsképződés (spém)',"
+      },
+      {
+        "lineNum": 125,
+        "text": "symptoms: 'Gyenge gyorsulás padlógáznál, railnyomás hiány (P0087), Limp Mode és fémrészecskék az üzemanyagszűrőben.',"
+      },
+      {
+        "lineNum": 126,
+        "text": "prevention: 'Prémium minőségű gázolaj kenésjavító adalékkal, üzemanyagszűrő csere max 15,000 km-enként, CP4 felújítás 160e km-nél.',"
+      },
+      {
+        "lineNum": 150,
+        "text": "criticalDefectTag: '⚠️ MŰANYAG TERMOSZTÁTHÁZ SZIVÁRGÁS & SZELEPKOKSZ',"
+      },
+      {
+        "lineNum": 160,
+        "text": "name: 'Műanyag termosztátház / vízpumpa tolózár (rotary slide valve) modul kirepedés és hűtőfolyadék-szivárgás',"
+      },
+      {
+        "lineNum": 168,
+        "text": "symptoms: 'Édeskés fagyállószag a motortérben, folyamatosan csökkenő kiegyenlítőtartály szint, rózsaszín hűtőfolyadék foltok a kartervédőn.',"
+      },
+      {
+        "lineNum": 169,
+        "text": "prevention: 'Alumínium házas revíziós termosztát/vízpumpa modul felszerelése az első mikroszivárgás észlelésekor.',"
+      },
+      {
+        "lineNum": 183,
+        "text": "name: 'Közvetlen befecskendezés miatti szívószelep kokszosodás (carbon buildup)',"
+      },
+      {
+        "lineNum": 191,
+        "text": "symptoms: 'Egyenetlen hideg alapjárat, hidegindítási égéskimaradások (P0300, P0301), torpanás padlógázas gyorsításkor.',"
+      },
+      {
+        "lineNum": 192,
+        "text": "prevention: 'Dióhéjas mechanikus szívószelep tisztítás 80,000 km-enként, prémium 100-as oktánszámú benzin használata.',"
+      },
+      {
+        "lineNum": 216,
+        "text": "criticalDefectTag: '⚠️ SZÁRAZ DQ200 KUPLUNGRÁNGATÁS & MECHATRONIKA',"
+      },
+      {
+        "lineNum": 226,
+        "text": "name: 'DQ200 7-fokozatú szárazkuplung rángatás és mechatronika nyomástároló kirepedés',"
+      },
+      {
+        "lineNum": 234,
+        "text": "symptoms: 'Intenzív vibráció és rázkódás 1-ből 2-be váltáskor araszolásnál, villogó sebességfokozat kijelzés.',"
+      },
+      {
+        "lineNum": 235,
+        "text": "prevention: 'Dugóban manuális fokozatválasztás a felesleges 1-2 váltások elkerülésére, szoftveres kuplung alapbeállítás.',"
+      }
+    ]
+  },
+  {
+    "file": "src/pages/BlogPage.jsx",
+    "count": 1,
+    "matches": [
+      {
+        "lineNum": 184,
+        "text": "label={post.id === 'dsg-service-cost' ? 'Kritikus' : post.id === 'high-mileage-german-estate' ? 'Közepes' : 'Alacsony'}"
+      }
+    ]
+  },
+  {
+    "file": "src/pages/HomePage.jsx",
+    "count": 16,
+    "matches": [
+      {
+        "lineNum": 176,
+        "text": "<RiskBadge level=\"low\" label=\"Alacsony Kockázat\" />"
+      },
+      {
+        "lineNum": 182,
+        "text": "Értékvesztés, üzemanyag, biztosítás és kötelező szervizek valós 5-éves adatai."
+      },
+      {
+        "lineNum": 194,
+        "text": "<span className=\"text-muted dark:text-slate-400\">Benchmark átlag:</span>"
+      },
+      {
+        "lineNum": 200,
+        "text": "<span>Kalkuláció megnyitása</span>"
+      },
+      {
+        "lineNum": 215,
+        "text": "<RiskBadge level=\"moderate\" label=\"Közepes Kockázat\" />"
+      },
+      {
+        "lineNum": 221,
+        "text": "Futásteljesítmény alapú fődarab-kopás, csereperiódusok és várható javítási összegek."
+      },
+      {
+        "lineNum": 227,
+        "text": "<span className=\"text-body dark:text-slate-300 font-medium\">Vezérműlánc / szíj</span>"
+      },
+      {
+        "lineNum": 232,
+        "text": "<span className=\"text-body dark:text-slate-300 font-medium\">DPF részecskeszűrő</span>"
+      },
+      {
+        "lineNum": 234,
+        "text": "<RiskBadge level=\"moderate\" label=\"Közepes\" />"
+      },
+      {
+        "lineNum": 237,
+        "text": "<span className=\"text-body dark:text-slate-300 font-medium\">Vízpumpa &amp; termosztát</span>"
+      },
+      {
+        "lineNum": 244,
+        "text": "<span>Kockázati mátrix</span>"
+      },
+      {
+        "lineNum": 259,
+        "text": "<RiskBadge level=\"critical\" label=\"Kritikus Kockázat\" />"
+      },
+      {
+        "lineNum": 265,
+        "text": "Hibakód alapján rangsorolt kiváltó okok, gyári alkatrészárak és műhelyi munkadíjak."
+      },
+      {
+        "lineNum": 272,
+        "text": "<span className=\"text-[11px] text-muted dark:text-slate-400\">Katalizátor hatásfok</span>"
+      },
+      {
+        "lineNum": 275,
+        "text": "<span className=\"text-primary-800 dark:text-primary-300 font-medium\">Reális műhelyi ár:</span>"
+      },
+      {
+        "lineNum": 281,
+        "text": "<span>Hibakód kalkulátor</span>"
+      }
+    ]
+  },
+  {
+    "file": "src/services/vehicleDataService.js",
+    "count": 1,
+    "matches": [
+      {
+        "lineNum": 518,
+        "text": "* Returns curated engine & model telemetry, known issues (\"gyermekbetegségek\"),"
+      }
+    ]
+  }
+]

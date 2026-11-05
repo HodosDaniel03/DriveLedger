@@ -5,16 +5,23 @@ import { UnitProvider } from './context/UnitContext';
 import { GarageProvider } from './context/GarageContext';
 import Navbar, { WORKSPACE_TABS } from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import ScrollToTop from './components/common/ScrollToTop';
 import HomePage from './pages/HomePage';
 import BlogPage from './pages/BlogPage';
 import TcoCalculator from './components/calculators/TcoCalculator';
 import MaintenanceRiskMatrix from './components/calculators/MaintenanceRiskMatrix';
 import ObdEstimator from './components/calculators/ObdEstimator';
+import VehicleComparator from './components/calculators/VehicleComparator';
+import PreInspectionChecklist from './components/home/PreInspectionChecklist';
 import TechnicalMethodologyGuide from './components/seo/TechnicalMethodologyGuide';
 import DynamicSeoHead from './components/seo/DynamicSeoHead';
 import ReviewsPage from './pages/ReviewsPage';
 import { VEHICLE_PRESETS } from './data/vehiclePresets';
 import { OBD_CODES } from './data/obdCodes';
+import {
+  parseCompareMatchupPath,
+  parseRiskMileagePath,
+} from './data/seoMatrixData';
 
 const PATH_TO_TAB = {
   '/': 'overview',
@@ -22,6 +29,8 @@ const PATH_TO_TAB = {
   '/tco': 'tco',
   '/risk-matrix': 'risk',
   '/obd-estimator': 'obd',
+  '/compare': 'compare',
+  '/checklist': 'checklist',
   '/methodology': 'methodology',
   '/reviews': 'reviews',
   '/blog': 'blog',
@@ -32,6 +41,8 @@ const TAB_TO_PATH = {
   tco: '/tco',
   risk: '/risk-matrix',
   obd: '/obd-estimator',
+  compare: '/compare',
+  checklist: '/checklist',
   methodology: '/methodology',
   reviews: '/reviews',
   blog: '/blog',
@@ -57,23 +68,54 @@ function ShiftMetricWorkspace() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Derive initial tab from URL query param, hybrid /obd/:preset/:code path, or pathname
+  // Derive initial tab from URL query param, programmatic SEO paths, or pathname
   const resolveInitialTab = () => {
     const qTab = searchParams.get('tab');
-    if (qTab && ['overview', 'tco', 'risk', 'obd', 'methodology', 'reviews', 'blog'].includes(qTab)) {
+    if (qTab && ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)) {
       return qTab;
     }
     const hybrid = parseHybridObdPath(location.pathname);
     if (hybrid) return 'obd';
+    const matchup = parseCompareMatchupPath(location.pathname);
+    if (matchup) return 'compare';
+    const riskMileage = parseRiskMileagePath(location.pathname);
+    if (riskMileage) return 'risk';
     return PATH_TO_TAB[location.pathname] || 'overview';
   };
 
   const resolveInitialPreset = () => {
-    const qPreset = searchParams.get('preset');
+    const qPreset = searchParams.get('preset') || searchParams.get('presetA');
     if (qPreset && VEHICLE_PRESETS.some((p) => p.id === qPreset)) return qPreset;
+    const qEngine = searchParams.get('engine');
+    if (qEngine) {
+      const match = VEHICLE_PRESETS.find(
+        (p) => p.id === qEngine || p.engineCode?.toLowerCase().includes(qEngine.toLowerCase())
+      );
+      if (match) return match.id;
+    }
     const hybrid = parseHybridObdPath(location.pathname);
     if (hybrid?.preset) return hybrid.preset;
+    const matchup = parseCompareMatchupPath(location.pathname);
+    if (matchup?.presetA) return matchup.presetA;
+    const riskMileage = parseRiskMileagePath(location.pathname);
+    if (riskMileage?.preset) return riskMileage.preset;
     return VEHICLE_PRESETS[0].id;
+  };
+
+  const resolveInitialSecondaryPreset = () => {
+    const qPresetB = searchParams.get('presetB');
+    if (qPresetB && VEHICLE_PRESETS.some((p) => p.id === qPresetB)) return qPresetB;
+    const matchup = parseCompareMatchupPath(location.pathname);
+    if (matchup?.presetB) return matchup.presetB;
+    return null;
+  };
+
+  const resolveInitialRiskOdometer = () => {
+    const riskMileage = parseRiskMileagePath(location.pathname);
+    if (riskMileage?.odometerMiles) return { miles: riskMileage.odometerMiles, slug: riskMileage.mileageSlug };
+    const qOdo = Number(searchParams.get('odo'));
+    if (qOdo > 0) return { miles: Math.round(qOdo), slug: null };
+    return { miles: null, slug: null };
   };
 
   const resolveInitialObdCode = () => {
@@ -86,12 +128,22 @@ function ShiftMetricWorkspace() {
 
   const [activeTab, setActiveTabState] = useState(resolveInitialTab);
   const [selectedPresetId, setSelectedPresetIdState] = useState(resolveInitialPreset);
+  const [secondaryPresetId, setSecondaryPresetIdState] = useState(resolveInitialSecondaryPreset);
+  const [riskOdometerOverride, setRiskOdometerOverride] = useState(resolveInitialRiskOdometer);
   const [selectedObdCode, setSelectedObdCodeState] = useState(resolveInitialObdCode);
   const [activeLegalModal, setActiveLegalModal] = useState(null);
 
   // Keep URL query parameters synchronized for programmatic SEO & deep-link sharing
   const syncUrlParams = useCallback(
-    (nextTab, nextPreset, nextCode) => {
+    (nextTab, nextPreset, nextCode, nextSecondaryPreset = secondaryPresetId) => {
+      if (nextTab === 'compare' && nextSecondaryPreset && nextSecondaryPreset !== nextPreset) {
+        const params = new URLSearchParams();
+        params.set('tab', 'compare');
+        params.set('presetA', nextPreset);
+        params.set('presetB', nextSecondaryPreset);
+        navigate(`/compare/${nextPreset}-vs-${nextSecondaryPreset}?${params.toString()}`, { replace: true });
+        return;
+      }
       const targetPath = TAB_TO_PATH[nextTab] || '/tco';
       const params = new URLSearchParams();
       params.set('tab', nextTab);
@@ -99,18 +151,29 @@ function ShiftMetricWorkspace() {
       params.set('code', nextCode);
       navigate(`${targetPath}?${params.toString()}`, { replace: true });
     },
-    [navigate]
+    [navigate, secondaryPresetId]
   );
 
   const handleSelectTab = (tabId) => {
     syncUrlParams(tabId, selectedPresetId, selectedObdCode);
     setActiveTabState(tabId);
+    if (tabId !== 'risk') {
+      setRiskOdometerOverride({ miles: null, slug: null });
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectPreset = (presetId) => {
     syncUrlParams(activeTab, presetId, selectedObdCode);
     setSelectedPresetIdState(presetId);
+    setRiskOdometerOverride({ miles: null, slug: null });
+  };
+
+  const handleSelectSecondaryPreset = (presetBId) => {
+    setSecondaryPresetIdState(presetBId);
+    if (activeTab === 'compare' && presetBId && presetBId !== selectedPresetId) {
+      syncUrlParams('compare', selectedPresetId, selectedObdCode, presetBId);
+    }
   };
 
   const handleSelectObdCode = (code) => {
@@ -165,14 +228,37 @@ function ShiftMetricWorkspace() {
   // Synchronize state when location or search parameters change via router
   useEffect(() => {
     const hybrid = parseHybridObdPath(location.pathname);
-    const qTab = searchParams.get('tab') || (hybrid ? 'obd' : PATH_TO_TAB[location.pathname]);
-    if (qTab && ['overview', 'tco', 'risk', 'obd', 'methodology', 'reviews', 'blog'].includes(qTab)) {
+    const matchup = parseCompareMatchupPath(location.pathname);
+    const riskMileage = parseRiskMileagePath(location.pathname);
+
+    const qTab =
+      searchParams.get('tab') ||
+      (hybrid ? 'obd' : matchup ? 'compare' : riskMileage ? 'risk' : PATH_TO_TAB[location.pathname]);
+    if (qTab && ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)) {
       setActiveTabState((prev) => (prev !== qTab ? qTab : prev));
     }
-    const qPreset = searchParams.get('preset') || hybrid?.preset;
+
+    const qPreset =
+      searchParams.get('preset') ||
+      searchParams.get('presetA') ||
+      hybrid?.preset ||
+      matchup?.presetA ||
+      riskMileage?.preset;
     if (qPreset && VEHICLE_PRESETS.some((p) => p.id === qPreset)) {
       setSelectedPresetIdState((prev) => (prev !== qPreset ? qPreset : prev));
     }
+
+    const qPresetB = searchParams.get('presetB') || matchup?.presetB;
+    if (qPresetB && VEHICLE_PRESETS.some((p) => p.id === qPresetB)) {
+      setSecondaryPresetIdState((prev) => (prev !== qPresetB ? qPresetB : prev));
+    }
+
+    if (riskMileage?.odometerMiles) {
+      setRiskOdometerOverride({ miles: riskMileage.odometerMiles, slug: riskMileage.mileageSlug });
+    } else if (Number(searchParams.get('odo')) > 0) {
+      setRiskOdometerOverride({ miles: Math.round(Number(searchParams.get('odo'))), slug: null });
+    }
+
     const qCode = searchParams.get('code')?.toUpperCase() || hybrid?.code;
     if (qCode && OBD_CODES.some((c) => c.code === qCode)) {
       setSelectedObdCodeState((prev) => (prev !== qCode ? qCode : prev));
@@ -193,12 +279,12 @@ function ShiftMetricWorkspace() {
           (hybrid ? 'obd' : PATH_TO_TAB[window.location.pathname]) ||
           'overview';
         setActiveTabState(
-          ['overview', 'tco', 'risk', 'obd', 'methodology', 'reviews', 'blog'].includes(qTab)
+          ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)
             ? qTab
             : 'overview'
         );
 
-        const qPreset = params.get('preset') || hybrid?.preset;
+        const qPreset = params.get('preset') || params.get('presetA') || hybrid?.preset;
         setSelectedPresetIdState(
           qPreset && VEHICLE_PRESETS.some((p) => p.id === qPreset)
             ? qPreset
@@ -225,11 +311,14 @@ function ShiftMetricWorkspace() {
   }, []);
 
   return (
-    <div id="top" className="min-h-screen bg-canvas text-body selection:bg-primary-100 selection:text-primary-800 antialiased dark:bg-slate-950 dark:text-slate-300">
+    <div id="top" className="min-h-screen scroll-pt-28 lg:scroll-pt-32 bg-canvas text-body selection:bg-primary-100 selection:text-primary-800 antialiased dark:bg-[#09090B] dark:text-zinc-300">
+      <ScrollToTop />
       {/* Dynamic Programmatic SEO Meta Tags & Schema.org JSON-LD */}
       <DynamicSeoHead
         activeTab={activeTab}
         selectedPresetId={selectedPresetId}
+        secondaryPresetId={secondaryPresetId}
+        mileageBracketSlug={riskOdometerOverride?.slug}
         selectedObdCode={selectedObdCode}
       />
 
@@ -242,14 +331,14 @@ function ShiftMetricWorkspace() {
       />
 
       {/* Main Content Container */}
-      <main className="mx-auto max-w-[1380px] px-6 lg:px-10 pt-8 pb-16 space-y-12">
+      <main className="mx-auto max-w-[1380px] min-h-[85vh] px-6 lg:px-10 pt-8 pb-16 space-y-12">
         {/* Dynamic Calculator Workspace */}
         <div
           key={activeTab}
           id={`panel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
-          className="animate-fade-in"
+          className="min-h-[640px] animate-fade-in"
         >
           {/* TAB 0: INDEPENDENT CAR COST PLATFORM OVERVIEW */}
           {activeTab === 'overview' && (
@@ -280,6 +369,8 @@ function ShiftMetricWorkspace() {
               selectedPresetId={selectedPresetId}
               onSelectPreset={handleSelectPreset}
               onNavigateToObd={handleNavigateToObd}
+              onNavigateToCompare={() => handleSelectTab('compare')}
+              initialOdometerMiles={riskOdometerOverride?.miles}
             />
           )}
 
@@ -293,6 +384,30 @@ function ShiftMetricWorkspace() {
               onSelectObdCode={handleSelectObdCode}
               onSelectCode={handleSelectObdCode}
               onNavigateToRisk={() => handleSelectTab('risk')}
+              onNavigateToCompare={() => handleSelectTab('compare')}
+            />
+          )}
+
+          {/* TAB 4: VEHICLE COMPARATOR / SIDE-BY-SIDE COMPARISON */}
+          {activeTab === 'compare' && (
+            <VehicleComparator
+              primaryPresetId={selectedPresetId}
+              secondaryPresetId={secondaryPresetId}
+              onApplyPreset={handleSelectPreset}
+              onSelectSecondaryPreset={handleSelectSecondaryPreset}
+              onClose={() => handleSelectTab('overview')}
+              standalone
+            />
+          )}
+
+          {/* TAB 5: PRE-PURCHASE INSPECTION CHECKLIST (PPI) */}
+          {activeTab === 'checklist' && (
+            <PreInspectionChecklist
+              presetId={selectedPresetId}
+              onSelectPreset={handleSelectPreset}
+              onNavigateToObd={handleNavigateToObd}
+              onNavigateToTco={handleNavigateToPresetTco}
+              standalone
             />
           )}
 
@@ -356,9 +471,9 @@ function ShiftMetricWorkspace() {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 dark:bg-black/75 backdrop-blur-sm"
         >
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface dark:bg-slate-900 dark:border-slate-800 p-6 sm:p-8 shadow-xl dark:shadow-2xl">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-surface dark:bg-[#121215] dark:border-zinc-800 p-6 sm:p-8 shadow-xl dark:shadow-2xl">
             <div className="flex items-start justify-between gap-4">
-              <h2 className="text-lg font-bold tracking-tight text-ink dark:text-slate-100">
+              <h2 className="text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
                 {activeLegalModal === 'privacy' && 'Privacy Policy & Telemetry Data Governance'}
                 {activeLegalModal === 'terms' && 'Terms of Service & Mathematical Disclaimers'}
                 {activeLegalModal === 'affiliate' && 'Affiliate & Partner Monetization Disclosure'}
@@ -370,12 +485,12 @@ function ShiftMetricWorkspace() {
                 type="button"
                 onClick={() => setActiveLegalModal(null)}
                 aria-label="Close modal"
-                className="rounded-full p-1 text-muted hover:bg-surface-subtle hover:text-ink dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
+                className="rounded-lg p-1 text-muted hover:bg-surface-subtle hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50 transition-colors"
               >
                 ✕
               </button>
             </div>
-            <div className="mt-3 text-sm leading-relaxed text-body dark:text-slate-300 space-y-2">
+            <div className="mt-3 text-sm font-sans leading-relaxed text-body dark:text-zinc-300 space-y-2">
               {activeLegalModal === 'privacy' && (
                 <p>
                   ShiftMetric adheres to privacy-by-design principles. User inputs (vehicle purchase prices, odometer readings, and driving duty cycle distributions) are processed in-browser. We do not sell personal telemetry data.
@@ -406,7 +521,7 @@ function ShiftMetricWorkspace() {
               <button
                 type="button"
                 onClick={() => setActiveLegalModal(null)}
-                className="rounded-full bg-primary-600 px-5 py-2 text-xs font-semibold text-white hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-500 shadow-sm transition-all"
+                className="rounded-lg bg-primary-600 px-5 py-2 text-xs font-sans font-semibold text-white hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-500 shadow-sm transition-colors duration-150"
               >
                 Close
               </button>

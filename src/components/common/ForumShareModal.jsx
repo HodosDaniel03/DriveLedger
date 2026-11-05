@@ -260,6 +260,7 @@ export default function ForumShareModal({
   // Deep-link share URL
   const shareUrl = useMemo(() => {
     const tabParam = riskSummary && !tcoSummary ? 'risk' : 'tco';
+    const pathSegment = tabParam === 'risk' ? '/risk-matrix' : '/tco';
     const presetParam = encodeURIComponent(resolvedVehicle?.id || 'ford-focus-ecoblue');
     const odoParam = Math.round(resolvedOdometerMiles);
     const origin =
@@ -267,9 +268,9 @@ export default function ForumShareModal({
       window.location?.origin &&
       window.location.origin.startsWith('http')
         ? window.location.origin
-        : 'https://shiftmetric.app';
-    return `${origin}/?tab=${tabParam}&preset=${presetParam}&odo=${odoParam}`;
-  }, [resolvedVehicle, resolvedOdometerMiles, riskSummary, tcoSummary]);
+        : 'https://shiftmetric.com';
+    return `${origin}${pathSegment}?tab=${tabParam}&preset=${presetParam}&odo=${odoParam}&reg=${region}`;
+  }, [resolvedVehicle, resolvedOdometerMiles, riskSummary, tcoSummary, region]);
 
   // Formatted telemetry strings
   const tcoFormatted = formatCurrency(resolvedTco.totalEconomicCostUsd);
@@ -377,20 +378,20 @@ export default function ForumShareModal({
       data-testid="forum-share-modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm overflow-y-auto"
     >
-      <div className="relative w-full max-w-2xl rounded-2xl border border-border dark:border-slate-800 bg-surface dark:bg-slate-900 text-ink dark:text-slate-100 p-5 sm:p-6 shadow-2xl space-y-5">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-5 sm:p-6 shadow-2xl space-y-5">
         {/* Modal Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-border dark:border-slate-800 pb-4">
+        <div className="flex items-start justify-between gap-4 border-b border-border dark:border-zinc-800 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <Share2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-              <h2 className="font-h3 text-h3 font-bold text-ink dark:text-slate-100">
+              <h2 className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-100">
                 Share for Reddit &amp; Enthusiast Forums
               </h2>
-              <Pill tone="brand" className="text-[10px] font-mono">
-                1-CLICK EMBED
+              <Pill tone="brand">
+                1-Click Embed
               </Pill>
             </div>
-            <p className="text-xs text-muted dark:text-slate-400 mt-1">
+            <p className="font-sans text-xs text-muted dark:text-zinc-400 mt-1">
               Copy pre-formatted ownership telemetry for Discord, r/cars, r/MechanicAdvice, VWVortex, Bimmerpost, or TalkFord.
             </p>
           </div>
@@ -398,48 +399,48 @@ export default function ForumShareModal({
             type="button"
             onClick={onClose}
             aria-label="Close share modal"
-            className="rounded-lg p-1.5 text-muted hover:text-ink dark:text-slate-400 dark:hover:text-slate-100 hover:bg-surface-subtle dark:hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-1.5 text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Visual Telemetry Snapshot Card */}
-        <div className="rounded-xl bg-[#0B1220] text-white p-4 border border-slate-800 shadow-inner space-y-3">
+        <div className="rounded-xl bg-[#18181B] text-white p-4 border border-zinc-800 shadow-inner space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-primary-400 font-bold">
-                SHIFTMETRIC TELEMETRY SNAPSHOT
+              <span className="text-[10px] font-sans uppercase tracking-wider text-primary-400 font-bold">
+                ShiftMetric Telemetry Snapshot
               </span>
-              <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
+              <h3 className="font-sans text-sm sm:text-base font-bold text-white leading-snug">
                 {resolvedVehicle.name}
               </h3>
             </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-400/40 px-2.5 py-0.5 text-[11px] font-mono font-semibold text-amber-300">
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 border border-amber-400/40 px-2.5 py-0.5 text-[11px] font-sans font-medium text-amber-300">
               <ShieldAlert className="w-3 h-3" />
               {criticalDefectTag}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-            <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">
+            <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
+              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
                 5-Yr TCO
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-white tabular-nums">
                 {tcoFormatted}
               </span>
             </div>
-            <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">
+            <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
+              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
                 Monthly Cost
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-primary-400 tabular-nums">
                 {monthlyFormatted}/mo
               </span>
             </div>
-            <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">
+            <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
+              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
                 Reliability
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 tabular-nums inline-flex items-center gap-1">
@@ -447,8 +448,8 @@ export default function ForumShareModal({
                 {score}/100
               </span>
             </div>
-            <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">
+            <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
+              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
                 12-Mo Reserve
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-amber-300 tabular-nums">
@@ -479,10 +480,10 @@ export default function ForumShareModal({
                     setActiveFormat(tab.id);
                     setCopiedMain(false);
                   }}
-                  className={`flex items-center gap-2.5 rounded-xl p-3 text-left transition-all border ${
+                  className={`flex items-center gap-2.5 rounded-xl p-3 text-left font-sans transition-colors duration-150 border ${
                     isSelected
                       ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                      : 'bg-surface-subtle dark:bg-slate-800 text-ink dark:text-slate-100 border-border dark:border-slate-700 hover:border-border-strong'
+                      : 'bg-surface-subtle dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border dark:border-zinc-700 hover:border-border-strong'
                   }`}
                 >
                   <Icon
@@ -494,7 +495,7 @@ export default function ForumShareModal({
                     <div className="text-xs font-bold truncate">{tab.label}</div>
                     <div
                       className={`text-[10px] truncate ${
-                        isSelected ? 'text-white/80' : 'text-muted dark:text-slate-400'
+                        isSelected ? 'text-white/80' : 'text-muted dark:text-zinc-400'
                       }`}
                     >
                       {tab.subtitle}
@@ -509,14 +510,14 @@ export default function ForumShareModal({
         {/* Live Preview Box */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-wider text-muted dark:text-slate-400 font-semibold">
+            <span className="text-xs font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold">
               Live Embed Preview ({FORMAT_TABS.find((t) => t.id === activeFormat)?.label})
             </span>
             <button
               type="button"
               data-testid="copy-share-snippet-btn"
               onClick={() => copyTextSafe(activeSnippetText, setCopiedMain)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all shadow-sm ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 font-sans text-xs font-semibold transition-colors duration-150 shadow-sm ${
                 copiedMain
                   ? 'bg-emerald-600 text-white'
                   : 'bg-primary-600 hover:bg-primary-700 text-white'
@@ -538,19 +539,19 @@ export default function ForumShareModal({
 
           <pre
             data-testid="forum-share-preview"
-            className="w-full rounded-xl bg-surface-subtle dark:bg-slate-950 border border-border dark:border-slate-800 p-3.5 text-xs font-mono text-ink dark:text-slate-200 overflow-x-auto whitespace-pre-wrap break-words max-h-56 leading-relaxed select-all"
+            className="w-full rounded-xl bg-surface-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 p-3.5 text-xs font-sans text-ink dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap break-words max-h-56 leading-relaxed select-all"
           >
             {activeSnippetText}
           </pre>
         </div>
 
         {/* Direct Deep-Link URL Bar */}
-        <div className="pt-2 border-t border-border dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl bg-surface-subtle dark:bg-slate-800/80 border border-border dark:border-slate-700 px-3 py-2">
-            <ExternalLink className="w-4 h-4 text-muted dark:text-slate-400 shrink-0" />
+        <div className="pt-2 border-t border-border dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl bg-surface-subtle dark:bg-zinc-800/80 border border-border dark:border-zinc-700 px-3 py-2">
+            <ExternalLink className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0" />
             <span
               data-testid="forum-share-deep-link"
-              className="text-xs font-mono text-muted dark:text-slate-300 truncate"
+              className="text-xs font-sans text-muted dark:text-zinc-300 truncate"
             >
               {shareUrl}
             </span>
@@ -561,7 +562,7 @@ export default function ForumShareModal({
               type="button"
               data-testid="copy-direct-url-btn"
               onClick={() => copyTextSafe(shareUrl, setCopiedUrl)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-surface dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-ink dark:text-slate-100 border border-border-strong dark:border-slate-700 hover:bg-surface-subtle dark:hover:bg-slate-700 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-surface dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 transition-colors duration-150"
             >
               {copiedUrl ? (
                 <>
@@ -579,7 +580,7 @@ export default function ForumShareModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-surface-subtle dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-muted hover:text-ink dark:text-slate-300 dark:hover:text-white transition-colors"
+              className="rounded-xl bg-surface-subtle dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-muted hover:text-ink dark:text-zinc-300 dark:hover:text-white transition-colors"
             >
               Done
             </button>
