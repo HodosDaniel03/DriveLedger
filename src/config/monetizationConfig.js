@@ -9,11 +9,11 @@
  */
 
 export const SITE_METADATA = {
-  brandName: 'ShiftMetric',
-  domain: 'shiftmetric.com',
-  contactEmail: 'contact@shiftmetric.com',
-  legalEmail: 'legal@shiftmetric.com',
-  lastUpdated: 'November 6, 2026',
+  brandName: 'MyDriveLedger',
+  domain: 'mydriveledger.com',
+  contactEmail: 'contact@mydriveledger.com',
+  legalEmail: 'contact@mydriveledger.com',
+  lastUpdated: 'November 7, 2026',
 };
 
 export const ADSENSE_CONFIG = {
@@ -105,11 +105,8 @@ export function buildAffiliateUrl(partnerKey = 'vinCheck', vehicleContext = null
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
   const baseUrl = String(partner.baseUrl || '').trim();
   const rawParam = String(partner.affiliateParam || '').trim().replace(/^[?&]+/, '');
-  const hashIndex = baseUrl.indexOf('#');
-  const urlWithoutHash = hashIndex >= 0 ? baseUrl.slice(0, hashIndex) : baseUrl;
-  const hashFragment = hashIndex >= 0 ? baseUrl.slice(hashIndex) : '';
-  const separator = urlWithoutHash.includes('?') ? '&' : '?';
-  const href = rawParam ? `${urlWithoutHash}${separator}${rawParam}${hashFragment}` : baseUrl;
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  const href = rawParam ? `${baseUrl}${separator}${rawParam}` : baseUrl;
 
   const linkProps = {
     href,
