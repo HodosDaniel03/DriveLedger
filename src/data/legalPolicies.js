@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Comprehensive Legal, Liability, Privacy & Regulatory Policy Suite
+ * DriveLedger — Comprehensive Legal, Liability, Privacy & Regulatory Policy Suite
  * Dynamically bound to `src/config/monetizationConfig.js`.
  * Written in full, formal, multi-paragraph English legal prose with zero placeholders.
  */

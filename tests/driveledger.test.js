@@ -361,7 +361,7 @@ registerHooks({
   },
 });
 
-console.log('=== ShiftMetric Full-Stack Deep Verification Suite ===');
+console.log('=== DriveLedger Full-Stack Deep Verification Suite ===');
 
 const React = (await import('react')).default;
 const { createRoot } = await import('react-dom/client');
@@ -579,7 +579,7 @@ const root = createRoot(rootContainer);
 root.render(React.createElement(App));
 
 const initialHtml = rootContainer.toHtml();
-assert.ok(initialHtml.includes('ShiftMetric'), 'App HTML must render brand header');
+assert.ok(initialHtml.includes('DriveLedger'), 'App HTML must render brand header');
 assert.ok(initialHtml.includes('tabular-nums'), 'App HTML must enforce tabular-nums');
 assert.ok(initialHtml.includes('lg:grid-cols-12'), 'App HTML must use 12-column split workspace');
 assert.ok(initialHtml.includes('lg:col-span-7'), 'App HTML must use 7-column left control panel');
@@ -1119,7 +1119,7 @@ exportBtn.dispatchEvent({ type: 'click' });
 
 const dossierHtml = rootContainer.toHtml();
 assert.ok(
-  dossierHtml.includes('SHIFTMETRIC AUTOMOTIVE TELEMETRY REPORT'),
+  dossierHtml.includes('DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT'),
   'Opening dossier export must render executive telemetry report header'
 );
 assert.ok(
@@ -1145,7 +1145,7 @@ const closeDossierBtn = rootContainer.querySelectorAll(
 assert.ok(closeDossierBtn, 'Must find close button for dossier modal');
 closeDossierBtn.dispatchEvent({ type: 'click' });
 assert.ok(
-  !rootContainer.toHtml().includes('SHIFTMETRIC AUTOMOTIVE TELEMETRY REPORT'),
+  !rootContainer.toHtml().includes('DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT'),
   'Closing dossier modal must dismiss dialog'
 );
 
@@ -1367,10 +1367,10 @@ if (closeDossier6H) closeDossier6H.dispatchEvent({ type: 'click' });
 
 console.log('✓ 6H. Advanced Edge Cases, Negative Currencies, Swapping & Code Catalog Integrity verified');
 
-// 6I. Brand Unification (ShiftMetric) & Deduplicated FAQ Verification
+// 6I. Brand Unification (DriveLedger) & Deduplicated FAQ Verification
 // 1. Verify Brand consistency across the entire app
 const currentHtml = rootContainer.toHtml();
-assert.ok(currentHtml.includes('ShiftMetric'), 'ShiftMetric brand must be present across the interface');
+assert.ok(currentHtml.includes('DriveLedger'), 'DriveLedger brand must be present across the interface');
 
 // 2. Verify FAQ Deduplication on Overview tab
 const overviewNavBtn = rootContainer.querySelectorAll(
@@ -1387,8 +1387,8 @@ assert.strictEqual(
 );
 // Native HomePage FAQ must be present
 assert.ok(
-  rootContainer.toHtml().includes('Why drivers choose ShiftMetric'),
-  'HomePage comparison table with ShiftMetric must be visible'
+  rootContainer.toHtml().includes('Why drivers choose DriveLedger'),
+  'HomePage comparison table with DriveLedger must be visible'
 );
 assert.ok(
   rootContainer.toHtml().includes('Do I need to create an account or sign up?'),
@@ -1409,7 +1409,7 @@ assert.strictEqual(
   'Footer FAQ section (#faq-heading) must be hidden on Methodology tab'
 );
 assert.ok(
-  rootContainer.toHtml().includes('How does ShiftMetric calculate non-linear 5-year and 10-year vehicle depreciation?'),
+  rootContainer.toHtml().includes('How does DriveLedger calculate non-linear 5-year and 10-year vehicle depreciation?'),
   'Methodology guide native engineering FAQ must be visible'
 );
 
@@ -1465,7 +1465,7 @@ assert.ok(
   'Footer FAQ section (#faq-heading) must be visible on Blog tab'
 );
 
-console.log('✓ 6I. Brand Unification (ShiftMetric) & FAQ Deduplication verified');
+console.log('✓ 6I. Brand Unification (DriveLedger) & FAQ Deduplication verified');
 
 // ============================================================================
 // 6J. Vehicle Photo Map 1-to-1 Engine, Priority Plus Navbar & UI De-AI Checks
@@ -1602,10 +1602,10 @@ const {
 } = await import('../src/data/legalPolicies.js');
 
 // 1. Verify monetizationConfig.js Single Source of Truth
-assert.strictEqual(MONETIZATION_CONFIG.brandName, 'ShiftMetric');
-assert.strictEqual(MONETIZATION_CONFIG.domain, 'shiftmetric.com');
-assert.strictEqual(MONETIZATION_CONFIG.contactEmail, 'contact@shiftmetric.com');
-assert.strictEqual(MONETIZATION_CONFIG.legalEmail, 'legal@shiftmetric.com');
+assert.strictEqual(MONETIZATION_CONFIG.brandName, 'DriveLedger');
+assert.strictEqual(MONETIZATION_CONFIG.domain, 'mydriveledger.com');
+assert.strictEqual(MONETIZATION_CONFIG.contactEmail, 'contact@mydriveledger.com');
+assert.strictEqual(MONETIZATION_CONFIG.legalEmail, 'contact@mydriveledger.com');
 assert.strictEqual(MONETIZATION_CONFIG.lastUpdated, 'November 6, 2026');
 assert.strictEqual(MONETIZATION_CONFIG.adsenseEnabled, false);
 assert.strictEqual(MONETIZATION_CONFIG.publisherId, 'ca-pub-0000000000000000');
@@ -1694,7 +1694,7 @@ const hashRouteChecks = [
   { hash: '#affiliate-disclosure', expectedText: 'As an Amazon Associate, we earn from qualifying purchases.' },
   { hash: '#cookies', expectedText: 'GDPR / CCPA Cookie &amp; Local Storage Governance Policy' },
   { hash: '#about', expectedText: 'Actuarial Depreciation Curves' },
-  { hash: '#contact', expectedText: 'legal@shiftmetric.com' },
+  { hash: '#contact', expectedText: 'contact@mydriveledger.com' },
 ];
 
 for (const { hash, expectedText } of hashRouteChecks) {
@@ -1765,10 +1765,19 @@ const footerNotice = rootContainer.querySelectorAll(
 )[0];
 assert.ok(footerNotice, '1-line legal notice must be present in Footer');
 
-// 6. Verify Cloudflare Pages Production Files (public/_redirects, public/ads.txt, public/robots.txt)
+// 6. Verify Production Routing & SEO Files (wrangler.jsonc or public/_redirects, public/ads.txt, public/robots.txt)
+const wranglerPath = path.join(projectRoot, 'wrangler.jsonc');
 const redirectsPath = path.join(projectRoot, 'public', '_redirects');
-assert.ok(fs.existsSync(redirectsPath), 'public/_redirects must exist');
-assert.strictEqual(fs.readFileSync(redirectsPath, 'utf8').trim(), '/* /index.html 200');
+assert.ok(
+  fs.existsSync(wranglerPath) || fs.existsSync(redirectsPath),
+  'Production routing configuration (wrangler.jsonc or public/_redirects) must exist'
+);
+if (fs.existsSync(wranglerPath)) {
+  const wranglerConfig = JSON.parse(fs.readFileSync(wranglerPath, 'utf8'));
+  assert.strictEqual(wranglerConfig.assets?.not_found_handling, 'single-page-application');
+} else {
+  assert.strictEqual(fs.readFileSync(redirectsPath, 'utf8').trim(), '/* /index.html 200');
+}
 
 const adsTxtPath = path.join(projectRoot, 'public', 'ads.txt');
 assert.ok(fs.existsSync(adsTxtPath), 'public/ads.txt must exist');
@@ -1776,7 +1785,7 @@ assert.ok(fs.readFileSync(adsTxtPath, 'utf8').includes('google.com, pub-00000000
 
 const robotsTxtPath = path.join(projectRoot, 'public', 'robots.txt');
 assert.ok(fs.existsSync(robotsTxtPath), 'public/robots.txt must exist');
-assert.ok(fs.readFileSync(robotsTxtPath, 'utf8').includes('Sitemap: https://shiftmetric.com/sitemap.xml'));
+assert.ok(fs.readFileSync(robotsTxtPath, 'utf8').includes('Sitemap: https://mydriveledger.com/sitemap.xml'));
 
 // 7. Verify popstate back-navigation from /#privacy to / closes the LegalModal
 globalThis.window.location.hash = '#privacy';

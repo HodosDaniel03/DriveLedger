@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Comprehensive Automotive Workshop Hierarchy Database
+ * DriveLedger — Comprehensive Automotive Workshop Hierarchy Database
  * Organized hierarchically: Brand ➔ Model ➔ Engine / Powertrain
  * Covering 35 global & European automotive marques with verified engineering telemetry.
  */

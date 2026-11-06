@@ -69,7 +69,7 @@ function parseHybridObdPath(pathname) {
   };
 }
 
-function ShiftMetricWorkspace() {
+function DriveLedgerWorkspace() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -550,7 +550,7 @@ export default function App() {
     <ThemeProvider>
       <UnitProvider>
         <GarageProvider>
-          <ShiftMetricWorkspace />
+          <DriveLedgerWorkspace />
         </GarageProvider>
       </UnitProvider>
     </ThemeProvider>

@@ -62,7 +62,7 @@ export default function HomePage({
     },
     {
       q: 'Do I need to create an account or sign up?',
-      a: 'No. ShiftMetric is 100% free, independent, and requires zero sign-up or personal credit card info.',
+      a: 'No. DriveLedger is 100% free, independent, and requires zero sign-up or personal credit card info.',
     },
     {
       q: 'Which regions and currencies are supported?',
@@ -385,14 +385,14 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 6. Comparison Table (Stitch Section: Why drivers choose ShiftMetric) */}
+      {/* 6. Comparison Table (Stitch Section: Why drivers choose DriveLedger) */}
       <section className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-10">
         <div className="text-center max-w-xl mx-auto mb-10">
           <h2 className="text-2xl sm:text-3xl font-sans font-bold text-ink dark:text-zinc-50 tracking-tight">
-            Why drivers choose ShiftMetric
+            Why drivers choose DriveLedger
           </h2>
           <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-2">
-            Compare how ShiftMetric stacks up against dealer quotes and online forums.
+            Compare how DriveLedger stacks up against dealer quotes and online forums.
           </p>
         </div>
 
@@ -403,7 +403,7 @@ export default function HomePage({
                 <th className="py-4 px-5 font-semibold w-2/5">Capability</th>
                 <th className="py-4 px-5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-t-xl w-1/5">
                   <div className="flex items-center gap-1.5">
-                    <span>ShiftMetric</span>
+                    <span>DriveLedger</span>
                     <span className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[10px] px-2 py-0.5 rounded-md font-sans font-medium">
                       verified
                     </span>
@@ -673,7 +673,7 @@ export default function HomePage({
           </summary>
           <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800 text-xs text-body dark:text-zinc-300 space-y-4 leading-relaxed font-sans cursor-default">
             <p>
-              ShiftMetric provides automotive cost modeling across North American (US), British (UK), and European Union (EU) jurisdictions. Our computational framework unifies empirical depreciation curves, localized fuel tariffs, regional insurance ratings, and OEM flat-rate labor estimates.
+              DriveLedger provides automotive cost modeling across North American (US), British (UK), and European Union (EU) jurisdictions. Our computational framework unifies empirical depreciation curves, localized fuel tariffs, regional insurance ratings, and OEM flat-rate labor estimates.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-[11px] pt-2">
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">

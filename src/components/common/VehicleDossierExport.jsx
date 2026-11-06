@@ -311,10 +311,10 @@ export default function VehicleDossierExport({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 print:text-black font-bold">
-                  SHIFTMETRIC AUTOMOTIVE TELEMETRY REPORT
+                  DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT
                 </p>
                 <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/40 print:text-black print:bg-transparent">
-                  SHIFTMETRIC TELEMETRY DOSSIER
+                  DRIVELEDGER TELEMETRY DOSSIER
                 </span>
               </div>
               <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 print:text-black mt-1">

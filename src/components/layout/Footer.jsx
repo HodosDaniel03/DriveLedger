@@ -75,7 +75,7 @@ export default function Footer({
         slotId={MONETIZATION_CONFIG.slots.topLeaderboard}
         variant="leaderboard"
         partnerKey="vinCheck"
-        contextLabel="ShiftMetric Automotive Cost & Diagnostic Benchmark"
+        contextLabel="DriveLedger Automotive Cost & Diagnostic Benchmark"
       />
 
       {/* 2. Collapsible FAQ Accordion with Stitch Clean Styling */}

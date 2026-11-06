@@ -314,7 +314,7 @@ export default function PreInspectionChecklist({
 
   const handleShareLink = () => {
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://shiftmetric.com';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mydriveledger.com';
       const shareUrl = `${origin}/checklist?preset=${encodeURIComponent(selectedPreset.id)}&odo=${Math.round(odometerMiles)}&price=${Math.round(askingPriceUsd)}`;
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl);
@@ -528,7 +528,7 @@ export default function PreInspectionChecklist({
         <div className="flex justify-between items-start">
           <div>
             <h1 className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
-              ShiftMetric — Pre-Purchase Inspection &amp; Negotiation Battlecard
+              DriveLedger — Pre-Purchase Inspection &amp; Negotiation Battlecard
             </h1>
             <p className="font-sans text-sm text-gray-700 mt-1">
               Vehicle: <strong>{selectedPreset.name}</strong> · Engine: <strong>{selectedPreset.engineCode}</strong> · Powertrain: <strong>{selectedPreset.fuelType}</strong>
@@ -538,7 +538,7 @@ export default function PreInspectionChecklist({
             </p>
           </div>
           <div className="text-right text-xs text-gray-500 font-sans">
-            shiftmetric.com/checklist
+            mydriveledger.com/checklist
           </div>
         </div>
       </div>

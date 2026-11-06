@@ -1,8 +1,8 @@
 /**
- * ShiftMetric — Normalized Powertrain Archetype & Brand Tier Telemetry Engine (Phase 5.1)
+ * DriveLedger — Normalized Powertrain Archetype & Brand Tier Telemetry Engine (Phase 5.1)
  * Decouples mechanical risk architectures (8 core powertrain archetypes) and brand labor/parts
  * tier multipliers from individual vehicle model shells, enabling compact normalized model records
- * to hydrate dynamically into full ShiftMetric TCO & Risk Matrix telemetry presets.
+ * to hydrate dynamically into full DriveLedger TCO & Risk Matrix telemetry presets.
  */
 
 export {

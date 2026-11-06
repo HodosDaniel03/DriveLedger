@@ -948,7 +948,7 @@ export default function VehicleComparator({
             </p>
           </div>
           <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-            Database: ShiftMetric Curated Dossier
+            Database: DriveLedger Curated Dossier
           </span>
         </div>
 

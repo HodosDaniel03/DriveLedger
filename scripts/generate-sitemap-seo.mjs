@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Programmatic SEO & Dynamic XML Sitemap Generator
+ * DriveLedger — Programmatic SEO & Dynamic XML Sitemap Generator
  *
  * Generates public/sitemap.xml at build-time containing 4,800+ powertrain-validated URLs:
  * 1. Core workspace & editorial routes (/overview, /tco, /risk-matrix, /obd-estimator, /compare, /checklist, /methodology, /reviews, /blog)
@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SITEMAP_PATH = path.resolve(ROOT_DIR, 'public', 'sitemap.xml');
 
-const SITE_ORIGIN = 'https://shiftmetric.com';
+const SITE_ORIGIN = 'https://mydriveledger.com';
 const TODAY = new Date().toISOString().split('T')[0];
 
 function escapeXml(unsafe) {

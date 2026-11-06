@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Turnkey Monetization & Site Configuration Control Center
+ * DriveLedger — Turnkey Monetization & Site Configuration Control Center
  * Single Source of Truth for Site Metadata, Google AdSense Slots, and Affiliate Partner Links.
  *
  * To activate live monetization in production:
@@ -9,11 +9,11 @@
  */
 
 export const SITE_METADATA = {
-  brandName: 'MyDriveLedger',
+  brandName: 'DriveLedger',
   domain: 'mydriveledger.com',
   contactEmail: 'contact@mydriveledger.com',
   legalEmail: 'contact@mydriveledger.com',
-  lastUpdated: 'November 7, 2026',
+  lastUpdated: 'November 6, 2026',
 };
 
 export const ADSENSE_CONFIG = {
@@ -105,8 +105,19 @@ export function buildAffiliateUrl(partnerKey = 'vinCheck', vehicleContext = null
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
   const baseUrl = String(partner.baseUrl || '').trim();
   const rawParam = String(partner.affiliateParam || '').trim().replace(/^[?&]+/, '');
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  const href = rawParam ? `${baseUrl}${separator}${rawParam}` : baseUrl;
+  let href = baseUrl;
+  if (rawParam) {
+    const hashIdx = baseUrl.indexOf('#');
+    if (hashIdx !== -1) {
+      const baseWithoutHash = baseUrl.slice(0, hashIdx);
+      const hash = baseUrl.slice(hashIdx);
+      const separator = baseWithoutHash.includes('?') ? '&' : '?';
+      href = `${baseWithoutHash}${separator}${rawParam}${hash}`;
+    } else {
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      href = `${baseUrl}${separator}${rawParam}`;
+    }
+  }
 
   const linkProps = {
     href,

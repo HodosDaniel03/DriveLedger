@@ -6,7 +6,7 @@ import { useGarage } from '../../context/GarageContext';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 
 export const PRIMARY_WORKSPACE_TABS = [
-  { id: 'overview', label: 'Overview', fullLabel: 'ShiftMetric Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database' },
+  { id: 'overview', label: 'Overview', fullLabel: 'DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database' },
   { id: 'tco', label: 'True Cost to Own', fullLabel: '5-Yr True Cost to Own', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves' },
   { id: 'risk', label: 'Maintenance Check', fullLabel: 'Powertrain Risk Matrix', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk' },
   { id: 'obd', label: 'OBD-II Estimator', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs' },
@@ -111,13 +111,13 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             onSelectTab('overview');
           }}
           className="flex items-center gap-2.5 text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
-          aria-label="ShiftMetric home"
+          aria-label="DriveLedger home"
         >
           <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white transition-transform duration-200 group-hover:scale-105 shadow-xs">
             <Gauge className="w-4 h-4 text-white" />
           </span>
           <span className="font-sans font-bold text-base sm:text-lg tracking-tight text-ink dark:text-zinc-50">
-            ShiftMetric
+            DriveLedger
           </span>
         </a>
 

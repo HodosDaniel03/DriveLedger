@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Canonical Powertrain Architecture & Telemetry Module
+ * DriveLedger — Canonical Powertrain Architecture & Telemetry Module
  * 
  * Provides:
  *  1. Canonical PowertrainType enumeration ('EV' | 'PHEV' | 'HEV' | 'ICE_PETROL' | 'ICE_DIESEL')

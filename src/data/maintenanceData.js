@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Mechanical Component Wear & Thermodynamic Penalty Database
+ * DriveLedger — Mechanical Component Wear & Thermodynamic Penalty Database
  * Models physical odometer vs. effective thermodynamic wear age across:
  * - Short-trip urban cold cycles (1.35x to 1.55x wear multiplier)
  * - Oil change interval discipline (Strict 6k-8k mi vs Extended 15k-20k mi)

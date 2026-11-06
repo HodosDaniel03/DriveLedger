@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Break-Even Trajectory & Pre-Purchase Inspection (PPI) Engine
+ * DriveLedger — Break-Even Trajectory & Pre-Purchase Inspection (PPI) Engine
  * Pure JS calculation and data-synthesis modules for node/browser interoperability.
  */
 

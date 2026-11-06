@@ -222,8 +222,8 @@ test('5. parseCompareMatchupPath & parseRiskMileagePath: Resolve Clean SEO URLs 
 test('6. generateSitemapXml: Scales Cleanly Beyond 4,500 Unique Programmatic URLs With Zero EV/DPF Pollution', () => {
   const { xml, count } = generateSitemapXml();
   assert.ok(count >= 4500, `Expected >=4,500 sitemap URLs, got ${count}`);
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/compare/bmw-330i-g20-vs-tesla-model-3-lr</loc>'));
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/risk-matrix/ford-focus-ecoblue/100k-miles</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/compare/bmw-330i-g20-vs-tesla-model-3-lr</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix/ford-focus-ecoblue/100k-miles</loc>'));
   assert.ok(!xml.includes('/obd/tesla-model-3-lr/p2002</loc>'), 'Sitemap must never emit EV + DPF P2002 URL');
   assert.ok(xml.includes('/obd/tesla-model-3-lr/p0a80</loc>'), 'Sitemap must emit EV + HV Battery P0A80 URL');
 });

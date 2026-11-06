@@ -268,7 +268,7 @@ export default function ForumShareModal({
       window.location?.origin &&
       window.location.origin.startsWith('http')
         ? window.location.origin
-        : 'https://shiftmetric.com';
+        : 'https://mydriveledger.com';
     return `${origin}${pathSegment}?tab=${tabParam}&preset=${presetParam}&odo=${odoParam}&reg=${region}`;
   }, [resolvedVehicle, resolvedOdometerMiles, riskSummary, tcoSummary, region]);
 
@@ -293,7 +293,7 @@ export default function ForumShareModal({
     const quick = `Vehicle: ${resolvedVehicle.name} | 5-Yr TCO: ${tcoFormatted} (${monthlyFormatted}/mo) | Reliability Score: ${score}/100 | Top Risk: ${topRiskLabel} (${reserveFormatted}) | Source: ${shareUrl}`;
 
     const reddit = [
-      `### ShiftMetric Telemetry Report: ${resolvedVehicle.name}`,
+      `### DriveLedger Telemetry Report: ${resolvedVehicle.name}`,
       '',
       '| Metric | Telemetry Value | Notes |',
       '| :--- | :--- | :--- |',
@@ -309,11 +309,11 @@ export default function ForumShareModal({
         resolvedVehicle.engineCode || resolvedVehicle.powertrainLabel || 'Powertrain Telemetry'
       } |`,
       '',
-      `*Interactive Deep-Link: [ShiftMetric Telemetry Benchmark](${shareUrl})*`,
+      `*Interactive Deep-Link: [DriveLedger Telemetry Benchmark](${shareUrl})*`,
     ].join('\n');
 
     const bbcode = [
-      `[b][size=4]ShiftMetric Telemetry Report: ${resolvedVehicle.name}[/size][/b]`,
+      `[b][size=4]DriveLedger Telemetry Report: ${resolvedVehicle.name}[/size][/b]`,
       `[i]Odometer: ${distanceFormatted} | Protocol: ${
         scheduleMode === 'oem'
           ? 'OEM Marketing Schedule'
@@ -410,7 +410,7 @@ export default function ForumShareModal({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="text-[10px] font-sans uppercase tracking-wider text-primary-400 font-bold">
-                ShiftMetric Telemetry Snapshot
+                DriveLedger Telemetry Snapshot
               </span>
               <h3 className="font-sans text-sm sm:text-base font-bold text-white leading-snug">
                 {resolvedVehicle.name}

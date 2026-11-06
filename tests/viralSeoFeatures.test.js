@@ -146,15 +146,15 @@ test('6. generateSitemapXml: Generates Valid XML with Core, Preset and Diagnosti
   assert.ok(xml.endsWith('</urlset>'), 'Closing urlset tag required');
 
   // Verify Core Routes exist
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/</loc>'), 'Homepage route required');
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/compare</loc>'), 'Compare route required');
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/checklist</loc>'), 'Checklist route required');
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/tco</loc>'), 'TCO route required');
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/risk-matrix</loc>'), 'Risk matrix route required');
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/</loc>'), 'Homepage route required');
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/compare</loc>'), 'Compare route required');
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/checklist</loc>'), 'Checklist route required');
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/tco</loc>'), 'TCO route required');
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix</loc>'), 'Risk matrix route required');
 
   // Verify Programmatic Vehicle Routes
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/checklist?preset=ford-focus-ecoblue</loc>'));
-  assert.ok(xml.includes('<loc>https://shiftmetric.com/compare?presetA=tesla-model-3-lr</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/checklist?preset=ford-focus-ecoblue</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/compare?presetA=tesla-model-3-lr</loc>'));
 
   // Verify Hybrid OBD-II Routes
   assert.ok(xml.includes('/obd/ford-focus-ecoblue/p2002</loc>'));

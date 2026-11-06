@@ -15,7 +15,7 @@ const REVIEWS = [
     rating: 5,
     savingsText: '$2,400 Saved in Preventative Sourcing',
     review:
-      'ShiftMetric flagged the oil filter housing and cooling flange embrittlement window at 58k miles before I finalized a 330i purchase. The dealer agreed to replace both parts before delivery.',
+      'DriveLedger flagged the oil filter housing and cooling flange embrittlement window at 58k miles before I finalized a 330i purchase. The dealer agreed to replace both parts before delivery.',
   },
   {
     id: 2,
@@ -26,7 +26,7 @@ const REVIEWS = [
     rating: 5,
     savingsText: '$1,850 DPF Trap Avoided',
     review:
-      'The short-trip urban wear warning was 100% accurate. My route shifted from highway to city, and ShiftMetric predicted DPF soot saturation within 4 months. Switched regeneration protocols just in time.',
+      'The short-trip urban wear warning was 100% accurate. My route shifted from highway to city, and DriveLedger predicted DPF soot saturation within 4 months. Switched regeneration protocols just in time.',
   },
   {
     id: 3,
@@ -37,7 +37,7 @@ const REVIEWS = [
     rating: 5,
     savingsText: 'Accurate to $0.02 / mile',
     review:
-      'Compared my Model 3 against a Camry Hybrid before buying. ShiftMetric showed higher tire wear and insurance costs offsetting fuel savings down to the exact dollar. Refreshingly honest data.',
+      'Compared my Model 3 against a Camry Hybrid before buying. DriveLedger showed higher tire wear and insurance costs offsetting fuel savings down to the exact dollar. Refreshingly honest data.',
   },
   {
     id: 4,

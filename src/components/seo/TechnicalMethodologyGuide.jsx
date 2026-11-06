@@ -18,9 +18,9 @@ import {
 export const FAQ_ITEMS = [
   {
     question:
-      'How does ShiftMetric calculate non-linear 5-year and 10-year vehicle depreciation?',
+      'How does DriveLedger calculate non-linear 5-year and 10-year vehicle depreciation?',
     answer:
-      'Unlike simplistic linear calculators that subtract a flat percentage per year, ShiftMetric uses a segment-specific logarithmic residual retention curve calibrated against wholesale auction data and mileage intensity. Vehicle value at year t is modeled as V(t) = P₀ × R(t) × (1 - α · ΔM)^t, where P₀ is initial acquisition cost, R(t) is the baseline segment retention factor at year t, ΔM is the annual mileage variance relative to the 12,500-mile baseline, and α = 0.045 is the empirical odometer elasticity coefficient.',
+      'Unlike simplistic linear calculators that subtract a flat percentage per year, DriveLedger uses a segment-specific logarithmic residual retention curve calibrated against wholesale auction data and mileage intensity. Vehicle value at year t is modeled as V(t) = P₀ × R(t) × (1 - α · ΔM)^t, where P₀ is initial acquisition cost, R(t) is the baseline segment retention factor at year t, ΔM is the annual mileage variance relative to the 12,500-mile baseline, and α = 0.045 is the empirical odometer elasticity coefficient.',
   },
   {
     question:
@@ -36,13 +36,13 @@ export const FAQ_ITEMS = [
   },
   {
     question:
-      'How do US MPG, UK Imperial MPG, and European L/100km conversions work in ShiftMetric?',
+      'How do US MPG, UK Imperial MPG, and European L/100km conversions work in DriveLedger?',
     answer:
-      'ShiftMetric stores canonical telemetry in USD, statute miles (1 mi = 1.609344 km), and US Gallons (3.78541178 Litres). Because a UK Imperial Gallon equals 4.54609 Litres, 1 MPG (US) equals exactly 1.20095 MPG (UK). For European metric consumption, L/100km is inversely proportional to fuel economy and is computed via the exact physical constant 235.21458 / MPG (US). Switching the top navigation unit pill updates every currency figure, odometer reading, and fuel consumption metric at 60fps without rounding drift.',
+      'DriveLedger stores canonical telemetry in USD, statute miles (1 mi = 1.609344 km), and US Gallons (3.78541178 Litres). Because a UK Imperial Gallon equals 4.54609 Litres, 1 MPG (US) equals exactly 1.20095 MPG (UK). For European metric consumption, L/100km is inversely proportional to fuel economy and is computed via the exact physical constant 235.21458 / MPG (US). Switching the top navigation unit pill updates every currency figure, odometer reading, and fuel consumption metric at 60fps without rounding drift.',
   },
   {
     question:
-      'Why does ShiftMetric recommend servicing "lifetime" automatic transmission fluids at 40k–60k miles?',
+      'Why does DriveLedger recommend servicing "lifetime" automatic transmission fluids at 40k–60k miles?',
     answer:
       'Automakers often define "lifetime fill" as the duration of the factory powertrain warranty (typically 5 years or 60,000 miles). In practice, automatic transmission fluid (ATF) and dual-clutch wet fluid accumulate clutch friction material and experience shear viscosity loss from thermal cycling above 110°C. Replacing fluid and sump filters every 38,000–40,000 miles on DSG/PDK/S-Tronic gearboxes and every 55,000–60,000 miles on ZF 8HP / 9G-Tronic / 10R80 torque converter transmissions prevents $2,400+ mechatronic valve body failures.',
   },
@@ -62,11 +62,11 @@ export const LEGAL_MODAL_CONTENT = {
     sections: [
       {
         heading: '1. Zero Personal Financial Storage Architecture',
-        body: 'ShiftMetric processes all vehicle True Cost to Own (TCO) sliders, loan amortization inputs, odometer readings, and OBD-II fault code queries locally within your browser session. We do not transmit or store your personal financial figures on remote servers.',
+        body: 'DriveLedger processes all vehicle True Cost to Own (TCO) sliders, loan amortization inputs, odometer readings, and OBD-II fault code queries locally within your browser session. We do not transmit or store your personal financial figures on remote servers.',
       },
       {
         heading: '2. LocalStorage Preferences & Deep-Link URLs',
-        body: 'To provide a seamless experience, ShiftMetric uses browser LocalStorage solely to remember your selected unit system (US, UK, or EU), theme preference (Dark or Light mode), and cookie consent status. Shareable URL query parameters (?tab=tco&preset=...) contain only non-identifiable vehicle configuration states.',
+        body: 'To provide a seamless experience, DriveLedger uses browser LocalStorage solely to remember your selected unit system (US, UK, or EU), theme preference (Dark or Light mode), and cookie consent status. Shareable URL query parameters (?tab=tco&preset=...) contain only non-identifiable vehicle configuration states.',
       },
       {
         heading: '3. Google AdSense & Third-Party Analytics Cookies',
@@ -81,7 +81,7 @@ export const LEGAL_MODAL_CONTENT = {
     sections: [
       {
         heading: '1. Informational & Statistical Modeling Scope',
-        body: 'All calculations, residual value curves, thermodynamic wear multipliers, and OBD-II workshop repair estimates generated by ShiftMetric are statistical engineering projections provided strictly for educational and informational purposes. They do not constitute formal mechanical certification, certified appraisal, or licensed financial advice.',
+        body: 'All calculations, residual value curves, thermodynamic wear multipliers, and OBD-II workshop repair estimates generated by DriveLedger are statistical engineering projections provided strictly for educational and informational purposes. They do not constitute formal mechanical certification, certified appraisal, or licensed financial advice.',
       },
       {
         heading: '2. OBD-II Diagnostic & Workshop Safety Notice',
@@ -89,7 +89,7 @@ export const LEGAL_MODAL_CONTENT = {
       },
       {
         heading: '3. Limitation of Liability',
-        body: 'ShiftMetric Telemetry Systems shall not be held liable for workshop invoice variances, vehicle purchase decisions, or mechanical failures arising from reliance on estimated intervals or diagnostic guides.',
+        body: 'DriveLedger Telemetry Systems shall not be held liable for workshop invoice variances, vehicle purchase decisions, or mechanical failures arising from reliance on estimated intervals or diagnostic guides.',
       },
     ],
   },
@@ -100,7 +100,7 @@ export const LEGAL_MODAL_CONTENT = {
     sections: [
       {
         heading: '1. FTC & ASA Commercial Transparency Compliance',
-        body: 'In compliance with US Federal Trade Commission (FTC) 16 CFR Part 255 guidelines and UK/EU consumer transparency regulations, ShiftMetric discloses that certain contextual recommendation cards Marked with "Verified Partner" or "Sponsored Telemetry Integration" contain affiliate links.',
+        body: 'In compliance with US Federal Trade Commission (FTC) 16 CFR Part 255 guidelines and UK/EU consumer transparency regulations, DriveLedger discloses that certain contextual recommendation cards Marked with "Verified Partner" or "Sponsored Telemetry Integration" contain affiliate links.',
       },
       {
         heading: '2. Editorial & Algorithmic Independence',
@@ -142,7 +142,7 @@ export default function TechnicalMethodologyGuide({
     '@graph': [
       {
         '@type': 'SoftwareApplication',
-        name: 'ShiftMetric Automotive TCO, Powertrain Risk & OBD-II Estimator',
+        name: 'DriveLedger Automotive TCO, Powertrain Risk & OBD-II Estimator',
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
         offers: {
@@ -247,7 +247,7 @@ export default function TechnicalMethodologyGuide({
               </p>
 
               <p>
-                Our financing engine couples this residual curve with an exact monthly reducing-balance amortization schedule. In the early years of a 72- or 84-month loan at &gt;6.5% APR, front-loaded interest charges combined with Year 1–2 depreciation frequently create a negative equity gap, which ShiftMetric highlights in the year-by-year progression table.
+                Our financing engine couples this residual curve with an exact monthly reducing-balance amortization schedule. In the early years of a 72- or 84-month loan at &gt;6.5% APR, front-loaded interest charges combined with Year 1–2 depreciation frequently create a negative equity gap, which DriveLedger highlights in the year-by-year progression table.
               </p>
             </div>
           </details>
@@ -510,7 +510,7 @@ export default function TechnicalMethodologyGuide({
             <strong className="text-ink dark:text-zinc-200">
               AdSense &amp; Partner Verification Notice:{' '}
             </strong>
-            ShiftMetric maintains strict separation between our thermodynamic/financial algorithms and verified partner integrations. Review our legal governance documents at any time:
+            DriveLedger maintains strict separation between our thermodynamic/financial algorithms and verified partner integrations. Review our legal governance documents at any time:
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">

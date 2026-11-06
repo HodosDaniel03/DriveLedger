@@ -175,7 +175,7 @@ export default function DynamicSeoHead({
 
     if (activeTab === 'obd') {
       const canonicalPath = `/obd/${preset.id}/${codeLower}`;
-      const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | ShiftMetric`;
+      const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
       const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
       return {
         title,
@@ -187,7 +187,7 @@ export default function DynamicSeoHead({
 
     if (activeTab === 'tco') {
       const canonicalPath = `/tco?preset=${preset.id}`;
-      const title = `${preset.name} 5-Year True Cost to Own & Depreciation | ShiftMetric`;
+      const title = `${preset.name} 5-Year True Cost to Own & Depreciation | DriveLedger`;
       const description = `${preset.name} (${preset.engineCode}) 5-year True Cost to Own is projected at $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/mo or $${telemetry.costPerMileUsd}/mi), including $${telemetry.depreciation5YrUsd.toLocaleString()} non-linear depreciation and maintenance reserves.`;
       return {
         title,
@@ -200,7 +200,7 @@ export default function DynamicSeoHead({
     if (activeTab === 'risk') {
       if (activeMileageBracket) {
         const canonicalPath = `/risk-matrix/${preset.id}/${activeMileageBracket.slug}`;
-        const title = `${preset.name} at ${activeMileageBracket.label}: Reliability Risk & Maintenance Costs | ShiftMetric`;
+        const title = `${preset.name} at ${activeMileageBracket.label}: Reliability Risk & Maintenance Costs | DriveLedger`;
         const description = `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect imminent timing, transmission, DPF, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
         return {
           title,
@@ -210,7 +210,7 @@ export default function DynamicSeoHead({
         };
       }
       const canonicalPath = `/risk-matrix?preset=${preset.id}`;
-      const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | ShiftMetric`;
+      const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | DriveLedger`;
       const description = `${preset.name} achieves a ${telemetry.reliabilityScore}/100 Engineering Reliability Score at ${telemetry.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
       return {
         title,
@@ -228,7 +228,7 @@ export default function DynamicSeoHead({
           secondaryTelemetry.total5YrTcoUsd < telemetry.total5YrTcoUsd
             ? secondaryPreset.name
             : preset.name;
-        const title = `${preset.name} vs ${secondaryPreset.name}: 5-Year TCO & Reliability Comparison | ShiftMetric`;
+        const title = `${preset.name} vs ${secondaryPreset.name}: 5-Year TCO & Reliability Comparison | DriveLedger`;
         const description = `${preset.name} ($${telemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telemetry.reliabilityScore}/100 reliability) vs ${secondaryPreset.name} ($${secondaryTelemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${secondaryTelemetry.reliabilityScore}/100 reliability). ${cheaperName} saves $${delta5Yr.toLocaleString()} over 5 years.`;
         return {
           title,
@@ -238,7 +238,7 @@ export default function DynamicSeoHead({
         };
       }
       const canonicalPath = `/compare?presetA=${preset.id}`;
-      const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | ShiftMetric`;
+      const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | DriveLedger`;
       const description = `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
       return {
         title,
@@ -250,7 +250,7 @@ export default function DynamicSeoHead({
 
     if (activeTab === 'checklist') {
       const canonicalPath = `/checklist?preset=${preset.id}`;
-      const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | ShiftMetric`;
+      const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | DriveLedger`;
       const description = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
       return {
         title,
@@ -261,7 +261,7 @@ export default function DynamicSeoHead({
     }
 
     const baseTabPath = CANONICAL_TAB_PATHS[activeTab] || '/';
-    const title = `${preset.name} TCO, Reliability Score (${telemetry.reliabilityScore}/100) & ${obdDossier.code} Diagnostics | ShiftMetric`;
+    const title = `${preset.name} TCO, Reliability Score (${telemetry.reliabilityScore}/100) & ${obdDossier.code} Diagnostics | DriveLedger`;
     const description = `Independent automotive engineering platform: ${preset.name} 5-year TCO ($${telemetry.total5YrTcoUsd.toLocaleString()}), powertrain reliability score (${telemetry.reliabilityScore}/100), and ${obdDossier.code} live PID diagnostic protocols.`;
     return {
       title,
@@ -414,7 +414,7 @@ export default function DynamicSeoHead({
     const dynamicFaqs = [
       {
         question: `What is the 5-year True Cost to Own (TCO) and Reliability Score for the ${preset.name}?`,
-        answer: `Based on ShiftMetric telemetry modeling, the ${preset.name} (${preset.engineCode}) carries an estimated 5-year True Cost to Own of $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/month or $${telemetry.costPerMileUsd}/mile) and an Engineering Reliability Score of ${telemetry.reliabilityScore}/100 at ${telemetry.odometerMiles.toLocaleString()} miles.`,
+        answer: `Based on DriveLedger telemetry modeling, the ${preset.name} (${preset.engineCode}) carries an estimated 5-year True Cost to Own of $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/month or $${telemetry.costPerMileUsd}/mile) and an Engineering Reliability Score of ${telemetry.reliabilityScore}/100 at ${telemetry.odometerMiles.toLocaleString()} miles.`,
       },
       {
         question: `How much does it cost to fix OBD-II code ${obdDossier.code} (${obdDossier.title}) on a ${preset.name}?`,

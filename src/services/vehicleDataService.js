@@ -1,5 +1,5 @@
 /**
- * ShiftMetric — Hybrid Vehicle Intelligence & Data Provider Service
+ * DriveLedger — Hybrid Vehicle Intelligence & Data Provider Service
  * Combines NHTSA & EPA Live APIs with In-Memory / LocalStorage Caching
  * and Instant (<50ms) Curated Database Fallback.
  */
@@ -268,7 +268,7 @@ function getCuratedFallbackComplaints(make, model, year) {
 function getCuratedFallbackFuelEconomy(engine) {
   if (engine && engine.epaEfficiency) {
     return {
-      source: 'Curated ShiftMetric Technical Database',
+      source: 'Curated DriveLedger Technical Database',
       combinedMpg: engine.epaEfficiency.combinedMpg,
       cityMpg: engine.epaEfficiency.cityMpg,
       highwayMpg: engine.epaEfficiency.highwayMpg,
@@ -279,7 +279,7 @@ function getCuratedFallbackFuelEconomy(engine) {
   }
 
   return {
-    source: 'Curated ShiftMetric Baseline',
+    source: 'Curated DriveLedger Baseline',
     combinedMpg: 32,
     cityMpg: 28,
     highwayMpg: 38,

@@ -1,5 +1,5 @@
 /**
- * ShiftMetric Vehicle Archetypes & Engineering Telemetry Badge Resolver
+ * DriveLedger Vehicle Archetypes & Engineering Telemetry Badge Resolver
  * 
  * Maps vehicle database records into:
  *  1. 7 Vector Body Archetypes ('hatchback', 'wagon', 'sedan', 'suv', 'crossover', 'coupe', 'truck')
