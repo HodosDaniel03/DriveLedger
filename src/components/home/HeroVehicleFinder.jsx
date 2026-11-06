@@ -3,7 +3,7 @@ import { Search, Sparkles, Filter, Car, Zap, Check, ArrowRight, ShieldCheck, Che
 import { VEHICLE_PRESETS, BRANDS, BODY_TYPES } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import VehicleHierarchySelector from '../common/VehicleHierarchySelector';
-import VehicleSilhouette from '../common/vehicle/VehicleSilhouette.jsx';
+import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
 import VehicleTechnicalBadges from '../common/vehicle/VehicleTechnicalBadges.jsx';
 import { RiskBadge } from '../common/OdometerPrimitives';
 
@@ -201,8 +201,8 @@ export default function HeroVehicleFinder({
               </div>
 
               {/* Real Automotive Studio Photography Frame */}
-              <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200 dark:border-zinc-800 group">
-                <VehicleSilhouette vehicle={activePreset} className="w-full h-full" interactive />
+              <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
+                <VehicleImageResolver vehicle={activePreset} variant="showcase" className="w-full h-full" interactive />
               </div>
 
               {/* Strictly Single Row of Max 4 Neutral Micro-Tags */}

@@ -797,7 +797,7 @@ export default function ObdEstimator({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-bold">
-                      PID Telemetry-Narrowed Range
+                      Expected Cost Range
                     </span>
                     <Pill tone={liveVerdict.tone} className="text-[11px] py-0 px-2">
                       {liveVerdict.badgeLabel}

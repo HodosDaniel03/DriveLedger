@@ -33,7 +33,29 @@ const PILL_STYLES = {
   brand: 'bg-primary-600 text-white border border-primary-700 dark:bg-primary-600 dark:text-white',
 };
 
+function extractNodeText(node) {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractNodeText).join('');
+  if (node && typeof node === 'object' && node.props) {
+    return extractNodeText(node.props.children);
+  }
+  return '';
+}
+
 export function Pill({ tone = 'neutral', children, className = '' }) {
+  const normalizedText = extractNodeText(children)
+    .replace(/^[●•\s]+/, '')
+    .trim()
+    .toLowerCase();
+  if (
+    normalizedText === 'calculated' ||
+    normalizedText === 'live' ||
+    normalizedText === 'verified oem baseline' ||
+    normalizedText === 'telemetry preset benchmark' ||
+    normalizedText === 'normal / sensor fault likely'
+  ) {
+    return null;
+  }
   return (
     <span
       className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-sans font-medium whitespace-nowrap transition-colors duration-200 ${PILL_STYLES[tone] || PILL_STYLES.neutral} ${className}`}
@@ -343,7 +365,8 @@ export function RiskBadge({ level = 'low', label, className = '' }) {
     normalizedLabel === 'calculated' ||
     normalizedLabel === 'live' ||
     normalizedLabel === 'verified oem baseline' ||
-    normalizedLabel === 'telemetry preset benchmark'
+    normalizedLabel === 'telemetry preset benchmark' ||
+    normalizedLabel === 'normal / sensor fault likely'
   ) {
     return null;
   }

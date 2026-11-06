@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import vehiclePhotoMap from '../../../data/vehiclePhotoMap.json' with { type: 'json' };
 import {
   resolveBodyArchetype,
   resolvePowertrainArchetype,
@@ -9,115 +10,162 @@ import {
  * High-Resolution Segment Fallback Photography (3/4 Automotive Studio & Road Angles)
  */
 export const SEGMENT_FALLBACK_PHOTOS = {
-  hatchback: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  sedan: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1000&q=80',
-  wagon: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80',
-  suv: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=80',
-  crossover: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=1000&q=80',
-  coupe: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1000&q=80',
-  truck: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&w=1000&q=80',
+  hatchback:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/2020_Volkswagen_Golf_Style_1.5_Front.jpg/960px-2020_Volkswagen_Golf_Style_1.5_Front.jpg',
+  sedan:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/2019_BMW_318d_SE_Automatic_2.0_Front.jpg/960px-2019_BMW_318d_SE_Automatic_2.0_Front.jpg',
+  wagon:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Skoda_Octavia_IV_Combi_IMG_3615.jpg/960px-Skoda_Octavia_IV_Combi_IMG_3615.jpg',
+  suv:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/2019_Toyota_RAV4_Design_HEV_CVT_2.5_Front.jpg/960px-2019_Toyota_RAV4_Design_HEV_CVT_2.5_Front.jpg',
+  crossover:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/2021_Hyundai_Tucson_Ultimate_T-GDi_HEV_Automatic_1.6_Front.jpg/960px-2021_Hyundai_Tucson_Ultimate_T-GDi_HEV_Automatic_1.6_Front.jpg',
+  coupe:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Porsche_992_Carrera_S_Cabriolet_Genf_2019_1Y7A5736.jpg/960px-Porsche_992_Carrera_S_Cabriolet_Genf_2019_1Y7A5736.jpg',
+  truck:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/2018_Ford_F-150_XLT_Crew_Cab%2C_front_11.10.19.jpg/960px-2018_Ford_F-150_XLT_Crew_Cab%2C_front_11.10.19.jpg',
 };
-
-/**
- * Verified Make & Model Automotive Photography Catalog (3/4 Studio & Editorial Shots)
- */
-const VERIFIED_MODEL_PHOTOS = [
-  // Ford
-  { match: ['focus'], url: 'https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['fiesta', 'puma'], url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['mondeo', 'fusion'], url: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['kuga', 'escape', 'explorer'], url: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['f-150', 'f150', 'ranger', 'maverick', 'transit'], url: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['mustang', 'mach-e'], url: 'https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?auto=format&fit=crop&w=1000&q=80' },
-
-  // Volkswagen
-  { match: ['golf gti', 'golf r'], url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['golf', 'polo', 'id.3', 'id3'], url: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['passat', 'arteon', 'jetta'], url: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['tiguan', 'touareg', 't-roc', 'id.4', 'id4'], url: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1000&q=80' },
-
-  // BMW
-  { match: ['3 series', '320', '330', 'm340', 'm3', 'i4'], url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['5 series', '520', '530', '540', 'm5', 'i5', '7 series'], url: 'https://images.unsplash.com/photo-1523983388277-336a66bf9bcd?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['x1', 'x3', 'x5', 'ix3', 'ix'], url: 'https://images.unsplash.com/photo-1556189250-72ba954cfc2b?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['1 series', '118', '120', '2 series'], url: 'https://images.unsplash.com/photo-1607853202273-797f1c22a38e?auto=format&fit=crop&w=1000&q=80' },
-
-  // Toyota & Lexus
-  { match: ['camry', 'avalon', 'mirai'], url: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['corolla', 'yaris', 'auris', 'prius'], url: 'https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['rav4', 'highlander', 'c-hr', 'chr', 'land cruiser', 'bz4x'], url: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['hilux', 'tacoma', 'tundra'], url: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['lexus', 'nx', 'rx', 'es', 'is', 'ux'], url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1000&q=80' },
-
-  // Tesla
-  { match: ['model 3', 'model s'], url: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['model y', 'model x'], url: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1000&q=80' },
-
-  // Audi
-  { match: ['a3', 's3', 'rs3', 'a1'], url: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['a4', 's4', 'a5', 'a6', 'e-tron gt'], url: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['q3', 'q4', 'q5', 'q7', 'q8', 'e-tron'], url: 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?auto=format&fit=crop&w=1000&q=80' },
-
-  // Mercedes-Benz
-  { match: ['c-class', 'c200', 'c220', 'c300', 'e-class', 'e220', 'e300', 'eqe', 's-class'], url: 'https://images.unsplash.com/photo-1618843479319-56173152d6e5?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['a-class', 'a180', 'a200', 'cla', 'b-class'], url: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['glc', 'gla', 'gle', 'eqa', 'eqc'], url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1000&q=80' },
-
-  // Honda
-  { match: ['civic', 'accord', 'jazz', 'fit'], url: 'https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['cr-v', 'crv', 'hr-v', 'hrv', 'pilot'], url: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=1000&q=80' },
-
-  // Skoda, SEAT, Cupra
-  { match: ['octavia', 'superb', 'scala', 'fabia'], url: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['kodiaq', 'karoq', 'kamiq', 'enyaq'], url: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['leon', 'ibiza', 'ateca', 'formentor', 'born'], url: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80' },
-
-  // Hyundai & Kia
-  { match: ['i30', 'i20', 'ceed', 'elantra', 'rio'], url: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['tucson', 'sportage', 'santa fe', 'sorento', 'kona', 'niro'], url: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['ioniq', 'ev6', 'ev9'], url: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1000&q=80' },
-
-  // Volvo
-  { match: ['xc60', 'xc90', 'xc40', 'ex30'], url: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['v60', 'v90', 's60', 's90'], url: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1000&q=80' },
-
-  // Peugeot, Renault, Citroen, Dacia, Opel
-  { match: ['208', '308', 'clio', 'megane', 'sandero', 'astra', 'corsa', 'c3', 'c4'], url: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['3008', '5008', '2008', 'captur', 'austral', 'duster', 'mokka', 'grandland', 'c5'], url: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1000&q=80' },
-
-  // Mazda, Nissan, Porsche
-  { match: ['mazda3', 'mazda 3', 'mazda6', 'mazda 6'], url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['cx-5', 'cx5', 'cx-30', 'cx-60', 'qashqai', 'x-trail', 'juke', 'ariyah', 'leaf'], url: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=1000&q=80' },
-  { match: ['911', 'cayman', 'boxster', 'taycan', 'macan', 'cayenne', 'panamera'], url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1000&q=80' },
-];
 
 const BRAND_DEFAULT_PHOTOS = {
-  ford: 'https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1000&q=80',
-  volkswagen: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80',
-  vw: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80',
-  bmw: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1000&q=80',
-  audi: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1000&q=80',
-  'mercedes-benz': 'https://images.unsplash.com/photo-1618843479319-56173152d6e5?auto=format&fit=crop&w=1000&q=80',
-  mercedes: 'https://images.unsplash.com/photo-1618843479319-56173152d6e5?auto=format&fit=crop&w=1000&q=80',
-  porsche: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1000&q=80',
-  toyota: 'https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=1000&q=80',
-  lexus: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1000&q=80',
-  tesla: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1000&q=80',
-  honda: 'https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=1000&q=80',
-  skoda: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1000&q=80',
-  seat: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  cupra: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  volvo: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1000&q=80',
-  hyundai: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  kia: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1000&q=80',
-  mazda: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1000&q=80',
-  nissan: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=1000&q=80',
-  renault: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  peugeot: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  citroen: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
-  dacia: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1000&q=80',
-  opel: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80',
+  ford: vehiclePhotoMap['ford-focus'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  volkswagen: vehiclePhotoMap['volkswagen-golf'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  vw: vehiclePhotoMap['volkswagen-golf'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  bmw: vehiclePhotoMap['bmw-3-series'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  audi: vehiclePhotoMap['audi-a4'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  'mercedes-benz': vehiclePhotoMap['mercedes-benz-c-class'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  mercedes: vehiclePhotoMap['mercedes-benz-c-class'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  porsche: vehiclePhotoMap['porsche-macan'] || SEGMENT_FALLBACK_PHOTOS.coupe,
+  toyota: vehiclePhotoMap['toyota-corolla'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  lexus: vehiclePhotoMap['lexus-nx'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  tesla: vehiclePhotoMap['tesla-model-3'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  honda: vehiclePhotoMap['honda-civic'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  skoda: vehiclePhotoMap['skoda-octavia'] || SEGMENT_FALLBACK_PHOTOS.wagon,
+  seat: vehiclePhotoMap['seat-leon'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  cupra: vehiclePhotoMap['cupra-formentor'] || SEGMENT_FALLBACK_PHOTOS.crossover,
+  volvo: vehiclePhotoMap['volvo-xc60'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  hyundai: vehiclePhotoMap['hyundai-tucson'] || SEGMENT_FALLBACK_PHOTOS.crossover,
+  kia: vehiclePhotoMap['kia-sportage'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  mazda: vehiclePhotoMap['mazda-cx-5'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  nissan: vehiclePhotoMap['nissan-qashqai'] || SEGMENT_FALLBACK_PHOTOS.crossover,
+  renault: vehiclePhotoMap['renault-clio'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  peugeot: vehiclePhotoMap['peugeot-3008'] || SEGMENT_FALLBACK_PHOTOS.crossover,
+  citroen: vehiclePhotoMap['citroen-c4'] || SEGMENT_FALLBACK_PHOTOS.crossover,
+  dacia: vehiclePhotoMap['dacia-duster'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  opel: vehiclePhotoMap['opel-astra'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  chevrolet: vehiclePhotoMap['chevrolet-camaro'] || SEGMENT_FALLBACK_PHOTOS.coupe,
+  subaru: vehiclePhotoMap['subaru-outback'] || SEGMENT_FALLBACK_PHOTOS.wagon,
+  jeep: vehiclePhotoMap['jeep-compass'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  fiat: vehiclePhotoMap['fiat-500'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  'alfa-romeo': vehiclePhotoMap['alfa-romeo-giulia'] || SEGMENT_FALLBACK_PHOTOS.sedan,
+  mini: vehiclePhotoMap['mini-cooper'] || SEGMENT_FALLBACK_PHOTOS.hatchback,
+  'land-rover': vehiclePhotoMap['land-rover-range-rover-evoque'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  jaguar: vehiclePhotoMap['jaguar-f-pace'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  suzuki: vehiclePhotoMap['suzuki-vitara'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  mitsubishi: vehiclePhotoMap['mitsubishi-outlander'] || SEGMENT_FALLBACK_PHOTOS.suv,
+  ram: SEGMENT_FALLBACK_PHOTOS.truck,
+  gmc: SEGMENT_FALLBACK_PHOTOS.truck,
 };
+
+const PHOTO_MAP_KEYS = Object.keys(vehiclePhotoMap);
+
+const BRAND_SLUG_ALIASES = {
+  vw: 'volkswagen',
+  mercedes: 'mercedes-benz',
+  ds: 'ds-automobiles',
+};
+
+export function normalizePhotoKey(make, model) {
+  return `${make || ''}-${model || ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function canonicalizeBrandPrefix(slug) {
+  if (!slug) return '';
+  for (const [alias, canonical] of Object.entries(BRAND_SLUG_ALIASES)) {
+    if (slug === canonical || slug.startsWith(`${canonical}-`)) return slug;
+    if (slug === alias) return canonical;
+    if (slug.startsWith(`${alias}-`)) {
+      return `${canonical}-${slug.slice(alias.length + 1)}`;
+    }
+  }
+  return slug;
+}
+
+/**
+ * Looks up a vehicle in src/data/vehiclePhotoMap.json (Tier 1).
+ * Returns { url, key, isExactMapMatch }.
+ */
+export function lookupVerifiedPhotoFromMap(vehicle = {}) {
+  if (!vehicle || typeof vehicle !== 'object') {
+    return { url: null, key: null, isExactMapMatch: false };
+  }
+
+  const rawBrand = vehicle.brand || (vehicle.name || '').split(' ')[0] || '';
+  const normBrand = canonicalizeBrandPrefix(normalizePhotoKey(rawBrand, ''));
+  const cleanedName = (vehicle.name || '')
+    .replace(/\([^)]*\)/g, '')
+    .trim();
+
+  const rawModelInput =
+    vehicle.model ||
+    vehicle.modelName ||
+    (rawBrand ? cleanedName.replace(new RegExp(`^${rawBrand}\\s+`, 'i'), '').trim() : '');
+
+  const candidateKeys = [
+    normBrand && vehicle.model ? normalizePhotoKey(normBrand, vehicle.model) : '',
+    normBrand && vehicle.modelName ? normalizePhotoKey(normBrand, vehicle.modelName) : '',
+    vehicle.id ? canonicalizeBrandPrefix(normalizePhotoKey('', vehicle.id)) : '',
+    cleanedName ? canonicalizeBrandPrefix(normalizePhotoKey('', cleanedName)) : '',
+    vehicle.shortName ? canonicalizeBrandPrefix(normalizePhotoKey('', vehicle.shortName)) : '',
+    normBrand && vehicle.shortName ? normalizePhotoKey(normBrand, vehicle.shortName) : '',
+  ]
+    .filter(Boolean)
+    .filter((k) => k !== normBrand);
+
+  // 1. Direct key hit in vehiclePhotoMap.json
+  for (const key of candidateKeys) {
+    if (vehiclePhotoMap[key]) {
+      return { url: vehiclePhotoMap[key], key, isExactMapMatch: true };
+    }
+  }
+
+  // 2. Prefix / normalized model match against vehiclePhotoMap.json keys (only when key includes a model segment)
+  for (const key of candidateKeys) {
+    if (!key.includes('-')) continue;
+    const prefixHit = PHOTO_MAP_KEYS.find(
+      (mapKey) => mapKey.startsWith(`${key}-`) || key.startsWith(`${mapKey}-`)
+    );
+    if (prefixHit && vehiclePhotoMap[prefixHit]) {
+      return { url: vehiclePhotoMap[prefixHit], key: prefixHit, isExactMapMatch: true };
+    }
+  }
+
+  // 3. Token intersection match for make + primary model token
+  const primaryModelToken = normalizePhotoKey('', (rawModelInput || '').split(/[/,(]/)[0] || '');
+
+  if (normBrand && primaryModelToken && primaryModelToken !== normBrand) {
+    const combinedPrefix = `${normBrand}-${primaryModelToken}`;
+    const tokenHit = PHOTO_MAP_KEYS.find(
+      (mapKey) =>
+        mapKey === combinedPrefix ||
+        mapKey.startsWith(`${combinedPrefix}-`) ||
+        (mapKey.startsWith(`${normBrand}-`) && mapKey.includes(`-${primaryModelToken}`))
+    );
+    if (tokenHit && vehiclePhotoMap[tokenHit]) {
+      return { url: vehiclePhotoMap[tokenHit], key: tokenHit, isExactMapMatch: true };
+    }
+  }
+
+  return {
+    url: null,
+    key: candidateKeys[0] || (normBrand && primaryModelToken ? `${normBrand}-${primaryModelToken}` : null),
+    isExactMapMatch: false,
+  };
+}
 
 /**
  * Brand Marque Identity & Tier Multiplier Registry
@@ -192,6 +240,9 @@ export function resolveBrandIdentity(vehicle = {}) {
 
 /**
  * Resolves a verified high-resolution 3/4-angle vehicle photo URL for any catalog make/model or body segment.
+ * Tier 1: Direct lookup in src/data/vehiclePhotoMap.json.
+ * Tier 2: Cached Wikipedia REST API thumbnail in localStorage (if previously resolved).
+ * Tier 3: Brand or Segment fallback photo.
  */
 export function resolveVehiclePhotoUrl({ vehicle = {}, imageUrl, cdnTemplate } = {}) {
   const directUrl = imageUrl || vehicle?.imageUrl || vehicle?.photoUrl || '';
@@ -213,14 +264,21 @@ export function resolveVehiclePhotoUrl({ vehicle = {}, imageUrl, cdnTemplate } =
       .replace(/\{model\}/g, encodeURIComponent(slugModel));
   }
 
-  const haystack = `${vehicle?.id || ''} ${vehicle?.brand || ''} ${vehicle?.modelName || ''} ${vehicle?.shortName || ''} ${vehicle?.name || ''}`
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+  // Tier 1: Exact or normalized match from src/data/vehiclePhotoMap.json
+  const mapLookup = lookupVerifiedPhotoFromMap(vehicle);
+  if (mapLookup.url) {
+    return mapLookup.url;
+  }
 
-  for (const item of VERIFIED_MODEL_PHOTOS) {
-    if (item.match.some((keyword) => haystack.includes(keyword))) {
-      return item.url;
+  // Tier 2 (Sync Cache Check): Check localStorage for previously fetched Wikipedia photo
+  if (mapLookup.key && typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`shiftmetric_wiki_photo_${mapLookup.key}`);
+      if (cached && cached.startsWith('http')) {
+        return cached;
+      }
+    } catch {
+      // Ignore storage access errors
     }
   }
 
@@ -287,10 +345,21 @@ export function derivePowertrainMicroBadge(vehicle = {}) {
   };
 }
 
+function isValidWikiVehiclePhotoUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const clean = rawUrl.split('?')[0].toLowerCase();
+  if (!['.jpg', '.jpeg', '.png', '.webp'].some((ext) => clean.endsWith(ext))) {
+    return false;
+  }
+  const banned = ['logo', 'emblem', 'badge', 'wordmark', 'engine_bay', 'dashboard', 'interior', 'cockpit', 'diagram', 'map'];
+  return !banned.some((kw) => clean.includes(kw));
+}
+
 /**
  * Real Automotive Photography Resolver
  * Renders verified 3/4-angle vehicle photographs inside a recessed zinc frame
- * (dark:bg-zinc-900) without floating overlay text covering tires or bumpers.
+ * (aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900)
+ * without floating overlay text covering tires or bumpers.
  */
 export default function VehicleImageResolver({
   vehicle = {},
@@ -303,6 +372,8 @@ export default function VehicleImageResolver({
 }) {
   const bodyArchetype = resolveBodyArchetype(vehicle);
   const fallbackSegmentUrl = SEGMENT_FALLBACK_PHOTOS[bodyArchetype] || SEGMENT_FALLBACK_PHOTOS.sedan;
+
+  const mapLookup = useMemo(() => lookupVerifiedPhotoFromMap(vehicle), [vehicle]);
 
   const primaryPhotoUrl = useMemo(
     () => resolveVehiclePhotoUrl({ vehicle, imageUrl, cdnTemplate }),
@@ -317,13 +388,74 @@ export default function VehicleImageResolver({
     setImgFailed(false);
   }, [primaryPhotoUrl, vehicle?.id]);
 
+  // Tier 2: Live Client-Side Fallback to Wikipedia REST Summary API for custom/new models
+  useEffect(() => {
+    if (imageUrl || cdnTemplate || mapLookup.isExactMapMatch) return;
+    if (!mapLookup.key) return;
+
+    const cacheKey = `shiftmetric_wiki_photo_${mapLookup.key}`;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached && cached.startsWith('http')) {
+          setActiveSrc(cached);
+          return;
+        }
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
+    if (typeof fetch !== 'function') return;
+
+    const make = (vehicle?.brand || '').trim();
+    const model = (vehicle?.model || vehicle?.modelName || vehicle?.name || '')
+      .replace(/\([^)]*\)/g, '')
+      .split('/')[0]
+      .trim();
+    const wikiQuery = `${make} ${model}`.trim();
+    if (!wikiQuery || wikiQuery.length < 3) return;
+
+    let cancelled = false;
+    const summaryEndpoint = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
+      wikiQuery.replace(/\s+/g, '_')
+    )}`;
+
+    fetch(summaryEndpoint, { headers: { Accept: 'application/json' } })
+      .then((res) => (res && res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const candidateUrl = (data.thumbnail?.source || data.originalimage?.source || '').split('?')[0];
+        const width = data.originalimage?.width || data.thumbnail?.width || 0;
+        if (width >= 400 && isValidWikiVehiclePhotoUrl(candidateUrl)) {
+          const hiResUrl = candidateUrl.replace(/\/\d+px-/, '/960px-');
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(cacheKey, hiResUrl);
+            }
+          } catch {
+            // Ignore storage errors
+          }
+          setActiveSrc(hiResUrl);
+          setImgFailed(false);
+        }
+      })
+      .catch(() => {
+        // Silent fallback to segment photo
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle, imageUrl, cdnTemplate, mapLookup.isExactMapMatch, mapLookup.key]);
+
   const bodyLabel = getArchetypeLabel(bodyArchetype);
 
   return (
     <div
-      className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 select-none ${className}`}
+      className={`relative aspect-[16/9] w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 select-none ${className}`}
       data-testid="vehicle-image-resolver"
-      data-tier="tier-1-photo"
+      data-tier={mapLookup.isExactMapMatch ? 'tier-1-photo' : 'tier-2-wiki-fallback'}
       data-archetype={bodyArchetype}
     >
       {!imgFailed ? (
@@ -361,4 +493,3 @@ export default function VehicleImageResolver({
     </div>
   );
 }
-

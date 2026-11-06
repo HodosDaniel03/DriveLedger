@@ -1465,7 +1465,125 @@ assert.ok(
 
 console.log('✓ 6I. Brand Unification (ShiftMetric) & FAQ Deduplication verified');
 
+// ============================================================================
+// 6J. Vehicle Photo Map 1-to-1 Engine, Priority Plus Navbar & UI De-AI Checks
+// ============================================================================
+const {
+  resolveVehiclePhotoUrl,
+  lookupVerifiedPhotoFromMap,
+  SEGMENT_FALLBACK_PHOTOS,
+} = await import('../src/components/common/vehicle/VehicleImageResolver.jsx');
+const { VEHICLE_CATALOG } = await import('../src/data/vehicleCatalog.js');
+const vehiclePhotoMapModule = await import('../src/data/vehiclePhotoMap.json', {
+  with: { type: 'json' },
+});
+const vehiclePhotoMapData = vehiclePhotoMapModule.default;
+
+const mapKeys = Object.keys(vehiclePhotoMapData);
+const mapUrls = Object.values(vehiclePhotoMapData);
+const mapFilenames = mapUrls.map((u) =>
+  decodeURIComponent(u.split('?')[0].split('/').pop() || '')
+    .replace(/^\d+px-/, '')
+    .toLowerCase()
+);
+assert.ok(mapKeys.length >= 145, `Expected >= 145 vehiclePhotoMap entries, found ${mapKeys.length}`);
+assert.strictEqual(
+  new Set(mapUrls).size,
+  mapUrls.length,
+  'Zero duplicate photo URLs allowed in src/data/vehiclePhotoMap.json'
+);
+assert.strictEqual(
+  new Set(mapFilenames).size,
+  mapFilenames.length,
+  'Zero duplicate underlying Wikimedia filenames allowed in src/data/vehiclePhotoMap.json'
+);
+
+for (const [k, url] of Object.entries(vehiclePhotoMapData)) {
+  const clean = url.split('?')[0].toLowerCase();
+  assert.ok(
+    ['.jpg', '.jpeg', '.png', '.webp'].some((ext) => clean.endsWith(ext)),
+    `Invalid image extension for ${k}: ${url}`
+  );
+  assert.ok(!clean.endsWith('.svg'), `SVG forbidden in vehiclePhotoMap for ${k}`);
+}
+
+for (const brand of VEHICLE_CATALOG) {
+  for (const model of brand.models) {
+    const hit = lookupVerifiedPhotoFromMap({ brand: brand.name, model: model.name });
+    assert.ok(
+      hit.isExactMapMatch && hit.url,
+      `Catalog model ${brand.name} ${model.name} must match vehiclePhotoMap.json`
+    );
+  }
+}
+
+const { MODULAR_BRANDS } = await import('../src/data/vehicles/index.js');
+for (const brand of MODULAR_BRANDS) {
+  for (const model of brand.models) {
+    const makeName = model.brand || brand.name;
+    const hit = lookupVerifiedPhotoFromMap({ brand: makeName, model: model.name });
+    assert.ok(
+      hit.isExactMapMatch && hit.url,
+      `Modular catalog model ${makeName} ${model.name} must match vehiclePhotoMap.json`
+    );
+  }
+}
+
+for (const preset of VEHICLE_PRESETS) {
+  const hit = lookupVerifiedPhotoFromMap(preset);
+  assert.ok(hit.isExactMapMatch && hit.url, `Preset ${preset.id} must match vehiclePhotoMap.json`);
+}
+
+// Brand-only objects must NOT falsely match a specific model
+const brandOnlyLookup = lookupVerifiedPhotoFromMap({ brand: 'Volkswagen', name: 'Volkswagen' });
+assert.strictEqual(brandOnlyLookup.isExactMapMatch, false, 'Brand-only object must not report exact model match');
+
+// Brand default fallback must resolve to the brand's actual photo in vehiclePhotoMap.json
+assert.strictEqual(
+  resolveVehiclePhotoUrl({ vehicle: { brand: 'Kia', model: 'UnmappedCustomProto' } }),
+  vehiclePhotoMapData['kia-sportage'],
+  'Unmapped Kia model must fall back to Kia brand default photo, not Toyota RAV4'
+);
+
+// Edge cases for photo resolution
+assert.strictEqual(resolveVehiclePhotoUrl({ vehicle: null }), SEGMENT_FALLBACK_PHOTOS.sedan);
+assert.strictEqual(resolveVehiclePhotoUrl({ vehicle: {} }), SEGMENT_FALLBACK_PHOTOS.sedan);
+assert.strictEqual(
+  resolveVehiclePhotoUrl({ vehicle: { id: 'custom-car' }, imageUrl: 'https://example.com/car.jpg' }),
+  'https://example.com/car.jpg'
+);
+
+// Custom model localStorage cache fallback
+globalThis.localStorage.setItem(
+  'shiftmetric_wiki_photo_rivian-r1t',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/rivian_r1t.jpg'
+);
+assert.strictEqual(
+  resolveVehiclePhotoUrl({ vehicle: { brand: 'Rivian', model: 'R1T' } }),
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/rivian_r1t.jpg'
+);
+globalThis.localStorage.removeItem('shiftmetric_wiki_photo_rivian-r1t');
+
+// Priority Plus Navbar elements
+const moreBtn = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'navbar-more-button'
+)[0];
+assert.ok(moreBtn, 'Priority Plus Navbar must render More dropdown button');
+const quickTabsBar = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'navbar-mobile-quick-tabs'
+)[0];
+assert.ok(quickTabsBar, 'Mobile Navbar must render horizontally scrollable quick-tab bar');
+
+// Ensure banned clutter pill 'Normal / Sensor fault likely' is absent from rendered ObdEstimator
+assert.ok(
+  !obdHtmlUpdated.includes('Normal / Sensor fault likely'),
+  'Clutter badge "Normal / Sensor fault likely" must not render in ObdEstimator'
+);
+
+console.log('✓ 6J. 100% Real Vehicle Photo Engine (146 unique URLs & files), Priority Plus Navbar & UI De-AI verified');
+
 console.log('ALL DEEP VERIFICATION CHECKS PASSED WITH 0 ERRORS.');
+
 
 
 

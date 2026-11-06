@@ -28,7 +28,7 @@ import { findEngineVariant, getKnownIssuesForVehicle } from '../../data/vehicles
 import { useUnits } from '../../context/UnitContext';
 import { useGarage } from '../../context/GarageContext';
 import { Card, Pill, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
-import VehicleSilhouette from '../common/vehicle/VehicleSilhouette.jsx';
+import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import AdUnit from '../monetization/AdUnit';
 import { computeBreakEvenTrajectory } from '../../data/breakEvenAndPpi.js';
@@ -491,9 +491,9 @@ export default function VehicleComparator({
         )}
       </div>
 
-      {/* TL;DR Verdict Box */}
+      {/* Comparison Summary Box */}
       <TldrVerdictBox
-        title="TL;DR Comparison Verdict"
+        title="Comparison Summary"
         subtitle="3 key comparative metrics at a glance (zero fluff)"
         badge="Decision Balance"
         facts={comparatorTldrFacts}
@@ -630,8 +630,8 @@ export default function VehicleComparator({
               </label>
             </div>
 
-            <div className="mt-3 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200 dark:border-zinc-800">
-              <VehicleSilhouette vehicle={vehicleA} className="w-full h-full" interactive />
+            <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
+              <VehicleImageResolver vehicle={vehicleA} variant="compact" className="w-full h-full" interactive />
             </div>
           </div>
 
@@ -733,8 +733,8 @@ export default function VehicleComparator({
               </label>
             </div>
 
-            <div className="mt-3 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200 dark:border-zinc-800">
-              <VehicleSilhouette vehicle={vehicleB} className="w-full h-full" interactive />
+            <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
+              <VehicleImageResolver vehicle={vehicleB} variant="compact" className="w-full h-full" interactive />
             </div>
           </div>
 

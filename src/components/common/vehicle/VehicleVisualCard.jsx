@@ -149,7 +149,7 @@ export default function VehicleVisualCard({
     >
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-start">
         {/* Real Vehicle Photo Left (sm:col-span-5) */}
-        <div className="sm:col-span-5 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/10] relative border border-zinc-200/80 dark:border-zinc-800 group">
+        <div className="sm:col-span-5 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200/80 dark:border-zinc-800 group">
           <VehicleImageResolver vehicle={vehicle} variant={variant} interactive showOverlays={false} />
         </div>
 

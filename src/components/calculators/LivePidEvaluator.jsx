@@ -646,14 +646,16 @@ export default function LivePidEvaluator({
           </p>
         </div>
 
-        <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
-          <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400">
-            Live Telemetry Verdict
-          </span>
-          <Pill tone={verdict.tone}>
-            <span data-testid="pid-verdict-badge">{verdict.badgeLabel}</span>
-          </Pill>
-        </div>
+        {verdict.tone !== 'good' && (
+          <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
+            <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400">
+              Live Telemetry Verdict
+            </span>
+            <Pill tone={verdict.tone}>
+              <span data-testid="pid-verdict-badge">{verdict.badgeLabel}</span>
+            </Pill>
+          </div>
+        )}
       </div>
 
       {/* Quick Telemetry Scenario Presets */}
