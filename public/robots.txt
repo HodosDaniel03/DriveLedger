@@ -1,9 +1,14 @@
 User-agent: *
 Allow: /
+Allow: /overview
 Allow: /tco
 Allow: /risk-matrix
 Allow: /obd-estimator
+Allow: /compare
+Allow: /checklist
 Allow: /methodology
+Allow: /reviews
+Allow: /blog
 
 # Programmatic SEO query parameters allowed for vehicle presets and OBD-II fault codes
-Sitemap: https://shiftmetric.io/sitemap.xml
+Sitemap: https://mydriveledger.com/sitemap.xml

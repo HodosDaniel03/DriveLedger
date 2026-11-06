@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Calculator,
   ShieldAlert,
@@ -15,12 +15,12 @@ import {
 } from 'lucide-react';
 import HeroVehicleFinder from '../components/home/HeroVehicleFinder';
 import SubsystemGrid from '../components/home/SubsystemGrid';
-import PreInspectionChecklist from '../components/home/PreInspectionChecklist';
 import ReviewsSection from '../components/home/ReviewsSection';
-import { VEHICLE_PRESETS } from '../data/vehiclePresets';
+import { VEHICLE_PRESETS, getPresetById } from '../data/vehiclePresets';
+import { generatePpiChecklist } from '../data/breakEvenAndPpi';
 import { useUnits } from '../context/UnitContext';
 import { BLOG_POSTS } from './BlogPage';
-import { RiskBadge } from '../components/common/OdometerPrimitives';
+import { RiskBadge, InfoTooltip } from '../components/common/OdometerPrimitives';
 
 export default function HomePage({
   selectedPresetId,
@@ -28,11 +28,18 @@ export default function HomePage({
   onNavigateToTco,
   onNavigateToRisk,
   onNavigateToObd,
+  onNavigateToChecklist,
   onNavigateToMethodology,
   onNavigateToBlog,
 }) {
   const { formatCurrency, formatDistance } = useUnits();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+
+  const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
+  const previewPpiItems = useMemo(
+    () => generatePpiChecklist(activePreset, activePreset.defaultOdometerMiles || 60000).slice(0, 3),
+    [activePreset]
+  );
 
   // Featured canonical presets for the Telemetry Benchmark section
   const featuredPresets = [
@@ -77,71 +84,63 @@ export default function HomePage({
         onNavigateToRisk={onNavigateToRisk}
       />
 
-      {/* 2. Trust Stats Strip (Stitch Landing Section 2) */}
-      <div className="bg-surface dark:bg-[#121215] rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-zinc-200 dark:divide-zinc-800">
-          <div className="p-4 md:p-2 text-center flex flex-col items-center">
-            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">120+</span>
-            <span className="text-xs sm:text-small font-sans font-medium text-muted dark:text-zinc-400 mt-1">Car models analysed</span>
-          </div>
-          <div className="p-4 md:p-2 text-center flex flex-col items-center">
-            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">4,800</span>
-            <span className="text-xs sm:text-small font-sans font-medium text-muted dark:text-zinc-400 mt-1">OBD2 codes priced</span>
-          </div>
-          <div className="p-4 md:p-2 text-center flex flex-col items-center">
-            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">3</span>
-            <span className="text-xs sm:text-small font-sans font-medium text-muted dark:text-zinc-400 mt-1">Regions: US · UK · EU</span>
-          </div>
-          <div className="p-4 md:p-2 text-center flex flex-col items-center">
-            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">0</span>
-            <span className="text-xs sm:text-small font-sans font-medium text-muted dark:text-zinc-400 mt-1">Sign-ups required</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. How It Works (Three steps to a clear answer) */}
-      <section className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 p-8 sm:p-12 shadow-sm">
-        <div className="text-center max-w-xl mx-auto mb-12">
-          <span className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold">
-            Process
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-sans font-bold text-ink dark:text-zinc-50 tracking-tight mt-2">
-            Three steps to a clear answer
-          </h2>
-          <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-2">
-            From vehicle selection to actionable cost intelligence in seconds.
-          </p>
-        </div>
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* 2. Unified Process & Trust Stats Strip */}
+      <section className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-10 shadow-sm space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Step 1 */}
-          <div className="relative flex flex-col items-center text-center p-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-base flex items-center justify-center mb-4 shadow-sm">
+          <div className="flex items-start gap-4 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/60 border border-zinc-200/70 dark:border-zinc-800/70">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
               1
             </div>
-            <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 mb-2">Pick your car</h3>
-            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 max-w-xs leading-relaxed">
-              Select your model and powertrain, or choose a catalog preset.
-            </p>
+            <div>
+              <h3 className="text-sm sm:text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50">Pick your car</h3>
+              <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed mt-1">
+                Select your model and powertrain, or choose a catalog preset.
+              </p>
+            </div>
           </div>
           {/* Step 2 */}
-          <div className="relative flex flex-col items-center text-center p-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-base flex items-center justify-center mb-4 shadow-sm">
+          <div className="flex items-start gap-4 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/60 border border-zinc-200/70 dark:border-zinc-800/70">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
               2
             </div>
-            <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 mb-2">Adjust your driving</h3>
-            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 max-w-xs leading-relaxed">
-              Configure your annual mileage, ownership timeframe, and local fuel rates.
-            </p>
+            <div>
+              <h3 className="text-sm sm:text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50">Adjust your driving</h3>
+              <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed mt-1">
+                Configure your annual mileage, ownership timeframe, and local fuel rates.
+              </p>
+            </div>
           </div>
           {/* Step 3 */}
-          <div className="relative flex flex-col items-center text-center p-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-base flex items-center justify-center mb-4 shadow-sm">
+          <div className="flex items-start gap-4 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/60 border border-zinc-200/70 dark:border-zinc-800/70">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 font-mono tabular-nums font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
               3
             </div>
-            <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 mb-2">Get your report</h3>
-            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 max-w-xs leading-relaxed">
-              Review projected 5-year costs, failure probabilities, and workshop quotes.
-            </p>
+            <div>
+              <h3 className="text-sm sm:text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50">Get your report</h3>
+              <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed mt-1">
+                Review projected 5-year costs, failure probabilities, and workshop quotes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-zinc-200 dark:divide-zinc-800">
+          <div className="p-3 md:p-2 text-center flex flex-col items-center">
+            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">120+</span>
+            <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">Car models analysed</span>
+          </div>
+          <div className="p-3 md:p-2 text-center flex flex-col items-center">
+            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">4,800</span>
+            <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">OBD2 codes priced</span>
+          </div>
+          <div className="p-3 md:p-2 text-center flex flex-col items-center">
+            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">3</span>
+            <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">Regions: US · UK · EU</span>
+          </div>
+          <div className="p-3 md:p-2 text-center flex flex-col items-center">
+            <span className="font-metric-l text-metric-l font-bold text-ink dark:text-zinc-50 font-mono tabular-nums">0</span>
+            <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">Sign-ups required</span>
           </div>
         </div>
       </section>
@@ -354,7 +353,13 @@ export default function HomePage({
                       </strong>
                     </div>
                     <div>
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Wear</span>
+                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 flex items-center justify-center gap-0.5">
+                        <span>Wear</span>
+                        <InfoTooltip
+                          term="Maintenance Wear Factor"
+                          explanation="Compares expected component wear and repair costs against the segment average (1.00x). Lower is more reliable; above 1.30x indicates higher maintenance exposure."
+                        />
+                      </span>
                       <strong
                         className={`text-xs font-mono tabular-nums font-bold ${
                           car.maintenanceWearFactor > 1.3
@@ -472,13 +477,69 @@ export default function HomePage({
       {/* 7. Subsystem Telemetry Grid */}
       <SubsystemGrid onNavigateToRisk={onNavigateToRisk} />
 
-      {/* 8. Pre-Inspection Workshop Checklist */}
-      <PreInspectionChecklist
-        presetId={selectedPresetId}
-        onSelectPreset={onSelectPreset}
-        onNavigateToObd={onNavigateToObd}
-        onNavigateToTco={onNavigateToTco}
-      />
+      {/* 8. Compact Pre-Purchase Inspection (PPI) Preview Card */}
+      <section
+        data-testid="homepage-ppi-preview"
+        className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-8"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-zinc-200 dark:border-zinc-800">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-sans font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>ON-SITE BUYER CHECKLIST</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
+              Pre-Purchase Inspection Points for {activePreset.name}
+            </h2>
+            <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-1">
+              Top engine-specific red flags to verify in person before signing a purchase agreement.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => (onNavigateToChecklist ? onNavigateToChecklist() : onNavigateToRisk())}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#183D22] dark:bg-emerald-600 text-white px-5 py-2.5 font-sans text-xs sm:text-sm font-semibold shadow-sm hover:opacity-95 transition-opacity shrink-0"
+          >
+            <span>Open Full Interactive PPI Checklist</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+          {previewPpiItems.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-muted dark:text-zinc-400">
+                    {item.category}
+                  </span>
+                  <RiskBadge
+                    level={item.severity === 'CRITICAL' ? 'critical' : 'moderate'}
+                    label={item.isModelSpecific ? 'Model Defect' : 'Standard Check'}
+                  />
+                </div>
+                <h3 className="font-sans text-xs sm:text-sm font-bold text-ink dark:text-zinc-50 leading-snug">
+                  {item.title}
+                </h3>
+                <p className="mt-1.5 font-sans text-xs text-body dark:text-zinc-300 leading-relaxed line-clamp-2">
+                  {item.whatToLookFor}
+                </p>
+              </div>
+              {item.estimatedRepairCostUsd > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between text-xs font-sans">
+                  <span className="text-muted dark:text-zinc-400">Potential negotiating leverage:</span>
+                  <span className="font-mono tabular-nums font-bold text-rose-600 dark:text-rose-400">
+                    -{formatCurrency(item.estimatedRepairCostUsd)}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* 9. Driver Testimonials & Reviews */}
       <ReviewsSection />

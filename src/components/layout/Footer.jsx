@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, X, ArrowRight, ShieldCheck, Download } from 'lucide-react';
-import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
+import { Plus, Settings2 } from 'lucide-react';
 import { OBD_CODES } from '../../data/obdCodes';
 import { PROGRAMMATIC_OBD_MATRIX } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Collapse } from '../common/OdometerPrimitives';
+import AdUnit from '../monetization/AdUnit';
+import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
+import {
+  WORKSPACE_LEGAL_NOTICE_LINE,
+  NOMINATIVE_FAIR_USE_NOTICE,
+  AMAZON_ASSOCIATES_CLAUSE,
+} from '../../data/legalPolicies';
 
 const FAQS = [
   {
@@ -35,6 +41,7 @@ export default function Footer({
   onSelectObdCode,
   onSelectHybridObd,
   onOpenLegalModal,
+  onOpenCookiePreferences,
   hideFaq = false,
 }) {
   const { formatCurrency } = useUnits();
@@ -48,22 +55,28 @@ export default function Footer({
     { id: 'vw-golf-20-tdi', name: 'VW Golf 2.0 TDI', price: 27900 },
   ];
 
+  const triggerLegal = (policyKey) => {
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#${policyKey}`
+      );
+    }
+    if (onOpenLegalModal) {
+      onOpenLegalModal(policyKey);
+    }
+  };
+
   return (
     <div className="mt-16 space-y-16">
-      {/* 1. Reserved Zero-CLS Ad Container (Stitch Section 7.10) */}
-      <div
-        className="flex min-h-[90px] items-center justify-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4"
-        aria-label="Advertisement"
-      >
-        <div className="text-center">
-          <span className="text-[11px] font-sans tracking-widest text-faint dark:text-zinc-500 uppercase font-semibold block mb-0.5">
-            ADVERTISEMENT · SPONSORED PARTNER PLACEMENT
-          </span>
-          <span className="text-xs font-sans text-muted dark:text-zinc-400">
-            Google AdSense Zero-CLS Reserved Container (Responsive Leaderboard)
-          </span>
-        </div>
-      </div>
+      {/* 1. Reserved Zero-CLS Ad Container Controlled by monetizationConfig.js */}
+      <AdUnit
+        slotId={MONETIZATION_CONFIG.slots.topLeaderboard}
+        variant="leaderboard"
+        partnerKey="vinCheck"
+        contextLabel="ShiftMetric Automotive Cost & Diagnostic Benchmark"
+      />
 
       {/* 2. Collapsible FAQ Accordion with Stitch Clean Styling */}
       {!hideFaq && (
@@ -217,7 +230,7 @@ export default function Footer({
       {/* 4. Stitch Master Footer */}
       <footer className="w-full bg-surface dark:bg-[#121215] border-t border-zinc-200 dark:border-zinc-800 -mx-4 sm:-mx-6 px-6 lg:px-12 pt-14 pb-10">
         <div className="max-w-[1380px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
             {/* Brand Col */}
             <div className="lg:col-span-2 flex flex-col gap-3">
               <div className="flex items-center gap-2.5 text-ink dark:text-zinc-50 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
@@ -227,14 +240,19 @@ export default function Footer({
                     <path d="m12 14 3-3" />
                   </svg>
                 </span>
-                <span className="font-sans text-h3 tracking-tight font-bold text-ink dark:text-zinc-50">ShiftMetric</span>
+                <span className="font-sans text-h3 tracking-tight font-bold text-ink dark:text-zinc-50">
+                  {MONETIZATION_CONFIG.brandName}
+                </span>
               </div>
               <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-sm">
                 Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.
               </p>
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-sans font-medium">
                   Verified Automotive Data Index
+                </span>
+                <span className="text-[11px] font-mono text-muted dark:text-zinc-400">
+                  {MONETIZATION_CONFIG.contactEmail}
                 </span>
               </div>
             </div>
@@ -296,8 +314,13 @@ export default function Footer({
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onOpenLegalModal && onOpenLegalModal('about')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
-                    About
+                  <button type="button" onClick={() => triggerLegal('about')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    About Us
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => triggerLegal('contact')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    Contact ({MONETIZATION_CONFIG.contactEmail})
                   </button>
                 </li>
               </ul>
@@ -305,12 +328,12 @@ export default function Footer({
 
             {/* Legal Col */}
             <div className="flex flex-col gap-2.5">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Legal</span>
+              <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Legal &amp; Compliance</span>
               <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
                   <button
                     type="button"
-                    onClick={() => onOpenLegalModal && onOpenLegalModal('privacy')}
+                    onClick={() => triggerLegal('privacy')}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Privacy Policy
@@ -319,31 +342,78 @@ export default function Footer({
                 <li>
                   <button
                     type="button"
-                    onClick={() => onOpenLegalModal && onOpenLegalModal('terms')}
+                    onClick={() => triggerLegal('terms')}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
-                    Terms
+                    Terms of Service
                   </button>
                 </li>
                 <li>
                   <button
                     type="button"
-                    onClick={() => onOpenLegalModal && onOpenLegalModal('affiliate')}
+                    onClick={() => triggerLegal('disclaimer')}
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
+                  >
+                    Liability Disclaimer
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => triggerLegal('affiliate-disclosure')}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Affiliate Disclosure
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => triggerLegal('cookies')}
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
+                  >
+                    Cookie Policy
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    data-testid="footer-cookie-preferences"
+                    onClick={() => {
+                      if (onOpenCookiePreferences) {
+                        onOpenCookiePreferences();
+                      } else {
+                        triggerLegal('cookies');
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 font-medium text-primary-600 dark:text-primary-400 hover:underline transition-colors duration-150 text-left"
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                    <span>Cookie Preferences</span>
                   </button>
                 </li>
               </ul>
             </div>
           </div>
 
+          {/* Comprehensive 1-Line & Nominative Fair Use Legal Shield in Footer */}
+          <div className="py-5 border-t border-zinc-200/80 dark:border-zinc-800/80 space-y-2 text-[11px] font-sans text-muted dark:text-zinc-400 leading-relaxed">
+            <p data-testid="footer-legal-notice-line" className="font-medium text-body dark:text-zinc-300">
+              {WORKSPACE_LEGAL_NOTICE_LINE} {AMAZON_ASSOCIATES_CLAUSE}
+            </p>
+            <p className="text-[10px] text-faint dark:text-zinc-500">
+              {NOMINATIVE_FAIR_USE_NOTICE}
+            </p>
+          </div>
+
           {/* Bottom Bar */}
-          <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-sans text-muted dark:text-zinc-400">
-            <div className="flex items-center gap-2">
-              <span className="font-sans">© 2026 ShiftMetric. Estimates only.</span>
+          <div className="pt-5 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-sans text-muted dark:text-zinc-400">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-sans">© 2026 {MONETIZATION_CONFIG.brandName} ({MONETIZATION_CONFIG.domain}). Estimates only.</span>
               <span>•</span>
               <span>Independent benchmark, not affiliated with OEMs.</span>
+              <span>•</span>
+              <span>Updated {MONETIZATION_CONFIG.lastUpdated}</span>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-faint dark:text-zinc-500 font-mono tabular-nums">v4.14-prod</span>

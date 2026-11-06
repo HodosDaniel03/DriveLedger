@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Lightbulb, Wrench, Shield, ArrowRight, Printer, Info, CheckCircle2, RotateCcw, AlertTriangle, ShieldCheck, GitCompare, Car, FileText, Share2 } from 'lucide-react';
+import { Lightbulb, Wrench, Shield, ArrowRight, Printer, Info, CheckCircle2, RotateCcw, AlertTriangle, ShieldCheck, GitCompare, Car, FileText, Share2, ChevronDown } from 'lucide-react';
 import {
   POWERTRAIN_OPTIONS,
   TRANSMISSION_OPTIONS,
@@ -15,7 +15,7 @@ import {
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP, COMPONENT_MILESTONE_TRIGGERS } from '../../context/GarageContext';
-import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, PartnerCard, RadialScoreGauge, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
+import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, RadialScoreGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
 import VehicleSelect from '../common/VehicleSelect';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import MaintenanceMilestones, { EV_MILESTONE_IMPACT_MAP } from './MaintenanceMilestones';
@@ -26,7 +26,6 @@ import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
 import KnownIssuesDossier from '../common/KnownIssuesDossier';
 import FixOrSellCalculator from './FixOrSellCalculator';
 import AdUnit from '../monetization/AdUnit';
-import { REGIONAL_PARTNER_URLS } from '../../data/affiliatePartners';
 
 const BAR_COLOR = {
   OPTIMAL: '#12A150',
@@ -70,6 +69,8 @@ export default function MaintenanceRiskMatrix({
   const [showForumShareModal, setShowForumShareModal] = useState(false);
   const [showComparator, setShowComparator] = useState(false);
   const [justSavedGarage, setJustSavedGarage] = useState(false);
+  const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Fallback local state if rendered standalone outside GarageProvider
   const [localServicedByPreset, setLocalServicedByPreset] = useState({});
@@ -372,6 +373,7 @@ export default function MaintenanceRiskMatrix({
             <span>Current odometer: {formatDistance(physicalOdometerMiles)}</span>
           }
           onChangeVehicle={() => {
+            setShowVehicleCatalog(true);
             const el = document.getElementById('profile-heading');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
@@ -387,7 +389,13 @@ export default function MaintenanceRiskMatrix({
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-sans text-h3 text-ink dark:text-zinc-50 font-bold tracking-tight">Reliability Score</h3>
+                <h3 className="font-sans text-h3 text-ink dark:text-zinc-50 font-bold tracking-tight inline-flex items-center gap-1.5">
+                  <span>Reliability Score</span>
+                  <InfoTooltip
+                    label="How Reliability Score is calculated"
+                    content="A 0–100 powertrain health index derived from component wear vs. critical failure thresholds, driving profile, and verified maintenance credits."
+                  />
+                </h3>
                 {scheduleMode === 'oem' ? (
                   <span className="bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium rounded-md inline-flex items-center">
                     OEM Risk Multiplier Active
@@ -483,50 +491,65 @@ export default function MaintenanceRiskMatrix({
         </div>
       </div>
 
-      {/* Quick Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-surface dark:bg-[#121215] rounded-2xl border border-border dark:border-zinc-800 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowComparator((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
-              showComparator
-                ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700'
-            }`}
-          >
-            <GitCompare className="w-4 h-4" />
-            <span>{showComparator ? 'Hide Vehicle Comparison' : 'Compare Vehicles'}</span>
-          </button>
+      {/* Streamlined Quick Action Bar */}
+      <div className="p-3.5 bg-surface dark:bg-[#121215] rounded-2xl border border-border dark:border-zinc-800 shadow-sm space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveToGarage}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
+                isSavedInGarage
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
+                  : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+              }`}
+            >
+              {isSavedInGarage ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Saved ✓</span>
+                </>
+              ) : (
+                <>
+                  <Car className="w-4 h-4" />
+                  <span>Save to My Garage</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowComparator((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
+                showComparator
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                  : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700'
+              }`}
+            >
+              <GitCompare className="w-4 h-4" />
+              <span>{showComparator ? 'Hide Vehicle Comparison' : 'Compare Vehicles'}</span>
+            </button>
+
+            <p className="hidden xl:inline text-xs font-sans font-medium text-muted dark:text-zinc-400 ml-2">
+              Powertrain wear simulation calibrated for {activePreset.name} · Protocol: {scheduleMode === 'oem' ? 'OEM Marketing (Dealer)' : 'Engineering Preventative (Specialist)'}
+            </p>
+          </div>
 
           <button
             type="button"
-            onClick={handleSaveToGarage}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-sans text-xs font-semibold transition-colors duration-150 border ${
-              isSavedInGarage
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
-                : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700'
-            }`}
+            data-testid="toggle-risk-export-menu"
+            aria-expanded={showExportMenu}
+            onClick={() => setShowExportMenu((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3.5 py-2 font-sans text-xs font-semibold text-ink dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
-            {isSavedInGarage ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Saved ✓</span>
-              </>
-            ) : (
-              <>
-                <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <span>Save to My Garage</span>
-              </>
-            )}
+            <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400" />
+            <span>{showExportMenu ? 'Hide Export & Share' : 'Export & Share Report (PDF / Reddit)'}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform duration-150 ${showExportMenu ? 'rotate-180' : ''}`} />
           </button>
-
-          <p className="hidden xl:inline text-xs font-sans font-medium text-muted dark:text-zinc-400 ml-2">
-            Powertrain wear simulation calibrated for {activePreset.name} · Protocol: {scheduleMode === 'oem' ? 'OEM Marketing (Dealer)' : 'Engineering Preventative (Specialist)'}
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Collapsible Export & Share Drawer (remains mounted in DOM via sr-only when collapsed) */}
+        <div className={showExportMenu ? 'flex flex-wrap items-center gap-2 pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800/70 animate-fade-in' : 'sr-only'}>
           <button
             type="button"
             data-testid="open-forum-share-btn"
@@ -611,24 +634,58 @@ export default function MaintenanceRiskMatrix({
         {/* Left Column: 5 cols controls (sticky) */}
         <div className="lg:col-span-5">
           <Card className="h-fit lg:sticky lg:top-24 lg:top-[136px]" aria-labelledby="profile-heading">
-            <h2 id="profile-heading" className="mb-5 font-h3 text-h3 text-ink dark:text-zinc-100 font-semibold tracking-tight scroll-mt-28 lg:scroll-mt-32">
+            <h2 id="profile-heading" className="mb-4 font-h3 text-h3 text-ink dark:text-zinc-100 font-semibold tracking-tight scroll-mt-28 lg:scroll-mt-32">
               Vehicle &amp; driving profile
             </h2>
 
-            {/* Vehicle Cascading Selectors */}
-            <VehicleSelect
-              selectedPresetId={selectedPresetId}
-              onSelectPreset={onSelectPreset}
-              selectDropdownId="risk-preset-sync"
-            />
+            {/* Compact Collapsible Vehicle Catalog Toggle */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Car className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="block font-sans text-[10px] font-bold uppercase tracking-wider text-muted dark:text-zinc-400">
+                      Active Vehicle
+                    </span>
+                    <span className="block font-sans text-xs font-bold text-ink dark:text-zinc-100 truncate">
+                      {activePreset.name} · {activePreset.engineCode}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="toggle-risk-vehicle-catalog"
+                  aria-expanded={showVehicleCatalog}
+                  onClick={() => setShowVehicleCatalog((prev) => !prev)}
+                  className="inline-flex items-center gap-1 rounded-lg bg-surface dark:bg-zinc-800 px-2.5 py-1.5 font-sans text-xs font-semibold text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shrink-0"
+                >
+                  <span>{showVehicleCatalog ? 'Hide Catalog' : 'Switch Model'}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform duration-150 ${showVehicleCatalog ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
 
-            <div className="mt-8 flex flex-col gap-7">
+              <div className={showVehicleCatalog ? 'mt-3 block animate-fade-in' : 'sr-only'}>
+                <VehicleSelect
+                  selectedPresetId={selectedPresetId}
+                  onSelectPreset={(nextId) => {
+                    onSelectPreset(nextId);
+                  }}
+                  selectDropdownId="risk-preset-sync"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-6">
               {/* High-Visibility Segmented Control: Preventative vs OEM Telemetry Toggle */}
               <div className="rounded-2xl p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-ink dark:text-zinc-50 font-sans flex items-center gap-1.5">
                     <Wrench className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                     <span>Service Schedule Protocol</span>
+                    <InfoTooltip
+                      label="Preventative vs. OEM Schedule"
+                      content="Preventative follows component makers (ZF, Bosch, BorgWarner) who mandate 50k–60k transmission fluid & early timing inspections. OEM follows dealership marketing ('sealed for life' fluids & 20k oil intervals) designed only to clear the 60k warranty."
+                    />
                   </span>
                   {scheduleMode === 'oem' ? (
                     <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40">
@@ -777,8 +834,12 @@ export default function MaintenanceRiskMatrix({
               )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs text-white/70 uppercase font-semibold tracking-wider font-sans">
-                    Estimated 12-month service reserve
+                  <p className="text-xs text-white/70 uppercase font-semibold tracking-wider font-sans inline-flex items-center gap-1">
+                    <span>Estimated 12-month service reserve</span>
+                    <InfoTooltip
+                      label="What is the 12-Month Service Reserve?"
+                      content="The recommended annual maintenance fund weighted by each component's current wear percentage, workshop labor tier, and annual driving distance."
+                    />
                   </p>
                   {scheduleMode === 'oem' && (
                     <span className="text-[11px] font-sans font-medium bg-rose-950/40 text-rose-300 px-2 py-0.5 rounded-md border border-rose-800/50">
@@ -806,7 +867,13 @@ export default function MaintenanceRiskMatrix({
               </div>
               <dl className="flex gap-6 text-sm border-t sm:border-t-0 sm:border-l border-white/10 pt-3 sm:pt-0 sm:pl-6">
                 <div>
-                  <dt className="text-xs font-sans text-white/60">Effective wear</dt>
+                  <dt className="text-xs font-sans text-white/60 inline-flex items-center gap-1">
+                    <span>Effective wear</span>
+                    <InfoTooltip
+                      label="What is Effective Wear?"
+                      content="Mechanical stress age adjusted for urban stop-and-go thermal cycles and oil drain intervals — often 20–45% higher than raw physical odometer miles."
+                    />
+                  </dt>
                   <dd className="font-semibold tabular-nums font-mono text-white mt-0.5">{formatDistance(effectiveWearMax)}</dd>
                 </div>
                 <div>
@@ -999,15 +1066,6 @@ export default function MaintenanceRiskMatrix({
                 );
               })}
             </ul>
-
-            {/* Native Partner Card */}
-            <div className="mt-6">
-              <PartnerCard
-                text="Prevent $2,500+ surprise workshop bills — scan live engine & DPF health from your phone."
-                cta="Compare OBD2 Scanners"
-                href={(REGIONAL_PARTNER_URLS['obd-scanner'][region] || REGIONAL_PARTNER_URLS['obd-scanner'].US).href}
-              />
-            </div>
           </Card>
         </div>
       </div>
@@ -1050,6 +1108,19 @@ export default function MaintenanceRiskMatrix({
         slotId="risk-bottom-leaderboard"
         variant="leaderboard"
         contextLabel={`${activePreset.name} Powertrain Wear & Risk Matrix`}
+      />
+
+      {/* 7. Mobile Sticky Summary Bar for real-time odometer & schedule feedback on small screens */}
+      <MobileStickySummaryBar
+        label={`${activePreset.name} · Wear & Risk`}
+        primaryValue={`${formatCurrency(serviceReserveUsd)}/yr`}
+        secondaryValue={`Reliability ${reliabilityScore}/100`}
+        badgeText={`${criticalItems.length} Critical`}
+        actionLabel="See Assemblies"
+        onAction={() => {
+          const el = document.getElementById('schedule-heading');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
     </div>
   );

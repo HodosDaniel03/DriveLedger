@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Sparkles, Filter, Car, Zap, Check, ArrowRight, ShieldCheck, ChevronDown, Star } from 'lucide-react';
+import { Search, Sparkles, Filter, Car, Zap, Check, ArrowRight, ShieldCheck, ChevronDown, Star, X } from 'lucide-react';
 import { VEHICLE_PRESETS, BRANDS, BODY_TYPES } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import VehicleHierarchySelector from '../common/VehicleHierarchySelector';
@@ -19,6 +19,20 @@ export default function HeroVehicleFinder({
   const [activeBudgetFilter, setActiveBudgetFilter] = useState(null);
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Live autocomplete matches for the Hero Search Bar
+  const searchMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return VEHICLE_PRESETS.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.modelName.toLowerCase().includes(q) ||
+        (p.engineCode && p.engineCode.toLowerCase().includes(q)) ||
+        (p.fuelType && p.fuelType.toLowerCase().includes(q))
+    ).slice(0, 6);
+  }, [searchQuery]);
 
   // Filter presets based on quick filters
   const filteredPresets = VEHICLE_PRESETS.filter((p) => {
@@ -54,6 +68,16 @@ export default function HeroVehicleFinder({
     onSelectPreset(e.target.value);
   };
 
+  const handleBodyTypeSelect = (btId) => {
+    setSelectedBodyType(btId);
+    if (btId !== 'all') {
+      const firstMatch = VEHICLE_PRESETS.find((p) => p.bodyType === btId);
+      if (firstMatch) {
+        onSelectPreset(firstMatch.id);
+      }
+    }
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
@@ -61,7 +85,7 @@ export default function HeroVehicleFinder({
       onNavigateToTco(selectedPresetId);
       return;
     }
-    const matched = VEHICLE_PRESETS.find(
+    const matched = searchMatches[0] || VEHICLE_PRESETS.find(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q) ||
@@ -70,6 +94,7 @@ export default function HeroVehicleFinder({
     if (matched) {
       onSelectPreset(matched.id);
       onNavigateToTco(matched.id);
+      setSearchQuery('');
     } else {
       onNavigateToTco(selectedPresetId);
     }
@@ -95,27 +120,90 @@ export default function HeroVehicleFinder({
             Real 5-year ownership costs, upcoming maintenance, and fair repair pricing in seconds.
           </p>
 
-          {/* Search Field */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="w-full max-w-xl h-14 bg-white dark:bg-zinc-900 rounded-xl shadow-sm flex items-center pl-4 pr-1.5 py-1.5 border border-zinc-300 dark:border-zinc-800 focus-within:border-primary-600 dark:focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-600/15 transition-[border-color,box-shadow] duration-150"
-          >
-            <Search className="w-5 h-5 text-muted dark:text-zinc-400 shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Enter a car model or engine (e.g. Golf 2.0 TDI, Passat B8)..."
-              className="flex-1 ml-3 bg-transparent font-sans text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 text-sm focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="bg-primary-600 text-white font-sans font-semibold text-xs sm:text-sm px-5 h-11 rounded-lg shadow-sm hover:bg-primary-700 transition-colors duration-150 flex items-center gap-1.5 shrink-0 cursor-pointer"
+          {/* Search Field + Live Autocomplete Dropdown */}
+          <div className="w-full max-w-xl relative">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="w-full h-14 bg-white dark:bg-zinc-900 rounded-xl shadow-sm flex items-center pl-4 pr-1.5 py-1.5 border border-zinc-300 dark:border-zinc-800 focus-within:border-primary-600 dark:focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-600/15 transition-[border-color,box-shadow] duration-150"
             >
-              <span>Check now</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+              <Search className="w-5 h-5 text-muted dark:text-zinc-400 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Enter a car model or engine (e.g. Golf 2.0 TDI, Passat B8)..."
+                aria-label="Search vehicle model or engine"
+                className="flex-1 ml-3 bg-transparent font-sans text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 text-sm focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search query"
+                  className="p-1.5 mr-1 text-muted hover:text-ink dark:hover:text-zinc-200 rounded-md"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                type="submit"
+                className="bg-primary-600 text-white font-sans font-semibold text-xs sm:text-sm px-5 h-11 rounded-lg shadow-sm hover:bg-primary-700 transition-colors duration-150 flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <span>Check now</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            {/* Live Autocomplete Dropdown */}
+            {searchQuery.trim().length > 0 && (
+              <div
+                data-testid="hero-search-autocomplete"
+                className="mt-2 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden z-30"
+              >
+                {searchMatches.length > 0 ? (
+                  <ul className="divide-y divide-zinc-200 dark:divide-zinc-800 max-h-64 overflow-y-auto">
+                    {searchMatches.map((car) => (
+                      <li key={car.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectPreset(car.id);
+                            onNavigateToTco(car.id);
+                            setSearchQuery('');
+                          }}
+                          className="w-full px-4 py-2.5 text-left flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-sans text-xs sm:text-sm font-bold text-ink dark:text-zinc-50 truncate">
+                                {car.name}
+                              </span>
+                              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 text-[10px] font-sans font-medium shrink-0">
+                                {car.fuelType}
+                              </span>
+                            </div>
+                            <div className="text-[11px] font-sans text-muted dark:text-zinc-400 truncate mt-0.5">
+                              {car.powerHp} HP · {car.engineCode} · {formatDistance(car.defaultOdometerMiles)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-mono tabular-nums text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                              {formatCurrency(car.purchasePriceUsd)}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="px-4 py-3 text-xs font-sans text-muted dark:text-zinc-400">
+                    No matching model found for &ldquo;{searchQuery}&rdquo;. Try searching &ldquo;Golf&rdquo;, &ldquo;BMW&rdquo;, or &ldquo;Tesla&rdquo;.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Popular Shortcuts */}
           <div className="mt-4 flex items-center gap-2 text-xs font-sans flex-wrap">
@@ -160,7 +248,7 @@ export default function HeroVehicleFinder({
                 <button
                   key={bt.id}
                   type="button"
-                  onClick={() => setSelectedBodyType(bt.id)}
+                  onClick={() => handleBodyTypeSelect(bt.id)}
                   className={`px-2.5 py-1 rounded-md text-xs font-sans font-medium transition-colors duration-150 border ${
                     isActive
                       ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
@@ -173,6 +261,49 @@ export default function HeroVehicleFinder({
               );
             })}
           </div>
+
+          {/* Interactive Filtered Body Style Quick-Select Strip */}
+          {selectedBodyType !== 'all' && filteredPresets.length > 0 && (
+            <div
+              data-testid="hero-bodytype-results"
+              className="mt-3 w-full max-w-xl p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800"
+            >
+              <div className="flex items-center justify-between mb-1.5 text-[11px] font-sans text-muted dark:text-zinc-400">
+                <span className="font-semibold uppercase tracking-wider">
+                  Filtered {selectedBodyType} models ({filteredPresets.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBodyType('all')}
+                  className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                >
+                  Show all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {filteredPresets.slice(0, 6).map((car) => {
+                  const isCurrent = car.id === activePreset.id;
+                  return (
+                    <button
+                      key={car.id}
+                      type="button"
+                      onClick={() => onSelectPreset(car.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-sans font-medium border transition-colors ${
+                        isCurrent
+                          ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500 font-semibold shadow-xs'
+                          : 'bg-white dark:bg-zinc-800 text-ink dark:text-zinc-200 border-zinc-200 dark:border-zinc-700 hover:border-primary-600'
+                      }`}
+                    >
+                      <span>{car.shortName || car.name}</span>
+                      <span className="ml-1.5 font-mono tabular-nums text-[10px] opacity-80">
+                        {formatCurrency(car.purchasePriceUsd)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Visual Showcase & Active Vehicle Card */}

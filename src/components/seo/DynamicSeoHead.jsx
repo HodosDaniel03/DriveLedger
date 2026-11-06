@@ -5,8 +5,9 @@ import { MAINTENANCE_COMPONENTS, evaluateComponentHealth } from '../../data/main
 import { calculateTcoProjection } from '../calculators/TcoCalculator';
 import { FAQ_ITEMS } from './TechnicalMethodologyGuide';
 import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
+import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 
-const SITE_ORIGIN = 'https://shiftmetric.com';
+const SITE_ORIGIN = `https://${MONETIZATION_CONFIG.domain}`;
 
 const CANONICAL_TAB_PATHS = {
   overview: '/',

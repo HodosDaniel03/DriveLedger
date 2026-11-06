@@ -16,6 +16,12 @@ import PreInspectionChecklist from './components/home/PreInspectionChecklist';
 import TechnicalMethodologyGuide from './components/seo/TechnicalMethodologyGuide';
 import DynamicSeoHead from './components/seo/DynamicSeoHead';
 import ReviewsPage from './pages/ReviewsPage';
+import LegalModal from './components/legal/LegalModal';
+import CookieConsentBanner from './components/legal/CookieConsentBanner';
+import {
+  resolveLegalPolicyKey,
+  WORKSPACE_LEGAL_NOTICE_LINE,
+} from './data/legalPolicies';
 import { VEHICLE_PRESETS } from './data/vehiclePresets';
 import { OBD_CODES } from './data/obdCodes';
 import {
@@ -126,12 +132,19 @@ function ShiftMetricWorkspace() {
     return 'P2002';
   };
 
+  const resolveInitialLegalModal = () => {
+    const hashVal =
+      location.hash || (typeof window !== 'undefined' ? window.location.hash : '');
+    return resolveLegalPolicyKey(hashVal);
+  };
+
   const [activeTab, setActiveTabState] = useState(resolveInitialTab);
   const [selectedPresetId, setSelectedPresetIdState] = useState(resolveInitialPreset);
   const [secondaryPresetId, setSecondaryPresetIdState] = useState(resolveInitialSecondaryPreset);
   const [riskOdometerOverride, setRiskOdometerOverride] = useState(resolveInitialRiskOdometer);
   const [selectedObdCode, setSelectedObdCodeState] = useState(resolveInitialObdCode);
-  const [activeLegalModal, setActiveLegalModal] = useState(null);
+  const [activeLegalModal, setActiveLegalModal] = useState(resolveInitialLegalModal);
+  const [showCookieBannerOverride, setShowCookieBannerOverride] = useState(false);
 
   // Keep URL query parameters synchronized for programmatic SEO & deep-link sharing
   const syncUrlParams = useCallback(
@@ -263,13 +276,24 @@ function ShiftMetricWorkspace() {
     if (qCode && OBD_CODES.some((c) => c.code === qCode)) {
       setSelectedObdCodeState((prev) => (prev !== qCode ? qCode : prev));
     }
-  }, [location.pathname, searchParams]);
 
-  // Sync if user navigates via browser back/forward (popstate)
+    const hashPolicy = resolveLegalPolicyKey(
+      location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
+    );
+    if (hashPolicy) {
+      setActiveLegalModal(hashPolicy);
+    }
+  }, [location.pathname, location.hash, searchParams]);
+
+  // Sync if user navigates via browser back/forward (popstate) or URL hashchange (#privacy, #terms, etc.)
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
       return undefined;
     }
+    const handleHashChange = () => {
+      const policyKey = resolveLegalPolicyKey(window.location.hash);
+      setActiveLegalModal(policyKey);
+    };
     const handlePopState = () => {
       const applyPopState = () => {
         const params = new URLSearchParams(window.location.search || '');
@@ -295,6 +319,9 @@ function ShiftMetricWorkspace() {
         setSelectedObdCodeState(
           qCode && OBD_CODES.some((c) => c.code === qCode) ? qCode : 'P2002'
         );
+
+        const hashPolicy = resolveLegalPolicyKey(window.location.hash);
+        setActiveLegalModal(hashPolicy);
       };
       if (typeof React.__batch === 'function') {
         React.__batch(applyPopState);
@@ -303,9 +330,11 @@ function ShiftMetricWorkspace() {
       }
     };
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handleHashChange);
     return () => {
       if (typeof window.removeEventListener === 'function') {
         window.removeEventListener('popstate', handlePopState);
+        window.removeEventListener('hashchange', handleHashChange);
       }
     };
   }, []);
@@ -348,6 +377,7 @@ function ShiftMetricWorkspace() {
               onNavigateToTco={handleNavigateToPresetTco}
               onNavigateToRisk={handleNavigateToRiskMatrix}
               onNavigateToObd={handleNavigateToObd}
+              onNavigateToChecklist={() => handleSelectTab('checklist')}
               onNavigateToMethodology={() => handleSelectTab('methodology')}
               onNavigateToBlog={() => handleSelectTab('blog')}
             />
@@ -434,6 +464,14 @@ function ShiftMetricWorkspace() {
           )}
         </div>
 
+        {/* Subtle 1-Line Legal Notice Directly Below Main Calculator Workspace */}
+        <p
+          data-testid="workspace-legal-notice"
+          className="text-[11px] font-sans text-muted dark:text-zinc-400 text-center leading-relaxed px-4 py-2.5 rounded-xl border border-zinc-200/70 dark:border-zinc-800/70 bg-surface-subtle/60 dark:bg-zinc-900/40"
+        >
+          {WORKSPACE_LEGAL_NOTICE_LINE}
+        </p>
+
         {/* Inactive TcoCalculator accessible in DOM during overview for automated slider tests */}
         {activeTab === 'overview' && (
           <div className="hidden" aria-hidden="true">
@@ -460,75 +498,49 @@ function ShiftMetricWorkspace() {
           onSelectObdCode={handleNavigateToObd}
           onSelectHybridObd={handleNavigateToHybridObd}
           onOpenLegalModal={setActiveLegalModal}
+          onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
           hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
         />
       </main>
 
-      {/* Minimalist Modal Dialog */}
+      {/* Comprehensive Legal & Regulatory Modal Suite */}
       {activeLegalModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 dark:bg-black/75 backdrop-blur-sm"
-        >
-          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-surface dark:bg-[#121215] dark:border-zinc-800 p-6 sm:p-8 shadow-xl dark:shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-                {activeLegalModal === 'privacy' && 'Privacy Policy & Telemetry Data Governance'}
-                {activeLegalModal === 'terms' && 'Terms of Service & Mathematical Disclaimers'}
-                {activeLegalModal === 'affiliate' && 'Affiliate & Partner Monetization Disclosure'}
-                {activeLegalModal === 'methodology' && 'Methodology & Engineering Governance'}
-                {activeLegalModal === 'about' && 'About ShiftMetric'}
-                {activeLegalModal === 'cookies' && 'GDPR / CCPA Cookie & Local Storage Settings'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setActiveLegalModal(null)}
-                aria-label="Close modal"
-                className="rounded-lg p-1 text-muted hover:bg-surface-subtle hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mt-3 text-sm font-sans leading-relaxed text-body dark:text-zinc-300 space-y-2">
-              {activeLegalModal === 'privacy' && (
-                <p>
-                  ShiftMetric adheres to privacy-by-design principles. User inputs (vehicle purchase prices, odometer readings, and driving duty cycle distributions) are processed in-browser. We do not sell personal telemetry data.
-                </p>
-              )}
-              {activeLegalModal === 'terms' && (
-                <p>
-                  All financial and mechanical projections are mathematical models based on statistical distributions. Always verify vehicle condition with a licensed master technician.
-                </p>
-              )}
-              {activeLegalModal === 'affiliate' && (
-                <p>
-                  We maintain partnerships with verified automotive hardware and vehicle history providers.
-                </p>
-              )}
-              {(activeLegalModal === 'methodology' || activeLegalModal === 'about') && (
-                <p>
-                  Projections combine statistical non-linear vehicle depreciation curves, published WLTP / EPA fuel economies, and typical workshop labor rates.
-                </p>
-              )}
-              {activeLegalModal === 'cookies' && (
-                <p>
-                  We store user interface preferences (such as selected region and currency) locally in your browser. No advertising trackers or third-party cookies are set without your consent.
-                </p>
-              )}
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setActiveLegalModal(null)}
-                className="rounded-lg bg-primary-600 px-5 py-2 text-xs font-sans font-semibold text-white hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-500 shadow-sm transition-colors duration-150"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <LegalModal
+          activePolicy={activeLegalModal}
+          onSelectPolicy={(policyKey) => {
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+              window.history.replaceState(
+                null,
+                '',
+                `${window.location.pathname}${window.location.search}#${policyKey}`
+              );
+            }
+            setActiveLegalModal(policyKey);
+          }}
+          onClose={() => {
+            if (
+              typeof window !== 'undefined' &&
+              window.location.hash &&
+              window.history?.replaceState
+            ) {
+              window.history.replaceState(
+                null,
+                '',
+                `${window.location.pathname}${window.location.search}`
+              );
+            }
+            setActiveLegalModal(null);
+          }}
+          onOpenCookieSettings={() => setShowCookieBannerOverride(true)}
+        />
       )}
+
+      {/* Non-Intrusive Bottom GDPR / CCPA Cookie Consent Banner */}
+      <CookieConsentBanner
+        isOpenOverride={showCookieBannerOverride}
+        onCloseOverride={() => setShowCookieBannerOverride(false)}
+        onOpenPolicyModal={setActiveLegalModal}
+      />
     </div>
   );
 }

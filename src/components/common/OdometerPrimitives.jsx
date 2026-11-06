@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Info } from 'lucide-react';
 
 export function Card({ className = '', children, ...props }) {
   return (
@@ -455,6 +455,95 @@ export function TldrVerdictBox({
     </div>
   );
 }
+
+export function InfoTooltip({ term, explanation, label, content, className = '' }) {
+  const [open, setOpen] = useState(false);
+  const resolvedTitle = term || label;
+  const resolvedBody = explanation || content;
+  return (
+    <span className={`relative inline-flex items-center align-middle ${className}`}>
+      <button
+        type="button"
+        aria-label={`Explanation for ${resolvedTitle || 'metric'}`}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 focus:outline-none transition-colors cursor-help"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 sm:w-72 p-3 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white text-xs font-sans font-normal leading-relaxed shadow-xl border border-zinc-700 z-50 pointer-events-none whitespace-normal text-left"
+        >
+          {resolvedTitle && <strong className="block font-semibold text-emerald-400 mb-1">{resolvedTitle}</strong>}
+          <span className="text-zinc-200">{resolvedBody}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
+export function MobileStickySummaryBar({
+  primaryLabel,
+  label,
+  primaryValue,
+  secondaryText,
+  secondaryValue,
+  actionLabel = 'Details ↑',
+  onAction,
+  badge,
+  badgeText,
+}) {
+  const resolvedLabel = primaryLabel || label;
+  const resolvedSecondary = secondaryText || secondaryValue;
+  return (
+    <div
+      data-testid="mobile-sticky-summary-bar"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-2.5 shadow-2xl flex items-center justify-between gap-3"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold truncate">
+            {resolvedLabel}
+          </span>
+          {badge || (badgeText && (
+            <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.2 text-[10px] font-sans font-semibold shrink-0">
+              {badgeText}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-mono text-base font-bold tabular-nums text-ink dark:text-zinc-50 truncate">
+            {primaryValue}
+          </span>
+          {resolvedSecondary && (
+            <span className="font-sans text-xs text-muted dark:text-zinc-400 truncate">
+              {resolvedSecondary}
+            </span>
+          )}
+        </div>
+      </div>
+      {onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="shrink-0 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white px-3.5 py-2 font-sans text-xs font-semibold shadow-xs active:scale-95 transition-transform"
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
 
 
 

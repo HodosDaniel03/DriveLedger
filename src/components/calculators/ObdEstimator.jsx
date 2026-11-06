@@ -8,12 +8,11 @@ import {
 import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
 import { getHybridVehicleObdContext } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
-import { Card, PageHeader, Pill, Segmented, PartnerCard, SeverityGauge, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
+import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import AdUnit from '../monetization/AdUnit';
 import LivePidEvaluator from './LivePidEvaluator';
 import FixOrSellCalculator from './FixOrSellCalculator';
-import { REGIONAL_PARTNER_URLS } from '../../data/affiliatePartners';
 
 const QUICK_CODES = ['P0420', 'P2002', 'P0171', 'P0300', 'P0299', 'P0401', 'P0128', 'P0700'];
 
@@ -589,7 +588,13 @@ export default function ObdEstimator({
         <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight">Repair Severity</h3>
+              <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight inline-flex items-center gap-1.5">
+                <span>Repair Severity</span>
+                <InfoTooltip
+                  label="How Repair Severity is rated"
+                  content="Evaluates immediate mechanical risk (catalyst meltdown, oil starvation, or limp-mode lockup) based on SAE J1979 diagnostic trouble code thresholds."
+                />
+              </h3>
               <Info className="w-4 h-4 text-muted dark:text-zinc-400" />
             </div>
 
@@ -716,8 +721,12 @@ export default function ObdEstimator({
             {activeDossier.liveTelemetryCheck && (
               <div className="space-y-4 font-sans text-sm text-body dark:text-zinc-300">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-zinc-100 mb-2 font-sans">
-                    Target PIDs to monitor
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-zinc-100 mb-2 font-sans inline-flex items-center gap-1">
+                    <span>Target PIDs to monitor</span>
+                    <InfoTooltip
+                      label="What are OBD-II PIDs?"
+                      content="Parameter IDs (PIDs) are live sensor streams from your car's ECU (e.g., fuel trims, DPF soot differential pressure, or O2 voltage). Checking these before replacing parts prevents costly misdiagnosis."
+                    />
                   </p>
                   <ul className="space-y-2 text-xs">
                     {activeDossier.liveTelemetryCheck.pidsToMonitor.map((pid) => (
@@ -938,6 +947,19 @@ export default function ObdEstimator({
         slotId="obd-bottom-leaderboard"
         variant="leaderboard"
         contextLabel={`${activePreset.name} ${activeDossier.code} Repair Estimator`}
+      />
+
+      {/* 7. Mobile Sticky Summary Bar for real-time OBD-II workshop cost feedback on small screens */}
+      <MobileStickySummaryBar
+        label={`DTC ${activeDossier.code} · ${est.tierLabel}`}
+        primaryValue={`${formatCurrency(est.minTotalUsd)}–${formatCurrency(est.maxTotalUsd)}`}
+        secondaryValue={`Avg ${formatCurrency(est.weightedExpectedUsd)}`}
+        badgeText={activeDossier.severity?.includes('CRITICAL') ? 'Critical' : 'Service'}
+        actionLabel="Cost Summary"
+        onAction={() => {
+          const el = document.getElementById('workshop-summary-heading');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
     </div>
   );

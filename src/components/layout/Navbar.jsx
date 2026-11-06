@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronDown, Calculator, ShieldAlert, Cpu, Gauge, Sun, Moon, Car, GitCompare, CheckCircle2, BookOpen, MessageSquare, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, ChevronDown, Calculator, ShieldAlert, Cpu, Gauge, Sun, Moon, Car, GitCompare, CheckCircle2, BookOpen, MessageSquare, FileText, Search } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useGarage } from '../../context/GarageContext';
-import { getPresetById } from '../../data/vehiclePresets';
+import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 
 export const PRIMARY_WORKSPACE_TABS = [
   { id: 'overview', label: 'Overview', fullLabel: 'ShiftMetric Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database' },
@@ -32,12 +32,27 @@ const REGION_OPTIONS = [
 ];
 
 export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSelectPreset }) {
-  const { region, setRegion, formatDistance } = useUnits();
+  const { region, setRegion, formatDistance, formatCurrency } = useUnits();
   const { theme, setTheme } = useTheme();
   const garage = useGarage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [garageDropdownOpen, setGarageDropdownOpen] = useState(false);
+  const [vehicleSwitcherOpen, setVehicleSwitcherOpen] = useState(false);
+  const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
+
+  const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
+  const filteredNavbarPresets = useMemo(() => {
+    const q = vehicleSearchQuery.trim().toLowerCase();
+    if (!q) return VEHICLE_PRESETS.slice(0, 12);
+    return VEHICLE_PRESETS.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.modelName.toLowerCase().includes(q) ||
+        (p.engineCode && p.engineCode.toLowerCase().includes(q))
+    ).slice(0, 12);
+  }, [vehicleSearchQuery]);
 
   const savedVehicles = garage?.savedVehicles || [];
   const isSecondaryActive = SECONDARY_WORKSPACE_TABS.some((t) => t.id === activeTab);
@@ -45,7 +60,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
 
   // Close popovers on outside click or Escape key
   useEffect(() => {
-    if (!garageDropdownOpen && !moreDropdownOpen) return undefined;
+    if (!garageDropdownOpen && !moreDropdownOpen && !vehicleSwitcherOpen) return undefined;
     const handleDocClick = (e) => {
       const target = e.target;
       if (garageDropdownOpen) {
@@ -56,11 +71,16 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
         const isInsideMore = target && typeof target.closest === 'function' && target.closest('#more-dropdown-container');
         if (!isInsideMore) setMoreDropdownOpen(false);
       }
+      if (vehicleSwitcherOpen) {
+        const isInsideVehicle = target && typeof target.closest === 'function' && target.closest('#navbar-vehicle-switcher-container');
+        if (!isInsideVehicle) setVehicleSwitcherOpen(false);
+      }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setGarageDropdownOpen(false);
         setMoreDropdownOpen(false);
+        setVehicleSwitcherOpen(false);
       }
     };
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
@@ -77,7 +97,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
         window.removeEventListener('keydown', handleKeyDown);
       }
     };
-  }, [garageDropdownOpen, moreDropdownOpen]);
+  }, [garageDropdownOpen, moreDropdownOpen, vehicleSwitcherOpen]);
 
   return (
     <header className="sticky top-0 left-0 right-0 z-40 border-b border-zinc-200 bg-[#F7F7F4]/95 backdrop-blur-md dark:bg-zinc-950/95 dark:border-zinc-800 transition-colors">
@@ -224,6 +244,141 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                 </button>
               );
             })}
+          </div>
+
+          {/* Global Active Vehicle Quick-Switcher Pill & Popover */}
+          <div id="navbar-vehicle-switcher-container" className="relative">
+            <button
+              type="button"
+              data-testid="navbar-active-vehicle-picker"
+              aria-haspopup="true"
+              aria-expanded={vehicleSwitcherOpen}
+              title={`Active vehicle: ${activePreset.name} — Click to switch`}
+              onClick={() => {
+                setVehicleSwitcherOpen((prev) => !prev);
+                setGarageDropdownOpen(false);
+                setMoreDropdownOpen(false);
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-200/90 bg-emerald-50/70 text-[#183D22] font-sans text-xs font-semibold hover:bg-emerald-100/80 transition-colors duration-150 shadow-xs dark:bg-emerald-950/35 dark:border-emerald-800/50 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+            >
+              <Car className="w-3.5 h-3.5 text-[#183D22] dark:text-emerald-400 shrink-0" />
+              <span className="max-w-[115px] sm:max-w-[155px] truncate">
+                {activePreset.shortName || activePreset.name}
+              </span>
+              <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${vehicleSwitcherOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {vehicleSwitcherOpen && (
+              <div
+                role="dialog"
+                aria-label="Global Active Vehicle Switcher"
+                className="absolute top-full right-0 mt-2.5 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3.5 z-50 animate-fade-in whitespace-normal"
+              >
+                <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+                  <div className="min-w-0">
+                    <span className="font-sans text-[11px] uppercase tracking-wider font-bold text-muted dark:text-zinc-400 block">
+                      Active Vehicle Context
+                    </span>
+                    <span className="font-sans text-xs font-bold text-ink dark:text-zinc-50 truncate block mt-0.5">
+                      {activePreset.name}
+                    </span>
+                  </div>
+                  <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-mono tabular-nums font-bold shrink-0">
+                    {formatCurrency ? formatCurrency(activePreset.purchasePriceUsd) : `$${activePreset.purchasePriceUsd}`}
+                  </span>
+                </div>
+
+                {/* Quick Search Input */}
+                <div className="relative mt-2.5">
+                  <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={vehicleSearchQuery}
+                    onChange={(e) => setVehicleSearchQuery(e.target.value)}
+                    placeholder="Quick switch model (e.g. Golf, BMW, Tesla)..."
+                    className="w-full h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 pl-8 pr-7 text-xs font-sans text-ink dark:text-zinc-100 placeholder:text-faint focus:border-[#183D22] dark:focus:border-emerald-500 outline-none"
+                  />
+                  {vehicleSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setVehicleSearchQuery('')}
+                      aria-label="Clear search"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted hover:text-ink"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Preset List */}
+                <ul className="mt-2 space-y-1 max-h-60 overflow-y-auto pr-0.5">
+                  {filteredNavbarPresets.map((p) => {
+                    const isCurrent = p.id === selectedPresetId;
+                    return (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onSelectPreset) onSelectPreset(p.id);
+                            setVehicleSwitcherOpen(false);
+                            setVehicleSearchQuery('');
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left text-xs transition-colors ${
+                            isCurrent
+                              ? 'bg-emerald-50/80 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50 font-semibold text-[#183D22] dark:text-emerald-300'
+                              : 'hover:bg-zinc-100 dark:hover:bg-zinc-900 text-ink dark:text-zinc-200'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-sans font-bold">{p.name}</div>
+                            <div className="text-[11px] font-sans text-muted dark:text-zinc-400 truncate">
+                              {p.powerHp} HP · {p.fuelType} · {p.engineCode}
+                            </div>
+                          </div>
+                          <span className="font-mono tabular-nums text-[11px] font-bold text-ink dark:text-zinc-300 shrink-0">
+                            {formatCurrency ? formatCurrency(p.purchasePriceUsd) : `$${p.purchasePriceUsd}`}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {/* Quick Jump Links for Active Car */}
+                <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-1.5 text-[11px] font-sans">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('tco');
+                      setVehicleSwitcherOpen(false);
+                    }}
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                  >
+                    5-Yr TCO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('risk');
+                      setVehicleSwitcherOpen(false);
+                    }}
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                  >
+                    Wear &amp; Risk
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('compare');
+                      setVehicleSwitcherOpen(false);
+                    }}
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                  >
+                    Compare
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Compact My Garage Button */}

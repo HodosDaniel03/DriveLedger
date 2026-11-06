@@ -58,7 +58,7 @@ export const LEGAL_MODAL_CONTENT = {
   privacy: {
     title: 'Privacy Policy & Telemetry Data Governance',
     icon: Lock,
-    updated: 'October 2026',
+    updated: 'November 6, 2026',
     sections: [
       {
         heading: '1. Zero Personal Financial Storage Architecture',
@@ -77,7 +77,7 @@ export const LEGAL_MODAL_CONTENT = {
   terms: {
     title: 'Terms of Service & Engineering Disclaimer',
     icon: FileText,
-    updated: 'October 2026',
+    updated: 'November 6, 2026',
     sections: [
       {
         heading: '1. Informational & Statistical Modeling Scope',
@@ -96,7 +96,7 @@ export const LEGAL_MODAL_CONTENT = {
   affiliate: {
     title: 'Affiliate & Partner Monetization Disclosure',
     icon: Scale,
-    updated: 'October 2026',
+    updated: 'November 6, 2026',
     sections: [
       {
         heading: '1. FTC & ASA Commercial Transparency Compliance',
@@ -111,7 +111,7 @@ export const LEGAL_MODAL_CONTENT = {
   cookies: {
     title: 'GDPR / CCPA Cookie & Telemetry Consent Preferences',
     icon: Sliders,
-    updated: 'October 2026',
+    updated: 'November 6, 2026',
     sections: [
       {
         heading: '1. Strictly Necessary Functional Storage (Always Active)',

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Printer, Info, CheckCircle2, RotateCcw, BookOpen, Car, FileText, Share2 } from 'lucide-react';
+import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Printer, Info, CheckCircle2, RotateCcw, BookOpen, Car, FileText, Share2, ChevronDown } from 'lucide-react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP } from '../../context/GarageContext';
-import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, PartnerCard, RadialScoreGauge, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
+import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, RadialScoreGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
 import VehicleSelect from '../common/VehicleSelect';
 import CostTimeline from './CostTimeline';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
@@ -15,7 +15,6 @@ import VehicleDossierExport from '../common/VehicleDossierExport';
 import ForumShareModal from '../common/ForumShareModal';
 import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
 import { evaluateMarketPriceDeal } from '../../data/fixOrSellEngine.js';
-import { REGIONAL_PARTNER_URLS } from '../../data/affiliatePartners.js';
 import {
   calculateTcoProjection,
   calculateNonLinearDepreciation,
@@ -78,6 +77,8 @@ export default function TcoCalculator({
   const [showForumShareModal, setShowForumShareModal] = useState(false);
   const [justSavedGarage, setJustSavedGarage] = useState(false);
   const [highlightedCategory, setHighlightedCategory] = useState(null);
+  const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const garage = useGarage();
 
@@ -310,27 +311,42 @@ export default function TcoCalculator({
             </div>
 
             {/* Compact Real Vehicle Photo & Single-Row Spec Micro-Tags */}
-            <div className="mb-5">
+            <div className="mb-3">
               <VehicleVisualCard
                 vehicle={activePreset}
                 variant="hero"
                 className="!p-4 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80"
-                onChangeVehicle={() => {
-                  const el = document.getElementById('vehicle-heading');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onChangeVehicle={() => setShowVehicleCatalog((prev) => !prev)}
                 onShareReport={() => setShowDossierModal(true)}
               />
             </div>
 
-            {/* Cascading vehicle selector */}
-            <VehicleSelect
-              selectedPresetId={selectedPresetId}
-              onSelectPreset={onSelectPreset}
-            />
+            {/* Compact Collapsible Toggle for Full Make/Model/Engine Selector */}
+            <div className="mb-3">
+              <button
+                type="button"
+                aria-expanded={showVehicleCatalog}
+                onClick={() => setShowVehicleCatalog((prev) => !prev)}
+                className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-100/80 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-xs font-sans font-semibold text-[#183D22] dark:text-emerald-400 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Car className="w-3.5 h-3.5" />
+                  <span>{showVehicleCatalog ? 'Hide full vehicle catalog selector' : 'Search or browse 120+ models & engines'}</span>
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showVehicleCatalog ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Cascading vehicle selector (kept mounted in DOM for instant switching & test compatibility) */}
+              <div className={showVehicleCatalog ? 'mt-3 block animate-fade-in' : 'sr-only'}>
+                <VehicleSelect
+                  selectedPresetId={selectedPresetId}
+                  onSelectPreset={onSelectPreset}
+                />
+              </div>
+            </div>
 
             {/* Benchmark Preset Shortcuts */}
-            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-1.5 text-xs">
+            <div className="pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-1.5 text-xs">
               <span className="sr-only">TELEMETRY PRESET BENCHMARKS:</span>
               <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 mr-1">
                 Quick presets:
@@ -374,6 +390,10 @@ export default function TcoCalculator({
                     >
                       {marketDealVerdict.label}
                     </span>
+                    <InfoTooltip
+                      term="Market Price Deal Verdict"
+                      explanation="Compares your entered purchase price against the mileage-adjusted fair market value for this specific model and engine."
+                    />
                   </div>
                   <div className="flex items-center gap-1 font-mono font-semibold text-lg text-ink dark:text-zinc-50 tabular-nums bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
                     <span>{currencySymbol}</span>
@@ -862,8 +882,12 @@ export default function TcoCalculator({
             {/* Compact Ownership Value Score Bar (Integrated inside Summary Card) */}
             <div className="mb-5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80">
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
-                  Ownership Value Score
+                <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 inline-flex items-center gap-1">
+                  <span>Ownership Value Score</span>
+                  <InfoTooltip
+                    label="What is Ownership Value Score?"
+                    content="A 0–100 composite score weighing 5-year depreciation retention, fuel efficiency, and projected maintenance burden against segment peers."
+                  />
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono tabular-nums text-xs font-bold text-ink dark:text-zinc-50">
@@ -885,7 +909,13 @@ export default function TcoCalculator({
             {/* Stacked Distribution Bar */}
             <div className="flex flex-col gap-1.5 mb-4 scroll-mt-28 lg:scroll-mt-32" id="cost-breakdown-heading">
               <div className="flex justify-between items-center font-sans text-[11px] uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold">
-                <span>Expense Allocation</span>
+                <span className="inline-flex items-center gap-1">
+                  <span>Expense Allocation</span>
+                  <InfoTooltip
+                    label="About Expense Allocation"
+                    content="Hover over any color segment or category row to highlight how depreciation, fuel, maintenance, insurance, and financing split your monthly cost."
+                  />
+                </span>
                 <span className="font-mono tabular-nums">100%</span>
               </div>
               <div
@@ -941,11 +971,49 @@ export default function TcoCalculator({
               })}
             </div>
 
-            {/* Compact Utility & Export Toolbar inside Summary Card */}
-            <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
-              <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400">
-                Comparison &amp; Export Tools
-              </span>
+            {/* Streamlined Primary Actions & Collapsible Export Toolbar inside Summary Card */}
+            <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400">
+                  Actions &amp; Comparison
+                </span>
+                <button
+                  type="button"
+                  data-testid="toggle-tco-export-menu"
+                  aria-expanded={showExportMenu}
+                  onClick={() => setShowExportMenu((prev) => !prev)}
+                  className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+                >
+                  <Printer className="w-3 h-3" />
+                  <span>{showExportMenu ? 'Hide Export & Share' : 'Export & Share (PDF / Reddit)'}</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${showExportMenu ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Primary Action: Save to My Garage */}
+              <button
+                type="button"
+                onClick={handleSaveToGarage}
+                className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 font-sans text-xs font-semibold transition-colors border shadow-xs ${
+                  isSavedInGarage
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+                    : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 dark:hover:bg-emerald-500'
+                }`}
+              >
+                {isSavedInGarage ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="truncate">Saved ✓</span>
+                  </>
+                ) : (
+                  <>
+                    <Car className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Save to My Garage</span>
+                  </>
+                )}
+              </button>
+
+              {/* Secondary Comparison Tools (2-column row) */}
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -978,29 +1046,10 @@ export default function TcoCalculator({
                   <Zap className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">{showEvBreakEven ? 'Hide EV Break-Even' : 'Fuel vs. EV Break-Even'}</span>
                 </button>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={handleSaveToGarage}
-                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 font-sans text-xs font-medium transition-colors border ${
-                    isSavedInGarage
-                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
-                      : 'bg-zinc-50 dark:bg-zinc-900 text-ink dark:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  {isSavedInGarage ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className="truncate">Saved ✓</span>
-                    </>
-                  ) : (
-                    <>
-                      <Car className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
-                      <span className="truncate">Save to My Garage</span>
-                    </>
-                  )}
-                </button>
-
+              {/* Collapsible Export & Share Drawer (remains mounted in DOM via sr-only when collapsed) */}
+              <div className={showExportMenu ? 'grid grid-cols-1 gap-1.5 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 animate-fade-in' : 'sr-only'}>
                 <button
                   type="button"
                   data-testid="open-forum-share-btn"
@@ -1150,6 +1199,19 @@ export default function TcoCalculator({
           </div>
         );
       })()}
+
+      {/* 5. Mobile Sticky Summary Bar for real-time slider feedback on small screens */}
+      <MobileStickySummaryBar
+        label={`${activePreset.name} · ${horizonYears}-Yr TCO`}
+        primaryValue={`${formatCurrency(tco.monthlyEconomicCostUsd)}/mo`}
+        secondaryValue={`${formatCurrency(tco.totalEconomicCostUsd)} total`}
+        badgeText={`Score ${ownershipValueScore}/100`}
+        actionLabel="View Breakdown"
+        onAction={() => {
+          const el = document.getElementById('summary-heading');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 }

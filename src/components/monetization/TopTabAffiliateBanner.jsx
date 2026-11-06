@@ -1,14 +1,23 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, CheckCircle2, Zap, Car, Landmark } from 'lucide-react';
+import { ArrowRight, ShieldCheck, CheckCircle2, Zap, Car, Landmark, Wrench } from 'lucide-react';
 import { Pill } from '../common/OdometerPrimitives';
 import { useUnits } from '../../context/UnitContext';
-import { resolveRegionalPartnerOffer } from '../../data/affiliatePartners';
+import {
+  resolveAffiliateOffer,
+  buildAffiliateUrl,
+  FTC_PROXIMATE_DISCLOSURE,
+} from '../../config/monetizationConfig';
 
 const TYPE_ICONS = {
   'vin-check': Car,
+  vinCheck: Car,
   warranty: ShieldCheck,
+  'parts-lookup': Wrench,
+  partsLookup: Wrench,
   'obd-scanner': Zap,
+  obdScanner: Zap,
   'insurance-finance': Landmark,
+  autoInsurance: Landmark,
 };
 
 export default function TopTabAffiliateBanner({
@@ -31,7 +40,7 @@ export default function TopTabAffiliateBanner({
 }) {
   const { region, formatCurrency, formatDistance } = useUnits();
 
-  const config = resolveRegionalPartnerOffer({
+  const config = resolveAffiliateOffer({
     type,
     region,
     vehicleName,
@@ -51,7 +60,15 @@ export default function TopTabAffiliateBanner({
     formatDistance,
   });
 
-  const IconComp = TYPE_ICONS[config.type] || Car;
+  const linkProps = buildAffiliateUrl(type, {
+    vehicleName,
+    purchasePriceUsd,
+    odometerMiles,
+    activeCode,
+    region,
+  });
+
+  const IconComp = TYPE_ICONS[config.type] || TYPE_ICONS[type] || Car;
 
   if (compact) {
     return (
@@ -94,15 +111,18 @@ export default function TopTabAffiliateBanner({
 
         <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800 flex flex-col gap-1">
           <a
-            href={config.href}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
+            href={linkProps.href}
+            target={linkProps.target}
+            rel={linkProps.rel}
             className="group w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
           >
             <span>{config.ctaText}</span>
             <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
-          <span className="text-[10px] text-muted dark:text-zinc-400 font-sans font-medium text-center">
+          <span className="text-[10px] text-muted dark:text-zinc-400 font-sans text-center">
+            {FTC_PROXIMATE_DISCLOSURE}
+          </span>
+          <span className="text-[10px] text-faint dark:text-zinc-500 font-sans font-medium text-center">
             {config.trustProof}
           </span>
         </div>
@@ -157,16 +177,19 @@ export default function TopTabAffiliateBanner({
 
         <div className="shrink-0 flex flex-col sm:items-start lg:items-end gap-1.5">
           <a
-            href={config.href}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
+            href={linkProps.href}
+            target={linkProps.target}
+            rel={linkProps.rel}
             className="group inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
           >
             <span>{config.ctaText}</span>
             <ArrowRight aria-hidden="true" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
-          <span className="text-[11px] text-muted dark:text-zinc-400 font-sans font-medium">
-            Direct certified partner dispatch ({config.region})
+          <span className="text-[11px] text-muted dark:text-zinc-400 font-sans">
+            {FTC_PROXIMATE_DISCLOSURE}
+          </span>
+          <span className="text-[10px] text-faint dark:text-zinc-500 font-sans font-medium">
+            {config.trustProof} ({config.region})
           </span>
         </div>
       </div>

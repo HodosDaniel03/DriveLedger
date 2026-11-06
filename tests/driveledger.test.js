@@ -281,12 +281,14 @@ globalThis.window = {
       const u = new URL(url, 'http://localhost:5173');
       globalThis.window.location.pathname = u.pathname;
       globalThis.window.location.search = u.search;
+      globalThis.window.location.hash = u.hash;
       globalThis.window.location.href = u.href;
     },
     pushState(_state, _title, url) {
       const u = new URL(url, 'http://localhost:5173');
       globalThis.window.location.pathname = u.pathname;
       globalThis.window.location.search = u.search;
+      globalThis.window.location.hash = u.hash;
       globalThis.window.location.href = u.href;
     },
   },
@@ -1582,7 +1584,276 @@ assert.ok(
 
 console.log('✓ 6J. 100% Real Vehicle Photo Engine (146 unique URLs & files), Priority Plus Navbar & UI De-AI verified');
 
+// ============================================================================
+// 6K. Turnkey Monetization Config, Bulletproof Legal Suite & Cloudflare Readiness
+// ============================================================================
+const {
+  MONETIZATION_CONFIG,
+  affiliatePartners,
+  buildAffiliateUrl,
+  FTC_PROXIMATE_DISCLOSURE,
+} = await import('../src/config/monetizationConfig.js');
+const {
+  LEGAL_POLICIES,
+  NOMINATIVE_FAIR_USE_NOTICE,
+  ADSENSE_DART_COOKIE_CLAUSE,
+  AMAZON_ASSOCIATES_CLAUSE,
+  WORKSPACE_LEGAL_NOTICE_LINE,
+} = await import('../src/data/legalPolicies.js');
+
+// 1. Verify monetizationConfig.js Single Source of Truth
+assert.strictEqual(MONETIZATION_CONFIG.brandName, 'ShiftMetric');
+assert.strictEqual(MONETIZATION_CONFIG.domain, 'shiftmetric.com');
+assert.strictEqual(MONETIZATION_CONFIG.contactEmail, 'contact@shiftmetric.com');
+assert.strictEqual(MONETIZATION_CONFIG.legalEmail, 'legal@shiftmetric.com');
+assert.strictEqual(MONETIZATION_CONFIG.lastUpdated, 'November 6, 2026');
+assert.strictEqual(MONETIZATION_CONFIG.adsenseEnabled, false);
+assert.strictEqual(MONETIZATION_CONFIG.publisherId, 'ca-pub-0000000000000000');
+assert.deepEqual(MONETIZATION_CONFIG.slots, {
+  topLeaderboard: '1111111111',
+  inContentRectangle: '2222222222',
+  bottomStickyBanner: '3333333333',
+});
+
+assert.strictEqual(affiliatePartners.vinCheck.name, 'carVertical');
+assert.strictEqual(affiliatePartners.vinCheck.baseUrl, 'https://www.carvertical.com/en/landing/v3');
+assert.strictEqual(affiliatePartners.vinCheck.affiliateParam, 'a=YOUR_CARVERTICAL_ID');
+assert.strictEqual(affiliatePartners.vinCheck.buttonText, 'Check Vehicle VIN History');
+assert.strictEqual(affiliatePartners.vinCheck.badgeText, 'Official History Report');
+
+assert.strictEqual(affiliatePartners.obdScanner.name, 'Amazon Automotive');
+assert.strictEqual(affiliatePartners.obdScanner.baseUrl, 'https://www.amazon.com/s?k=Bluetooth+OBD2+Scanner');
+assert.strictEqual(affiliatePartners.obdScanner.affiliateParam, 'tag=YOUR_AMAZON_TAG-20');
+assert.strictEqual(affiliatePartners.obdScanner.buttonText, 'Get Recommended OBD2 Scanner');
+assert.strictEqual(affiliatePartners.obdScanner.badgeText, 'Verified Diagnostic Tool');
+
+assert.strictEqual(affiliatePartners.autoInsurance.name, 'Insurance Comparison');
+assert.strictEqual(affiliatePartners.autoInsurance.baseUrl, 'https://www.insurify.com/');
+assert.strictEqual(affiliatePartners.autoInsurance.affiliateParam, 'ref=YOUR_INSURANCE_ID');
+assert.strictEqual(affiliatePartners.autoInsurance.buttonText, 'Compare Insurance Rates');
+assert.strictEqual(affiliatePartners.autoInsurance.badgeText, 'Rate Comparison');
+
+assert.strictEqual(affiliatePartners.partsLookup.name, 'OEM Parts Catalog');
+assert.strictEqual(affiliatePartners.partsLookup.baseUrl, 'https://www.rockauto.com/');
+assert.strictEqual(affiliatePartners.partsLookup.affiliateParam, 'ref=YOUR_PARTS_ID');
+assert.strictEqual(affiliatePartners.partsLookup.buttonText, 'Check Replacement Part Prices');
+assert.strictEqual(affiliatePartners.partsLookup.badgeText, 'Parts Supplier');
+
+// Verify buildAffiliateUrl helper
+const vinLink = buildAffiliateUrl('vinCheck', { vehicleName: 'BMW 330i' });
+assert.strictEqual(vinLink.href, 'https://www.carvertical.com/en/landing/v3?a=YOUR_CARVERTICAL_ID');
+assert.strictEqual(vinLink.target, '_blank');
+assert.strictEqual(vinLink.rel, 'sponsored noopener noreferrer');
+
+const obdLink = buildAffiliateUrl('obdScanner', { activeCode: 'P0420' });
+assert.strictEqual(obdLink.href, 'https://www.amazon.com/s?k=Bluetooth+OBD2+Scanner&tag=YOUR_AMAZON_TAG-20');
+assert.strictEqual(obdLink.target, '_blank');
+assert.strictEqual(obdLink.rel, 'sponsored noopener noreferrer');
+
+const insLink = buildAffiliateUrl('autoInsurance');
+assert.strictEqual(insLink.href, 'https://www.insurify.com/?ref=YOUR_INSURANCE_ID');
+
+const partsLink = buildAffiliateUrl('partsLookup');
+assert.strictEqual(partsLink.href, 'https://www.rockauto.com/?ref=YOUR_PARTS_ID');
+
+// Verify FTC proximate micro-disclosure is rendered in DOM
+assert.strictEqual(
+  FTC_PROXIMATE_DISCLOSURE,
+  'Partner link · We may earn a commission at no extra cost to you.'
+);
+assert.ok(
+  rootContainer.toHtml().includes(FTC_PROXIMATE_DISCLOSURE),
+  'Rendered DOM must include mandatory FTC proximate micro-disclosure'
+);
+
+// 2. Verify Legal Policies Verbatim Clauses & Zero Placeholders
+for (const [key, policy] of Object.entries(LEGAL_POLICIES)) {
+  const serialized = JSON.stringify(policy);
+  assert.ok(!serialized.includes('[placeholder]'), `Policy ${key} must not contain [placeholder]`);
+  assert.ok(!serialized.includes('...'), `Policy ${key} must not contain truncated ...`);
+  assert.ok(policy.sections.length >= 3, `Policy ${key} must have at least 3 multi-paragraph sections`);
+}
+assert.ok(
+  JSON.stringify(LEGAL_POLICIES.terms).includes(NOMINATIVE_FAIR_USE_NOTICE),
+  'Terms policy must contain verbatim Nominative Fair Use Notice'
+);
+assert.ok(
+  JSON.stringify(LEGAL_POLICIES.privacy).includes(ADSENSE_DART_COOKIE_CLAUSE),
+  'Privacy policy must contain verbatim Google AdSense & DoubleClick DART Cookie Clause'
+);
+assert.ok(
+  JSON.stringify(LEGAL_POLICIES['affiliate-disclosure']).includes(AMAZON_ASSOCIATES_CLAUSE),
+  'Affiliate disclosure policy must contain verbatim Amazon Associates sentence'
+);
+
+// 3. Verify Direct URL Hash Routing (#privacy, #terms, #disclaimer, #affiliate-disclosure, #cookies, #about, #contact)
+const hashRouteChecks = [
+  { hash: '#privacy', expectedText: 'Third-Party Advertising &amp; Google AdSense' },
+  { hash: '#terms', expectedText: 'No Certified Automotive Mechanic Advice' },
+  { hash: '#disclaimer', expectedText: 'Nominative Fair Use &amp; OEM Trademark Disclaimer' },
+  { hash: '#affiliate-disclosure', expectedText: 'As an Amazon Associate, we earn from qualifying purchases.' },
+  { hash: '#cookies', expectedText: 'GDPR / CCPA Cookie &amp; Local Storage Governance Policy' },
+  { hash: '#about', expectedText: 'Actuarial Depreciation Curves' },
+  { hash: '#contact', expectedText: 'legal@shiftmetric.com' },
+];
+
+for (const { hash, expectedText } of hashRouteChecks) {
+  globalThis.window.location.hash = hash;
+  globalThis.window.dispatchEvent({ type: 'hashchange' });
+  const modalHtml = rootContainer.toHtml();
+  const plainExpected = expectedText.replace(/&amp;/g, '&');
+  assert.ok(
+    modalHtml.includes(expectedText) || modalHtml.includes(plainExpected),
+    `Visiting ${hash} must automatically open modal containing "${plainExpected}"`
+  );
+}
+
+// Close modal after hash checks
+const closeAfterHashBtn = rootContainer.querySelectorAll(
+  (el) => el.tagName === 'BUTTON' && el.getAttribute('aria-label') === 'Close modal'
+)[0];
+assert.ok(closeAfterHashBtn, 'Must find Close modal button');
+closeAfterHashBtn.dispatchEvent({ type: 'click' });
+
+// 4. Verify CookieConsentBanner & Footer Cookie Preferences Interaction
+const cookieBannerEl = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'cookie-consent-banner'
+)[0];
+assert.ok(cookieBannerEl, 'CookieConsentBanner must be visible before consent is saved');
+
+const essentialOnlyBtn = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'cookie-essential-only'
+)[0];
+assert.ok(essentialOnlyBtn, 'Must find Essential Only button on CookieConsentBanner');
+essentialOnlyBtn.dispatchEvent({ type: 'click' });
+
+const savedConsentStr = globalThis.localStorage.getItem('shiftmetric_cookie_consent');
+assert.ok(savedConsentStr, 'Clicking Essential Only must persist consent in localStorage');
+assert.strictEqual(JSON.parse(savedConsentStr).mode, 'essential');
+
+// Re-open via permanent "Cookie Preferences" button in Footer
+const footerCookiePrefBtn = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'footer-cookie-preferences'
+)[0];
+assert.ok(footerCookiePrefBtn, 'Footer must render permanent Cookie Preferences button');
+footerCookiePrefBtn.dispatchEvent({ type: 'click' });
+
+const reopenedBannerEl = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'cookie-consent-banner'
+)[0];
+assert.ok(reopenedBannerEl, 'Clicking Cookie Preferences in Footer must re-open CookieConsentBanner');
+
+const acceptAllBtn = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'cookie-accept-all'
+)[0];
+assert.ok(acceptAllBtn, 'Must find Accept All button on CookieConsentBanner');
+acceptAllBtn.dispatchEvent({ type: 'click' });
+assert.strictEqual(
+  JSON.parse(globalThis.localStorage.getItem('shiftmetric_cookie_consent')).mode,
+  'all'
+);
+
+// 5. Verify 1-Line Legal Notice Below Main Workspace AND in Footer
+const workspaceNotice = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'workspace-legal-notice'
+)[0];
+assert.ok(workspaceNotice, '1-line legal notice must be present directly below main calculator workspace');
+assert.ok(workspaceNotice.textContent.includes(WORKSPACE_LEGAL_NOTICE_LINE));
+
+const footerNotice = rootContainer.querySelectorAll(
+  (el) => el.getAttribute('data-testid') === 'footer-legal-notice-line'
+)[0];
+assert.ok(footerNotice, '1-line legal notice must be present in Footer');
+
+// 6. Verify Cloudflare Pages Production Files (public/_redirects, public/ads.txt, public/robots.txt)
+const redirectsPath = path.join(projectRoot, 'public', '_redirects');
+assert.ok(fs.existsSync(redirectsPath), 'public/_redirects must exist');
+assert.strictEqual(fs.readFileSync(redirectsPath, 'utf8').trim(), '/* /index.html 200');
+
+const adsTxtPath = path.join(projectRoot, 'public', 'ads.txt');
+assert.ok(fs.existsSync(adsTxtPath), 'public/ads.txt must exist');
+assert.ok(fs.readFileSync(adsTxtPath, 'utf8').includes('google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0'));
+
+const robotsTxtPath = path.join(projectRoot, 'public', 'robots.txt');
+assert.ok(fs.existsSync(robotsTxtPath), 'public/robots.txt must exist');
+assert.ok(fs.readFileSync(robotsTxtPath, 'utf8').includes('Sitemap: https://shiftmetric.com/sitemap.xml'));
+
+// 7. Verify popstate back-navigation from /#privacy to / closes the LegalModal
+globalThis.window.location.hash = '#privacy';
+globalThis.window.dispatchEvent({ type: 'hashchange' });
+assert.ok(
+  rootContainer.toHtml().includes('Third-Party Advertising & Google AdSense'),
+  'LegalModal must be open at #privacy before popstate back-navigation test'
+);
+globalThis.window.location.hash = '';
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  !rootContainer.toHtml().includes('Third-Party Advertising & Google AdSense'),
+  'Navigating back via popstate to empty hash must close LegalModal'
+);
+
+// 8. Verify AdUnit live AdSense rendering (adsenseEnabled: true), slot key resolution, ad-blocker resilience, and hideWhenDisabled
+const { default: AdUnit } = await import('../src/components/monetization/AdUnit.jsx');
+const adTestContainer = new MockElement('div');
+const adTestRoot = createRoot(adTestContainer);
+
+// 8a. When adsenseEnabled is false and hideWhenDisabled is true, AdUnit renders nothing
+adTestRoot.render(React.createElement(AdUnit, { slotId: 'topLeaderboard', hideWhenDisabled: true }));
+assert.strictEqual(adTestContainer.innerHTML, '', 'AdUnit with hideWhenDisabled=true must render empty when adsenseEnabled is false');
+
+// 8b. When adsenseEnabled is true, AdUnit resolves slot keys (topLeaderboard, inContentRectangle, bottomStickyBanner) and survives ad-blocker push errors
+const prevAdsenseEnabled = MONETIZATION_CONFIG.adsenseEnabled;
+const prevAdsbygoogle = globalThis.window.adsbygoogle;
+try {
+  MONETIZATION_CONFIG.adsenseEnabled = true;
+  let pushCalls = 0;
+  globalThis.window.adsbygoogle = {
+    push() {
+      pushCalls += 1;
+      if (pushCalls === 2) {
+        throw new Error('Simulated ad-blocker push rejection');
+      }
+    },
+  };
+
+  adTestRoot.render(React.createElement(AdUnit, { slotId: 'inContentRectangle' }));
+  const rectAdHtml = adTestContainer.toHtml();
+  assert.ok(rectAdHtml.includes('class="adsbygoogle w-full"'), 'AdUnit must render <ins class="adsbygoogle"> when adsenseEnabled is true');
+  assert.ok(rectAdHtml.includes('data-ad-client="ca-pub-0000000000000000"'), 'AdUnit must bind publisherId from monetizationConfig.js');
+  assert.ok(rectAdHtml.includes('data-ad-slot="2222222222"'), 'AdUnit must resolve slotId="inContentRectangle" to "2222222222"');
+
+  // Trigger simulated ad-blocker error on second slot render
+  adTestRoot.render(React.createElement(AdUnit, { slotId: 'bottomStickyBanner' }));
+  const stickyAdHtml = adTestContainer.toHtml();
+  assert.ok(stickyAdHtml.includes('data-ad-slot="3333333333"'), 'AdUnit must resolve slotId="bottomStickyBanner" to "3333333333" and survive ad-blocker push exception');
+
+  adTestRoot.render(React.createElement(AdUnit, { slotId: 'topLeaderboard' }));
+  const topAdHtml = adTestContainer.toHtml();
+  assert.ok(topAdHtml.includes('data-ad-slot="1111111111"'), 'AdUnit must resolve slotId="topLeaderboard" to "1111111111"');
+  assert.ok(pushCalls >= 3, 'AdUnit must invoke window.adsbygoogle.push for each distinct slot render');
+} finally {
+  MONETIZATION_CONFIG.adsenseEnabled = prevAdsenseEnabled;
+  globalThis.window.adsbygoogle = prevAdsbygoogle;
+}
+
+// 9. Verify buildAffiliateUrl preserves URL hash fragments if present in baseUrl
+const prevBaseUrl = affiliatePartners.partsLookup.baseUrl;
+try {
+  affiliatePartners.partsLookup.baseUrl = 'https://www.rockauto.com/en/catalog#brake-pads';
+  const hashedLink = buildAffiliateUrl('partsLookup');
+  assert.strictEqual(
+    hashedLink.href,
+    'https://www.rockauto.com/en/catalog?ref=YOUR_PARTS_ID#brake-pads',
+    'buildAffiliateUrl must insert query parameter before any URL #fragment'
+  );
+} finally {
+  affiliatePartners.partsLookup.baseUrl = prevBaseUrl;
+}
+
+console.log('✓ 6K. Turnkey Monetization Config, Bulletproof Legal Suite (7 Hash Routes + GDPR/CCPA Banner) & Cloudflare Pages Readiness verified');
+
 console.log('ALL DEEP VERIFICATION CHECKS PASSED WITH 0 ERRORS.');
+
 
 
 
