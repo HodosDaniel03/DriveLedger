@@ -30,31 +30,64 @@ export const LEGAL_HASH_ROUTES = [
   '#contact',
 ];
 
+export const LEGAL_CLEAN_ROUTES = [
+  '/privacy',
+  '/terms',
+  '/disclaimer',
+  '/cookies',
+  '/affiliate-disclosure',
+  '/about',
+  '/contact',
+];
+
 const HASH_TO_POLICY_KEY = {
+  // Clean paths
+  '/privacy': 'privacy',
+  '/terms': 'terms',
+  '/disclaimer': 'disclaimer',
+  '/cookies': 'cookies',
+  '/affiliate-disclosure': 'affiliate-disclosure',
+  '/affiliate': 'affiliate-disclosure',
+  '/about': 'about',
+  '/contact': 'contact',
+  // Bare keys
   privacy: 'privacy',
-  '#privacy': 'privacy',
   terms: 'terms',
-  '#terms': 'terms',
   disclaimer: 'disclaimer',
-  '#disclaimer': 'disclaimer',
   'affiliate-disclosure': 'affiliate-disclosure',
-  '#affiliate-disclosure': 'affiliate-disclosure',
   affiliate: 'affiliate-disclosure',
-  '#affiliate': 'affiliate-disclosure',
   cookies: 'cookies',
-  '#cookies': 'cookies',
   about: 'about',
-  '#about': 'about',
-  methodology: 'about',
-  '#methodology': 'about',
   contact: 'contact',
+  // Hash routes
+  '#privacy': 'privacy',
+  '#terms': 'terms',
+  '#disclaimer': 'disclaimer',
+  '#affiliate-disclosure': 'affiliate-disclosure',
+  '#affiliate': 'affiliate-disclosure',
+  '#cookies': 'cookies',
+  '#about': 'about',
+  '#methodology': 'about',
   '#contact': 'contact',
 };
 
 export function resolveLegalPolicyKey(rawInput) {
   if (!rawInput || typeof rawInput !== 'string') return null;
   const cleaned = rawInput.trim().toLowerCase();
-  return HASH_TO_POLICY_KEY[cleaned] || null;
+
+  // Collision guard: /methodology is an application workspace tab, NOT the 'about' modal
+  if (
+    cleaned === '/methodology' ||
+    cleaned.startsWith('/methodology/') ||
+    cleaned === 'methodology'
+  ) {
+    return null;
+  }
+
+  // Normalize by stripping trailing slash for paths (e.g. /privacy/ -> /privacy)
+  const normalized = cleaned.length > 1 && cleaned.endsWith('/') ? cleaned.slice(0, -1) : cleaned;
+
+  return HASH_TO_POLICY_KEY[normalized] || null;
 }
 
 export const LEGAL_POLICIES = {
@@ -314,5 +347,11 @@ export const LEGAL_POLICIES = {
     ],
   },
 };
+
+// Ensure key and clean path are attached to each policy object
+Object.entries(LEGAL_POLICIES).forEach(([key, policy]) => {
+  if (!policy.key) policy.key = key;
+  if (!policy.path) policy.path = `/${key}`;
+});
 
 export default LEGAL_POLICIES;

@@ -65,6 +65,8 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/methodology`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/reviews`, '0.8', 'weekly');
   addUrl(`${SITE_ORIGIN}/blog`, '0.8', 'weekly');
+  addUrl(`${SITE_ORIGIN}/privacy`, '0.7', 'monthly');
+  addUrl(`${SITE_ORIGIN}/terms`, '0.7', 'monthly');
 
   // 2. Programmatic Preset Routes & Mileage-Bracket Risk Guides for all 179 Vehicle Presets
   const bracketKeys = Object.keys(MILEAGE_BRACKET_SLUGS);

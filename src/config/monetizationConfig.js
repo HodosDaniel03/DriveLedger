@@ -12,7 +12,7 @@ export const SITE_METADATA = {
   brandName: 'DriveLedger',
   domain: 'mydriveledger.com',
   contactEmail: 'contact@mydriveledger.com',
-  legalEmail: 'contact@mydriveledger.com',
+  legalEmail: 'legal@mydriveledger.com',
   lastUpdated: 'November 6, 2026',
 };
 

@@ -133,6 +133,10 @@ function DriveLedgerWorkspace() {
   };
 
   const resolveInitialLegalModal = () => {
+    const pathVal =
+      location.pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+    const pathPolicy = resolveLegalPolicyKey(pathVal);
+    if (pathPolicy) return pathPolicy;
     const hashVal =
       location.hash || (typeof window !== 'undefined' ? window.location.hash : '');
     return resolveLegalPolicyKey(hashVal);
@@ -277,11 +281,16 @@ function DriveLedgerWorkspace() {
       setSelectedObdCodeState((prev) => (prev !== qCode ? qCode : prev));
     }
 
-    const hashPolicy = resolveLegalPolicyKey(
-      location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
-    );
-    if (hashPolicy) {
-      setActiveLegalModal(hashPolicy);
+    const pathPolicy = resolveLegalPolicyKey(location.pathname);
+    if (pathPolicy) {
+      setActiveLegalModal(pathPolicy);
+    } else {
+      const hashPolicy = resolveLegalPolicyKey(
+        location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
+      );
+      if (hashPolicy) {
+        setActiveLegalModal(hashPolicy);
+      }
     }
   }, [location.pathname, location.hash, searchParams]);
 
@@ -291,7 +300,9 @@ function DriveLedgerWorkspace() {
       return undefined;
     }
     const handleHashChange = () => {
-      const policyKey = resolveLegalPolicyKey(window.location.hash);
+      const policyKey =
+        resolveLegalPolicyKey(window.location.hash) ||
+        resolveLegalPolicyKey(window.location.pathname);
       setActiveLegalModal(policyKey);
     };
     const handlePopState = () => {
@@ -320,8 +331,10 @@ function DriveLedgerWorkspace() {
           qCode && OBD_CODES.some((c) => c.code === qCode) ? qCode : 'P2002'
         );
 
-        const hashPolicy = resolveLegalPolicyKey(window.location.hash);
-        setActiveLegalModal(hashPolicy);
+        const policyKey =
+          resolveLegalPolicyKey(window.location.pathname) ||
+          resolveLegalPolicyKey(window.location.hash);
+        setActiveLegalModal(policyKey);
       };
       if (typeof React.__batch === 'function') {
         React.__batch(applyPopState);
@@ -509,25 +522,39 @@ function DriveLedgerWorkspace() {
           activePolicy={activeLegalModal}
           onSelectPolicy={(policyKey) => {
             if (typeof window !== 'undefined' && window.history?.replaceState) {
-              window.history.replaceState(
-                null,
-                '',
-                `${window.location.pathname}${window.location.search}#${policyKey}`
-              );
+              const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
+              if (currentPathPolicy) {
+                window.history.replaceState(
+                  null,
+                  '',
+                  `/${policyKey}${window.location.search}`
+                );
+              } else {
+                window.history.replaceState(
+                  null,
+                  '',
+                  `${window.location.pathname}${window.location.search}#${policyKey}`
+                );
+              }
             }
             setActiveLegalModal(policyKey);
           }}
           onClose={() => {
-            if (
-              typeof window !== 'undefined' &&
-              window.location.hash &&
-              window.history?.replaceState
-            ) {
-              window.history.replaceState(
-                null,
-                '',
-                `${window.location.pathname}${window.location.search}`
-              );
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+              const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
+              if (currentPathPolicy) {
+                window.history.replaceState(
+                  null,
+                  '',
+                  window.location.search ? `/${window.location.search}` : '/'
+                );
+              } else if (window.location.hash) {
+                window.history.replaceState(
+                  null,
+                  '',
+                  `${window.location.pathname}${window.location.search}`
+                );
+              }
             }
             setActiveLegalModal(null);
           }}

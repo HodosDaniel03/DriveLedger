@@ -8,13 +8,13 @@ import {
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 
 const POLICY_NAV_ITEMS = [
-  { key: 'terms', label: 'Terms of Service', hash: '#terms', Icon: Scale },
-  { key: 'disclaimer', label: 'Liability Disclaimer', hash: '#disclaimer', Icon: ShieldCheck },
-  { key: 'privacy', label: 'Privacy Policy', hash: '#privacy', Icon: Lock },
-  { key: 'cookies', label: 'Cookie Policy', hash: '#cookies', Icon: Settings2 },
-  { key: 'affiliate-disclosure', label: 'Affiliate Disclosure', hash: '#affiliate-disclosure', Icon: ExternalLink },
-  { key: 'about', label: 'About & Methodology', hash: '#about', Icon: BookOpen },
-  { key: 'contact', label: 'Contact', hash: '#contact', Icon: FileText },
+  { key: 'terms', label: 'Terms of Service', path: '/terms', hash: '#terms', Icon: Scale },
+  { key: 'disclaimer', label: 'Liability Disclaimer', path: '/disclaimer', hash: '#disclaimer', Icon: ShieldCheck },
+  { key: 'privacy', label: 'Privacy Policy', path: '/privacy', hash: '#privacy', Icon: Lock },
+  { key: 'cookies', label: 'Cookie Policy', path: '/cookies', hash: '#cookies', Icon: Settings2 },
+  { key: 'affiliate-disclosure', label: 'Affiliate Disclosure', path: '/affiliate-disclosure', hash: '#affiliate-disclosure', Icon: ExternalLink },
+  { key: 'about', label: 'About & Methodology', path: '/about', hash: '#about', Icon: BookOpen },
+  { key: 'contact', label: 'Contact', path: '/contact', hash: '#contact', Icon: FileText },
 ];
 
 export default function LegalModal({
@@ -46,7 +46,7 @@ export default function LegalModal({
                 <span className="truncate">{MONETIZATION_CONFIG.brandName} Legal &amp; Compliance</span>
               </span>
               <span className="text-[11px] font-mono text-muted dark:text-zinc-400 break-all">
-                https://{MONETIZATION_CONFIG.domain}/{policy.hash}
+                https://{MONETIZATION_CONFIG.domain}/{policy.key || policy.id}
               </span>
             </div>
             <h2
@@ -71,12 +71,12 @@ export default function LegalModal({
 
         {/* Policy Switcher Bar */}
         <div className="px-4 sm:px-6 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-          {POLICY_NAV_ITEMS.map(({ key, label, hash, Icon }) => {
+          {POLICY_NAV_ITEMS.map(({ key, label, path, Icon }) => {
             const isCurrent = policy.id === key;
             return (
               <a
                 key={key}
-                href={hash}
+                href={path}
                 onClick={(e) => {
                   e.preventDefault();
                   if (onSelectPolicy) onSelectPolicy(key);

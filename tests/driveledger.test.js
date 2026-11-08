@@ -1599,16 +1599,17 @@ const {
   ADSENSE_DART_COOKIE_CLAUSE,
   AMAZON_ASSOCIATES_CLAUSE,
   WORKSPACE_LEGAL_NOTICE_LINE,
+  resolveLegalPolicyKey,
 } = await import('../src/data/legalPolicies.js');
 
 // 1. Verify monetizationConfig.js Single Source of Truth
 assert.strictEqual(MONETIZATION_CONFIG.brandName, 'DriveLedger');
 assert.strictEqual(MONETIZATION_CONFIG.domain, 'mydriveledger.com');
 assert.strictEqual(MONETIZATION_CONFIG.contactEmail, 'contact@mydriveledger.com');
-assert.strictEqual(MONETIZATION_CONFIG.legalEmail, 'contact@mydriveledger.com');
+assert.strictEqual(MONETIZATION_CONFIG.legalEmail, 'legal@mydriveledger.com');
 assert.strictEqual(MONETIZATION_CONFIG.lastUpdated, 'November 6, 2026');
 assert.strictEqual(MONETIZATION_CONFIG.adsenseEnabled, false);
-assert.strictEqual(MONETIZATION_CONFIG.publisherId, 'ca-pub-0000000000000000');
+assert.strictEqual(MONETIZATION_CONFIG.publisherId, 'ca-pub-6581535125716295');
 assert.deepEqual(MONETIZATION_CONFIG.slots, {
   topLeaderboard: '1111111111',
   inContentRectangle: '2222222222',
@@ -1775,13 +1776,14 @@ assert.ok(
 if (fs.existsSync(wranglerPath)) {
   const wranglerConfig = JSON.parse(fs.readFileSync(wranglerPath, 'utf8'));
   assert.strictEqual(wranglerConfig.assets?.not_found_handling, 'single-page-application');
-} else {
+}
+if (fs.existsSync(redirectsPath)) {
   assert.strictEqual(fs.readFileSync(redirectsPath, 'utf8').trim(), '/* /index.html 200');
 }
 
 const adsTxtPath = path.join(projectRoot, 'public', 'ads.txt');
 assert.ok(fs.existsSync(adsTxtPath), 'public/ads.txt must exist');
-assert.ok(fs.readFileSync(adsTxtPath, 'utf8').includes('google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0'));
+assert.ok(fs.readFileSync(adsTxtPath, 'utf8').includes('google.com, pub-6581535125716295, DIRECT, f08c47fec0942fa0'));
 
 const robotsTxtPath = path.join(projectRoot, 'public', 'robots.txt');
 assert.ok(fs.existsSync(robotsTxtPath), 'public/robots.txt must exist');
@@ -1800,6 +1802,52 @@ assert.ok(
   !rootContainer.toHtml().includes('Third-Party Advertising & Google AdSense'),
   'Navigating back via popstate to empty hash must close LegalModal'
 );
+
+// 7b. Verify Clean Path Routing, /methodology Collision Guard, and Clean Path Popstate
+const cleanPaths = [
+  '/privacy',
+  '/terms',
+  '/disclaimer',
+  '/cookies',
+  '/affiliate-disclosure',
+  '/about',
+  '/contact',
+];
+for (const p of cleanPaths) {
+  assert.ok(resolveLegalPolicyKey(p), `resolveLegalPolicyKey must resolve clean path ${p}`);
+  assert.ok(resolveLegalPolicyKey(`${p}/`), `resolveLegalPolicyKey must resolve trailing slash ${p}/`);
+}
+assert.strictEqual(resolveLegalPolicyKey('/methodology'), null, '/methodology must return null (collision guard)');
+assert.strictEqual(resolveLegalPolicyKey('/methodology/'), null, '/methodology/ must return null (collision guard)');
+assert.strictEqual(resolveLegalPolicyKey('methodology'), null, 'methodology must return null (collision guard)');
+
+globalThis.window.location.pathname = '/privacy';
+globalThis.window.location.hash = '';
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  rootContainer.toHtml().includes('Third-Party Advertising & Google AdSense'),
+  'Navigating to /privacy via popstate must open LegalModal'
+);
+globalThis.window.location.pathname = '/';
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  !rootContainer.toHtml().includes('Third-Party Advertising & Google AdSense'),
+  'Navigating back to / via popstate must close LegalModal'
+);
+
+// 7c. Verify Brand Assets (logo-512.png <100KB, valid PNG, and favicon.svg)
+const logoPath = path.join(projectRoot, 'public', 'logo-512.png');
+const faviconPath = path.join(projectRoot, 'public', 'favicon.svg');
+assert.ok(fs.existsSync(logoPath), 'public/logo-512.png must exist');
+const logoStat = fs.statSync(logoPath);
+assert.ok(logoStat.size > 0 && logoStat.size < 102400, 'public/logo-512.png must be < 100KB');
+const logoBuf = fs.readFileSync(logoPath);
+assert.strictEqual(logoBuf.readUInt32BE(0), 0x89504e47, 'public/logo-512.png must have valid PNG magic signature');
+assert.strictEqual(logoBuf.readUInt32BE(16), 512, 'public/logo-512.png width must be 512');
+assert.strictEqual(logoBuf.readUInt32BE(20), 512, 'public/logo-512.png height must be 512');
+
+assert.ok(fs.existsSync(faviconPath), 'public/favicon.svg must exist');
+assert.ok(fs.readFileSync(faviconPath, 'utf8').includes('<svg'), 'public/favicon.svg must be valid SVG');
 
 // 8. Verify AdUnit live AdSense rendering (adsenseEnabled: true), slot key resolution, ad-blocker resilience, and hideWhenDisabled
 const { default: AdUnit } = await import('../src/components/monetization/AdUnit.jsx');
@@ -1828,7 +1876,7 @@ try {
   adTestRoot.render(React.createElement(AdUnit, { slotId: 'inContentRectangle' }));
   const rectAdHtml = adTestContainer.toHtml();
   assert.ok(rectAdHtml.includes('class="adsbygoogle w-full"'), 'AdUnit must render <ins class="adsbygoogle"> when adsenseEnabled is true');
-  assert.ok(rectAdHtml.includes('data-ad-client="ca-pub-0000000000000000"'), 'AdUnit must bind publisherId from monetizationConfig.js');
+  assert.ok(rectAdHtml.includes('data-ad-client="ca-pub-6581535125716295"'), 'AdUnit must bind publisherId from monetizationConfig.js');
   assert.ok(rectAdHtml.includes('data-ad-slot="2222222222"'), 'AdUnit must resolve slotId="inContentRectangle" to "2222222222"');
 
   // Trigger simulated ad-blocker error on second slot render
