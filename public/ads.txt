@@ -1,3 +1,1 @@
-# DriveLedger (mydriveledger.com) Authorized Digital Sellers (ads.txt)
-# Replace pub-0000000000000000 with your active Google AdSense Publisher ID upon deployment
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+google.com, pub-6581535125716295, DIRECT, f08c47fec0942fa0

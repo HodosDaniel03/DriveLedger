@@ -18,7 +18,7 @@ export const SITE_METADATA = {
 
 export const ADSENSE_CONFIG = {
   adsenseEnabled: false,
-  publisherId: 'ca-pub-0000000000000000',
+  publisherId: 'ca-pub-6581535125716295',
   slots: {
     topLeaderboard: '1111111111',
     inContentRectangle: '2222222222',
