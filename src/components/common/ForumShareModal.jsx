@@ -376,14 +376,14 @@ export default function ForumShareModal({
       aria-modal="true"
       aria-label="Share Telemetry Card for Reddit & Enthusiast Forums"
       data-testid="forum-share-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-2xl rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-5 sm:p-6 shadow-2xl space-y-5">
+      <div className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-4 sm:p-6 shadow-2xl space-y-5">
         {/* Modal Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-border dark:border-zinc-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Share2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+        <div className="flex items-start justify-between gap-3 border-b border-border dark:border-zinc-800 pb-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Share2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
               <h2 className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-100">
                 Share for Reddit &amp; Enthusiast Forums
               </h2>
@@ -399,7 +399,7 @@ export default function ForumShareModal({
             type="button"
             onClick={onClose}
             aria-label="Close share modal"
-            className="rounded-lg p-1.5 text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg p-2 text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

@@ -22,8 +22,10 @@
   transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-benchmark:hover {
-  box-shadow: 0 12px 32px rgba(20, 26, 21, 0.07);
+@media (hover: hover) {
+  .card-benchmark:hover {
+    box-shadow: 0 12px 32px rgba(20, 26, 21, 0.07);
+  }
 }
 
 /* Horizontal Tab Scroller Edge Fade */

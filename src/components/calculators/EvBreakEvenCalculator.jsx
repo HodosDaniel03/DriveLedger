@@ -143,13 +143,13 @@ export default function EvBreakEvenCalculator({
   ], [isCheaperUpfront, isNegativeSavings, breakEvenYears, breakEvenDistanceLocal, distanceUnit, currencySymbol, annualSavingsLocal, pctCheaper, requiredAnnualDist5Yr]);
 
   return (
-    <Card className="rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-5 sm:p-6 space-y-6" aria-labelledby="breakeven-heading">
+    <Card className="rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 space-y-6" aria-labelledby="breakeven-heading">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E6E6E1]">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-[#E8F5E9] p-2 text-[#183D22]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="rounded-xl bg-[#E8F5E9] p-2 text-[#183D22] shrink-0">
             <Zap className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 id="breakeven-heading" className="text-base sm:text-lg font-bold tracking-tight text-ink scroll-mt-28 lg:scroll-mt-32">
               Real-World Fuel vs. EV Break-Even Calculator
             </h2>
@@ -270,7 +270,7 @@ export default function EvBreakEvenCalculator({
             type="number"
             value={icePurchasePrice}
             onChange={(e) => setIcePurchasePrice(Math.max(0, Number(e.target.value) || 0))}
-            className="w-full rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
+            className="w-full min-h-[44px] rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
           />
         </div>
 
@@ -283,7 +283,7 @@ export default function EvBreakEvenCalculator({
             type="number"
             value={evPurchasePrice}
             onChange={(e) => setEvPurchasePrice(Math.max(0, Number(e.target.value) || 0))}
-            className="w-full rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
+            className="w-full min-h-[44px] rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
           />
         </div>
       </div>
@@ -295,16 +295,16 @@ export default function EvBreakEvenCalculator({
           aria-expanded={customOpen}
           aria-controls="ev-assumptions-panel"
           onClick={() => setCustomOpen((o) => !o)}
-          className="flex w-full items-center justify-between rounded-xl py-2 px-3 font-sans text-sm font-semibold text-[#183D22] dark:text-emerald-400 bg-[#F2F6F3] dark:bg-zinc-900 hover:bg-[#E8F0EA] dark:hover:bg-zinc-800 transition-colors"
+          className="flex w-full min-h-[48px] items-center justify-between gap-3 text-left rounded-xl py-2.5 px-3.5 font-sans text-sm font-semibold text-[#183D22] dark:text-emerald-400 bg-[#F2F6F3] dark:bg-zinc-900 hover:bg-[#E8F0EA] dark:hover:bg-zinc-800 transition-colors"
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2.5 min-w-0 flex-1">
             <Plus
               aria-hidden="true"
-              className={`w-4 h-4 transition-transform duration-300 ${customOpen ? 'rotate-45' : ''}`}
+              className={`w-4 h-4 shrink-0 transition-transform duration-300 ${customOpen ? 'rotate-45' : ''}`}
             />
-            <span>Customize energy rates &amp; consumption assumptions</span>
+            <span className="min-w-0 leading-snug">Customize energy rates &amp; consumption assumptions</span>
           </span>
-          <span className="text-xs font-sans font-medium text-[#5F665F] dark:text-zinc-400">
+          <span className="hidden sm:inline text-xs font-sans font-medium text-[#5F665F] dark:text-zinc-400 shrink-0">
             {customOpen ? 'Hide' : 'Expand'}
           </span>
         </button>
@@ -321,7 +321,7 @@ export default function EvBreakEvenCalculator({
                 step="0.05"
                 value={fuelPriceLocal}
                 onChange={(e) => setFuelPriceLocal(Math.max(0.1, Number(e.target.value) || 0))}
-                className="w-full rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
+                className="w-full min-h-[44px] rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
               />
             </div>
 
@@ -335,7 +335,7 @@ export default function EvBreakEvenCalculator({
                 step="0.01"
                 value={electricityPriceLocal}
                 onChange={(e) => setElectricityPriceLocal(Math.max(0.01, Number(e.target.value) || 0))}
-                className="w-full rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
+                className="w-full min-h-[44px] rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
               />
             </div>
           </div>

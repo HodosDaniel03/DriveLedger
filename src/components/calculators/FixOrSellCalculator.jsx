@@ -128,7 +128,7 @@ export default function FixOrSellCalculator({
               <label htmlFor="fix-sell-repair-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
                 Workshop repair quote
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-0.5 rounded-md border border-border dark:border-zinc-700">
+              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
                 <span>{currencySymbol}</span>
                 <input
                   id="fix-sell-repair-input"
@@ -140,7 +140,7 @@ export default function FixOrSellCalculator({
                   onChange={(e) =>
                     setRepairQuoteUsd(convertRegionToUsd(Math.max(0, Number(e.target.value) || 0)))
                   }
-                  className="w-20 text-right bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
                 />
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function FixOrSellCalculator({
               <label htmlFor="fix-sell-market-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
                 Repaired running market value
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-0.5 rounded-md border border-border dark:border-zinc-700">
+              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
                 <span>{currencySymbol}</span>
                 <input
                   id="fix-sell-market-input"
@@ -177,7 +177,7 @@ export default function FixOrSellCalculator({
                   onChange={(e) =>
                     setMarketValueUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
                   }
-                  className="w-20 text-right bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
                 />
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function FixOrSellCalculator({
               <label htmlFor="fix-sell-odo-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
                 Current odometer
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-0.5 rounded-md border border-border dark:border-zinc-700">
+              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
                 <input
                   id="fix-sell-odo-input"
                   type="number"
@@ -213,7 +213,7 @@ export default function FixOrSellCalculator({
                   onChange={(e) =>
                     setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
                   }
-                  className="w-20 text-right bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
                 />
                 <span className="font-sans text-xs text-muted">{distanceUnit}</span>
               </div>
@@ -239,11 +239,11 @@ export default function FixOrSellCalculator({
               type="button"
               aria-expanded={customOpen}
               onClick={() => setCustomOpen((o) => !o)}
-              className="flex w-full items-center justify-between font-sans text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline py-1"
+              className="flex w-full min-h-[48px] items-center justify-between gap-3 text-left font-sans text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline py-1.5"
             >
-              <span>Customize assumptions (as-is broken value &amp; replacement budget)</span>
+              <span className="min-w-0 flex-1 leading-snug">Customize assumptions (as-is broken value &amp; replacement budget)</span>
               <ChevronDown
-                className={`w-4 h-4 transition-transform duration-200 ${customOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 shrink-0 transition-transform duration-200 ${customOpen ? 'rotate-180' : ''}`}
               />
             </button>
             <Collapse open={customOpen}>
@@ -261,7 +261,7 @@ export default function FixOrSellCalculator({
                     onChange={(e) =>
                       setCustomBrokenValUsd(convertRegionToUsd(Math.max(0, Number(e.target.value) || 0)))
                     }
-                    className="w-full h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
+                    className="w-full h-11 sm:h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-base sm:text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
                   />
                 </div>
                 <div>
@@ -277,7 +277,7 @@ export default function FixOrSellCalculator({
                     onChange={(e) =>
                       setReplacementBudgetUsd(convertRegionToUsd(Math.max(3000, Number(e.target.value) || 3000)))
                     }
-                    className="w-full h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
+                    className="w-full h-11 sm:h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-base sm:text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
                   />
                 </div>
               </div>
@@ -286,7 +286,7 @@ export default function FixOrSellCalculator({
         </div>
 
         {/* Right: Live Decision Verdict Card */}
-        <div className="lg:col-span-6 rounded-2xl border border-border dark:border-zinc-800 bg-canvas dark:bg-zinc-950/70 p-4 sm:p-5 space-y-4">
+        <div className="lg:col-span-6 rounded-2xl border border-border dark:border-zinc-800 bg-canvas dark:bg-zinc-950/70 p-4 sm:p-5 space-y-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-muted dark:text-zinc-400">
               Algorithmic Recommendation
@@ -305,7 +305,7 @@ export default function FixOrSellCalculator({
 
           {/* Repair-to-Value Ratio Bar */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
               <span className="font-sans font-medium text-muted dark:text-zinc-400">Repair-to-Value Ratio (RVR)</span>
               <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
                 {decision.rvrPct}% ({formatCurrency(decision.repairQuoteUsd)} / {formatCurrency(decision.resolvedMarketValueUsd)})
@@ -331,23 +331,23 @@ export default function FixOrSellCalculator({
           </div>
 
           {/* 3 Financial Pillars Grid */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <div className="rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800">
-              <span className="block text-[10px] font-sans font-medium uppercase text-muted">Net Equity</span>
-              <span className="mt-0.5 block text-xs sm:text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-1 items-stretch">
+            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+              <span className="block text-xs font-sans font-medium text-muted truncate">Net Equity</span>
+              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
                 {decision.netEquityGainUsd >= 0 ? '+' : ''}
                 {formatCurrency(decision.netEquityGainUsd)}
               </span>
             </div>
-            <div className="rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800">
-              <span className="block text-[10px] font-sans font-medium uppercase text-muted">Yr-1 New Car Hit</span>
-              <span className="mt-0.5 block text-xs sm:text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
+            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+              <span className="block text-xs font-sans font-medium text-muted truncate">Yr-1 New Car Hit</span>
+              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
                 {formatCurrency(decision.annualReplacementSunkCostUsd)}/yr
               </span>
             </div>
-            <div className="rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800">
-              <span className="block text-[10px] font-sans font-medium uppercase text-muted">+15k Wear Risk</span>
-              <span className="mt-0.5 block text-xs sm:text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
+            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+              <span className="block text-xs font-sans font-medium text-muted truncate">+15k Wear Risk</span>
+              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
                 {formatCurrency(decision.cascadingExposureUsd)}
               </span>
             </div>

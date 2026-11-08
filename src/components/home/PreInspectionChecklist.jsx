@@ -340,12 +340,12 @@ export default function PreInspectionChecklist({
   return (
     <section
       id="printable-checklist"
-      className="p-6 sm:p-8 rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-sm space-y-6"
+      className="p-4 sm:p-8 rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-sm space-y-6 min-w-0 max-w-full overflow-hidden"
     >
       {/* Header and Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border dark:border-zinc-800 print:border-b-2 print:border-black">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border dark:border-zinc-800 print:border-b-2 print:border-black min-w-0">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-sans text-[11px] uppercase tracking-widest text-primary-600 dark:text-primary-400 font-bold block print:text-black">
               Pre-Purchase Inspection &amp; Negotiation Battlecard
             </span>
@@ -353,10 +353,10 @@ export default function PreInspectionChecklist({
               Live Offer Calculator
             </span>
           </div>
-          <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black">
+          <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
             {selectedPreset.name} — Field Inspection Checklist
           </h2>
-          <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700">
+          <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700 break-words">
             {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
           </p>
         </div>
@@ -366,7 +366,7 @@ export default function PreInspectionChecklist({
           <button
             type="button"
             onClick={handleShareLink}
-            className="px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+            className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
             title="Share state as URL link"
           >
             {copyFeedback ? (
@@ -385,7 +385,7 @@ export default function PreInspectionChecklist({
           <button
             type="button"
             onClick={handlePrint}
-            className="px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+            className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
             title="Print or save Negotiation Battlecard as PDF"
           >
             <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
@@ -396,7 +396,7 @@ export default function PreInspectionChecklist({
             <button
               type="button"
               onClick={() => onNavigateToObd()}
-              className="px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white flex items-center gap-1.5 shadow-sm transition-colors duration-150"
             >
               <span>OBD2 Code Lookup</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -406,8 +406,8 @@ export default function PreInspectionChecklist({
       </div>
 
       {/* Vehicle Preset, Asking Price & Odometer Quick Selector (Hidden during print) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-surface-subtle dark:bg-zinc-800/60 border border-border dark:border-zinc-800 print:hidden">
-        <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-subtle dark:bg-zinc-800/60 border border-border dark:border-zinc-800 print:hidden min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 min-w-0 w-full sm:w-auto">
           <label htmlFor="ppi-vehicle-select" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5 shrink-0">
             <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             <span>Vehicle:</span>
@@ -428,7 +428,7 @@ export default function PreInspectionChecklist({
               }
             }}
             aria-label="Select vehicle model"
-            className="max-w-[260px] truncate font-sans text-xs font-medium rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-3 py-1.5 text-ink dark:text-zinc-100 focus:outline-none focus:border-primary-600 shadow-sm"
+            className="w-full sm:max-w-[260px] min-h-[44px] sm:min-h-0 truncate font-sans text-base sm:text-xs font-medium rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-3 py-2 sm:py-1.5 text-ink dark:text-zinc-100 focus:outline-none focus:border-primary-600 shadow-sm"
           >
             {VEHICLE_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>
@@ -438,12 +438,12 @@ export default function PreInspectionChecklist({
           </select>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
             <label htmlFor="ppi-asking-price" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
               Asking Price:
             </label>
-            <div className="flex items-center rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1">
+            <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
               <span className="text-xs font-mono text-muted mr-1">{currencySymbol}</span>
               <input
                 id="ppi-asking-price"
@@ -455,16 +455,16 @@ export default function PreInspectionChecklist({
                 onChange={(e) =>
                   setAskingPriceUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
                 }
-                className="w-20 text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
+                className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
             <label htmlFor="ppi-odometer-input" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
               Odometer:
             </label>
-            <div className="flex items-center rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1">
+            <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
               <input
                 id="ppi-odometer-input"
                 type="number"
@@ -475,7 +475,7 @@ export default function PreInspectionChecklist({
                 onChange={(e) =>
                   setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
                 }
-                className="w-20 text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
+                className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
               />
               <span className="text-xs font-sans text-muted ml-1">{distanceUnit}</span>
             </div>
@@ -665,7 +665,7 @@ export default function PreInspectionChecklist({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="rounded-xl bg-surface dark:bg-[#121215] p-3 border border-border dark:border-zinc-800 print:border-gray-400">
             <span className="block text-[10px] font-sans font-medium uppercase text-muted print:text-gray-600">
               Seller Asking Price

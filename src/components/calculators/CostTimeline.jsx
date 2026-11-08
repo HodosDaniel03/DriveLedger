@@ -67,9 +67,9 @@ export default function CostTimeline({
       : DEFAULT_CATEGORIES;
 
   return (
-    <Card className={`rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-5 sm:p-6 ${className}`} aria-labelledby="timeline-heading">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <Card className={`rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 overflow-hidden ${className}`} aria-labelledby="timeline-heading">
+      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 min-w-0">
+        <div className="min-w-0">
           <span className="font-micro text-micro uppercase tracking-widest text-[#183D22] font-semibold block">
             Lifecycle trajectory
           </span>
@@ -78,7 +78,7 @@ export default function CostTimeline({
           </h2>
           <p className="mt-0.5 text-xs sm:text-sm text-muted">Cumulative cost of ownership, year by year.</p>
         </div>
-        <dl className="flex gap-6 text-right" aria-live="polite">
+        <dl className="flex gap-6 text-left sm:text-right" aria-live="polite">
           <div>
             <dt className="text-xs text-muted">After year {active.year}</dt>
             <dd className="text-xl font-bold tabular-nums tracking-tight text-ink font-code">
@@ -96,7 +96,7 @@ export default function CostTimeline({
 
       {/* 10-Year Interactive Stacked Bar Chart */}
       <div
-        className="mt-10 flex h-60 sm:h-64 items-end gap-1.5 sm:gap-3 relative"
+        className="mt-8 sm:mt-10 flex h-56 sm:h-64 items-end gap-1 sm:gap-3 relative min-w-0"
         role="img"
         aria-label={`Cumulative cost chart. After 10 years: ${formatCurrency(maxTotal)}.`}
         onMouseLeave={() => {
@@ -111,11 +111,11 @@ export default function CostTimeline({
           const isBarHighlighted = isActive || isPinned;
           const heightPct = Math.min(100, Math.max(12, Math.round((p.total / maxTotal) * 100)));
 
-          // Horizontal tooltip clamping: left-aligned for Y1-Y2, right-aligned for Y9-Y10, centered for Y3-Y8
+          // Horizontal tooltip clamping: left-aligned for Y1-Y3, right-aligned for Y8-Y10, centered for Y4-Y7
           let alignmentClass = 'left-1/2 -translate-x-1/2';
-          if (p.year <= 2) {
+          if (p.year <= 3) {
             alignmentClass = 'left-0';
-          } else if (p.year >= 9) {
+          } else if (p.year >= 8) {
             alignmentClass = 'right-0';
           }
 
@@ -140,7 +140,7 @@ export default function CostTimeline({
               onFocus={() => setHoveredYear(p.year)}
               onBlur={() => setHoveredYear(null)}
               onMouseEnter={() => setHoveredYear(p.year)}
-              className="relative flex h-full flex-1 flex-col items-center justify-end gap-2 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
+              className="relative flex h-full flex-1 min-w-0 flex-col items-center justify-end gap-1.5 sm:gap-2 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
             >
               {/* Stacked Bar Container */}
               <div
@@ -150,7 +150,7 @@ export default function CostTimeline({
                 {/* Rich Floating Tooltip Card */}
                 {isActive && showTooltip && (
                   <div
-                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-56 sm:w-64 rounded-xl border border-border/80 bg-surface/98 backdrop-blur-md p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
+                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-52 sm:w-64 max-w-[calc(100vw-3rem)] rounded-xl border border-border/80 bg-surface/98 backdrop-blur-md p-2.5 sm:p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
                     role="tooltip"
                     aria-hidden="false"
                   >
@@ -241,7 +241,7 @@ export default function CostTimeline({
 
               {/* Year Label */}
               <span
-                className={`text-xs tabular-nums font-code transition-colors ${
+                className={`text-[10px] sm:text-xs tabular-nums font-code transition-colors ${
                   isCurrentSelected
                     ? 'font-bold text-ink underline decoration-primary-600 decoration-2'
                     : isPinned
@@ -257,7 +257,7 @@ export default function CostTimeline({
       </div>
 
       {/* 5-Category Synchronized Interactive Legend */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-body pt-3 border-t border-border">
+      <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-x-5 gap-y-1.5 text-xs text-body pt-3 border-t border-border min-w-0">
         {categories.map((cat) => {
           const isCategoryDimmed = activeHighlight !== null && activeHighlight !== cat.id;
           const isCategoryHighlighted = activeHighlight === cat.id;
@@ -269,12 +269,13 @@ export default function CostTimeline({
               onMouseLeave={() => handleHighlight(null)}
               onFocus={() => handleHighlight(cat.id)}
               onBlur={() => handleHighlight(null)}
-              className={`flex items-center gap-1.5 min-w-0 font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-0.5 -mx-1.5 ${
+              title={cat.label}
+              className={`flex items-center gap-2 min-w-0 max-w-full font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-1 -mx-1.5 ${
                 isCategoryDimmed ? 'opacity-25' : 'opacity-100'
               } ${isCategoryHighlighted ? 'bg-surface-subtle font-semibold scale-105' : 'text-body hover:text-ink'}`}
             >
               <span
-                className="w-2.5 h-2.5 rounded-sm shrink-0 transition-transform duration-200"
+                className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform duration-200"
                 style={{ backgroundColor: cat.color }}
                 aria-hidden="true"
               />

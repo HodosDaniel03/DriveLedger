@@ -426,8 +426,8 @@ export default function VehicleComparator({
 
   // SVG Chart Dimensions & Scales
   const svgWidth = 620;
-  const svgHeight = 220;
-  const padding = { top: 25, right: 30, bottom: 35, left: 55 };
+  const svgHeight = 230;
+  const padding = { top: 28, right: 24, bottom: 34, left: 24 };
   const graphWidth = svgWidth - padding.left - padding.right;
   const graphHeight = svgHeight - padding.top - padding.bottom;
 
@@ -453,8 +453,10 @@ export default function VehicleComparator({
     .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.distMiles).toFixed(1)} ${getY(p.costB).toFixed(1)}`)
     .join(' ');
 
-  // User current 5-year point X coordinate
+  // User current 5-year point X coordinate (clamped to stays inside plot area)
   const userX = getX(Math.min(maxDist, breakEvenTrajectory.user5YrMiles));
+  const userLabelAnchor = userX > svgWidth * 0.6 ? 'end' : userX < svgWidth * 0.4 ? 'start' : 'middle';
+  const userLabelX = Math.max(padding.left + 4, Math.min(svgWidth - padding.right - 4, userX));
 
   // Break-even X coordinate if crossover exists
   const crossX = breakEvenTrajectory.breakEvenMiles ? getX(Math.min(maxDist, breakEvenTrajectory.breakEvenMiles)) : null;
@@ -563,10 +565,10 @@ export default function VehicleComparator({
       {/* Dual Vehicle Studio Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Vehicle A */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-5 flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-              <Pill tone="neutral" className="shrink-0">
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4 sm:p-5 flex flex-col justify-between min-w-0 overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+              <Pill tone="neutral" className="shrink-0 self-start sm:self-auto">
                 VEHICLE A (Current)
               </Pill>
               <select
@@ -578,7 +580,7 @@ export default function VehicleComparator({
                   if (onApplyPreset) onApplyPreset(e.target.value);
                 }}
                 aria-label="Select primary vehicle"
-                className="min-w-0 flex-1 max-w-[240px] truncate text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
+                className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
               >
                 {VEHICLE_PRESETS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -590,14 +592,14 @@ export default function VehicleComparator({
             <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleA.name}>
               {vehicleA.name}
             </h3>
-            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">
+            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
               Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceA)}</span> · {vehicleA.powerHp ? `${vehicleA.powerHp} HP` : ''} · {vehicleA.engineCode}
             </p>
 
             {/* Inline Listing Price & Odometer Overrides for Vehicle A */}
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
-              <label className="flex items-center justify-between gap-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-[11px] font-sans font-medium">
-                <span className="text-muted dark:text-zinc-400">Price ({currencySymbol})</span>
+            <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
                 <input
                   data-testid="comparator-price-a"
                   type="number"
@@ -609,11 +611,11 @@ export default function VehicleComparator({
                     if (e.target.value === '') return;
                     setCustomPriceAUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
                   }}
-                  className="w-20 text-right bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
                 />
               </label>
-              <label className="flex items-center justify-between gap-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-[11px] font-sans font-medium">
-                <span className="text-muted dark:text-zinc-400">Odo ({distanceUnit})</span>
+              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
                 <input
                   data-testid="comparator-odo-a"
                   type="number"
@@ -625,7 +627,7 @@ export default function VehicleComparator({
                     if (e.target.value === '') return;
                     setCustomOdoAMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
                   }}
-                  className="w-20 text-right bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
                 />
               </label>
             </div>
@@ -635,7 +637,7 @@ export default function VehicleComparator({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+          <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3 min-w-0">
             <div>
               <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
               <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
@@ -647,23 +649,24 @@ export default function VehicleComparator({
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800/80">
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Reliability</span>
-                <span className="mt-0.5 block text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800/80 items-stretch">
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
+                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
                   {riskA.reliabilityScore}/100
                 </span>
               </div>
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Service Risk</span>
-                <span className="mt-0.5 block text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
+                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
                   {formatCurrency(riskA.serviceReserveUsd)}
                 </span>
               </div>
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Known Flaws</span>
-                <span className="mt-0.5 block text-xs font-bold font-sans text-ink dark:text-zinc-50">
-                  <span className="font-mono tabular-nums">{knownIssuesA.length}</span> documented
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
+                <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                  <span>{knownIssuesA.length}</span>
+                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
                 </span>
               </div>
             </div>
@@ -671,17 +674,17 @@ export default function VehicleComparator({
         </div>
 
         {/* Vehicle B */}
-        <div className="rounded-xl border-2 border-primary-600/30 dark:border-primary-500/40 bg-primary-50/20 dark:bg-zinc-900/80 p-5 flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-              <Pill tone="brand" className="shrink-0">
+        <div className="rounded-xl border-2 border-primary-600/30 dark:border-primary-500/40 bg-primary-50/20 dark:bg-zinc-900/80 p-4 sm:p-5 flex flex-col justify-between min-w-0 overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+              <Pill tone="brand" className="shrink-0 self-start sm:self-auto">
                 VEHICLE B (Counterpart)
               </Pill>
               <select
                 value={vehicleBId}
                 onChange={(e) => updateVehicleB(e.target.value)}
                 aria-label="Select comparison vehicle"
-                className="min-w-0 flex-1 max-w-[240px] truncate text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
+                className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
               >
                 {VEHICLE_PRESETS.filter((p) => p.id !== activePresetAId).map((p) => (
                   <option key={p.id} value={p.id}>
@@ -693,14 +696,14 @@ export default function VehicleComparator({
             <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleB.name}>
               {vehicleB.name}
             </h3>
-            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">
+            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
               Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceB)}</span> · {vehicleB.powerHp ? `${vehicleB.powerHp} HP` : ''} · {vehicleB.engineCode}
             </p>
 
             {/* Inline Listing Price & Odometer Overrides for Vehicle B */}
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
-              <label className="flex items-center justify-between gap-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-[11px] font-sans font-medium">
-                <span className="text-muted dark:text-zinc-400">Price ({currencySymbol})</span>
+            <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
                 <input
                   data-testid="comparator-price-b"
                   type="number"
@@ -712,11 +715,11 @@ export default function VehicleComparator({
                     if (e.target.value === '') return;
                     setCustomPriceBUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
                   }}
-                  className="w-20 text-right bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
                 />
               </label>
-              <label className="flex items-center justify-between gap-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-1 text-[11px] font-sans font-medium">
-                <span className="text-muted dark:text-zinc-400">Odo ({distanceUnit})</span>
+              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
                 <input
                   data-testid="comparator-odo-b"
                   type="number"
@@ -728,7 +731,7 @@ export default function VehicleComparator({
                     if (e.target.value === '') return;
                     setCustomOdoBMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
                   }}
-                  className="w-20 text-right bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
                 />
               </label>
             </div>
@@ -738,7 +741,7 @@ export default function VehicleComparator({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-primary-100 dark:border-zinc-800 space-y-3">
+          <div className="mt-4 pt-3 border-t border-primary-100 dark:border-zinc-800 space-y-3 min-w-0">
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
@@ -763,23 +766,24 @@ export default function VehicleComparator({
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-primary-100/80 dark:border-zinc-800/80">
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Reliability</span>
-                <span className="mt-0.5 block text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-primary-100/80 dark:border-zinc-800/80 items-stretch">
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
+                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
                   {riskB.reliabilityScore}/100
                 </span>
               </div>
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Service Risk</span>
-                <span className="mt-0.5 block text-sm font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
+                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
                   {formatCurrency(riskB.serviceReserveUsd)}
                 </span>
               </div>
-              <div className="rounded-lg bg-white dark:bg-[#121215] p-2 border border-zinc-200 dark:border-zinc-800">
-                <span className="block text-[10px] font-sans font-medium text-muted dark:text-zinc-400">Known Flaws</span>
-                <span className="mt-0.5 block text-xs font-bold font-sans text-ink dark:text-zinc-50">
-                  <span className="font-mono tabular-nums">{knownIssuesB.length}</span> documented
+              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
+                <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                  <span>{knownIssuesB.length}</span>
+                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
                 </span>
               </div>
             </div>
@@ -788,11 +792,11 @@ export default function VehicleComparator({
       </div>
 
       {/* Break-Even Crossover Interactive SVG Graph */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-          <div>
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <TrendingDown className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
               <h3 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
                 5-Year Break-Even Crossover Trajectory
               </h3>
@@ -802,27 +806,32 @@ export default function VehicleComparator({
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-sans font-medium">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-blue-500 inline-block" />
-              <span className="text-muted dark:text-zinc-400">{vehicleA.name}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 text-xs font-sans font-medium min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shrink-0" />
+              <span className="text-muted dark:text-zinc-400 truncate" title={vehicleA.name}>{vehicleA.name}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
-              <span className="text-muted dark:text-zinc-400">{vehicleB.name}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shrink-0" />
+              <span className="text-muted dark:text-zinc-400 truncate" title={vehicleB.name}>{vehicleB.name}</span>
             </div>
           </div>
         </div>
 
         {/* Responsive SVG Chart */}
-        <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-hidden">
           <svg
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            className="w-full h-auto min-w-[540px] text-xs font-sans select-none"
+            width="100%"
+            preserveAspectRatio="xMidYMid meet"
+            className="w-full h-[220px] sm:h-[250px] text-xs font-sans select-none block"
           >
             {/* Grid lines and X labels */}
-            {points.map((p) => {
+            {points.map((p, idx) => {
               const x = getX(p.distMiles);
+              const isFirst = idx === 0;
+              const isLast = idx === points.length - 1;
+              const showMobileTick = idx % 2 === 0 || isLast;
               return (
                 <g key={p.distMiles}>
                   <line
@@ -836,10 +845,12 @@ export default function VehicleComparator({
                   />
                   <text
                     x={x}
-                    y={svgHeight - 10}
-                    textAnchor="middle"
+                    y={svgHeight - 8}
+                    textAnchor={isFirst ? 'start' : isLast ? 'end' : 'middle'}
                     fill="currentColor"
-                    className="text-muted dark:text-zinc-400 text-[10px] font-mono tabular-nums"
+                    className={`text-muted dark:text-zinc-400 text-[11px] sm:text-[10px] font-mono tabular-nums ${
+                      showMobileTick ? '' : 'hidden sm:inline'
+                    }`}
                   >
                     {region === 'EU' ? `${Math.round(p.distKm / 1000)}k km` : `${Math.round(p.distMiles / 1000)}k mi`}
                   </text>
@@ -858,11 +869,11 @@ export default function VehicleComparator({
               strokeDasharray="4,4"
             />
             <text
-              x={userX}
+              x={userLabelX}
               y={padding.top - 8}
-              textAnchor="middle"
+              textAnchor={userLabelAnchor}
               fill="#D97706"
-              className="font-bold text-[10px] font-sans"
+              className="font-bold text-[11px] sm:text-[10px] font-sans"
             >
               Your 5-Year Distance ({formatDistance(breakEvenTrajectory.user5YrMiles)})
             </text>
@@ -934,11 +945,11 @@ export default function VehicleComparator({
       </div>
 
       {/* Side-by-Side Known Issues at Current Mileage */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-5 space-y-4">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
               <h3 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
                 Known Vulnerabilities at <span className="font-mono tabular-nums">{formatDistance(odoA)}</span>
               </h3>
@@ -972,13 +983,13 @@ export default function VehicleComparator({
                 return (
                   <div
                     key={issue.id}
-                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors ${
+                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors min-w-0 ${
                       isActive
                         ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/50'
                         : 'bg-white dark:bg-[#121215] border-zinc-200 dark:border-zinc-800'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex flex-wrap items-center justify-between gap-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="font-sans font-bold text-ink dark:text-zinc-50 truncate">{issue.name}</span>
                         {isActive && (
@@ -991,12 +1002,12 @@ export default function VehicleComparator({
                         {issue.criticalMileage?.display}
                       </span>
                     </div>
-                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans">
+                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
                       {issue.symptoms}
                     </p>
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
+                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
                       <span>Repair: <strong className="font-mono tabular-nums">{issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</strong></span>
-                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold">{issue.prevention.slice(0, 45)}...</span>
+                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
                     </div>
                   </div>
                 );
@@ -1023,13 +1034,13 @@ export default function VehicleComparator({
                 return (
                   <div
                     key={issue.id}
-                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors ${
+                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors min-w-0 ${
                       isActive
                         ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/50'
                         : 'bg-white dark:bg-[#121215] border-zinc-200 dark:border-zinc-800'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex flex-wrap items-center justify-between gap-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="font-sans font-bold text-ink dark:text-zinc-50 truncate">{issue.name}</span>
                         {isActive && (
@@ -1042,12 +1053,12 @@ export default function VehicleComparator({
                         {issue.criticalMileage?.display}
                       </span>
                     </div>
-                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans">
+                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
                       {issue.symptoms}
                     </p>
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
+                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
                       <span>Repair: <strong className="font-mono tabular-nums">{issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</strong></span>
-                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold">{issue.prevention.slice(0, 45)}...</span>
+                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
                     </div>
                   </div>
                 );
@@ -1058,7 +1069,7 @@ export default function VehicleComparator({
       </div>
 
       {/* Side-by-Side Detailed Financial Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <table className="w-full min-w-[560px] text-left text-sm border-collapse">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-xs font-sans font-semibold text-muted dark:text-zinc-400">

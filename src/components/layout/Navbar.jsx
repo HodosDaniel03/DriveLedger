@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, ChevronDown, Calculator, ShieldAlert, Cpu, Gauge, Sun, Moon, Car, GitCompare, CheckCircle2, BookOpen, MessageSquare, FileText, Search } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -40,6 +40,10 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
   const [garageDropdownOpen, setGarageDropdownOpen] = useState(false);
   const [vehicleSwitcherOpen, setVehicleSwitcherOpen] = useState(false);
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
+  const [drawerVehicleExpanded, setDrawerVehicleExpanded] = useState(false);
+
+  const drawerRef = useRef(null);
+  const mobileTabRefs = useRef({});
 
   const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
   const filteredNavbarPresets = useMemo(() => {
@@ -57,6 +61,75 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
   const savedVehicles = garage?.savedVehicles || [];
   const isSecondaryActive = SECONDARY_WORKSPACE_TABS.some((t) => t.id === activeTab);
   const activeSecondaryTab = SECONDARY_WORKSPACE_TABS.find((t) => t.id === activeTab);
+
+  // Close mobile drawer when activeTab changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [activeTab]);
+
+  // Scroll active mobile quick-tab into center view
+  useEffect(() => {
+    const btn = mobileTabRefs.current?.[activeTab];
+    if (btn && typeof btn.scrollIntoView === 'function') {
+      try {
+        btn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      } catch (_err) {
+        // Ignore in headless/mock DOM environments
+      }
+    }
+  }, [activeTab]);
+
+  // Body scroll lock & Focus trap / Escape key for mobile drawer
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      if (typeof document !== 'undefined' && document.body && document.body.style) {
+        document.body.style.overflow = '';
+      }
+      return undefined;
+    }
+
+    if (typeof document !== 'undefined' && document.body && document.body.style) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    const handleDrawerKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+        return;
+      }
+      if (e.key === 'Tab' && drawerRef.current && typeof drawerRef.current.querySelectorAll === 'function') {
+        try {
+          const focusables = drawerRef.current.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (!focusables || focusables.length === 0) return;
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus?.();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus?.();
+          }
+        } catch (_err) {
+          // Ignore in mock DOM
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('keydown', handleDrawerKeyDown);
+    }
+    return () => {
+      if (typeof document !== 'undefined' && document.body && document.body.style) {
+        document.body.style.overflow = '';
+      }
+      if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+        window.removeEventListener('keydown', handleDrawerKeyDown);
+      }
+    };
+  }, [mobileMenuOpen]);
 
   // Close popovers on outside click or Escape key
   useEffect(() => {
@@ -100,23 +173,23 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
   }, [garageDropdownOpen, moreDropdownOpen, vehicleSwitcherOpen]);
 
   return (
-    <header className="sticky top-0 left-0 right-0 z-40 border-b border-zinc-200 bg-[#F7F7F4]/95 backdrop-blur-md dark:bg-zinc-950/95 dark:border-zinc-800 transition-colors">
-      {/* Main Horizontal Row (Locked h-16 / 64px, whitespace-nowrap) */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 whitespace-nowrap">
-        {/* Left: Brand Logo & Wordmark */}
+    <header className="sticky top-0 left-0 right-0 z-40 w-full max-w-full border-b border-zinc-200 bg-[#F7F7F4]/95 backdrop-blur-md dark:bg-zinc-950/95 dark:border-zinc-800 transition-colors safe-area-x">
+      {/* Main Horizontal Row: h-14 on mobile, h-16 on desktop, no outer whitespace-nowrap */}
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-14 lg:h-16 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+        {/* Left: Brand Logo & Wordmark (wordmark hidden below 350px to guarantee room on 320px screens) */}
         <a
           href="#top"
           onClick={(e) => {
             e.preventDefault();
             onSelectTab('overview');
           }}
-          className="flex items-center gap-2.5 text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
+          className="min-h-[44px] flex items-center gap-2 sm:gap-2.5 text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
           aria-label="DriveLedger home"
         >
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white transition-transform duration-200 group-hover:scale-105 shadow-xs">
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white transition-transform duration-200 group-hover:scale-105 shadow-xs shrink-0">
             <Gauge className="w-4 h-4 text-white" />
           </span>
-          <span className="font-sans font-bold text-base sm:text-lg tracking-tight text-ink dark:text-zinc-50">
+          <span className="hidden min-[360px]:inline font-sans font-bold text-base sm:text-lg tracking-tight text-ink dark:text-zinc-50 truncate">
             DriveLedger
           </span>
         </a>
@@ -214,13 +287,13 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
           </div>
         </nav>
 
-        {/* Right Controls: Compact Unit Switcher, My Garage Badge, Theme Toggle, Mobile Hamburger */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Segmented Region Switcher (US · UK · EU) */}
+        {/* Right Controls: Mobile shows compact vehicle selector + hamburger; Desktop shows full bar */}
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 flex-1 lg:flex-initial">
+          {/* Desktop Segmented Region Switcher (US · UK · EU) - hidden on mobile (in drawer instead) */}
           <div
             role="radiogroup"
             aria-label="Units and currency"
-            className="flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 shadow-xs dark:bg-zinc-900 dark:border-zinc-800"
+            className="hidden lg:flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 shadow-xs dark:bg-zinc-900 dark:border-zinc-800"
           >
             {REGION_OPTIONS.map((r) => {
               const isActive = r.id === region;
@@ -246,8 +319,8 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             })}
           </div>
 
-          {/* Global Active Vehicle Quick-Switcher Pill & Popover */}
-          <div id="navbar-vehicle-switcher-container" className="relative">
+          {/* Global Active Vehicle Quick-Switcher Pill & Popover (compact on mobile, 44px touch target) */}
+          <div id="navbar-vehicle-switcher-container" className="relative min-w-0 shrink">
             <button
               type="button"
               data-testid="navbar-active-vehicle-picker"
@@ -259,22 +332,22 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                 setGarageDropdownOpen(false);
                 setMoreDropdownOpen(false);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-200/90 bg-emerald-50/70 text-[#183D22] font-sans text-xs font-semibold hover:bg-emerald-100/80 transition-colors duration-150 shadow-xs dark:bg-emerald-950/35 dark:border-emerald-800/50 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+              className="min-h-[44px] lg:min-h-0 inline-flex items-center gap-1.5 px-2.5 py-2 lg:py-1 rounded-lg border border-emerald-200/90 bg-emerald-50/70 text-[#183D22] font-sans text-xs font-semibold hover:bg-emerald-100/80 transition-colors duration-150 shadow-xs dark:bg-emerald-950/35 dark:border-emerald-800/50 dark:text-emerald-300 dark:hover:bg-emerald-950/60 min-w-0 max-w-full"
             >
-              <Car className="w-3.5 h-3.5 text-[#183D22] dark:text-emerald-400 shrink-0" />
-              <span className="max-w-[115px] sm:max-w-[155px] truncate">
+              <Car className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-[#183D22] dark:text-emerald-400 shrink-0" />
+              <span className="min-w-0 max-w-[95px] min-[390px]:max-w-[110px] min-[420px]:max-w-[135px] sm:max-w-[160px] truncate">
                 {activePreset.shortName || activePreset.name}
               </span>
-              <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${vehicleSwitcherOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 lg:w-3 lg:h-3 shrink-0 transition-transform duration-150 ${vehicleSwitcherOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {vehicleSwitcherOpen && (
               <div
                 role="dialog"
                 aria-label="Global Active Vehicle Switcher"
-                className="absolute top-full right-0 mt-2.5 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3.5 z-50 animate-fade-in whitespace-normal"
+                className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 max-h-[80dvh] flex flex-col rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3.5 z-50 animate-fade-in whitespace-normal"
               >
-                <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
                   <div className="min-w-0">
                     <span className="font-sans text-[11px] uppercase tracking-wider font-bold text-muted dark:text-zinc-400 block">
                       Active Vehicle Context
@@ -288,24 +361,24 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   </span>
                 </div>
 
-                {/* Quick Search Input */}
+                {/* Quick Search Input (16px on mobile to prevent iOS auto-zoom) */}
                 <div className="relative mt-2.5">
-                  <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={vehicleSearchQuery}
                     onChange={(e) => setVehicleSearchQuery(e.target.value)}
                     placeholder="Quick switch model (e.g. Golf, BMW, Tesla)..."
-                    className="w-full h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 pl-8 pr-7 text-xs font-sans text-ink dark:text-zinc-100 placeholder:text-faint focus:border-[#183D22] dark:focus:border-emerald-500 outline-none"
+                    className="w-full h-11 sm:h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 pl-9 pr-8 text-base sm:text-xs font-sans text-ink dark:text-zinc-100 placeholder:text-faint focus:border-[#183D22] dark:focus:border-emerald-500 outline-none"
                   />
                   {vehicleSearchQuery && (
                     <button
                       type="button"
                       onClick={() => setVehicleSearchQuery('')}
                       aria-label="Clear search"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted hover:text-ink"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-ink"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
                 </div>
@@ -323,7 +396,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                             setVehicleSwitcherOpen(false);
                             setVehicleSearchQuery('');
                           }}
-                          className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left text-xs transition-colors ${
+                          className={`w-full min-h-[44px] flex items-center justify-between gap-2 p-2 rounded-xl text-left text-xs transition-colors ${
                             isCurrent
                               ? 'bg-emerald-50/80 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50 font-semibold text-[#183D22] dark:text-emerald-300'
                               : 'hover:bg-zinc-100 dark:hover:bg-zinc-900 text-ink dark:text-zinc-200'
@@ -345,14 +418,14 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                 </ul>
 
                 {/* Quick Jump Links for Active Car */}
-                <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-1.5 text-[11px] font-sans">
+                <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-1.5 text-xs sm:text-[11px] font-sans">
                   <button
                     type="button"
                     onClick={() => {
                       onSelectTab('tco');
                       setVehicleSwitcherOpen(false);
                     }}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
                   >
                     5-Yr TCO
                   </button>
@@ -362,7 +435,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                       onSelectTab('risk');
                       setVehicleSwitcherOpen(false);
                     }}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
                   >
                     Wear &amp; Risk
                   </button>
@@ -372,7 +445,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                       onSelectTab('compare');
                       setVehicleSwitcherOpen(false);
                     }}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
+                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
                   >
                     Compare
                   </button>
@@ -381,8 +454,8 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             )}
           </div>
 
-          {/* Compact My Garage Button */}
-          <div id="garage-dropdown-container" className="relative">
+          {/* Desktop Compact My Garage Button - hidden on mobile (in drawer instead) */}
+          <div id="garage-dropdown-container" className="hidden lg:block relative">
             <button
               type="button"
               aria-haspopup="true"
@@ -511,11 +584,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             )}
           </div>
 
-          {/* Compact Theme Toggle */}
+          {/* Desktop Compact Theme Toggle - hidden on mobile (in drawer instead) */}
           <div
             role="group"
             aria-label="Theme mode"
-            className="flex items-center p-0.5 rounded-lg border border-zinc-200 bg-white shadow-xs dark:bg-zinc-900 dark:border-zinc-800"
+            className="hidden lg:flex items-center p-0.5 rounded-lg border border-zinc-200 bg-white shadow-xs dark:bg-zinc-900 dark:border-zinc-800"
           >
             <button
               type="button"
@@ -545,13 +618,15 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             </button>
           </div>
 
-          {/* Mobile & Tablet (< 1024px) Hamburger Menu Button */}
+          {/* Mobile & Tablet (< 1024px) Hamburger Menu Button (min 44x44px touch target) */}
           <button
             type="button"
+            data-testid="navbar-mobile-menu-toggle"
             onClick={() => setMobileMenuOpen((o) => !o)}
-            className="lg:hidden p-1.5 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg focus:outline-none border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+            className="lg:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-100 rounded-lg focus:outline-none border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav-drawer"
           >
             {mobileMenuOpen ? (
               <X className="w-5 h-5" />
@@ -564,25 +639,28 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
         </div>
       </div>
 
-      {/* Tablet & Mobile (< 1024px) Horizontally Scrollable Quick-Tab Bar */}
-      <div
-        data-testid="navbar-mobile-quick-tabs"
-        className="lg:hidden border-t border-zinc-200/80 dark:border-zinc-800/80 bg-[#F7F7F4] dark:bg-zinc-950 px-4 py-1.5 overflow-x-auto no-scrollbar"
-      >
-        <div className="flex items-center gap-1.5 whitespace-nowrap">
+      {/* Tablet & Mobile (< 1024px) Contained Horizontally Scrollable Quick-Tab Pill Bar */}
+      <div className="relative lg:hidden border-t border-zinc-200/80 dark:border-zinc-800/80 bg-[#F7F7F4] dark:bg-zinc-950 w-full max-w-full overflow-hidden">
+        <div
+          data-testid="navbar-mobile-quick-tabs"
+          className="w-full px-4 pr-10 py-1.5 overflow-x-auto no-scrollbar snap-x snap-mandatory flex items-center gap-2"
+        >
           {PRIMARY_WORKSPACE_TABS.map((t) => {
             const active = t.id === activeTab;
             return (
               <button
                 key={`mobile-quick-${t.id}`}
+                ref={(el) => {
+                  if (el) mobileTabRefs.current[t.id] = el;
+                }}
                 type="button"
                 onClick={() => {
                   onSelectTab(t.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`px-3 py-1 rounded-lg font-sans text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+                className={`snap-start min-h-[38px] px-3.5 py-1.5 rounded-lg font-sans text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
                   active
-                    ? 'bg-[#183D22] text-white font-semibold dark:bg-emerald-600'
+                    ? 'bg-[#183D22] text-white font-semibold dark:bg-emerald-600 shadow-2xs'
                     : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-800'
                 }`}
               >
@@ -591,22 +669,113 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             );
           })}
         </div>
+        {/* Right-edge fade gradient to indicate horizontal scrollability */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#F7F7F4] via-[#F7F7F4]/80 to-transparent dark:from-zinc-950 dark:via-zinc-950/80"
+        />
       </div>
 
-      {/* Tablet & Mobile (< 1024px) Slide-Over Drawer / Sheet */}
+      {/* Tablet & Mobile (< 1024px) Full-Height Slide-In Drawer */}
       {mobileMenuOpen && (
         <div
+          id="mobile-nav-drawer"
           onClick={(e) => {
             if (e.target === e.currentTarget) setMobileMenuOpen(false);
           }}
-          className="lg:hidden absolute top-full left-0 right-0 h-[calc(100vh-6.25rem)] z-50 flex justify-end bg-black/40 backdrop-blur-xs animate-fade-in"
+          className="lg:hidden fixed inset-0 top-0 left-0 right-0 bottom-0 h-[100dvh] z-50 flex justify-end bg-black/50 backdrop-blur-xs animate-fade-in"
         >
           <div
+            ref={drawerRef}
             role="dialog"
+            aria-modal="true"
             aria-label="Mobile Navigation Drawer"
-            className="w-full max-w-sm bg-white dark:bg-[#121215] border-l border-zinc-200 dark:border-zinc-800 h-full overflow-y-auto p-5 flex flex-col justify-between shadow-2xl"
+            className="w-full max-w-sm bg-white dark:bg-[#121215] border-l border-zinc-200 dark:border-zinc-800 h-full overflow-y-auto p-4 sm:p-5 flex flex-col justify-between shadow-2xl safe-area-bottom"
           >
             <div className="space-y-5">
+              {/* Drawer Top Bar */}
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white shrink-0">
+                    <Gauge className="w-4 h-4 text-white" />
+                  </span>
+                  <div className="min-w-0">
+                    <span className="font-sans font-bold text-base text-ink dark:text-zinc-50 block truncate">
+                      DriveLedger
+                    </span>
+                    <span className="font-sans text-[11px] text-muted dark:text-zinc-400 block truncate">
+                      Navigation &amp; Preferences
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="mobile-drawer-close"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Close navigation menu"
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Active Vehicle Selector inside Drawer */}
+              <div className="rounded-xl border border-emerald-200/80 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-950/25 p-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-[#183D22] dark:text-emerald-400 block">
+                      Active Vehicle
+                    </span>
+                    <span className="text-xs font-sans font-bold text-ink dark:text-zinc-50 truncate block">
+                      {activePreset.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDrawerVehicleExpanded((prev) => !prev)}
+                    className="min-h-[38px] px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800/60 text-xs font-sans font-semibold text-[#183D22] dark:text-emerald-300 shrink-0"
+                  >
+                    {drawerVehicleExpanded ? 'Done' : 'Switch Car'}
+                  </button>
+                </div>
+
+                {drawerVehicleExpanded && (
+                  <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40 space-y-2">
+                    <input
+                      type="text"
+                      value={vehicleSearchQuery}
+                      onChange={(e) => setVehicleSearchQuery(e.target.value)}
+                      placeholder="Filter models (e.g. Golf, Camry, Model 3)..."
+                      className="w-full h-11 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-base font-sans text-ink dark:text-zinc-100 outline-none"
+                    />
+                    <div className="max-h-44 overflow-y-auto space-y-1">
+                      {filteredNavbarPresets.map((p) => (
+                        <button
+                          key={`drawer-preset-${p.id}`}
+                          type="button"
+                          onClick={() => {
+                            if (onSelectPreset) onSelectPreset(p.id);
+                            setDrawerVehicleExpanded(false);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full min-h-[44px] flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs font-sans ${
+                            p.id === selectedPresetId
+                              ? 'bg-[#183D22] text-white font-semibold dark:bg-emerald-600'
+                              : 'bg-white/80 dark:bg-zinc-900/80 text-ink dark:text-zinc-200 hover:bg-white'
+                          }`}
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <span className="font-mono tabular-nums text-[11px] shrink-0">
+                            {formatCurrency ? formatCurrency(p.purchasePriceUsd) : `$${p.purchasePriceUsd}`}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Primary Calculators */}
               <div>
                 <span className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold block mb-2">
                   Primary Calculators
@@ -623,7 +792,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                           onSelectTab(t.id);
                           setMobileMenuOpen(false);
                         }}
-                        className={`flex items-center gap-3 text-left py-2.5 px-3 rounded-xl font-sans text-sm font-medium transition-colors duration-150 ${
+                        className={`min-h-[48px] flex items-center gap-3 text-left py-2.5 px-3 rounded-xl font-sans text-sm font-medium transition-colors duration-150 ${
                           active
                             ? 'bg-emerald-50 text-[#183D22] dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold border border-emerald-200/80 dark:border-emerald-800/40'
                             : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900'
@@ -633,7 +802,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                         <div className="min-w-0">
                           <span className="block truncate">{t.label}</span>
                           {t.desc && (
-                            <span className="block text-[11px] font-normal text-zinc-500 dark:text-zinc-400 truncate">
+                            <span className="block text-xs font-normal text-zinc-500 dark:text-zinc-400 truncate">
                               {t.desc}
                             </span>
                           )}
@@ -644,9 +813,10 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                 </div>
               </div>
 
+              {/* Guides & Resources ("More" items) */}
               <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
                 <span className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold block mb-2">
-                  Guides &amp; Resources
+                  More Guides &amp; Resources
                 </span>
                 <div className="flex flex-col gap-1">
                   {SECONDARY_WORKSPACE_TABS.map((t) => {
@@ -660,7 +830,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                           onSelectTab(t.id);
                           setMobileMenuOpen(false);
                         }}
-                        className={`flex items-center gap-3 text-left py-2.5 px-3 rounded-xl font-sans text-sm font-medium transition-colors duration-150 ${
+                        className={`min-h-[44px] flex items-center gap-3 text-left py-2.5 px-3 rounded-xl font-sans text-sm font-medium transition-colors duration-150 ${
                           active
                             ? 'bg-emerald-50 text-[#183D22] dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold border border-emerald-200/80 dark:border-emerald-800/40'
                             : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900'
@@ -673,28 +843,95 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   })}
                 </div>
               </div>
-            </div>
 
-            <div className="pt-4 mt-6 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <span className="font-sans text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Region:</span>
-              <div className="flex items-center gap-1">
-                {REGION_OPTIONS.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => {
-                      setRegion(r.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`px-2.5 py-1 rounded-md font-sans text-xs font-semibold ${
-                      region === r.id
-                        ? 'bg-[#183D22] text-white dark:bg-emerald-600'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                    }`}
-                  >
-                    {r.flag} {r.label}
-                  </button>
-                ))}
+              {/* Full-Width US / UK / EU Segmented Unit Control */}
+              <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                <span className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold block">
+                  Units &amp; Currency Region
+                </span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {REGION_OPTIONS.map((r) => (
+                    <button
+                      key={`drawer-region-${r.id}`}
+                      type="button"
+                      onClick={() => setRegion(r.id)}
+                      className={`min-h-[44px] flex flex-col items-center justify-center px-2 py-1.5 rounded-xl font-sans text-xs font-semibold border transition-colors ${
+                        region === r.id
+                          ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <span>{r.flag} {r.label}</span>
+                      <span className={`text-[10px] font-normal ${region === r.id ? 'text-emerald-100' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                        {r.hint}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Full-Width Theme Toggle & My Garage Quick Access */}
+              <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-sans uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold">
+                    Display Theme
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 w-44">
+                    <button
+                      type="button"
+                      onClick={() => setTheme('light')}
+                      className={`min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold border ${
+                        theme === 'light'
+                          ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-zinc-800 dark:border-amber-500/60 dark:text-amber-300'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      <Sun className="w-4 h-4" />
+                      <span>Light</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTheme('dark')}
+                      className={`min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold border ${
+                        theme === 'dark'
+                          ? 'bg-zinc-800 border-emerald-500/60 text-emerald-400'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      <Moon className="w-4 h-4" />
+                      <span>Dark</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* My Garage in Mobile Drawer */}
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-xs font-sans font-bold text-ink dark:text-zinc-100 block">
+                      My Garage ({savedVehicles.length} saved)
+                    </span>
+                    <span className="text-[11px] font-sans text-muted dark:text-zinc-400 block truncate">
+                      Bookmark vehicles &amp; service logs
+                    </span>
+                  </div>
+                  {selectedPresetId && garage?.saveVehicleToGarage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const preset = getPresetById(selectedPresetId);
+                        garage.saveVehicleToGarage({
+                          presetId: preset.id,
+                          name: preset.name,
+                          odometerMiles: preset.defaultOdometerMiles,
+                          purchasePriceUsd: preset.purchasePriceUsd,
+                        });
+                      }}
+                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white text-xs font-sans font-semibold shrink-0"
+                    >
+                      + Save Car
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

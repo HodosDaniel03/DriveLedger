@@ -384,7 +384,7 @@ export default function MaintenanceRiskMatrix({
         />
 
         {/* Hero Card 2: Reliability Score Card */}
-        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-border/80 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
+        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-border/80 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -434,7 +434,7 @@ export default function MaintenanceRiskMatrix({
                 <RadialScoreGauge score={reliabilityScore} label="Reliability Score" size={144} />
               </div>
 
-              <div className="sm:col-span-7 flex flex-col justify-center">
+              <div className="sm:col-span-7 flex flex-col justify-center min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
                   <span className="font-micro text-micro font-semibold text-ink dark:text-zinc-200 uppercase tracking-wider">
                     What affected the score
@@ -632,7 +632,7 @@ export default function MaintenanceRiskMatrix({
       {/* 2. Workspace Split: 5 cols controls (left sticky), 7 cols wear timeline (right) */}
       <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
         {/* Left Column: 5 cols controls (sticky) */}
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 min-w-0">
           <Card className="h-fit lg:sticky lg:top-24 lg:top-[136px]" aria-labelledby="profile-heading">
             <h2 id="profile-heading" className="mb-4 font-h3 text-h3 text-ink dark:text-zinc-100 font-semibold tracking-tight scroll-mt-28 lg:scroll-mt-32">
               Vehicle &amp; driving profile
@@ -677,10 +677,10 @@ export default function MaintenanceRiskMatrix({
 
             <div className="flex flex-col gap-6">
               {/* High-Visibility Segmented Control: Preventative vs OEM Telemetry Toggle */}
-              <div className="rounded-2xl p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink dark:text-zinc-50 font-sans flex items-center gap-1.5">
-                    <Wrench className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+              <div className="rounded-2xl p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-ink dark:text-zinc-50 font-sans flex items-center gap-1.5 min-w-0">
+                    <Wrench className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 shrink-0" />
                     <span>Service Schedule Protocol</span>
                     <InfoTooltip
                       label="Preventative vs. OEM Schedule"
@@ -688,11 +688,11 @@ export default function MaintenanceRiskMatrix({
                     />
                   </span>
                   {scheduleMode === 'oem' ? (
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 shrink-0">
                       +{oemRiskMultiplier.toFixed(2)}x RISK EXPOSURE
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
                       SPECIALIST STANDARD
                     </span>
                   )}
@@ -806,7 +806,7 @@ export default function MaintenanceRiskMatrix({
         </div>
 
         {/* Right Column: 7 cols component wear timeline */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 min-w-0">
           <Card aria-labelledby="schedule-heading">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="schedule-heading" className="font-sans text-h3 text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
@@ -826,13 +826,13 @@ export default function MaintenanceRiskMatrix({
             </div>
 
             {/* Estimated 12-month service reserve banner */}
-            <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#18181B] border border-zinc-800 p-6 text-white sm:flex-row sm:items-end sm:justify-between shadow-sm relative overflow-hidden">
+            <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#18181B] border border-zinc-800 p-4 sm:p-6 text-white sm:flex-row sm:items-end sm:justify-between shadow-sm relative overflow-hidden min-w-0">
               {scheduleMode === 'oem' && (
-                <div className="absolute top-0 right-0 bg-rose-600 text-white font-sans text-[10px] font-bold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                <div className="self-start sm:absolute sm:top-0 sm:right-0 bg-rose-600 text-white font-sans text-[10px] font-bold px-3 py-0.5 rounded-md sm:rounded-none sm:rounded-bl-lg uppercase tracking-wider">
                   Risk Exposure (+{oemRiskMultiplier.toFixed(2)}x)
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs text-white/70 uppercase font-semibold tracking-wider font-sans inline-flex items-center gap-1">
                     <span>Estimated 12-month service reserve</span>
@@ -856,7 +856,7 @@ export default function MaintenanceRiskMatrix({
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-4xl sm:text-5xl font-bold tabular-nums tracking-tight font-mono text-white" aria-live="polite">
+                <p className="mt-1 text-[clamp(2.25rem,10vw,3.25rem)] font-bold tabular-nums tracking-tight font-mono text-white leading-none" aria-live="polite">
                   {formatCurrency(serviceReserveUsd)}
                 </p>
                 {scheduleMode === 'oem' && (

@@ -133,16 +133,16 @@ export default function TopTabAffiliateBanner({
   return (
     <aside
       data-testid={`affiliate-banner-${config.type}`}
-      className={`relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+      className={`relative overflow-hidden w-full max-w-full min-w-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
       aria-label="Partner Recommendation"
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-4 max-w-3xl">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between min-w-0">
+        <div className="flex items-start gap-4 max-w-3xl min-w-0">
           <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
             <IconComp className="w-5 h-5" />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="neutral">
                 {config.badge}
@@ -156,7 +156,7 @@ export default function TopTabAffiliateBanner({
             </div>
 
             <div>
-              <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
+              <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 break-words">
                 {config.title}
               </h3>
               <p className="mt-1 text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
@@ -175,15 +175,15 @@ export default function TopTabAffiliateBanner({
           </div>
         </div>
 
-        <div className="shrink-0 flex flex-col sm:items-start lg:items-end gap-1.5">
+        <div className="shrink-0 w-full sm:w-auto flex flex-col sm:items-start lg:items-end gap-1.5">
           <a
             href={linkProps.href}
             target={linkProps.target}
             rel={linkProps.rel}
-            className="group inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
+            className="group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
           >
             <span>{config.ctaText}</span>
-            <ArrowRight aria-hidden="true" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight aria-hidden="true" className="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
           <span className="text-[11px] text-muted dark:text-zinc-400 font-sans">
             {FTC_PROXIMATE_DISCLOSURE}

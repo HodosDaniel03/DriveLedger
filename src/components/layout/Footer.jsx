@@ -228,7 +228,7 @@ export default function Footer({
       </div>
 
       {/* 4. Stitch Master Footer */}
-      <footer className="w-full bg-surface dark:bg-[#121215] border-t border-zinc-200 dark:border-zinc-800 -mx-4 sm:-mx-6 px-6 lg:px-12 pt-14 pb-10">
+      <footer className="w-full max-w-full bg-surface dark:bg-[#121215] border-t border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 sm:px-6 lg:px-12 pt-10 sm:pt-14 pb-10 safe-area-x safe-area-bottom">
         <div className="max-w-[1380px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
             {/* Brand Col */}

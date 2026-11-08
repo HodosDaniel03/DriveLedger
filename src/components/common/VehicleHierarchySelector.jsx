@@ -310,7 +310,7 @@ export default function VehicleHierarchySelector({
               value={globalSearchQuery}
               onChange={(e) => setGlobalSearchQuery(e.target.value)}
               placeholder="Search by make, model, engine code or keyword (e.g. 'Golf 2.0 TDI', 'BMW 320d', 'Passat B8')..."
-              className="w-full bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border border-zinc-300 dark:border-zinc-800 rounded-xl pl-11 pr-10 py-2.5 text-sm font-sans focus:border-primary-600 focus:ring-2 focus:ring-primary-600/15 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-faint shadow-sm"
+              className="w-full min-h-[44px] bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border border-zinc-300 dark:border-zinc-800 rounded-xl pl-11 pr-10 py-2.5 text-base sm:text-sm font-sans focus:border-primary-600 focus:ring-2 focus:ring-primary-600/15 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-faint shadow-sm"
             />
             {globalSearchQuery && (
               <button
@@ -430,18 +430,18 @@ export default function VehicleHierarchySelector({
 
               {/* Brand Search Input */}
               <div className="relative">
-                <Search className="w-4 h-4 text-muted absolute left-3.5 top-2.5 pointer-events-none" />
+                <Search className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={brandSearchQuery}
                   onChange={(e) => setBrandSearchQuery(e.target.value)}
                   placeholder="Filter makes (e.g. Volkswagen, BMW, Toyota, Ford)..."
-                  className="w-full bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs font-sans focus:border-primary-600 focus:ring-2 focus:ring-primary-600/15 outline-none transition-[border-color,box-shadow] duration-150 shadow-sm"
+                  className="w-full min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-base sm:text-xs font-sans focus:border-primary-600 focus:ring-2 focus:ring-primary-600/15 outline-none transition-[border-color,box-shadow] duration-150 shadow-sm"
                 />
               </div>
 
               {/* Brand Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
                 {filteredBrands.map((b) => {
                   const isCurrent = selectedBrandName === b.name;
                   return (

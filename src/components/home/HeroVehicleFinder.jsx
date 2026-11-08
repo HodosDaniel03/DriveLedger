@@ -101,17 +101,17 @@ export default function HeroVehicleFinder({
   };
 
   return (
-    <section className="w-full bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-10 lg:p-12 mb-10 relative overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+    <section className="w-full max-w-full bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 sm:p-8 lg:p-12 mb-8 sm:mb-10 relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
         {/* Left Column: Hero Copy & Search Bar */}
-        <div className="lg:col-span-7 flex flex-col items-start">
+        <div className="lg:col-span-7 flex flex-col items-start min-w-0 w-full">
           {/* Eyebrow Micro-Tag */}
           <div className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 text-[11px] font-sans font-medium">
             <span>Free · Independent · No sign-up</span>
           </div>
 
           {/* Main Title */}
-          <h1 className="text-3xl sm:text-4xl lg:text-[46px] leading-[1.12] tracking-tight font-sans font-bold text-ink dark:text-zinc-50 mt-4 mb-3">
+          <h1 className="text-[clamp(1.75rem,7vw,3.5rem)] leading-tight text-balance tracking-tight font-sans font-bold text-ink dark:text-zinc-50 mt-4 mb-3">
             Know what your car really costs — <span className="text-primary-600 dark:text-primary-400">before it costs you.</span>
           </h1>
 
@@ -120,34 +120,36 @@ export default function HeroVehicleFinder({
             Real 5-year ownership costs, upcoming maintenance, and fair repair pricing in seconds.
           </p>
 
-          {/* Search Field + Live Autocomplete Dropdown */}
+          {/* Search Field + Live Autocomplete Dropdown (Stacked on < sm, inline on >= sm) */}
           <div className="w-full max-w-xl relative">
             <form
               onSubmit={handleSearchSubmit}
-              className="w-full h-14 bg-white dark:bg-zinc-900 rounded-xl shadow-sm flex items-center pl-4 pr-1.5 py-1.5 border border-zinc-300 dark:border-zinc-800 focus-within:border-primary-600 dark:focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-600/15 transition-[border-color,box-shadow] duration-150"
+              className="w-full flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 sm:h-14 sm:bg-white sm:dark:bg-zinc-900 sm:rounded-xl sm:shadow-sm sm:pl-4 sm:pr-1.5 sm:py-1.5 sm:border sm:border-zinc-300 sm:dark:border-zinc-800 sm:focus-within:border-primary-600 sm:dark:focus-within:border-primary-500 sm:focus-within:ring-4 sm:focus-within:ring-primary-600/15 transition-[border-color,box-shadow] duration-150"
             >
-              <Search className="w-5 h-5 text-muted dark:text-zinc-400 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter a car model or engine (e.g. Golf 2.0 TDI, Passat B8)..."
-                aria-label="Search vehicle model or engine"
-                className="flex-1 ml-3 bg-transparent font-sans text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 text-sm focus:outline-none"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  aria-label="Clear search query"
-                  className="p-1.5 mr-1 text-muted hover:text-ink dark:hover:text-zinc-200 rounded-md"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              <div className="w-full sm:flex-1 h-12 sm:h-full bg-white dark:bg-zinc-900 sm:bg-transparent sm:dark:bg-transparent rounded-xl sm:rounded-none border border-zinc-300 dark:border-zinc-800 sm:border-0 px-3.5 sm:px-0 flex items-center min-w-0 shadow-xs sm:shadow-none focus-within:border-primary-600 dark:focus-within:border-primary-500">
+                <Search className="w-5 h-5 text-muted dark:text-zinc-400 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Enter a car model or engine (e.g. Golf 2.0 TDI, Passat B8)..."
+                  aria-label="Search vehicle model or engine"
+                  className="w-full flex-1 min-w-0 ml-2.5 sm:ml-3 bg-transparent font-sans text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 text-base sm:text-sm focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Clear search query"
+                    className="p-1.5 mr-1 text-muted hover:text-ink dark:hover:text-zinc-200 rounded-md shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               <button
                 type="submit"
-                className="bg-primary-600 text-white font-sans font-semibold text-xs sm:text-sm px-5 h-11 rounded-lg shadow-sm hover:bg-primary-700 transition-colors duration-150 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                className="w-full sm:w-auto h-12 sm:h-11 bg-primary-600 text-white font-sans font-semibold text-sm px-5 rounded-xl sm:rounded-lg shadow-sm hover:bg-primary-700 transition-colors duration-150 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
               >
                 <span>Check now</span>
                 <ArrowRight className="w-4 h-4" />
@@ -206,7 +208,7 @@ export default function HeroVehicleFinder({
           </div>
 
           {/* Popular Shortcuts */}
-          <div className="mt-4 flex items-center gap-2 text-xs font-sans flex-wrap">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-sans w-full">
             <span className="text-muted dark:text-zinc-400 font-medium">Popular:</span>
             {[
               { label: 'VW Golf 8', id: 'vw-golf-20-tdi' },
@@ -221,7 +223,7 @@ export default function HeroVehicleFinder({
                   onSelectPreset(item.id);
                   onNavigateToTco(item.id);
                 }}
-                className="bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 rounded-md px-2.5 py-0.5 text-[11px] font-sans font-medium hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
+                className="min-h-[36px] bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 rounded-lg px-3 py-1 text-xs font-sans font-medium hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
               >
                 {item.label}
               </button>
@@ -229,8 +231,8 @@ export default function HeroVehicleFinder({
           </div>
 
           {/* Trust Proof Rating */}
-          <div className="mt-6 flex items-center gap-2.5">
-            <div className="flex items-center text-amber-500 text-sm tracking-tight select-none">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className="flex items-center text-amber-500 text-sm tracking-tight select-none shrink-0">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
               ))}
@@ -241,7 +243,7 @@ export default function HeroVehicleFinder({
           </div>
 
           {/* Body Style Chips */}
-          <div className="mt-5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-2 w-full">
             {BODY_TYPES.map((bt) => {
               const isActive = selectedBodyType === bt.id;
               return (
@@ -249,7 +251,7 @@ export default function HeroVehicleFinder({
                   key={bt.id}
                   type="button"
                   onClick={() => handleBodyTypeSelect(bt.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-sans font-medium transition-colors duration-150 border ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-colors duration-150 border ${
                     isActive
                       ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
                       : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60 hover:text-ink dark:hover:text-zinc-50'
@@ -307,10 +309,10 @@ export default function HeroVehicleFinder({
         </div>
 
         {/* Right Column: Visual Showcase & Active Vehicle Card */}
-        <div className="lg:col-span-5 relative flex justify-center">
-          <div className="relative w-full max-w-[460px]">
+        <div className="lg:col-span-5 relative flex justify-center min-w-0 w-full">
+          <div className="relative w-full max-w-[460px] min-w-0">
             {/* Main Vehicle Showcase Card */}
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md bg-surface dark:bg-[#121215] p-5 space-y-4">
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md bg-surface dark:bg-[#121215] p-4 sm:p-5 space-y-4">
               <div className="flex items-start justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -353,35 +355,35 @@ export default function HeroVehicleFinder({
               </div>
 
               {/* Key Indicators 3-Col Mini Strip */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
-                <div>
-                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Odometer</span>
-                  <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
+                <div className="min-w-0">
+                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Odometer</span>
+                  <strong className="text-ink dark:text-zinc-50 text-sm font-mono tabular-nums font-bold block truncate">
                     {formatDistance(activePreset.defaultOdometerMiles)}
                   </strong>
                 </div>
-                <div>
-                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Economy</span>
-                  <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
+                <div className="min-w-0">
+                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Economy</span>
+                  <strong className="text-ink dark:text-zinc-50 text-sm font-mono tabular-nums font-bold block truncate">
                     {activePreset.isEv ? `${activePreset.mpgUs} kWh` : `${activePreset.mpgUs} MPG`}
                   </strong>
                 </div>
-                <div>
-                  <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Annual Service</span>
-                  <strong className="text-primary-600 dark:text-primary-400 text-xs font-mono tabular-nums font-bold">
+                <div className="min-w-0">
+                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Annual Service</span>
+                  <strong className="text-primary-600 dark:text-primary-400 text-sm font-mono tabular-nums font-bold block truncate">
                     {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr
                   </strong>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex items-center gap-2">
+              <div className="pt-2 flex flex-col min-[380px]:flex-row items-stretch min-[380px]:items-center gap-2">
                 <button
                   type="button"
                   onClick={() => onNavigateToTco(activePreset.id)}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-sans font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors duration-150"
+                  className="min-h-[44px] flex-1 bg-primary-600 hover:bg-primary-700 text-white font-sans font-semibold text-xs sm:text-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors duration-150"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 shrink-0" />
                   <span>Simulate 5-Yr TCO</span>
                 </button>
                 <button

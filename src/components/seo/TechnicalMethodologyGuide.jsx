@@ -198,13 +198,13 @@ export default function TechnicalMethodologyGuide({
       {/* 3-Column Deep Technical Pillars (1,200+ Words Total Authoritative Content) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pillar 1: Non-Linear Depreciation & Amortization Math */}
-        <article className="rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-6 shadow-card space-y-4 flex flex-col justify-between">
+        <article className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-card space-y-4 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-950/60 border border-primary-100 dark:border-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
                 <Calculator className="w-5 h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
                   SECTION 01 · FINTECH MODELING
                 </span>
@@ -222,7 +222,7 @@ export default function TechnicalMethodologyGuide({
           <details className="group pt-3 border-t border-border dark:border-zinc-800">
             <summary className="flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
               <span>View mathematical formulation &amp; derivation</span>
-              <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform duration-200" />
+              <ChevronDown className="w-4 h-4 shrink-0 group-open:rotate-180 transition-transform duration-200" />
             </summary>
 
             <div className="mt-4 pt-3 border-t border-border/50 dark:border-zinc-800 space-y-3 text-xs leading-relaxed text-body dark:text-zinc-300 cursor-default">
@@ -234,7 +234,7 @@ export default function TechnicalMethodologyGuide({
                 <span className="text-primary-600 dark:text-primary-400 font-bold block">
                   RESIDUAL VALUE EQUATION:
                 </span>
-                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200">
+                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200 break-words">
                   V(t) = P₀ × R_seg(t) × [1 - α · ((M_ann - 12,500) / 12,500)]^t
                 </code>
                 <span className="text-muted dark:text-zinc-400 block pt-1">
@@ -254,13 +254,13 @@ export default function TechnicalMethodologyGuide({
         </article>
 
         {/* Pillar 2: Thermodynamic Short-Trip Wear Factors */}
-        <article className="rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-6 shadow-card space-y-4 flex flex-col justify-between">
+        <article className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-card space-y-4 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-9 h-9 rounded-lg bg-warning-bg dark:bg-amber-950/50 border border-[#F5DE8A] dark:border-amber-800/80 flex items-center justify-center text-warning-text dark:text-amber-400 shrink-0">
                 <Flame className="w-5 h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
                   SECTION 02 · TRIBOLOGY &amp; KINETICS
                 </span>
@@ -278,7 +278,7 @@ export default function TechnicalMethodologyGuide({
           <details className="group pt-3 border-t border-border dark:border-zinc-800">
             <summary className="flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
               <span>View thermodynamic formulation &amp; derivation</span>
-              <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform duration-200" />
+              <ChevronDown className="w-4 h-4 shrink-0 group-open:rotate-180 transition-transform duration-200" />
             </summary>
 
             <div className="mt-4 pt-3 border-t border-border/50 dark:border-zinc-800 space-y-3 text-xs leading-relaxed text-body dark:text-zinc-300 cursor-default">
@@ -290,7 +290,7 @@ export default function TechnicalMethodologyGuide({
                 <span className="text-warning-text dark:text-amber-400 font-bold block">
                   EFFECTIVE WEAR AGE FORMULA:
                 </span>
-                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200">
+                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200 break-words">
                   M_eff = M_phys × [1 + U_pct · (k_urban - 1)] × k_oil × k_hist
                 </code>
                 <span className="text-muted dark:text-zinc-400 block pt-1">
@@ -310,13 +310,13 @@ export default function TechnicalMethodologyGuide({
         </article>
 
         {/* Pillar 3: First-Principles OBD-II Live PID Diagnostics */}
-        <article className="rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-6 shadow-card space-y-4 flex flex-col justify-between">
+        <article className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-card space-y-4 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-9 h-9 rounded-lg bg-success-bg dark:bg-emerald-950/50 border border-[#BFE8CF] dark:border-emerald-800/80 flex items-center justify-center text-success-text dark:text-emerald-400 shrink-0">
                 <Cpu className="w-5 h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
                   SECTION 03 · SAE J1979 DIAGNOSTICS
                 </span>
@@ -334,7 +334,7 @@ export default function TechnicalMethodologyGuide({
           <details className="group pt-3 border-t border-border dark:border-zinc-800">
             <summary className="flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
               <span>View diagnostic identities &amp; workflows</span>
-              <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform duration-200" />
+              <ChevronDown className="w-4 h-4 shrink-0 group-open:rotate-180 transition-transform duration-200" />
             </summary>
 
             <div className="mt-4 pt-3 border-t border-border/50 dark:border-zinc-800 space-y-3 text-xs leading-relaxed text-body dark:text-zinc-300 cursor-default">
@@ -346,13 +346,13 @@ export default function TechnicalMethodologyGuide({
                 <span className="text-success-text dark:text-emerald-400 font-bold block">
                   CORE DIAGNOSTIC IDENTITIES:
                 </span>
-                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200">
+                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200 break-words">
                   • P2002: ΔP_DPF(idle) = 0.5–1.8 kPa | KOEO = 0.0 kPa
                 </code>
-                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200">
+                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200 break-words">
                   • P0171: |STFT + LTFT|_idle &gt; 20% → &lt; 5% @ 2500 RPM = Vacuum Leak
                 </code>
-                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200">
+                <code className="block font-mono tabular-nums text-ink dark:text-zinc-200 break-words">
                   • U0100: R(DLC Pin 6 ↔ Pin 14) = 60.0 Ω (Two 120Ω in parallel)
                 </code>
               </div>
@@ -370,13 +370,13 @@ export default function TechnicalMethodologyGuide({
       </div>
 
       {/* Reference Engineering Benchmark Table */}
-      <div className="rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4 min-w-0 max-w-full overflow-hidden">
         <details className="group cursor-pointer">
           <summary className="flex flex-wrap items-center justify-between gap-2 select-none list-none [&::-webkit-details-marker]:hidden">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-base font-bold text-ink dark:text-zinc-100 flex items-center gap-2">
                 <span>Powertrain Preventative Service vs. OEM "Marketing Lifetime" Intervals</span>
-                <ChevronDown className="w-4 h-4 text-muted dark:text-zinc-400 group-open:rotate-180 transition-transform duration-200" />
+                <ChevronDown className="w-4 h-4 shrink-0 text-muted dark:text-zinc-400 group-open:rotate-180 transition-transform duration-200" />
               </h3>
               <p className="text-xs text-muted dark:text-zinc-400 mt-0.5">
                 Engineering safe intervals compiled across independent marque specialists (ZF, BorgWarner, Bosch, Luk/INA).
@@ -387,7 +387,7 @@ export default function TechnicalMethodologyGuide({
             </span>
           </summary>
 
-          <div className="mt-4 pt-4 border-t border-border dark:border-zinc-800 overflow-x-auto cursor-default">
+          <div className="mt-4 pt-4 border-t border-border dark:border-zinc-800 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 cursor-default">
             <table className="w-full text-left border-collapse text-xs min-w-[620px]">
               <thead>
                 <tr className="border-b border-border dark:border-zinc-800 text-[11px] uppercase tracking-wider text-muted dark:text-zinc-400 font-sans font-semibold">
@@ -458,7 +458,7 @@ export default function TechnicalMethodologyGuide({
       </div>
 
       {/* Interactive FAQ Accordion */}
-      <div className="rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4 min-w-0 max-w-full overflow-hidden">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 block">
@@ -474,12 +474,12 @@ export default function TechnicalMethodologyGuide({
           {FAQ_ITEMS.map((item, idx) => {
             const isOpen = openFaqIdx === idx;
             return (
-              <div key={idx} className="py-3.5">
+              <div key={idx} className="py-3">
                 <button
                   type="button"
                   onClick={() => setOpenFaqIdx(isOpen ? -1 : idx)}
                   aria-expanded={isOpen}
-                  className="w-full flex items-center justify-between gap-4 text-left text-sm font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-150"
+                  className="w-full min-h-[44px] flex items-center justify-between gap-4 text-left text-sm font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-150"
                 >
                   <span>{item.question}</span>
                   {isOpen ? (
@@ -502,7 +502,7 @@ export default function TechnicalMethodologyGuide({
       {/* Partner & Affiliate Transparency Banner */}
       <div
         id="partner-disclosure-banner"
-        className="scroll-mt-28 lg:scroll-mt-32 rounded-xl bg-surface-subtle dark:bg-zinc-900/60 border border-border dark:border-zinc-800 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted dark:text-zinc-400"
+        className="scroll-mt-28 lg:scroll-mt-32 rounded-2xl bg-surface-subtle dark:bg-zinc-900/60 border border-border dark:border-zinc-800 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted dark:text-zinc-400"
       >
         <div className="flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 text-score-good dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -519,7 +519,7 @@ export default function TechnicalMethodologyGuide({
               key={key}
               type="button"
               onClick={() => onOpenLegalModal && onOpenLegalModal(key)}
-              className="px-2.5 py-1 rounded-md bg-surface dark:bg-zinc-800 border border-border-strong dark:border-zinc-700 text-xs font-semibold text-ink dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-400 transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-0 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-md bg-surface dark:bg-zinc-800 border border-border-strong dark:border-zinc-700 text-xs font-semibold text-ink dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-400 transition-colors duration-150"
             >
               {doc.title.split('&')[0].trim()}
             </button>
@@ -533,16 +533,16 @@ export default function TechnicalMethodologyGuide({
           role="dialog"
           aria-modal="true"
           aria-labelledby="legal-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 dark:bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/40 dark:bg-black/60 backdrop-blur-sm"
         >
-          <div className="w-full max-w-2xl rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border dark:border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <activeModalData.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                <div>
+          <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-border dark:border-zinc-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <activeModalData.icon className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />
+                <div className="min-w-0">
                   <h3
                     id="legal-modal-title"
-                    className="text-base font-bold text-ink dark:text-zinc-100"
+                    className="text-base font-bold text-ink dark:text-zinc-100 truncate"
                   >
                     {activeModalData.title}
                   </h3>
@@ -555,13 +555,13 @@ export default function TechnicalMethodologyGuide({
                 type="button"
                 onClick={onCloseLegalModal}
                 aria-label="Close modal"
-                className="p-1.5 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors duration-150"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-4 text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed">
+            <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-4 text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed">
               {activeModalData.sections.map((sec, idx) => (
                 <div key={idx} className="space-y-1">
                   <h4 className="font-bold text-ink dark:text-zinc-100">{sec.heading}</h4>

@@ -4,7 +4,7 @@ import { ArrowRight, ChevronDown, Info } from 'lucide-react';
 export function Card({ className = '', children, ...props }) {
   return (
     <section
-      className={`rounded-xl border border-border/70 bg-surface p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5 sm:p-6 dark:bg-[#121215] dark:border-zinc-800 dark:shadow-none ${className}`}
+      className={`w-full max-w-full min-w-0 rounded-2xl border border-border/70 bg-surface p-4 shadow-card transition-[transform,box-shadow] duration-200 ease-out sm:hover:shadow-card-hover sm:hover:-translate-y-0.5 sm:p-6 dark:bg-[#121215] dark:border-zinc-800 dark:shadow-none ${className}`}
       {...props}
     >
       {children}
@@ -113,10 +113,10 @@ export function RangeSlider({
 
 export function Segmented({ label, value, options, onChange, className = '' }) {
   return (
-    <fieldset className={className}>
+    <fieldset className={`w-full max-w-full min-w-0 [min-inline-size:0] ${className}`}>
       {label && <legend className="mb-2 font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300">{label}</legend>}
       <div
-        className="grid gap-1 rounded-xl border border-border bg-surface-subtle dark:bg-zinc-900 dark:border-zinc-800 p-1"
+        className="w-full min-w-0 grid gap-1 rounded-xl border border-border bg-surface-subtle dark:bg-zinc-900 dark:border-zinc-800 p-1"
         style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       >
         {options.map((o) => {
@@ -127,16 +127,16 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
               type="button"
               aria-pressed={active}
               onClick={() => onChange(o.value)}
-              className={`flex flex-col items-center justify-center rounded-lg px-2 py-1.5 text-center font-sans text-xs sm:text-sm leading-tight font-medium text-balance transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+              className={`min-h-[44px] min-w-0 flex flex-col items-center justify-center rounded-lg px-1.5 sm:px-2 py-1.5 text-center font-sans text-xs sm:text-sm leading-tight font-medium text-balance transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                 active
                   ? 'bg-surface text-ink font-semibold shadow-sm border border-border/50 dark:bg-zinc-800 dark:text-zinc-50 dark:border-zinc-700'
                   : 'text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
-              <span>{o.label}</span>
+              <span className="truncate max-w-full">{o.label}</span>
               {o.hint && (
                 <span
-                  className={`mt-0.5 text-[11px] font-normal tabular-nums font-sans ${
+                  className={`mt-0.5 text-[10px] sm:text-[11px] font-normal tabular-nums font-sans truncate max-w-full ${
                     active ? 'text-primary-700 dark:text-emerald-400 font-semibold' : 'text-faint dark:text-zinc-500'
                   }`}
                 >
@@ -153,7 +153,7 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
 
 export function SelectField({ label, value, options, onChange, id, className = '' }) {
   return (
-    <div className={`min-w-0 ${className}`}>
+    <div className={`min-w-0 w-full ${className}`}>
       {label && (
         <label htmlFor={id} className="mb-1.5 block font-sans text-xs font-medium text-muted dark:text-zinc-400">
           {label}
@@ -164,7 +164,7 @@ export function SelectField({ label, value, options, onChange, id, className = '
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-full cursor-pointer appearance-none truncate rounded-xl border border-border bg-surface pr-9 pl-3 font-sans text-xs sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-border-strong focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-700"
+          className="h-11 min-h-[44px] w-full cursor-pointer appearance-none truncate rounded-xl border border-border bg-surface pr-9 pl-3 font-sans text-base sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-border-strong focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-700"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value} className="dark:bg-zinc-900 dark:text-zinc-100">
@@ -185,13 +185,13 @@ export function NumberField({ label, value, decimals = 0, suffix = '', onCommit,
   const [draft, setDraft] = useState(null);
   const shown = draft ?? (Number.isFinite(value) ? (decimals > 0 ? value.toFixed(decimals) : String(Math.round(value))) : '');
   return (
-    <div className={`min-w-0 ${className}`}>
+    <div className={`min-w-0 w-full ${className}`}>
       {label && (
         <label htmlFor={id} className="mb-1.5 block font-sans text-xs font-medium text-muted dark:text-zinc-400">
           {label}
         </label>
       )}
-      <div className="flex h-11 items-center rounded-xl border border-border bg-surface px-3 transition-colors duration-150 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-600/10 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:focus-within:border-emerald-500">
+      <div className="flex h-11 min-h-[44px] items-center rounded-xl border border-border bg-surface px-3 transition-colors duration-150 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-600/10 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:focus-within:border-emerald-500">
         <input
           id={id}
           inputMode="decimal"
@@ -204,7 +204,7 @@ export function NumberField({ label, value, decimals = 0, suffix = '', onCommit,
             const n = Number.parseFloat(text);
             if (Number.isFinite(n) && n >= min) onCommit(n);
           }}
-          className="w-full min-w-0 bg-transparent text-sm font-medium tabular-nums font-mono text-ink dark:text-zinc-100 outline-none"
+          className="w-full min-w-0 bg-transparent text-base sm:text-sm font-medium tabular-nums font-mono text-ink dark:text-zinc-100 outline-none"
         />
         {suffix && <span className="ml-2 shrink-0 font-sans text-xs text-muted dark:text-zinc-400">{suffix}</span>}
       </div>
@@ -481,7 +481,7 @@ export function InfoTooltip({ term, explanation, label, content, className = '' 
       {open && (
         <span
           role="tooltip"
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 sm:w-72 p-3 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white text-xs font-sans font-normal leading-relaxed shadow-xl border border-zinc-700 z-50 pointer-events-none whitespace-normal text-left"
+          className="fixed left-4 right-4 bottom-20 sm:absolute sm:inset-auto sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 sm:mb-2 sm:w-72 p-3 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white text-xs font-sans font-normal leading-relaxed shadow-xl border border-zinc-700 z-50 pointer-events-none whitespace-normal text-left"
         >
           {resolvedTitle && <strong className="block font-semibold text-emerald-400 mb-1">{resolvedTitle}</strong>}
           <span className="text-zinc-200">{resolvedBody}</span>
@@ -507,7 +507,7 @@ export function MobileStickySummaryBar({
   return (
     <div
       data-testid="mobile-sticky-summary-bar"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 py-2.5 shadow-2xl flex items-center justify-between gap-3"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-2xl flex items-center justify-between gap-3 safe-area-x"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -535,7 +535,7 @@ export function MobileStickySummaryBar({
         <button
           type="button"
           onClick={onAction}
-          className="shrink-0 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white px-3.5 py-2 font-sans text-xs font-semibold shadow-xs active:scale-95 transition-transform"
+          className="min-h-[44px] shrink-0 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white px-3.5 py-2 font-sans text-xs font-semibold shadow-xs active:scale-95 transition-transform"
         >
           {actionLabel}
         </button>

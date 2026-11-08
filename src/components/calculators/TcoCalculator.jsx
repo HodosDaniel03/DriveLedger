@@ -291,11 +291,11 @@ export default function TcoCalculator({
       />
 
       {/* 1. Primary Interactive 2-Column Calculator Above the Fold (7 cols controls, 5 cols sticky summary) */}
-      <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
+      <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start min-w-0">
         {/* Left Column: 7 cols (Your Vehicle & Sliders) */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6 min-w-0">
           {/* Card 1: Your Vehicle & Purchase Price */}
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6" aria-labelledby="vehicle-heading">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6" aria-labelledby="vehicle-heading">
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>
                 <h2 id="vehicle-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
@@ -445,7 +445,7 @@ export default function TcoCalculator({
           </Card>
 
           {/* Card 2: Driving Habits & Ownership Horizon */}
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6" aria-labelledby="driving-heading">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6" aria-labelledby="driving-heading">
             <div className="mb-5">
               <h2 id="driving-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight">
                 Driving habits &amp; horizon
@@ -458,11 +458,11 @@ export default function TcoCalculator({
             <div className="flex flex-col gap-6">
               {/* Core Slider 2: Annual Mileage (Default Visible) */}
               <div>
-                <div className="mb-2.5 flex items-baseline justify-between gap-4">
+                <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
                   <label htmlFor="slider-annual-distance" className="font-sans text-sm font-medium text-body dark:text-zinc-300">
                     Annual mileage
                   </label>
-                  <div className="flex items-center gap-1 font-mono font-semibold text-lg text-ink dark:text-zinc-50 tabular-nums bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-1 font-mono font-semibold text-base sm:text-lg text-ink dark:text-zinc-50 tabular-nums bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
                     <input
                       id="input-annual-distance"
                       type="number"
@@ -475,9 +475,9 @@ export default function TcoCalculator({
                         const val = Math.max(0, Number(e.target.value) || 0);
                         setAnnualDistanceMiles(convertRegionToMiles(val));
                       }}
-                      className="w-20 text-right bg-transparent outline-none font-mono tabular-nums text-ink dark:text-zinc-50"
+                      className="w-20 text-right bg-transparent outline-none font-mono text-base sm:text-lg tabular-nums text-ink dark:text-zinc-50"
                     />
-                    <span className="font-sans text-sm text-muted dark:text-zinc-400">{distanceUnit}</span>
+                    <span className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400">{distanceUnit}</span>
                   </div>
                 </div>
                 <input
@@ -520,17 +520,18 @@ export default function TcoCalculator({
                   aria-expanded={customOpen}
                   aria-controls="customize-panel"
                   onClick={() => setCustomOpen((o) => !o)}
-                  className="flex w-full items-center justify-between rounded-xl py-2.5 px-3.5 font-sans text-sm font-semibold text-[#183D22] dark:text-emerald-400 bg-zinc-100/80 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 transition-colors"
+                  className="min-h-[48px] flex w-full items-center justify-between gap-2 text-left rounded-xl py-2.5 px-3.5 font-sans text-xs sm:text-sm font-semibold text-[#183D22] dark:text-emerald-400 bg-zinc-100/80 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 transition-colors"
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 min-w-0 flex-1">
                     <Plus
                       aria-hidden="true"
-                      className={`w-4 h-4 transition-transform duration-300 ${customOpen ? 'rotate-45' : ''}`}
+                      className={`w-4 h-4 shrink-0 transition-transform duration-300 ${customOpen ? 'rotate-45' : ''}`}
                     />
-                    <span>Customize assumptions (financing, fuel &amp; insurance)</span>
+                    <span className="leading-snug">Customize assumptions (financing, fuel &amp; insurance)</span>
                   </span>
-                  <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-                    {customOpen ? 'Hide' : 'Expand'}
+                  <span className="shrink-0 inline-flex items-center gap-1 text-xs font-sans font-medium text-muted dark:text-zinc-400">
+                    <span className="hidden sm:inline">{customOpen ? 'Hide' : 'Expand'}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${customOpen ? 'rotate-180' : ''}`} />
                   </span>
                 </button>
 
@@ -671,7 +672,7 @@ export default function TcoCalculator({
                               <label htmlFor="input-apr" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
                                 Loan APR %
                               </label>
-                              <div className="flex h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
+                              <div className="flex h-11 sm:h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
                                 <input
                                   id="input-apr"
                                   type="number"
@@ -680,7 +681,7 @@ export default function TcoCalculator({
                                   max="40"
                                   value={aprPct}
                                   onChange={(e) => setAprPct(Math.min(40, Math.max(0, Number(e.target.value) || 0)))}
-                                  className="w-full bg-transparent text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
+                                  className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
                                 />
                                 <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-mono">%</span>
                               </div>
@@ -768,7 +769,7 @@ export default function TcoCalculator({
                           <label htmlFor="input-fuel-price" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1">
                             {activePreset.isEv ? 'Electricity price' : 'Fuel price'} ({currencySymbol})
                           </label>
-                          <div className="flex h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
+                          <div className="flex h-11 sm:h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
                             <input
                               id="input-fuel-price"
                               type="number"
@@ -778,7 +779,7 @@ export default function TcoCalculator({
                                 const val = Number(e.target.value);
                                 if (!isNaN(val) && val >= 0) setFuelPriceUsdGal(convertRegionFuelPriceToUsdGal(val, activePreset.isEv));
                               }}
-                              className="w-full bg-transparent text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
+                              className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
                             />
                             <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-sans">
                               {currencySymbol}/{region === 'EU' ? (activePreset.isEv ? 'kWh' : 'L') : activePreset.isEv ? 'kWh' : 'gal'}
@@ -791,7 +792,7 @@ export default function TcoCalculator({
                           <label htmlFor="input-insurance" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
                             Annual insurance
                           </label>
-                          <div className="flex h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
+                          <div className="flex h-11 sm:h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
                             <input
                               id="input-insurance"
                               type="number"
@@ -801,7 +802,7 @@ export default function TcoCalculator({
                                 const val = Number(e.target.value);
                                 if (val >= 0) setAnnualInsuranceUsd(convertRegionToUsd(val));
                               }}
-                              className="w-full bg-transparent text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
+                              className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
                             />
                             <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-sans">{currencySymbol} / yr</span>
                           </div>
@@ -828,22 +829,22 @@ export default function TcoCalculator({
         </div>
 
         {/* Right Column: 5 cols (Sticky Summary, Cost Breakdown & Compact Utility Toolbar) */}
-        <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-24">
+        <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-24 min-w-0">
           <Card className="h-fit shadow-card" aria-labelledby="summary-heading">
             {/* Eyebrow */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span id="summary-heading" className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider scroll-mt-28 lg:scroll-mt-32">
                 ESTIMATED COST TO OWN
               </span>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
+              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium shrink-0">
                 {horizonYears}-Year Forecast
               </span>
             </div>
 
             {/* Main Monthly Value */}
-            <div className="my-4">
-              <div className="flex items-baseline gap-1" aria-live="polite">
-                <span id="monthly-total" className="text-metric-xl font-bold font-mono tabular-nums text-ink dark:text-zinc-50 tracking-tight leading-none">
+            <div className="my-4 min-w-0">
+              <div className="flex items-baseline gap-1 flex-wrap" aria-live="polite">
+                <span id="monthly-total" className="text-[clamp(2.5rem,12vw,4rem)] font-bold font-mono tabular-nums text-ink dark:text-zinc-50 tracking-tight leading-none">
                   {formatCurrency(tco.monthlyEconomicCostUsd)}
                 </span>
                 <span className="font-sans text-lg text-muted dark:text-zinc-400 font-medium">/mo</span>
@@ -854,42 +855,45 @@ export default function TcoCalculator({
               {verifiedGarageCreditUsd > 0 && (
                 <div
                   data-testid="garage-service-credit-badge"
-                  className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium"
+                  className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium max-w-full"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>Verified Garage Service Credit: -<span className="font-mono tabular-nums">{formatCurrency(verifiedGarageCreditUsd)}</span> applied</span>
+                  <span className="truncate">Verified Garage Service Credit: -<span className="font-mono tabular-nums">{formatCurrency(verifiedGarageCreditUsd)}</span> applied</span>
                 </div>
               )}
             </div>
 
-            {/* Secondary Metrics Row */}
-            <div className="flex items-center justify-between flex-wrap sm:flex-nowrap gap-2 sm:gap-4 min-w-0 py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl px-4 mb-4 border border-zinc-200/80 dark:border-zinc-800/80">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 shrink-0">
+            {/* Secondary Metrics Row: 2-Column Stat Box Grid on Mobile */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
+                <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
                   {formatCurrency(tco.totalEconomicCostUsd)}
                 </span>
-                <span className="font-sans text-xs text-muted dark:text-zinc-400 truncate">· {horizonYears}-yr total</span>
+                <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
+                  {horizonYears}-yr total
+                </span>
               </div>
-              <div className="hidden sm:block w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700 shrink-0"></div>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 shrink-0">
+              <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
+                <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
                   {formatCurrency(costPerLocalUnit, 2)}
                 </span>
-                <span className="font-sans text-xs text-muted dark:text-zinc-400 truncate">· per {distanceUnit}</span>
+                <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
+                  per {distanceUnit}
+                </span>
               </div>
             </div>
 
             {/* Compact Ownership Value Score Bar (Integrated inside Summary Card) */}
             <div className="mb-5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 inline-flex items-center gap-1">
-                  <span>Ownership Value Score</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 inline-flex items-center gap-1 min-w-0">
+                  <span className="truncate">Ownership Value Score</span>
                   <InfoTooltip
                     label="What is Ownership Value Score?"
                     content="A 0–100 composite score weighing 5-year depreciation retention, fuel efficiency, and projected maintenance burden against segment peers."
                   />
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span className="font-mono tabular-nums text-xs font-bold text-ink dark:text-zinc-50">
                     {ownershipValueScore}/100
                   </span>
@@ -973,8 +977,8 @@ export default function TcoCalculator({
 
             {/* Streamlined Primary Actions & Collapsible Export Toolbar inside Summary Card */}
             <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 shrink-0">
                   Actions &amp; Comparison
                 </span>
                 <button
@@ -982,11 +986,11 @@ export default function TcoCalculator({
                   data-testid="toggle-tco-export-menu"
                   aria-expanded={showExportMenu}
                   onClick={() => setShowExportMenu((prev) => !prev)}
-                  className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+                  className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold text-primary-600 dark:text-emerald-400 hover:underline shrink-0"
                 >
-                  <Printer className="w-3 h-3" />
+                  <Printer className="w-3 h-3 shrink-0" />
                   <span>{showExportMenu ? 'Hide Export & Share' : 'Export & Share (PDF / Reddit)'}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${showExportMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${showExportMenu ? 'rotate-180' : ''}`} />
                 </button>
               </div>
 

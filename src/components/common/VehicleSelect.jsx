@@ -571,7 +571,7 @@ export default function VehicleSelect({
             aria-expanded={showAutocompleteDropdown}
             aria-controls="vehicle-command-search-results"
             autoComplete="off"
-            className="h-11 w-full rounded-xl border border-border bg-surface pr-10 pl-10 text-xs sm:text-sm font-medium text-ink placeholder:text-muted/80 shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-border-strong focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:hover:border-zinc-700"
+            className="h-11 w-full rounded-xl border border-border bg-surface pr-10 pl-10 text-base sm:text-sm font-medium text-ink placeholder:text-muted/80 shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-border-strong focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:hover:border-zinc-700"
           />
           {searchQuery && (
             <button

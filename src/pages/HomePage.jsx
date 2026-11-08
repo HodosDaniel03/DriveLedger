@@ -339,20 +339,20 @@ export default function HomePage({
                     {car.powertrainLabel}
                   </p>
 
-                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
-                    <div>
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Baseline</span>
-                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
+                  <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Baseline</span>
+                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
                         {formatDistance(car.defaultOdometerMiles)}
                       </strong>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block">Economy</span>
-                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Economy</span>
+                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
                         {car.isEv ? `${car.mpgUs} kWh` : `${car.mpgUs} MPG`}
                       </strong>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 flex items-center justify-center gap-0.5">
                         <span>Wear</span>
                         <InfoTooltip
@@ -361,7 +361,7 @@ export default function HomePage({
                         />
                       </span>
                       <strong
-                        className={`text-xs font-mono tabular-nums font-bold ${
+                        className={`text-xs font-mono tabular-nums font-bold block truncate ${
                           car.maintenanceWearFactor > 1.3
                             ? 'text-rose-600 dark:text-rose-400'
                             : car.maintenanceWearFactor < 0.9
@@ -386,8 +386,8 @@ export default function HomePage({
       </section>
 
       {/* 6. Comparison Table (Stitch Section: Why drivers choose DriveLedger) */}
-      <section className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-10">
-        <div className="text-center max-w-xl mx-auto mb-10">
+      <section className="w-full max-w-full bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 sm:p-10 overflow-hidden">
+        <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
           <h2 className="text-2xl sm:text-3xl font-sans font-bold text-ink dark:text-zinc-50 tracking-tight">
             Why drivers choose DriveLedger
           </h2>
@@ -396,7 +396,7 @@ export default function HomePage({
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-left border-collapse min-w-[640px]">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs font-sans uppercase tracking-wider text-muted dark:text-zinc-400">

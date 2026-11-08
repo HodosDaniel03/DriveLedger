@@ -227,7 +227,7 @@ export default function ObdEstimator({
       />
 
       {/* Top Search Bar Card (Full Width) */}
-      <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 space-y-5">
+      <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 space-y-5 min-w-0">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Main 56px Search Input */}
           <form
@@ -236,7 +236,7 @@ export default function ObdEstimator({
               e.preventDefault();
               if (searchMatches[0]) handleSelect(searchMatches[0].code);
             }}
-            className="relative flex-1"
+            className="relative flex-1 min-w-0"
           >
             <label htmlFor="code-search" className="sr-only">
               Search fault code or symptom
@@ -252,7 +252,7 @@ export default function ObdEstimator({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search code or symptom (e.g. P0420, P2002, misfire)..."
-              className="h-14 w-full rounded-xl border border-zinc-300 dark:border-zinc-800 bg-surface dark:bg-zinc-900 pr-24 pl-12 font-sans text-sm text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-xs scroll-mt-28 lg:scroll-mt-32"
+              className="h-14 w-full rounded-xl border border-zinc-300 dark:border-zinc-800 bg-surface dark:bg-zinc-900 pr-24 pl-12 font-sans text-base sm:text-sm text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-xs scroll-mt-28 lg:scroll-mt-32"
             />
             <div className="absolute top-1/2 right-3 -translate-y-1/2 flex items-center gap-1.5">
               <span className="font-mono tabular-nums font-bold text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-1 rounded-md">
@@ -408,14 +408,14 @@ export default function ObdEstimator({
       {/* Vehicle × OBD-II Programmatic Telemetry Banner */}
       <div
         id="obd-vehicle-telemetry-banner"
-        className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 space-y-4"
+        className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 space-y-4 min-w-0 overflow-hidden"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
-          <div className="space-y-1.5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
+          <div className="space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 font-sans text-[11px] font-bold uppercase tracking-wider text-[#183D22] dark:text-emerald-400">
-                <Car className="w-3.5 h-3.5" />
-                Vehicle × OBD-II Programmatic Telemetry
+                <Car className="w-3.5 h-3.5 shrink-0" />
+                <span>Vehicle × OBD-II Programmatic Telemetry</span>
               </span>
               {isKnownVulnerability ? (
                 <span className="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
@@ -435,14 +435,14 @@ export default function ObdEstimator({
 
             <h2
               id="hybrid-vehicle-obd-heading"
-              className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50"
+              className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50 break-words"
             >
               {activePreset.name} · <span className="font-mono tabular-nums">{activeDossier.code}</span> {activeDossier.title}: Repair Cost &amp; Live PID Guide
             </h2>
           </div>
 
           {/* Compact Vehicle Selector Dropdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0 min-w-0">
             <label
               htmlFor="obd-preset-select"
               className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold whitespace-nowrap"
@@ -454,7 +454,7 @@ export default function ObdEstimator({
               aria-label="Select vehicle powertrain for OBD-II telemetry correlation"
               value={activePreset.id}
               onChange={(e) => handlePresetChange(e.target.value)}
-              className="h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600/30"
+              className="h-11 sm:h-10 w-full sm:w-auto max-w-full truncate rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 font-sans text-base sm:text-xs font-medium text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600/30"
             >
               {VEHICLE_PRESETS.map((p) => (
                 <option key={p.id} value={p.id} className="dark:bg-zinc-900 dark:text-zinc-100">
@@ -466,7 +466,7 @@ export default function ObdEstimator({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-xs">
-          <div className="lg:col-span-8 space-y-1">
+          <div className="lg:col-span-8 space-y-1 min-w-0">
             <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 block">
               Factory Mechanical Risk Notes ({activePreset.engineCode})
             </span>
@@ -475,7 +475,7 @@ export default function ObdEstimator({
             </p>
           </div>
 
-          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80">
+          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <span className="font-sans text-muted dark:text-zinc-400 font-medium">Baseline Annual Maintenance:</span>
               <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
@@ -510,10 +510,10 @@ export default function ObdEstimator({
       {/* Hero Row: 2 Equal Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Hero Card 1: Code Information Card */}
-        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
+        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-metric-l font-bold text-ink dark:text-zinc-50 tracking-tight font-mono tabular-nums">
                   {activeDossier.code}
                 </span>
@@ -585,7 +585,7 @@ export default function ObdEstimator({
         </div>
 
         {/* Hero Card 2: Severity & Repair Overview Card */}
-        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
+        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight inline-flex items-center gap-1.5">
@@ -603,7 +603,7 @@ export default function ObdEstimator({
                 <SeverityGauge severity={activeDossier.severity} size={144} />
               </div>
 
-              <div className="sm:col-span-7 flex flex-col justify-center">
+              <div className="sm:col-span-7 flex flex-col justify-center min-w-0">
                 <span className="font-sans text-[11px] font-semibold text-ink dark:text-zinc-100 uppercase tracking-wider mb-1">
                   Can I keep driving?
                 </span>
@@ -644,7 +644,7 @@ export default function ObdEstimator({
       {/* 4. Workspace Split: 7 cols left, 5 cols right */}
       <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
         {/* Left Column: 7 cols */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6 min-w-0">
           {/* Card 1: Most Likely Root Causes */}
           <Card aria-labelledby="causes-heading">
             <div className="mb-5">
@@ -769,7 +769,7 @@ export default function ObdEstimator({
         </div>
 
         {/* Right Column: 5 cols (Sticky Summary & Single Integrated Partner CTA) */}
-        <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24">
+        <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 min-w-0">
           <Card className="h-fit shadow-card" aria-labelledby="workshop-summary-heading">
             {/* Eyebrow */}
             <div className="flex items-center justify-between">
@@ -791,7 +791,7 @@ export default function ObdEstimator({
 
             {/* Price Range Display */}
             <div className="my-5">
-              <div className="text-metric-xl font-bold font-mono text-ink dark:text-zinc-50 tracking-tight tabular-nums leading-none">
+              <div className="text-[clamp(1.75rem,8vw,2.75rem)] font-bold font-mono text-ink dark:text-zinc-50 tracking-tight tabular-nums leading-none">
                 {formatCurrency(est.minTotalUsd)} – {formatCurrency(est.maxTotalUsd)}
               </div>
               <p className="mt-1.5 font-sans text-xs text-muted dark:text-zinc-400">
@@ -842,7 +842,7 @@ export default function ObdEstimator({
               {diySavingsVsDealerUsd > 0 && (
                 <div
                   data-testid="diy-vs-dealer-savings-badge"
-                  className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium"
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium"
                 >
                   <span>DIY Garage saves <span className="font-mono tabular-nums font-bold">{formatCurrency(diySavingsVsDealerUsd)}</span> vs. Main Dealership</span>
                   <span className="font-mono tabular-nums opacity-85">

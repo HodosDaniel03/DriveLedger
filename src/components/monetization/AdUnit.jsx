@@ -114,15 +114,15 @@ export default function AdUnit({
       ref={setContainerNode}
       data-ad-slot={resolvedSlotId}
       data-ad-activated={isActivated ? 'true' : 'false'}
-      className={`${minHeightClass} w-full border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-surface-subtle dark:bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 relative overflow-hidden print:hidden no-print ${className}`}
+      className={`${minHeightClass} w-full max-w-full min-w-0 border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-surface-subtle dark:bg-zinc-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3.5 relative overflow-hidden print:hidden no-print ${className}`}
       aria-label="Advertisement"
     >
-      <div className="flex items-center gap-3 min-w-0 text-center sm:text-left">
+      <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto text-center sm:text-left">
         <div className="hidden sm:flex w-8 h-8 shrink-0 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
           <ShieldCheck className="w-4 h-4" />
         </div>
-        <div className="min-w-0">
-          <span className="text-[10px] font-sans tracking-widest uppercase text-faint dark:text-zinc-500 font-semibold block">
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-sans tracking-widest uppercase text-faint dark:text-zinc-500 font-semibold block break-words">
             ADVERTISEMENT · ZERO-CLS NATIVE PARTNER RESOURCE ({fallbackPartnerLink.badgeText})
           </span>
           <p className="text-xs font-sans text-body dark:text-zinc-300 truncate">
@@ -131,17 +131,17 @@ export default function AdUnit({
         </div>
       </div>
 
-      <div className="shrink-0 flex flex-col items-center sm:items-end gap-1">
+      <div className="shrink-0 w-full sm:w-auto flex flex-col items-center sm:items-end gap-1">
         <a
           href={fallbackPartnerLink.href}
           target={fallbackPartnerLink.target}
           rel={fallbackPartnerLink.rel}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3.5 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shadow-2xs whitespace-nowrap"
+          className="w-full sm:w-auto min-h-[44px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3.5 py-2 sm:py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shadow-2xs"
         >
-          <span>{fallbackPartnerLink.buttonText}</span>
-          <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
+          <span className="truncate">{fallbackPartnerLink.buttonText}</span>
+          <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 shrink-0" />
         </a>
-        <span className="text-[10px] font-sans text-muted dark:text-zinc-400">
+        <span className="text-[10px] font-sans text-muted dark:text-zinc-400 text-center sm:text-right">
           {FTC_PROXIMATE_DISCLOSURE}
         </span>
       </div>

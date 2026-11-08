@@ -73,9 +73,9 @@ export default function VehicleVisualCard({
   // =========================================================================
   if (variant === 'showcase') {
     return (
-      <div className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm bg-surface dark:bg-[#121215] p-5 space-y-4 ${className}`} id={id}>
+      <div className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm bg-surface dark:bg-[#121215] p-4 sm:p-5 space-y-4 min-w-0 max-w-full overflow-hidden ${className}`} id={id}>
         {/* Header with Vehicle Title & Price */}
-        <div className="flex items-start justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-start justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
           <div className="min-w-0">
             <h3 className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-50 truncate">
               {vehicle.name}
@@ -109,22 +109,22 @@ export default function VehicleVisualCard({
         {secondaryMetrics ? (
           secondaryMetrics
         ) : (
-          <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 text-center text-xs">
-            <div>
-              <span className="font-sans font-medium text-[10px] text-muted dark:text-zinc-400 block">Baseline Odo</span>
-              <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-xs font-bold">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 text-center text-xs">
+            <div className="min-w-0">
+              <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Baseline Odo</span>
+              <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-base font-bold">
                 {formatDistance(vehicle.defaultOdometerMiles || 48000)}
               </strong>
             </div>
-            <div>
-              <span className="font-sans font-medium text-[10px] text-muted dark:text-zinc-400 block">Efficiency</span>
-              <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-xs font-bold">
+            <div className="min-w-0">
+              <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Efficiency</span>
+              <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-base font-bold">
                 {vehicle.isEv ? `${vehicle.mpgUs} kWh` : `${vehicle.mpgUs} MPG`}
               </strong>
             </div>
-            <div>
-              <span className="font-sans font-medium text-[10px] text-muted dark:text-zinc-400 block">Wear Rate</span>
-              <strong className={`font-mono tabular-nums text-xs font-bold ${
+            <div className="min-w-0">
+              <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Wear Rate</span>
+              <strong className={`font-mono tabular-nums text-base font-bold ${
                 (vehicle.maintenanceWearFactor || 1.0) > 1.3 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
               }`}>
                 {(vehicle.maintenanceWearFactor || 1.0).toFixed(2)}x
@@ -145,21 +145,21 @@ export default function VehicleVisualCard({
   return (
     <div
       id={id}
-      className={`bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-6 flex flex-col justify-between transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5 ${className}`}
+      className={`bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5 ${className}`}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-5 items-start min-w-0">
         {/* Real Vehicle Photo Left (sm:col-span-5) */}
         <div className="sm:col-span-5 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200/80 dark:border-zinc-800 group">
           <VehicleImageResolver vehicle={vehicle} variant={variant} interactive showOverlays={false} />
         </div>
 
         {/* Vehicle Specs Right (sm:col-span-7) */}
-        <div className="sm:col-span-7 flex flex-col justify-between h-full">
-          <div>
-            <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight">
+        <div className="sm:col-span-7 flex flex-col justify-between h-full min-w-0">
+          <div className="min-w-0">
+            <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight break-words">
               {vehicle.name}
             </h3>
-            <p className="font-sans font-medium text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+            <p className="font-sans font-medium text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5 break-words">
               {vehicle.engineCode || `${vehicle.powerHp || 150} HP · ${vehicle.fuelType || 'Fuel'}`}
             </p>
 
@@ -174,7 +174,7 @@ export default function VehicleVisualCard({
           </div>
 
           {secondaryMetrics && (
-            <div className="font-sans text-xs text-muted dark:text-zinc-400 mt-3 flex items-center gap-1">
+            <div className="font-sans text-xs text-muted dark:text-zinc-400 mt-3 flex flex-wrap items-center gap-1">
               {secondaryMetrics}
             </div>
           )}
@@ -197,7 +197,7 @@ export default function VehicleVisualCard({
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   })
                 }
-                className="bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
+                className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
                 <span>Change vehicle</span>
@@ -207,7 +207,7 @@ export default function VehicleVisualCard({
                 <button
                   type="button"
                   onClick={onShareReport}
-                  className="bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
+                  className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
                 >
                   <span>Share report ↗</span>
                 </button>

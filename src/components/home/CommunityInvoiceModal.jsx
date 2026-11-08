@@ -280,25 +280,25 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/70 backdrop-blur-sm animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="community-invoice-modal-title"
     >
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl text-ink dark:text-zinc-100">
+      <div className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl text-ink dark:text-zinc-100">
         {/* Top Modal Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-surface/95 dark:bg-zinc-900/95 backdrop-blur border-b border-border dark:border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-400">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-6 py-4 bg-surface/95 dark:bg-zinc-900/95 backdrop-blur border-b border-border dark:border-zinc-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
               <FileText className="w-4 h-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <span className="font-sans text-[10px] uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold block">
                 COMMUNITY TELEMETRY AUDITOR
               </span>
               <h2
                 id="community-invoice-modal-title"
-                className="text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100"
+                className="text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100 truncate"
               >
                 Audit Your Workshop Invoice &amp; Price Spread
               </h2>
@@ -308,13 +308,13 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-subtle dark:hover:bg-zinc-800 transition-colors"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-subtle dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Post-Submission Statistical Percentile & Price Spread Visualization */}
           {submittedAudit && (
             <div
@@ -470,7 +470,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   id="invoice-vehicle-select"
                   value={selectedPresetId}
                   onChange={(e) => setSelectedPresetId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {VEHICLE_PRESETS.map((preset) => (
                     <option key={preset.id} value={preset.id}>
@@ -496,7 +496,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     placeholder="e.g. Volvo XC60 B5 AWD Mild Hybrid"
                     value={customVehicleName}
                     onChange={(e) => setCustomVehicleName(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm text-ink dark:text-zinc-100"
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
                   />
                 </div>
               )}
@@ -514,7 +514,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     id="invoice-assembly-select"
                     value={assemblyLabel}
                     onChange={(e) => setAssemblyLabel(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     {REPAIRED_ASSEMBLIES.map((item) => (
                       <option key={item.id} value={item.label}>
@@ -530,7 +530,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 <span className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5">
                   Workshop Tier
                 </span>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setWorkshopTier('independent')}
@@ -588,7 +588,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     required
                     value={invoiceAmount}
                     onChange={(e) => setInvoiceAmount(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
@@ -612,7 +612,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     required
                     value={odometerMiles}
                     onChange={(e) => setOdometerMiles(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
@@ -631,7 +631,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   placeholder="e.g. Alex M. (or leave blank)"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm text-ink dark:text-zinc-100"
+                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
                 />
               </div>
 
@@ -648,7 +648,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   placeholder="e.g. Replaced OEM Pierburg pump + Continental belt"
                   value={ownerNote}
                   onChange={(e) => setOwnerNote(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-xs sm:text-sm text-ink dark:text-zinc-100"
+                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
                 />
               </div>
             </div>

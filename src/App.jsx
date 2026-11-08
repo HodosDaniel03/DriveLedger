@@ -360,7 +360,7 @@ function DriveLedgerWorkspace() {
       />
 
       {/* Main Content Container */}
-      <main className="mx-auto max-w-[1380px] min-h-[85vh] px-6 lg:px-10 pt-8 pb-16 space-y-12">
+      <main className="w-full max-w-[1440px] mx-auto min-h-[85vh] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-28 lg:pb-16 space-y-10 sm:space-y-12">
         {/* Dynamic Calculator Workspace */}
         <div
           key={activeTab}

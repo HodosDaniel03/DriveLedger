@@ -113,15 +113,15 @@ export default function CookieConsentBanner({
     <aside
       data-testid="cookie-consent-banner"
       aria-label="GDPR and CCPA Cookie Consent Banner"
-      className="fixed bottom-0 inset-x-0 z-40 p-3 sm:p-4 pointer-events-none print:hidden no-print"
+      className="fixed bottom-0 inset-x-0 z-40 p-2 sm:p-4 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print"
     >
-      <div className="mx-auto max-w-[1280px] pointer-events-auto rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-xl p-4 sm:p-5">
+      <div className="mx-auto max-w-[1280px] max-h-[90dvh] overflow-y-auto pointer-events-auto rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-xl p-4 sm:p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-start gap-3 max-w-3xl">
+          <div className="flex items-start gap-3 max-w-3xl min-w-0">
             <div className="hidden sm:flex w-9 h-9 shrink-0 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center mt-0.5">
               <Shield className="w-4 h-4" />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
                   Privacy &amp; Cookie Governance (GDPR / UK GDPR / CCPA)
@@ -152,7 +152,7 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-settings-toggle"
               onClick={() => setShowSettings((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <Sliders className="w-3.5 h-3.5" />
               <span>Cookie Settings</span>
@@ -161,7 +161,7 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-essential-only"
               onClick={handleEssentialOnly}
-              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[44px] sm:min-h-0 inline-flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               Essential Only
             </button>
@@ -169,7 +169,7 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-accept-all"
               onClick={handleAcceptAll}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-sans font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+              className="min-h-[44px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-sans font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Accept All</span>
