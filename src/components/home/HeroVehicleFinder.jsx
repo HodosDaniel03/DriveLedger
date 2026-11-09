@@ -112,7 +112,7 @@ export default function HeroVehicleFinder({
 
           {/* Main Title */}
           <h1 className="text-[clamp(1.75rem,7vw,3.5rem)] leading-tight text-balance tracking-tight font-sans font-bold text-ink dark:text-zinc-50 mt-4 mb-3">
-            Know what your car really costs — <span className="text-primary-600 dark:text-primary-400">before it costs you.</span>
+            Know what your car really costs <span className="text-primary-600 dark:text-primary-400">before it costs you.</span>
           </h1>
 
           {/* Subtitle */}
