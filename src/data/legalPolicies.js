@@ -193,7 +193,7 @@ export const LEGAL_POLICIES = {
       {
         heading: '3. Outbound Affiliate Links & Third-Party Merchant Privacy',
         paragraphs: [
-          `Our calculators contain contextual partner links to verified third-party automotive platforms (such as VIN history registries, diagnostic hardware retailers, OEM parts catalogs, and insurance comparison marketplaces). When you voluntarily click an outbound partner link, your browser navigates to that third-party domain with a standard referral tracking parameter. ${brandName} does not receive any personal identity, payment card, or VIN query data that you subsequently submit on a third-party partner website; such interactions are governed solely by the privacy policy of the destination merchant.`,
+          `Our calculators contain contextual partner links to third-party automotive platforms (such as VIN history registries, diagnostic hardware retailers, OEM parts catalogs, and insurance comparison marketplaces). When you voluntarily click an outbound partner link, your browser navigates to that third-party domain with a standard referral tracking parameter. ${brandName} does not receive any personal identity, payment card, or VIN query data that you subsequently submit on a third-party partner website; such interactions are governed solely by the privacy policy of the destination merchant.`,
         ],
       },
       {
@@ -256,7 +256,7 @@ export const LEGAL_POLICIES = {
         heading: '1. FTC 16 CFR Part 255 Material Connection Disclosure',
         paragraphs: [
           `In accordance with the United States Federal Trade Commission (FTC) Guides Concerning the Use of Endorsements and Testimonials in Advertising (16 CFR Part 255), the UK Competition and Markets Authority (CMA) transparency guidelines, and European Union Unfair Commercial Practices Directive standards, ${brandName} (https://${domain}) discloses that we maintain commercial affiliate relationships with select automotive data, diagnostic hardware, replacement parts, and insurance comparison providers.`,
-          `When you click on a partner call-to-action button or hyperlink marked with a "Partner link" or "Verified Partner" disclosure on our platform and subsequently complete a qualifying purchase, VIN history check, or rate inquiry on the partner's website, ${brandName} may receive a referral fee or affiliate commission. This commission comes at zero additional cost to you—the price you pay on the partner's website is identical whether you access it through ${brandName} or visit the vendor directly.`,
+          `When you click on a partner call-to-action button or hyperlink marked with a "Partner link" or "Sponsored" disclosure on our platform and subsequently complete a qualifying purchase, VIN history check, or rate inquiry on the partner's website, ${brandName} may receive a referral fee or affiliate commission. This commission comes at zero additional cost to you—the price you pay on the partner's website is identical whether you access it through ${brandName} or visit the vendor directly.`,
         ],
       },
       {
@@ -280,35 +280,36 @@ export const LEGAL_POLICIES = {
     id: 'about',
     hash: '#about',
     shortLabel: 'About & Methodology',
-    title: `About ${brandName} — Engineering Methodology & E-E-A-T Governance`,
-    subtitle: `First-Principles Automotive Cost Modeling, SAE J1979 Diagnostic Mapping & Regional Labor Indexing — Last Updated: ${lastUpdated}`,
+    title: `About ${brandName} — Independent Car Cost & Reliability Tool`,
+    subtitle: `How We Estimate Ownership Costs, Maintenance Risks & Repair Prices — Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
-        heading: '1. Mission & Independent Automotive Cost Intelligence',
+        heading: '1. What DriveLedger Is & Who It Is For',
         paragraphs: [
-          `${brandName} (https://${domain}) was engineered to eliminate information asymmetry between everyday vehicle buyers/owners, automotive dealerships, and repair workshops. Most consumers evaluate a vehicle based solely on its sticker price and official fuel economy, overlooking the two largest drivers of real-world financial loss: non-linear multi-year depreciation and mileage-triggered powertrain component wear.`,
-          `Our platform combines actuarial depreciation modeling, thermodynamic duty-cycle wear multipliers, and root-cause OBD-II workshop labor mathematics into a single transparent, client-side telemetry workspace.`,
+          `${brandName} (https://${domain}) is a free, independent web application built for used-car buyers and vehicle owners across the United States, the United Kingdom, and the European Union. Most buyers compare cars based solely on the asking price and official fuel consumption, overlooking multi-year depreciation and mileage-triggered maintenance expenses.`,
+          `Our goal is to put practical cost calculators, common powertrain maintenance checklists, and OBD-II fault code repair estimates in one place—with no sign-up, no paywalls, and full transparency about how our numbers are estimated.`,
         ],
       },
       {
-        heading: '2. Actuarial Depreciation Curves & Thermodynamic Wear Multipliers',
+        heading: '2. Data Sources, Actuarial Depreciation Curves & Wear Estimates',
         paragraphs: [
-          `Rather than applying a flat annual percentage, ${brandName} models vehicle residual decay across a 10-year non-linear curve calibrated to segment-specific wholesale and retail market data, adjusted dynamically for annual mileage variance relative to regional baselines.`,
-          `In our Maintenance Risk Matrix, component lifespan is evaluated using effective wear mileage rather than raw odometer distance alone. Stop-and-go urban short trips prevent engine oil, exhaust catalysts, and Diesel Particulate Filters (DPFs) from reaching optimal thermal equilibrium, accelerating soot loading, fuel dilution, and dual-mass flywheel fatigue by a 1.35x to 1.55x thermodynamic penalty multiplier. We also explicitly highlight where manufacturer "lifetime fluid" or extended wet-belt marketing intervals diverge from preventative mechanical engineering.`,
+          `All figures shown on ${brandName} are statistical estimates rather than guaranteed workshop quotes. Our 5-year and 10-year Actuarial Depreciation Curves model vehicle value retention by vehicle segment and adjust for annual mileage relative to regional averages.`,
+          `Our maintenance schedules and component risk windows are compiled from publicly available manufacturer service schedules, technical service bulletins (TSBs), OEM parts catalogs, and typical independent vs. franchised dealership labor rates. For stop-and-go city driving, our calculator applies a 1.35x to 1.55x wear multiplier to reflect the faster wear on engine oil, Diesel Particulate Filters (DPFs), and dual-mass flywheels during short cold-start trips.`,
         ],
       },
       {
-        heading: '3. SAE J1979 OBD-II Fault Dossiers & US / UK / EU Regional Indexing',
+        heading: '3. OBD-II Fault Code Lookup & US / UK / EU Regional Pricing',
         paragraphs: [
-          `Every OBD-II diagnostic dossier in our catalog maps standardized SAE J1979 / ISO 15031 trouble codes to probability-weighted root causes, separating OEM/OE parts costs from flat-rate book labor hours across three transparent workshop tiers: Franchised Main Dealership ($185/hr baseline), Independent Specialist ($115/hr baseline), and DIY Parts-Only ($0/hr labor).`,
-          `Our multi-region unit engine converts currency ($ USD, £ GBP, € EUR), distance (miles vs. kilometers), and energy efficiency (MPG US, MPG UK Imperial, L/100km, kWh/100mi, and kWh/100km) in real time so drivers across North America, the United Kingdom, and the European Union can benchmark ownership costs in their native units.`,
+          `Each OBD-II trouble code guide in our lookup tool maps standard SAE J1979 fault codes to their most common mechanical or sensor causes, separating typical OE replacement part prices from estimated labor hours across three tiers: Franchised Dealership, Independent Specialist, and DIY Parts-Only.`,
+          `Our unit converter switches currency ($ USD, £ GBP, € EUR), distance (miles and kilometers), and fuel/energy consumption (MPG US, MPG UK, L/100km, kWh/100mi, and kWh/100km) so drivers in the US, UK, and Europe can compare costs in their local units.`,
         ],
       },
       {
-        heading: '4. Editorial Governance & Direct Contact Channels',
+        heading: '4. Imprint (Impresszum) — Independent Operator Identification & Contact',
         paragraphs: [
-          `${brandName} is maintained by automotive data engineers and diagnostic researchers committed to transparent, verifiable consumer math. For general inquiries, dataset feedback, or partnership questions, contact ${contactEmail}. For legal, privacy (GDPR/CCPA), or intellectual property notices, contact ${legalEmail}.`,
+          `${brandName} is operated as an independent digital publishing and web tool project (https://${domain}). To keep the calculators 100% free for all users, the site may include clearly labeled partner links (such as vehicle history report providers like carVertical or diagnostic tool retailers). Commercial links never alter our cost formulas or vehicle scores.`,
+          `Operator & Publisher (Impresszum pursuant to EU Directive 2000/31/EC & Hungarian Act CVIII of 2001 on Electronic Commerce Services): DriveLedger Editorial & Development (${domain}) · Operating Jurisdiction: European Union / Hungary · Electronic Contact: ${contactEmail} · Legal, Privacy (GDPR/CCPA) & Editorial Inquiries: ${legalEmail} · Edge Hosting & CDN Infrastructure: Cloudflare, Inc.`,
         ],
       },
     ],
@@ -342,6 +343,13 @@ export const LEGAL_POLICIES = {
         heading: '3. Reporting a Vehicle Preset or OBD-II Calibration Update',
         paragraphs: [
           `When submitting a workshop invoice benchmark or suggesting a new vehicle powertrain preset for inclusion in ${brandName}, please include the vehicle model year, engine code, physical odometer reading, region (US, UK, or EU), and whether the service was performed by a main dealership or an independent specialist.`,
+        ],
+      },
+      {
+        heading: '4. Statutory Imprint (Impresszum) & Service Provider Details',
+        paragraphs: [
+          `Service Provider & Editorial Operator: DriveLedger Editorial & Development (https://${domain}) · Jurisdiction: European Union / Hungary (in accordance with EU e-Commerce Directive 2000/31/EC and Hungarian Act CVIII of 2001).`,
+          `Direct Electronic Contact: ${contactEmail} (General & Affiliate Partnerships) · ${legalEmail} (Legal, GDPR Data Protection & Copyright) · Infrastructure & Hosting Provider: Cloudflare, Inc. (101 Townsend St, San Francisco, CA 94107, USA / Cloudflare European Edge Network).`,
         ],
       },
     ],

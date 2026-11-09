@@ -73,14 +73,14 @@ export default function AffiliateCTA({
   const headline = customHeadline || offer.title;
   const bodyText = customBody !== undefined ? customBody : offer.description;
   const actionText = ctaText || offer.ctaText || linkProps.buttonText;
-  const targetHref = href && href !== '#' ? href : linkProps.href;
+  const targetHref = href && href !== '#' ? href : offer.href || linkProps.href;
   const IconComp = ICONS[offer.type] || ICONS[type] || Car;
 
   return (
     <aside
       data-testid={`affiliate-cta-${offer.type}`}
       className={`w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#121215] p-4 sm:p-5 print:hidden no-print ${className}`}
-      aria-label="Verified Partner Action"
+      aria-label="Partner Recommendation"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
         <div className="flex items-start gap-3 min-w-0">
@@ -126,7 +126,7 @@ export default function AffiliateCTA({
             {FTC_PROXIMATE_DISCLOSURE}
           </span>
           <span className="text-[10px] font-sans font-medium text-faint dark:text-zinc-500">
-            {offer.partnerName} · {offer.badgeText} ({offer.region})
+            {offer.partnerName} ({offer.region})
           </span>
         </div>
       </div>

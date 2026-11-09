@@ -249,7 +249,7 @@ export default function Footer({
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-sans font-medium">
-                  Verified Automotive Data Index
+                  Independent Automotive Cost Estimates
                 </span>
                 <span className="text-[11px] font-mono text-muted dark:text-zinc-400">
                   {MONETIZATION_CONFIG.contactEmail}

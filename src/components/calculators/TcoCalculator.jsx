@@ -1175,7 +1175,7 @@ export default function TcoCalculator({
       <TldrVerdictBox
         title="TL;DR Verdict"
         subtitle="3 key financial metrics (Zero fluff)"
-        badge="Verified Data"
+        badge="Cost Estimate"
         facts={tcoTldrFacts}
       />
 

@@ -89,7 +89,7 @@ export const LEGAL_MODAL_CONTENT = {
       },
       {
         heading: '3. Limitation of Liability',
-        body: 'DriveLedger Telemetry Systems shall not be held liable for workshop invoice variances, vehicle purchase decisions, or mechanical failures arising from reliance on estimated intervals or diagnostic guides.',
+        body: 'DriveLedger shall not be held liable for workshop invoice variances, vehicle purchase decisions, or mechanical failures arising from reliance on estimated intervals or diagnostic guides.',
       },
     ],
   },
@@ -100,7 +100,7 @@ export const LEGAL_MODAL_CONTENT = {
     sections: [
       {
         heading: '1. FTC & ASA Commercial Transparency Compliance',
-        body: 'In compliance with US Federal Trade Commission (FTC) 16 CFR Part 255 guidelines and UK/EU consumer transparency regulations, DriveLedger discloses that certain contextual recommendation cards Marked with "Verified Partner" or "Sponsored Telemetry Integration" contain affiliate links.',
+        body: 'In compliance with US Federal Trade Commission (FTC) 16 CFR Part 255 guidelines and UK/EU consumer transparency regulations, DriveLedger discloses that certain contextual recommendation cards marked with "Partner link" or "Sponsored" contain affiliate links.',
       },
       {
         heading: '2. Editorial & Algorithmic Independence',
@@ -508,9 +508,9 @@ export default function TechnicalMethodologyGuide({
           <ShieldCheck className="w-4 h-4 text-score-good dark:text-emerald-400 shrink-0 mt-0.5" />
           <p>
             <strong className="text-ink dark:text-zinc-200">
-              AdSense &amp; Partner Verification Notice:{' '}
+              Advertising &amp; Partner Link Disclosure:{' '}
             </strong>
-            DriveLedger maintains strict separation between our thermodynamic/financial algorithms and verified partner integrations. Review our legal governance documents at any time:
+            DriveLedger maintains strict separation between our cost estimation models and third-party partner links. Review our legal governance documents at any time:
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -591,7 +591,7 @@ export default function TechnicalMethodologyGuide({
                         Contextual AdSense &amp; Partner Attribution
                       </span>
                       <span className="text-xs text-muted dark:text-zinc-400">
-                        Zero-CLS display ad slots &amp; verified affiliate links
+                        Display ad slots &amp; partner attribution links
                       </span>
                     </div>
                     <input

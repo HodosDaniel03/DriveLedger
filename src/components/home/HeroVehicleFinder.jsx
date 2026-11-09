@@ -230,15 +230,10 @@ export default function HeroVehicleFinder({
             ))}
           </div>
 
-          {/* Trust Proof Rating */}
+          {/* Factual Platform Highlights */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <div className="flex items-center text-amber-500 text-sm tracking-tight select-none shrink-0">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-              ))}
-            </div>
             <span className="text-xs sm:text-sm font-sans font-medium text-body dark:text-zinc-300">
-              <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums font-semibold">4.8/5</strong> from <span className="font-mono tabular-nums">2,400+</span> verified drivers
+              <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums font-semibold">120+</strong> models covered · US, UK &amp; EU regional pricing · Free, no sign-up
             </span>
           </div>
 

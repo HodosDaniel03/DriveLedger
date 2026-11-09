@@ -111,7 +111,7 @@ export default function TopTabAffiliateBanner({
 
         <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800 flex flex-col gap-1">
           <a
-            href={linkProps.href}
+            href={config.href || linkProps.href}
             target={linkProps.target}
             rel={linkProps.rel}
             className="group w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
@@ -177,7 +177,7 @@ export default function TopTabAffiliateBanner({
 
         <div className="shrink-0 w-full sm:w-auto flex flex-col sm:items-start lg:items-end gap-1.5">
           <a
-            href={linkProps.href}
+            href={config.href || linkProps.href}
             target={linkProps.target}
             rel={linkProps.rel}
             className="group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"

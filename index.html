@@ -2,8 +2,27 @@
 <html lang="en" class="bg-canvas dark:bg-slate-950">
 
 <head>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6581535125716295"
-    crossorigin="anonymous"></script>
+  <script>
+    window.__loadDriveLedgerAdSense = function () {
+      try {
+        var existing = document.getElementById('driveledger-adsense-script');
+        var raw = localStorage.getItem('shiftmetric_cookie_consent');
+        var parsed = raw ? JSON.parse(raw) : null;
+        if (!parsed || !parsed.advertising) {
+          if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+          return;
+        }
+        if (existing) return;
+        var s = document.createElement('script');
+        s.id = 'driveledger-adsense-script';
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6581535125716295';
+        document.head.appendChild(s);
+      } catch (e) { }
+    };
+    window.__loadDriveLedgerAdSense();
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>DriveLedger — Independent Automotive Cost Intelligence</title>

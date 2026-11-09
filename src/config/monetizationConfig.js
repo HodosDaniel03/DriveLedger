@@ -4,9 +4,10 @@
  *
  * To activate live monetization in production:
  * 1. Set `adsenseEnabled: true` and replace `publisherId` + `slots` with your live Google AdSense IDs.
- * 2. Replace `YOUR_CARVERTICAL_ID`, `YOUR_AMAZON_TAG-20`, `YOUR_INSURANCE_ID`, and `YOUR_PARTS_ID`
- *    in `affiliatePartners` with your live partner tracking parameters.
+ * 2. Set your approved partner tracking parameters in `affiliatePartners` (`affiliateParam`).
  */
+
+import { REGIONAL_PARTNER_URLS } from '../data/affiliatePartners.js';
 
 export const SITE_METADATA = {
   brandName: 'DriveLedger',
@@ -92,6 +93,29 @@ export function resolvePartnerKey(partnerKey = 'vinCheck') {
   return PARTNER_KEY_MAP[partnerKey] || 'vinCheck';
 }
 
+export function isPlaceholderAffiliateParam(param) {
+  const cleaned = String(param || '').trim();
+  if (!cleaned) return true;
+  return /YOUR_[A-Z0-9_-]+/i.test(cleaned);
+}
+
+function appendTrackingParam(rawBaseUrl, affiliateParam, { skipPlaceholder = false } = {}) {
+  const baseUrl = String(rawBaseUrl || '').trim();
+  const rawParam = String(affiliateParam || '').trim().replace(/^[?&]+/, '');
+  if (!rawParam || (skipPlaceholder && isPlaceholderAffiliateParam(rawParam)) || !baseUrl || baseUrl.includes(rawParam)) {
+    return baseUrl;
+  }
+  const hashIdx = baseUrl.indexOf('#');
+  if (hashIdx !== -1) {
+    const baseWithoutHash = baseUrl.slice(0, hashIdx);
+    const hash = baseUrl.slice(hashIdx);
+    const separator = baseWithoutHash.includes('?') ? '&' : '?';
+    return `${baseWithoutHash}${separator}${rawParam}${hash}`;
+  }
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${rawParam}`;
+}
+
 /**
  * Automatically appends the affiliate tracking parameter for the requested partner
  * and returns safe external link props (`href`, `target: "_blank"`, `rel: "sponsored noopener noreferrer"`).
@@ -103,21 +127,7 @@ export function resolvePartnerKey(partnerKey = 'vinCheck') {
 export function buildAffiliateUrl(partnerKey = 'vinCheck', vehicleContext = null) {
   const canonicalKey = resolvePartnerKey(partnerKey);
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
-  const baseUrl = String(partner.baseUrl || '').trim();
-  const rawParam = String(partner.affiliateParam || '').trim().replace(/^[?&]+/, '');
-  let href = baseUrl;
-  if (rawParam) {
-    const hashIdx = baseUrl.indexOf('#');
-    if (hashIdx !== -1) {
-      const baseWithoutHash = baseUrl.slice(0, hashIdx);
-      const hash = baseUrl.slice(hashIdx);
-      const separator = baseWithoutHash.includes('?') ? '&' : '?';
-      href = `${baseWithoutHash}${separator}${rawParam}${hash}`;
-    } else {
-      const separator = baseUrl.includes('?') ? '&' : '?';
-      href = `${baseUrl}${separator}${rawParam}`;
-    }
-  }
+  const href = appendTrackingParam(partner.baseUrl, partner.affiliateParam);
 
   const linkProps = {
     href,
@@ -156,8 +166,8 @@ function defaultFormatDistance(miles) {
 }
 
 /**
- * Resolves a complete contextual partner offer from `monetizationConfig.js` for
- * `AffiliateCTA` and `TopTabAffiliateBanner`.
+ * Resolves a complete contextual partner offer from `monetizationConfig.js` and
+ * `REGIONAL_PARTNER_URLS` (`affiliatePartners.js`) for `AffiliateCTA` and `TopTabAffiliateBanner`.
  */
 export function resolveAffiliateOffer({
   type = 'vin-check',
@@ -184,7 +194,21 @@ export function resolveAffiliateOffer({
 
   const canonicalKey = resolvePartnerKey(type);
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
-  const linkProps = buildAffiliateUrl(canonicalKey, {
+
+  const regionalBucketKey =
+    type === 'vin-check' || type === 'vinCheck'
+      ? 'vin-check'
+      : type === 'warranty' || type === 'partsLookup' || type === 'parts-lookup'
+        ? 'warranty'
+        : type === 'insurance-finance' || type === 'autoInsurance'
+          ? 'insurance-finance'
+          : 'obd-scanner';
+
+  const regionalEntry =
+    REGIONAL_PARTNER_URLS[regionalBucketKey]?.[regKey] ||
+    REGIONAL_PARTNER_URLS[regionalBucketKey]?.US;
+
+  const baseLinkProps = buildAffiliateUrl(canonicalKey, {
     type,
     region: regKey,
     vehicleName,
@@ -193,14 +217,23 @@ export function resolveAffiliateOffer({
     activeCode,
   });
 
+  const resolvedHref = regionalEntry?.href
+    ? appendTrackingParam(regionalEntry.href, partner.affiliateParam, { skipPlaceholder: true })
+    : baseLinkProps.href;
+
+  const linkProps = {
+    ...baseLinkProps,
+    href: resolvedHref,
+  };
+
+  const resolvedPartnerName = regionalEntry?.partnerName || partner.name;
+  const resolvedTrustDetail = regionalEntry?.trustProof || '';
+
   const formattedPrice =
     vehiclePriceFormatted || formatCurrency(Number(purchasePriceUsd) || 28500);
   const hasOdometer = Number(odometerMiles) > 0;
   const formattedOdo = hasOdometer ? formatDistance(odometerMiles) : null;
   const hasReserve = Number(serviceReserveUsd) > 0;
-  const exposureAmount = hasReserve
-    ? formatCurrency(Math.max(850, Math.round(serviceReserveUsd * 1.45)))
-    : formatCurrency(3200);
 
   if (type === 'vin-check' || type === 'vinCheck') {
     const odoClause = formattedOdo ? ` at ${formattedOdo}` : '';
@@ -208,13 +241,11 @@ export function resolveAffiliateOffer({
       type: 'vin-check',
       partnerKey: canonicalKey,
       region: regKey,
-      partnerName: partner.name,
+      partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
-      badge: `Verified Partner · ${partner.name} · ${partner.badgeText}`,
+      badge: `Partner link · ${resolvedPartnerName}`,
       title: `Buying or owning this ${vehicleName}${odoClause}? Check odometer rollbacks & salvage records before paying ${formattedPrice}`,
-      description: hasReserve
-        ? `At ${formattedOdo || 'current mileage'}, a rolled-back odometer hides ${exposureAmount}+ in imminent timing, DPF, or transmission wear. Verify title, structural collision records, and real mileage via ${partner.name} before paying ${formattedPrice}.`
-        : `Verify real mileage, hidden structural collision damage, past salvage titles, and theft history via ${partner.name} before paying ${formattedPrice}.`,
+      description: `Check chronological mileage records, past damage history, salvage or flood title status, and theft records via ${resolvedPartnerName} before paying ${formattedPrice}.`,
       features: [
         'Odometer Rollback Detection',
         'Salvage & Flood Title Records',
@@ -222,10 +253,10 @@ export function resolveAffiliateOffer({
       ],
       ctaText: partner.buttonText,
       secondaryActionLabel: 'Run Instant VIN Check',
-      href: linkProps.href,
+      href: resolvedHref,
       linkProps,
-      highlightBadge: `Avoids ${exposureAmount}+ in undisclosed repairs`,
-      trustProof: `${partner.badgeText} · ${partner.name} · Run Instant VIN Check`,
+      highlightBadge: 'Mileage, damage & title history check',
+      trustProof: `Partner link · ${resolvedPartnerName}${resolvedTrustDetail ? ` · ${resolvedTrustDetail}` : ''} · Run Instant VIN Check`,
       microDisclosure: FTC_PROXIMATE_DISCLOSURE,
     };
   }
@@ -239,11 +270,11 @@ export function resolveAffiliateOffer({
       type: type === 'warranty' ? 'warranty' : 'parts-lookup',
       partnerKey: canonicalKey,
       region: regKey,
-      partnerName: partner.name,
+      partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
-      badge: `Verified Partner · ${partner.name} · ${partner.badgeText}`,
+      badge: `Partner link · ${resolvedPartnerName}`,
       title: `Avoid unexpected workshop bills for ${vehicleName} — Compare repair protection & OEM replacement part prices (save up to ${savingsPerYr}/yr)`,
-      description: `${reserveText}Verify exact OEM replacement part pricing and protect against high-pressure fuel pump, timing assembly, turbocharger, and transmission failures.`,
+      description: `${reserveText}Compare OEM replacement part pricing and extended coverage options for fuel system, timing assembly, turbocharger, and transmission repairs.`,
       features: [
         `Save up to ${savingsPerYr}/yr on Coverage`,
         'OEM & Aftermarket Part Price Lookup',
@@ -251,10 +282,10 @@ export function resolveAffiliateOffer({
       ],
       ctaText: partner.buttonText,
       secondaryActionLabel: 'Compare Warranty Plans',
-      href: linkProps.href,
+      href: resolvedHref,
       linkProps,
       highlightBadge: `Save up to ${savingsPerYr}/yr on Coverage`,
-      trustProof: `${partner.badgeText} · ${partner.name} · Compare Warranty Plans`,
+      trustProof: `Partner link · ${resolvedPartnerName}${resolvedTrustDetail ? ` · ${resolvedTrustDetail}` : ''} · Compare Warranty Plans`,
       microDisclosure: FTC_PROXIMATE_DISCLOSURE,
     };
   }
@@ -274,22 +305,22 @@ export function resolveAffiliateOffer({
       type: 'insurance-finance',
       partnerKey: canonicalKey,
       region: regKey,
-      partnerName: partner.name,
+      partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
-      badge: `Verified Partner · ${partner.name} · ${partner.badgeText}`,
+      badge: `Partner link · ${resolvedPartnerName}`,
       title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName} — trim ~${monthlySave}/mo`,
-      description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare live motor insurance tariffs and lower-APR refinancing quotes via ${partner.name} without affecting your credit score.`,
+      description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare motor insurance tariffs and refinancing quotes via ${resolvedPartnerName}.`,
       features: [
         `Trim ~${monthlySave}/mo off Fixed Costs`,
-        'Instant Multi-Carrier Rate Check',
-        'Soft-Pull APR Refinance Match',
+        'Multi-Carrier Rate Check',
+        'APR Refinance Comparison',
       ],
       ctaText: partner.buttonText,
       secondaryActionLabel: 'Compare Lower Rates',
-      href: linkProps.href,
+      href: resolvedHref,
       linkProps,
       highlightBadge: `Potential ${monthlySave}/mo Fixed-Cost Reduction`,
-      trustProof: `${partner.badgeText} · ${partner.name}`,
+      trustProof: `Partner link · ${resolvedPartnerName}${resolvedTrustDetail ? ` · ${resolvedTrustDetail}` : ''}`,
       microDisclosure: FTC_PROXIMATE_DISCLOSURE,
     };
   }
@@ -311,13 +342,13 @@ export function resolveAffiliateOffer({
     type: 'obd-scanner',
     partnerKey: canonicalKey,
     region: regKey,
-    partnerName: partner.name,
+    partnerName: resolvedPartnerName,
     badgeText: partner.badgeText,
-    badge: `Verified Partner · ${partner.name} · ${partner.badgeText}`,
+    badge: `Partner link · ${resolvedPartnerName}`,
     title: `Don't pay ${diagFee}+ in workshop diagnostic fees — Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
     description: hasCauseDelta
-      ? `Don't authorize a blind ${formatCurrency(costliestCauseUsd)} replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} triggers ${activeCode}. Verify live telemetry PIDs on your phone with a ${scannerCost} scanner (${paybackRatio}x payback on first scan).`
-      : `Read freeze-frame telemetry, live O2/boost/fuel PIDs, and reset the Check Engine light in under 60 seconds. Recommended hardware diagnostic tool for ${activeCodeTitle}.`,
+      ? `Before authorizing a ${formatCurrency(costliestCauseUsd)} replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} triggers ${activeCode}, check live sensor PIDs on your phone with a ${scannerCost} scanner.`
+      : `Read freeze-frame data, live O2/boost/fuel PIDs, and clear fault codes on your phone. Compatible hardware diagnostic tool for ${activeCodeTitle}.`,
     features: [
       'iOS & Android Bluetooth',
       'Live Sensor Telemetry PIDs',
@@ -325,12 +356,12 @@ export function resolveAffiliateOffer({
     ],
     ctaText: partner.buttonText,
     secondaryActionLabel: partner.buttonText,
-    href: linkProps.href,
+    href: resolvedHref,
     linkProps,
     highlightBadge: paybackRatio
       ? `${paybackRatio}x Payback vs. Blind Parts Swap`
-      : 'Pays for itself on the first diagnostic scan',
-    trustProof: `${partner.badgeText} · ${partner.name} · Works with 1996+ OBD-II vehicles`,
+      : 'Read fault codes & live sensor data at home',
+    trustProof: `Partner link · ${resolvedPartnerName} · ${resolvedTrustDetail || 'Works with 1996+ OBD-II vehicles'}`,
     microDisclosure: FTC_PROXIMATE_DISCLOSURE,
   };
 }

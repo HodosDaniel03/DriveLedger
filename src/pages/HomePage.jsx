@@ -54,7 +54,7 @@ export default function HomePage({
   const faqs = [
     {
       q: 'How accurate are the cost estimates?',
-      a: 'Our cost models combine verified factory depreciation curves, regional insurance group tables, real-world fuel economy logs from over 50,000 vehicles, and average regional labor rates updated regularly.',
+      a: 'Our cost models combine factory depreciation curves, regional insurance group tables, typical real-world fuel economy figures, and average regional labor rates updated regularly.',
     },
     {
       q: 'Where do the repair prices come from?',
@@ -405,7 +405,7 @@ export default function HomePage({
                   <div className="flex items-center gap-1.5">
                     <span>DriveLedger</span>
                     <span className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[10px] px-2 py-0.5 rounded-md font-sans font-medium">
-                      verified
+                      independent
                     </span>
                   </div>
                 </th>
@@ -685,8 +685,8 @@ export default function HomePage({
                 Adjusts mechanical component lifespan based on city vs. highway trip cycles, cold-start frequency, and oil degradation rates.
               </div>
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <strong className="block text-ink dark:text-zinc-200 mb-1">OBD-II Diagnostic Telemetry:</strong>
-                Maps SAE J1979 DTC fault codes to verified root-cause probabilities and regional independent vs. dealership labor rates.
+                <strong className="block text-ink dark:text-zinc-200 mb-1">OBD-II Diagnostic Lookup:</strong>
+                Maps SAE J1979 DTC fault codes to estimated root-cause probabilities and regional independent vs. dealership labor rates.
               </div>
             </div>
           </div>

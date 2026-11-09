@@ -34,6 +34,16 @@ export function saveCookieConsentSelection(selection) {
   if (storage) {
     try {
       storage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(payload));
+      if (typeof window !== 'undefined') {
+        if (typeof window.__loadDriveLedgerAdSense === 'function') {
+          window.__loadDriveLedgerAdSense();
+        } else if (!payload.advertising && typeof document !== 'undefined') {
+          const existing = document.getElementById('driveledger-adsense-script');
+          if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
+          }
+        }
+      }
     } catch (_err) {
       // Ignore storage quota errors in restricted environments
     }

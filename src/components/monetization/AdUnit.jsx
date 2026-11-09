@@ -123,10 +123,10 @@ export default function AdUnit({
         </div>
         <div className="min-w-0 flex-1">
           <span className="text-[10px] font-sans tracking-widest uppercase text-faint dark:text-zinc-500 font-semibold block break-words">
-            ADVERTISEMENT · ZERO-CLS NATIVE PARTNER RESOURCE ({fallbackPartnerLink.badgeText})
+            ADVERTISEMENT · PARTNER RESOURCE
           </span>
           <p className="text-xs font-sans text-body dark:text-zinc-300 truncate">
-            {contextLabel} — Verified consumer tools via {fallbackPartnerLink.partnerName}.
+            {contextLabel} — External resource via {fallbackPartnerLink.partnerName}.
           </p>
         </div>
       </div>

@@ -7,70 +7,70 @@
 export const REGIONAL_PARTNER_URLS = {
   'vin-check': {
     US: {
-      partnerName: 'Carfax / NMVTIS',
-      href: 'https://www.carfax.com/vehicle-history-reports/',
-      trustProof: 'Official NMVTIS & North American Title Partner · 14,000+ Verified Scans',
+      partnerName: 'carVertical US',
+      href: 'https://www.carvertical.com/us',
+      trustProof: 'North American & International VIN History Check',
     },
     UK: {
       partnerName: 'carVertical UK',
       href: 'https://www.carvertical.com/gb',
-      trustProof: 'DVLA, HPI, Police Stolen & Insurance Write-Off Database · Instant Report',
+      trustProof: 'UK & Cross-Border VIN History Check',
     },
     EU: {
       partnerName: 'carVertical Europe',
       href: 'https://www.carvertical.com/eu',
-      trustProof: 'Cross-Border Euro Odometer, TUV & Insurance Damage Registry · 35+ Countries',
+      trustProof: 'European Cross-Border VIN History Check',
     },
   },
   'obd-scanner': {
     US: {
       partnerName: 'Amazon US Automotive',
       href: 'https://www.amazon.com/s?k=bluetooth+obd2+scanner',
-      trustProof: '4.9/5 Rating · Works with any 1996+ OBD-II vehicle (iOS & Android)',
+      trustProof: 'Works with 1996+ OBD-II vehicles (iOS & Android)',
     },
     UK: {
       partnerName: 'Amazon UK Automotive',
       href: 'https://www.amazon.co.uk/s?k=bluetooth+obd2+scanner',
-      trustProof: '4.9/5 Rating · Compatible with all UK EOBD / OBD-II petrol, diesel & hybrid cars',
+      trustProof: 'Compatible with UK EOBD / OBD-II petrol, diesel & hybrid cars',
     },
     EU: {
       partnerName: 'Amazon EU Automotive',
       href: 'https://www.amazon.de/s?k=bluetooth+obd2+scanner',
-      trustProof: '4.9/5 Rating · Compatible with all EU EOBD / OBD-II vehicles (iOS & Android)',
+      trustProof: 'Compatible with EU EOBD / OBD-II vehicles (iOS & Android)',
     },
   },
   warranty: {
     US: {
       partnerName: 'CarShield ASE Network',
       href: 'https://www.carshield.com/',
-      trustProof: 'Rated 4.8/5 · Direct Billing at ASE-Certified US Workshops & Dealerships',
+      trustProof: 'Vehicle service protection plans for US workshops & dealerships',
     },
     UK: {
       partnerName: 'MotorEasy UK Warranty',
       href: 'https://www.motoreasy.com/',
-      trustProof: 'Rated 4.7/5 · Direct Billing Across 10,000+ VAT-Registered UK Garages',
+      trustProof: 'Extended warranty options for UK garages',
     },
     EU: {
-      partnerName: 'Garant EU Powertrain Cover',
-      href: 'https://www.garant-warranty.eu/',
-      trustProof: 'Rated 4.7/5 · Pan-European Specialist & Main Dealer Direct Claims Settlement',
+      partnerName: 'AUTODOC Europe',
+      href: 'https://www.autodoc.eu/',
+      trustProof: 'European Replacement Parts & Service Catalog',
     },
   },
   'insurance-finance': {
     US: {
       partnerName: 'Insurify Rate Compare',
       href: 'https://insurify.com/car-insurance/',
-      trustProof: 'Real-Time Quotes Across 100+ US Carriers · Zero Spam Guarantee',
+      trustProof: 'Online US auto insurance rate comparison',
     },
     UK: {
       partnerName: 'Compare The Market UK',
       href: 'https://www.comparethemarket.com/car-insurance/',
-      trustProof: 'FCA-Regulated UK Motor Insurance & APR Refinancing Comparison',
+      trustProof: 'UK motor insurance & auto finance comparison',
     },
     EU: {
       partnerName: 'CHECK24 Auto & Finance',
       href: 'https://www.check24.de/kfz-versicherung/',
-      trustProof: '300+ European Motor Tariffs & Low-APR Auto Loan Refinancing',
+      trustProof: 'European motor insurance & auto loan comparison',
     },
   },
 };
@@ -118,9 +118,6 @@ export function resolveRegionalPartnerOffer({
   const hasOdometer = Number(odometerMiles) > 0;
   const formattedOdo = hasOdometer ? formatDistance(odometerMiles) : null;
   const hasReserve = Number(serviceReserveUsd) > 0;
-  const exposureAmount = hasReserve
-    ? formatCurrency(Math.max(850, Math.round(serviceReserveUsd * 1.45)))
-    : formatCurrency(3200);
 
   if (type === 'vin-check') {
     const odoClause = formattedOdo ? ` at ${formattedOdo}` : '';
@@ -128,11 +125,9 @@ export function resolveRegionalPartnerOffer({
       type: 'vin-check',
       region: regKey,
       partnerName: partner.partnerName,
-      badge: `Verified Partner · ${partner.partnerName}`,
+      badge: `Partner link · ${partner.partnerName}`,
       title: `Buying or owning this ${vehicleName}${odoClause}? Check odometer rollbacks & salvage records before paying ${formattedPrice}`,
-      description: hasReserve
-        ? `At ${formattedOdo || 'current mileage'}, a rolled-back odometer hides ${exposureAmount}+ in imminent timing, DPF, or transmission wear. Verify title, structural collision records, and real mileage via ${partner.partnerName} before paying ${formattedPrice}.`
-        : `Verify real mileage, hidden structural collision damage, past salvage titles, and theft history via ${partner.partnerName} before paying ${formattedPrice}.`,
+      description: `Check chronological mileage records, past damage history, salvage or flood title status, and theft records via ${partner.partnerName} before paying ${formattedPrice}.`,
       features: [
         'Odometer Rollback Detection',
         'Salvage & Flood Title Records',
@@ -140,7 +135,7 @@ export function resolveRegionalPartnerOffer({
       ],
       ctaText: 'Run Instant VIN Check',
       href: partner.href,
-      highlightBadge: `Avoids ${exposureAmount}+ in undisclosed repairs`,
+      highlightBadge: 'Mileage, damage & title history check',
       trustProof: partner.trustProof,
     };
   }
@@ -154,17 +149,17 @@ export function resolveRegionalPartnerOffer({
       type: 'warranty',
       region: regKey,
       partnerName: partner.partnerName,
-      badge: `Verified Partner · ${partner.partnerName}`,
+      badge: `Partner link · ${partner.partnerName}`,
       title: `Avoid unexpected workshop bills for ${vehicleName} — Compare repair protection & save up to ${savingsPerYr}/yr`,
-      description: `${reserveText}Protect against high-pressure fuel pump, timing assembly, turbocharger, and transmission failures with ${formatCurrency(0)} deductible coverage.`,
+      description: `${reserveText}Compare extended coverage options for fuel system, timing assembly, turbocharger, and transmission repairs.`,
       features: [
         `Save up to ${savingsPerYr}/yr on Coverage`,
         `${formatCurrency(0)} Deductible Options`,
-        'Direct Master Workshop Billing',
+        'Direct Workshop Billing Options',
       ],
       ctaText: 'Compare Warranty Plans',
       href: partner.href,
-      highlightBadge: `Save up to ${savingsPerYr}/yr on Coverage`,
+      highlightBadge: 'Extended Powertrain & Repair Coverage',
       trustProof: partner.trustProof,
     };
   }
@@ -181,13 +176,13 @@ export function resolveRegionalPartnerOffer({
       type: 'insurance-finance',
       region: regKey,
       partnerName: partner.partnerName,
-      badge: `Verified Partner · ${partner.partnerName}`,
+      badge: `Partner link · ${partner.partnerName}`,
       title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName} — trim ~${monthlySave}/mo`,
-      description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare live regional motor insurance tariffs and lower-APR refinancing quotes via ${partner.partnerName} without affecting your credit score.`,
+      description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare regional motor insurance tariffs and refinancing quotes via ${partner.partnerName}.`,
       features: [
         `Trim ~${monthlySave}/mo off Fixed Costs`,
-        'Instant Multi-Carrier Rate Check',
-        'Soft-Pull APR Refinance Match',
+        'Multi-Carrier Rate Check',
+        'APR Refinance Comparison',
       ],
       ctaText: 'Compare Lower Rates',
       href: partner.href,
@@ -212,11 +207,11 @@ export function resolveRegionalPartnerOffer({
     type: 'obd-scanner',
     region: regKey,
     partnerName: partner.partnerName,
-    badge: `Verified Partner · ${partner.partnerName}`,
+    badge: `Partner link · ${partner.partnerName}`,
     title: `Don't pay ${diagFee}+ in workshop diagnostic fees — Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
     description: hasCauseDelta
-      ? `Don't authorize a blind ${formatCurrency(costliestCauseUsd)} replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} triggers ${activeCode}. Verify live telemetry PIDs on your phone with a ${scannerCost} scanner (${paybackRatio}x payback on first scan).`
-      : `Read freeze-frame telemetry, live O2/boost/fuel PIDs, and reset the Check Engine light in under 60 seconds. Recommended hardware diagnostic tool for ${activeCodeTitle}.`,
+      ? `Before authorizing a ${formatCurrency(costliestCauseUsd)} assembly replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} can trigger ${activeCode}, check live sensor PIDs on your phone with a ${scannerCost} scanner.`
+      : `Read freeze-frame data, live O2/boost/fuel PIDs, and clear fault codes on your phone. Compatible hardware diagnostic tool for ${activeCodeTitle}.`,
     features: [
       'iOS & Android Bluetooth',
       'Live Sensor Telemetry PIDs',
@@ -226,7 +221,7 @@ export function resolveRegionalPartnerOffer({
     href: partner.href,
     highlightBadge: paybackRatio
       ? `${paybackRatio}x Payback vs. Blind Parts Swap`
-      : 'Pays for itself on the first diagnostic scan',
+      : 'Read fault codes & live sensor data at home',
     trustProof: partner.trustProof,
   };
 }

@@ -15,8 +15,8 @@ export const PRIMARY_WORKSPACE_TABS = [
 
 export const SECONDARY_WORKSPACE_TABS = [
   { id: 'checklist', label: 'PPI Checklist', fullLabel: 'Pre-Purchase Inspection Checklist', icon: CheckCircle2, desc: 'On-site inspection checklist & printable report' },
-  { id: 'methodology', label: 'Methodology', fullLabel: 'Methodology & Engineering Governance', icon: BookOpen, desc: 'Mathematical models & data sources' },
-  { id: 'reviews', label: 'Reviews', fullLabel: 'Driver Reviews', icon: MessageSquare, desc: 'Verified owner feedback & reports' },
+  { id: 'methodology', label: 'Methodology', fullLabel: 'Methodology & Data Sources', icon: BookOpen, desc: 'Mathematical models & data sources' },
+  { id: 'reviews', label: 'Reviews', fullLabel: 'Driver Reviews', icon: MessageSquare, desc: 'Owner feedback & repair quote comparisons' },
   { id: 'blog', label: 'Blog', fullLabel: 'Practical Automotive Guides', icon: FileText, desc: 'Deep-dive reliability & buying guides' },
 ];
 

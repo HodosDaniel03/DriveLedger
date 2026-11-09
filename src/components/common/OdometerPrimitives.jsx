@@ -225,7 +225,7 @@ export function Collapse({ open, id, children, className = '' }) {
   );
 }
 
-export function PartnerCard({ text, cta, href, badge = 'Verified Partner', className = '' }) {
+export function PartnerCard({ text, cta, href, badge = 'Partner link', className = '' }) {
   const cleanCta = typeof cta === 'string' ? cta.replace(/\s*→\s*$/, '').trim() : cta;
   return (
     <aside className={`rounded-xl border border-border bg-surface-subtle p-4 transition-[transform,box-shadow] duration-200 ease-out hover:shadow-md dark:bg-zinc-900 dark:border-zinc-800 ${className}`}>
@@ -234,7 +234,7 @@ export function PartnerCard({ text, cta, href, badge = 'Verified Partner', class
       </span>
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center font-sans font-bold text-xs text-muted dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
-          VP
+          PL
         </div>
         <p className="font-sans text-ink text-xs font-medium leading-relaxed dark:text-zinc-200">
           {text}

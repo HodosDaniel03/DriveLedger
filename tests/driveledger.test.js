@@ -587,7 +587,7 @@ assert.ok(initialHtml.includes('lg:col-span-5'), 'App HTML must use 5-column rig
 assert.ok(initialHtml.includes('lg:sticky lg:top-24'), 'App HTML must use sticky right summary');
 assert.ok(initialHtml.includes('ADVERTISEMENT'), 'AdUnit must render ADVERTISEMENT micro-label');
 assert.ok(initialHtml.includes('min-h-[90px]'), 'AdUnit must reserve zero-CLS min-h-[90px]');
-assert.ok(initialHtml.includes('Verified Partner'), 'AffiliateCTA must render Verified Partner badge');
+assert.ok(initialHtml.includes('Partner link'), 'AffiliateCTA must render Partner link badge');
 assert.ok(initialHtml.includes('application/ld+json'), 'TechnicalMethodologyGuide must inject Schema.org JSON-LD');
 assert.ok(initialHtml.includes('Lifecycle trajectory'), 'CostTimeline must render Lifecycle trajectory heading');
 assert.ok(initialHtml.includes('Financing Interest'), 'CostTimeline must render Financing Interest legend category');

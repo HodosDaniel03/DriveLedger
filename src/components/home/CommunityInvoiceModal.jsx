@@ -24,49 +24,42 @@ export const REPAIRED_ASSEMBLIES = [
     label: 'Timing Belt / Wet Belt & Water Pump',
     independentBase: { p10: 780, avg: 1140, p90: 1580 },
     dealershipBase: { p10: 1290, avg: 1850, p90: 2540 },
-    sampleSize: 412,
   },
   {
     id: 'dsg-zf-trans-service',
     label: 'DSG / ZF Automatic Transmission Fluid & Filter',
     independentBase: { p10: 360, avg: 540, p90: 780 },
     dealershipBase: { p10: 680, avg: 980, p90: 1390 },
-    sampleSize: 538,
   },
   {
     id: 'dpf-scr-cleaning',
     label: 'DPF / SCR Thermal Cleaning or Replacement',
     independentBase: { p10: 520, avg: 1180, p90: 2150 },
     dealershipBase: { p10: 1450, avg: 2680, p90: 4100 },
-    sampleSize: 289,
   },
   {
     id: 'hpfp-injectors',
     label: 'High-Pressure Fuel Injector / HPFP Set',
     independentBase: { p10: 980, avg: 1560, p90: 2350 },
     dealershipBase: { p10: 1850, avg: 2890, p90: 4250 },
-    sampleSize: 194,
   },
   {
     id: 'gdi-walnut-blasting',
     label: 'GDI Intake Valve Walnut Blasting & PCV',
     independentBase: { p10: 420, avg: 650, p90: 940 },
     dealershipBase: { p10: 790, avg: 1220, p90: 1680 },
-    sampleSize: 317,
   },
   {
     id: 'dmf-clutch-pack',
     label: 'Dual-Mass Flywheel & Clutch Pack',
     independentBase: { p10: 1120, avg: 1640, p90: 2290 },
     dealershipBase: { p10: 1950, avg: 2840, p90: 3890 },
-    sampleSize: 276,
   },
   {
     id: 'turbo-vnt-rebuild',
     label: 'Turbocharger / VNT Actuator Rebuild',
     independentBase: { p10: 890, avg: 1460, p90: 2180 },
     dealershipBase: { p10: 1780, avg: 2750, p90: 3980 },
-    sampleSize: 215,
   },
 ];
 
@@ -188,7 +181,6 @@ export function calculateInvoiceAuditStats({
     verdictBadge,
     verdictTone,
     calloutText,
-    sampleSize: assembly.sampleSize,
   };
 }
 
@@ -226,7 +218,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
     const vehicleDisplayName =
       selectedPresetId === 'custom' && customVehicleName.trim()
         ? customVehicleName.trim()
-        : selectedPreset?.shortName || selectedPreset?.name || 'Verified Fleet Vehicle';
+        : selectedPreset?.shortName || selectedPreset?.name || 'Custom Vehicle';
 
     const stats = calculateInvoiceAuditStats({
       assemblyLabel,
@@ -245,11 +237,11 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
     const newEntry = {
       id: `inv-${Date.now()}`,
-      name: ownerName.trim() || 'Verified Owner',
+      name: ownerName.trim() || 'Anonymous Owner',
       role:
         workshopTier === 'dealership'
-          ? 'Franchise Dealership Invoice'
-          : 'Independent Specialist Audit',
+          ? 'Franchise Dealership Quote'
+          : 'Independent Specialist Quote',
       vehicle: vehicleDisplayName,
       presetId: selectedPresetId,
       assembly: assemblyLabel,
@@ -294,13 +286,13 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
             </div>
             <div className="min-w-0">
               <span className="font-sans text-[10px] uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold block">
-                COMMUNITY TELEMETRY AUDITOR
+                WORKSHOP QUOTE BENCHMARK
               </span>
               <h2
                 id="community-invoice-modal-title"
                 className="text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100 truncate"
               >
-                Audit Your Workshop Invoice &amp; Price Spread
+                Compare Your Workshop Quote &amp; Price Spread
               </h2>
             </div>
           </div>
@@ -324,7 +316,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>INVOICE LOGGED TO COMMUNITY TELEMETRY</span>
+                  <span>SAVED LOCALLY IN YOUR BROWSER</span>
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-md text-[11px] font-sans font-medium border ${
@@ -351,11 +343,10 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     {activeStats.calloutText}
                   </p>
                   <p className="text-[11px] text-muted dark:text-zinc-400 font-sans">
-                    Calibrated against <span className="font-mono tabular-nums">{activeStats.sampleSize + 1}</span> verified{' '}
-                    {submittedAudit.vehicle} &amp; segment invoices ·{' '}
+                    Compared against our regional cost estimates for {submittedAudit.vehicle} ·{' '}
                     {submittedAudit.workshopTier === 'dealership'
-                      ? `Independent Specialist median is $${activeStats.oppositeAvg.toLocaleString()}`
-                      : `Franchise Dealership median is $${activeStats.oppositeAvg.toLocaleString()}`}
+                      ? `Independent Specialist median estimate is $${activeStats.oppositeAvg.toLocaleString()}`
+                      : `Franchise Dealership median estimate is $${activeStats.oppositeAvg.toLocaleString()}`}
                   </p>
                 </div>
               </div>
@@ -442,14 +433,14 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-primary-400 hover:underline"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Audit Another Repair Invoice</span>
+                  <span>Compare Another Workshop Quote</span>
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="px-4 py-2 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                 >
-                  Done &amp; View Telemetry Feed
+                  Done &amp; View Saved Notes
                 </button>
               </div>
             </div>
@@ -617,13 +608,13 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 </div>
               </div>
 
-              {/* Driver Handle & Telemetry Observation */}
+              {/* Driver Handle & Repair Note */}
               <div>
                 <label
                   htmlFor="invoice-driver-name"
                   className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
                 >
-                  Driver / Fleet Handle (Optional)
+                  Your Name or Initials (Optional)
                 </label>
                 <input
                   id="invoice-driver-name"
@@ -640,7 +631,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   htmlFor="invoice-owner-note"
                   className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
                 >
-                  Telemetry / Parts Observation (Optional)
+                  Repair / Parts Note (Optional)
                 </label>
                 <input
                   id="invoice-owner-note"
@@ -688,7 +679,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 className="px-5 py-2.5 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 text-white shadow-sm flex items-center gap-2 transition-colors duration-150"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Verify &amp; Log Invoice Telemetry</span>
+                <span>Compare &amp; Save Locally</span>
               </button>
             </div>
           </form>
