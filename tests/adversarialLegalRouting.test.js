@@ -817,14 +817,27 @@ test('Adversarial 9: AdSense Configuration & Publisher ID Strict Alignment', asy
 });
 
 test('Adversarial 10: Static Hosting SPA Fallback & XML Sitemap Integrity', () => {
-  // _redirects
+  // Production routing configuration (wrangler.jsonc with native SPA routing or legacy _redirects)
+  const wranglerPath = path.join(projectRoot, 'wrangler.jsonc');
   const redirectsPath = path.join(projectRoot, 'public', '_redirects');
-  assert.ok(fs.existsSync(redirectsPath), 'public/_redirects must exist');
-  assert.strictEqual(
-    fs.readFileSync(redirectsPath, 'utf8').trim(),
-    '/* /index.html 200',
-    'public/_redirects must specify /* /index.html 200'
+  assert.ok(
+    fs.existsSync(wranglerPath) || fs.existsSync(redirectsPath),
+    'Production routing configuration (wrangler.jsonc or public/_redirects) must exist'
   );
+  if (fs.existsSync(wranglerPath)) {
+    const wranglerConfig = JSON.parse(fs.readFileSync(wranglerPath, 'utf8'));
+    assert.strictEqual(
+      wranglerConfig.assets?.not_found_handling,
+      'single-page-application',
+      'wrangler.jsonc must configure assets.not_found_handling to "single-page-application"'
+    );
+  } else if (fs.existsSync(redirectsPath)) {
+    assert.strictEqual(
+      fs.readFileSync(redirectsPath, 'utf8').trim(),
+      '/* /index.html 200',
+      'public/_redirects must specify /* /index.html 200'
+    );
+  }
 
   // sitemap.xml
   const sitemapPath = path.join(projectRoot, 'public', 'sitemap.xml');
