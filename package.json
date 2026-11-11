@@ -8,9 +8,9 @@
     "build": "node scripts/generate-sitemap-seo.mjs && vite build",
     "preview": "vite preview",
     "sitemap": "node scripts/generate-sitemap-seo.mjs",
-    "test": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js && vitest run",
+    "test": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js tests/carverticalAffiliate.test.js tests/phase0Calculations.test.js && vitest run",
     "test:vitest": "vitest run",
-    "test:node": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js",
+    "test:node": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js tests/carverticalAffiliate.test.js tests/phase0Calculations.test.js",
     "test:jev": "node --test tests/jevCatalogJudge.test.js",
     "jev:audit": "node scripts/jev-evaluator.mjs"
   },

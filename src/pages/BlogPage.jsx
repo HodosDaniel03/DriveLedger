@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, Wrench, ShieldAlert, Cpu, ArrowRight, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import { RiskBadge } from '../components/common/OdometerPrimitives';
+import VinCheckBanner from '../components/monetization/VinCheckBanner';
 import AffiliateCTA from '../components/monetization/AffiliateCTA';
 
 export const BLOG_POSTS = [
@@ -351,12 +352,22 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
                     })}
 
                     <div className="pt-3">
-                      <AffiliateCTA
-                        type={post.category === 'Diagnostics' ? 'obd-scanner' : 'vin-check'}
-                        vehicleName="a used vehicle"
-                        purchasePriceUsd={24500}
-                        activeCode="P0420"
-                      />
+                      {post.category === 'Diagnostics' ? (
+                        <AffiliateCTA
+                          type="obd-scanner"
+                          vehicleName="a used vehicle"
+                          purchasePriceUsd={24500}
+                          activeCode="P0420"
+                        />
+                      ) : (
+                        <VinCheckBanner
+                          placement="buyer-guide"
+                          vehicleName="a used vehicle"
+                          purchasePriceUsd={24500}
+                          headline="Run an Independent carVertical History Audit"
+                          description="Verify chronological mileage records, inspect previous structural collision damage photos, and check international theft registries before signing an agreement."
+                        />
+                      )}
                     </div>
                   </div>
                 )}

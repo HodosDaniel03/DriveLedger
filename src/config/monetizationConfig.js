@@ -27,6 +27,36 @@ export const ADSENSE_CONFIG = {
   },
 };
 
+export const CARVERTICAL_AFFILIATE_URL =
+  'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger';
+
+export const CARVERTICAL_DIRECT_VIN_TEMPLATE =
+  'https://www.carvertical.deal/4CMF46B/5NWWWN/?uid=40&source_id=AFF&sub1=mydriveledger&sub3={VIN}';
+
+export const CARVERTICAL_DISCOUNT_CODE = 'mydriveledger';
+export const CARVERTICAL_DISCOUNT_PERCENT = 20;
+
+export const CARVERTICAL_LEGAL_ATTRIBUTION =
+  'Vehicle history check services are provided and sold by carVertical. All intellectual property rights are owned by carVertical.';
+
+/**
+ * Builds the official carVertical affiliate link with Everflow sub-tracking IDs and optional VIN/License Plate.
+ *
+ * @param {string} vinOrPlate - 17-digit VIN or License Plate string.
+ * @param {string} placement - Tracking placement descriptor (e.g. 'tco', 'ppi', 'comparator', 'guide', 'general').
+ * @returns {string} Fully formatted affiliate URL.
+ */
+export function getCarVerticalUrl(vinOrPlate = '', placement = 'general') {
+  const cleanVin = String(vinOrPlate || '').trim().toUpperCase();
+  const cleanPlacement = String(placement || 'general').trim();
+
+  if (cleanVin) {
+    return `https://www.carvertical.deal/4CMF46B/5NWWWN/?uid=40&source_id=AFF&sub1=mydriveledger&sub2=${encodeURIComponent(cleanPlacement)}&sub3=${encodeURIComponent(cleanVin)}`;
+  }
+
+  return `https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=${encodeURIComponent(cleanPlacement)}`;
+}
+
 export const affiliatePartners = {
   vinCheck: {
     name: 'carVertical',
@@ -34,6 +64,13 @@ export const affiliatePartners = {
     affiliateParam: 'a=YOUR_CARVERTICAL_ID',
     buttonText: 'Check Vehicle VIN History',
     badgeText: 'Official History Report',
+    // Live Everflow Affiliate & Discount Configuration
+    liveAffiliateUrl: CARVERTICAL_AFFILIATE_URL,
+    directVinTemplate: CARVERTICAL_DIRECT_VIN_TEMPLATE,
+    discountCode: CARVERTICAL_DISCOUNT_CODE,
+    discountPercent: CARVERTICAL_DISCOUNT_PERCENT,
+    legalAttribution: CARVERTICAL_LEGAL_ATTRIBUTION,
+    getCarVerticalUrl,
   },
   obdScanner: {
     name: 'Amazon Automotive',
@@ -69,6 +106,15 @@ export const MONETIZATION_CONFIG = {
   site: SITE_METADATA,
   adsense: ADSENSE_CONFIG,
   affiliatePartners,
+  carVertical: {
+    affiliateUrl: CARVERTICAL_AFFILIATE_URL,
+    directVinTemplate: CARVERTICAL_DIRECT_VIN_TEMPLATE,
+    discountCode: CARVERTICAL_DISCOUNT_CODE,
+    discountPercent: CARVERTICAL_DISCOUNT_PERCENT,
+    legalAttribution: CARVERTICAL_LEGAL_ATTRIBUTION,
+    getCarVerticalUrl,
+  },
+  carVerticalAttribution: CARVERTICAL_LEGAL_ATTRIBUTION,
   ftcMicroDisclosure: FTC_PROXIMATE_DISCLOSURE,
 };
 

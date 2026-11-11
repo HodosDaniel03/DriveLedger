@@ -22,6 +22,7 @@ import {
   MAINTENANCE_COMPONENTS,
   evaluateComponentHealth,
   calculateOemRiskMultiplier,
+  calculateMaintenanceReserve,
 } from '../../data/maintenanceData';
 import { calculateTcoProjection } from './TcoCalculator';
 import { findEngineVariant, getKnownIssuesForVehicle } from '../../data/vehicles/index.js';
@@ -29,6 +30,7 @@ import { useUnits } from '../../context/UnitContext';
 import { useGarage } from '../../context/GarageContext';
 import { Card, Pill, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
 import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
+import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import AdUnit from '../monetization/AdUnit';
 import { computeBreakEvenTrajectory } from '../../data/breakEvenAndPpi.js';
@@ -43,7 +45,8 @@ export function computeReliabilityAndRisk(
   odoMiles = 62000,
   schedMode = 'preventative',
   urbanPct = 35,
-  tier = 'independent'
+  tier = 'independent',
+  annualDistanceMiles = 12000
 ) {
   const safePreset = preset || VEHICLE_PRESETS[0];
   const physicalOdometerMiles = Math.max(0, Number(odoMiles) >= 0 ? Number(odoMiles) : (safePreset.defaultOdometerMiles || 62000));
@@ -68,21 +71,11 @@ export function computeReliabilityAndRisk(
     };
   });
 
-  let reserve = 0;
-  for (const item of evaluatedComponents) {
-    const costRange = tier === 'dealership' ? item.costsUsd.dealership : item.costsUsd.independent;
-    const avgCost = (costRange[0] + costRange[1]) / 2;
-
-    if (item.health.status === 'CRITICAL') {
-      reserve += avgCost * 0.75;
-    } else if (item.health.status === 'WARNING') {
-      reserve += avgCost * 0.35;
-    } else {
-      reserve += avgCost * 0.12;
-    }
-  }
-
-  const baseReserveUsd = Math.round(reserve);
+  const baseReserveUsd = calculateMaintenanceReserve({
+    evaluatedComponents,
+    workshopTier: tier,
+    annualDistanceMiles,
+  });
   const oemRiskMultiplier = calculateOemRiskMultiplier(physicalOdometerMiles);
   const serviceReserveUsd = schedMode === 'oem' ? Math.round(baseReserveUsd * oemRiskMultiplier) : baseReserveUsd;
 
@@ -256,12 +249,14 @@ export default function VehicleComparator({
       annualDistanceMiles: resolvedAnnualMiles,
       mpgUs: mpgA,
       isEv: vehicleA.isEv,
+      powertrainType: vehicleA.powertrainType || vehicleA.powertrain,
+      vehicle: vehicleA,
       fuelPriceUsdGal: fuelPriceA,
       annualInsuranceUsd: insuranceA,
       baseAnnualMaintenanceUsd: vehicleA.baseAnnualMaintenanceUsd,
       maintenanceWearFactor: vehicleA.maintenanceWearFactor,
       downPaymentPct,
-      aprPct: vehicleA.isEv ? 5.2 : aprPct,
+      aprPct: aprPct,
       loanTermMonths,
       horizonYears,
       residualCurve10Yr: vehicleA.residualCurve10Yr,
@@ -292,12 +287,14 @@ export default function VehicleComparator({
       annualDistanceMiles: resolvedAnnualMiles,
       mpgUs: vehicleB.mpgUs,
       isEv: vehicleB.isEv,
+      powertrainType: vehicleB.powertrainType || vehicleB.powertrain,
+      vehicle: vehicleB,
       fuelPriceUsdGal: vehicleB.defaultFuelPriceUsdGal,
       annualInsuranceUsd: vehicleB.annualInsuranceUsd,
       baseAnnualMaintenanceUsd: vehicleB.baseAnnualMaintenanceUsd,
       maintenanceWearFactor: vehicleB.maintenanceWearFactor,
       downPaymentPct,
-      aprPct: vehicleB.isEv ? 5.2 : aprPct,
+      aprPct: aprPct,
       loanTermMonths,
       horizonYears,
       residualCurve10Yr: vehicleB.residualCurve10Yr,
@@ -335,13 +332,13 @@ export default function VehicleComparator({
 
   // Calculate Mechanical Reliability & 12-Month Repair Risk Exposure for both vehicles
   const riskA = useMemo(
-    () => computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier),
-    [vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier]
+    () => computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles),
+    [vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
   const riskB = useMemo(
-    () => computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier),
-    [vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier]
+    () => computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles),
+    [vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
   // Financial & Mechanical Deltas
@@ -1198,13 +1195,12 @@ export default function VehicleComparator({
         const winReserve = bIsWinner ? riskB.serviceReserveUsd : riskA.serviceReserveUsd;
         return (
           <div className="space-y-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-            <AffiliateCTA
-              type="vin-check"
+            <VinCheckBanner
+              placement="comparator"
               stepLabel="Winner Verification"
               vehicleName={winVehicle.name}
               purchasePriceUsd={winPrice}
               odometerMiles={winOdo}
-              serviceReserveUsd={winReserve}
             />
             {standalone && (
               <AdUnit

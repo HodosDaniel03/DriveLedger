@@ -11,6 +11,7 @@ import {
   filterComponentsForPowertrain,
   resolvePowertrainType,
   isPureElectric,
+  calculateMaintenanceReserve,
 } from '../../data/maintenanceData';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
@@ -257,7 +258,11 @@ export default function MaintenanceRiskMatrix({
       }
     }
 
-    const base = Math.round(reserve);
+    const base = calculateMaintenanceReserve({
+      evaluatedComponents,
+      workshopTier,
+      annualDistanceMiles,
+    });
     const unadjustedScaled = scheduleMode === 'oem' ? Math.round(base * oemRiskMultiplier) : base;
     const creditRounded = Math.min(Math.max(0, unadjustedScaled - 120), Math.round(rawServiceCredit));
     const finalReserve = Math.max(0, unadjustedScaled - creditRounded);

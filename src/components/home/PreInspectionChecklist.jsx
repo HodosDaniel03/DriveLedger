@@ -21,6 +21,7 @@ import {
   isPureElectric,
 } from '../../data/maintenanceData.js';
 import { estimateMileageAdjustedMarketValue } from '../../data/fixOrSellEngine.js';
+import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 
 export { generatePpiChecklist };
@@ -484,13 +485,12 @@ export default function PreInspectionChecklist({
       </div>
 
       {/* Step 0: Dynamic Geo-Routed Digital VIN & Odometer Rollback Verification */}
-      <AffiliateCTA
-        type="vin-check"
+      <VinCheckBanner
+        placement="ppi"
         stepLabel="Step 0 · Digital Check"
         vehicleName={selectedPreset.name}
         purchasePriceUsd={askingPriceUsd}
         odometerMiles={odometerMiles}
-        serviceReserveUsd={wearExposure.serviceReserve12MoUsd}
       />
 
       {/* Interactive Progress & Live Negotiation Strip */}

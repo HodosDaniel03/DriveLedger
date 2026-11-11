@@ -16,12 +16,21 @@ export {
   calculateEvEnergyCost,
   calculatePhevEnergyCost,
   calculateVehicleEnergyCost,
+  DEFAULT_RESIDUAL_CURVE_10YR,
+  POWERTRAIN_DEFAULT_RESIDUAL_CURVES,
+  getFactoryRetention,
+  calculateNonLinearDepreciation,
+  parseSanitizedNumber,
+  parseNonNegativeNumber,
 } from './powertrainTypes.js';
 
 import {
   POWERTRAIN_TYPES,
   resolvePowertrainType,
   isPureElectric,
+  calculateNonLinearDepreciation,
+  parseSanitizedNumber,
+  parseNonNegativeNumber,
 } from './powertrainTypes.js';
 
 export const POWERTRAIN_OPTIONS = [
@@ -779,6 +788,63 @@ export const REVISION_THRESHOLDS = [
 ];
 
 /**
+ * Calculates standardized maintenance reserve for a vehicle based on
+ * evaluated component health statuses, workshop labor rate tier, and annual mileage.
+ * Consolidates component reserve calculations across MaintenanceRiskMatrix and VehicleComparator.
+ *
+ * @param {object} [params={}]
+ * @param {Array<object>} [params.evaluatedComponents=[]] - Evaluated component health objects
+ * @param {'independent' | 'dealership'} [params.workshopTier='independent'] - Workshop labor tier
+ * @param {number} [params.annualDistanceMiles=12000] - Annual driving distance in miles
+ * @returns {number} Standardized maintenance reserve in USD (integer rounded)
+ */
+export function calculateMaintenanceReserve({
+  evaluatedComponents = [],
+  workshopTier = 'independent',
+  annualDistanceMiles = 12000,
+} = {}) {
+  const annualDist = Math.max(500, Number(annualDistanceMiles) || 12000);
+  const annualMileageScale = Math.min(2.5, Math.max(0.25, annualDist / 12000));
+  const list = Array.isArray(evaluatedComponents) ? evaluatedComponents : [];
+  let reserve = 0;
+
+  for (const item of list) {
+    if (!item) continue;
+    const costRange = workshopTier === 'dealership'
+      ? item.costsUsd?.dealership || [0, 0]
+      : item.costsUsd?.independent || [0, 0];
+    const c0 = Number(costRange[0]) || 0;
+    const c1 = Number(costRange[1]) || 0;
+    const avgCost = (c0 + c1) / 2;
+
+    if (avgCost <= 0) continue;
+
+    let itemReserve = 0;
+    const status = item.health?.status;
+
+    if (status === 'CRITICAL') {
+      itemReserve = avgCost * 0.75 * annualMileageScale;
+    } else if (status === 'WARNING') {
+      itemReserve = avgCost * 0.35 * annualMileageScale;
+    } else {
+      const projectedEffectiveWear =
+        (Number(item.health?.effectiveWearMiles) || 0) +
+        annualDist * (Number(item.health?.combinedMultiplier) || 1.0);
+      const interval = Number(item.serviceIntervalMiles) || 60000;
+      if (projectedEffectiveWear >= interval * 0.72) {
+        itemReserve = avgCost * 0.22 * annualMileageScale;
+      } else {
+        itemReserve = avgCost * 0.10 * annualMileageScale;
+      }
+    }
+
+    reserve += Math.min(avgCost * 1.25, itemReserve);
+  }
+
+  return Math.round(reserve);
+}
+
+/**
  * Calculates revision threshold surcharges incurred between two mileage points
  * for a specific powertrain type.
  */
@@ -830,8 +896,9 @@ export function calculateDynamicMaintenance({
   // Asymptotic wear escalation with cap at mature mileage
   const wearEscalation = Math.min(2.5, 1 + Math.max(0, (endOfYearOdo - 30000) / 85000) * 0.45);
 
-  // EV base maintenance reduction (30-40% lower)
-  const powertrainBaseFactor = isEv ? 0.65 : 1.0;
+  // EV base maintenance reduction: Presets and archetypes already specify EV-tailored
+  // base maintenance; powertrainBaseFactor is set to 1.0 to eliminate redundant 0.65x double discounting.
+  const powertrainBaseFactor = 1.0;
   const baseCost = baseAnnualMaintenanceUsd * powertrainBaseFactor;
 
   // Revision threshold milestones crossed in this year
@@ -857,83 +924,6 @@ export function calculateDynamicMaintenance({
 }
 
 /**
- * Calculates realistic non-linear vehicle depreciation:
- * - Steep drop in first 3 years (~20-25% in Yr 1, ~15% in Yr 2, ~12% in Yr 3)
- * - Gradual flattening past year 4 (3-7%/yr down to scrap residual floor)
- * - Powertrain adjustment (HEV retention bonus, EV tech obsolescence / curve, ICE_DIESEL restrictions)
- * - Annual mileage deviation adjustment
- * - Used vehicles: initial vehicle age offset based on starting odometer so used cars do not repeatedly take the showroom drop
- * - Residual value floor >= 5% of purchase price
- */
-export function calculateNonLinearDepreciation({
-  purchasePriceUsd,
-  odometerMiles = 0,
-  annualDistanceMiles = 12000,
-  ownershipYear = 1,
-  powertrainType = 'ICE_PETROL',
-  residualCurve10Yr,
-}) {
-  const price = Math.max(500, Number(purchasePriceUsd) > 0 ? Number(purchasePriceUsd) : 30000);
-  const startOdo = Math.max(0, Number(odometerMiles) >= 0 ? Number(odometerMiles) : 0);
-  const annualMi = Math.max(0, Number(annualDistanceMiles) >= 0 ? Number(annualDistanceMiles) : 12000);
-  const yr = Math.max(1, Number(ownershipYear) || 1);
-  const pType = resolvePowertrainType(powertrainType);
-
-  // 1. Initial vehicle age offset at acquisition (A0 in years, 12,500 miles = 1 year baseline)
-  const initialAgeYears = startOdo / 12500;
-
-  // Continuous factory-new retention curve function
-  // Steep drop in first 3 years (~20-25% Yr 1, ~15% Yr 2, ~12% Yr 3)
-  // Gradual flattening past year 4 (3-7%/yr down to scrap residual floor)
-  const getFactoryRetention = (t) => {
-    if (t <= 0) return 1.0;
-    return Math.max(0.05, 0.45 * Math.exp(-0.58 * t) + 0.40 * Math.exp(-0.05 * t) + 0.15);
-  };
-
-  const rAcquisition = Math.max(0.05, getFactoryRetention(initialAgeYears));
-  const rCurrent = Math.max(0.05, getFactoryRetention(initialAgeYears + yr));
-
-  // Used vehicle retention ratio relative to value at acquisition: prevents re-taking showroom drop
-  const baseRetention = Math.min(1.0, rCurrent / rAcquisition);
-
-  // 2. Powertrain adjustment factor
-  let ptMultiplier = 1.0;
-  if (pType === POWERTRAIN_TYPES.HEV) {
-    ptMultiplier = 1.03; // HEV resale retention bonus
-  } else if (pType === POWERTRAIN_TYPES.EV) {
-    ptMultiplier = 0.97; // EV early tech obsolescence factor (smooth and monotonic)
-  } else if (pType === POWERTRAIN_TYPES.ICE_DIESEL) {
-    ptMultiplier = 0.985; // Low-emission zone restrictions
-  }
-
-  // 3. Mileage deviation adjustment (relative to 12,500 mi/yr baseline)
-  const mileageExcessRatio = (annualMi - 12500) / 12500;
-  let mileageAdjustment = 1.0;
-  if (mileageExcessRatio > 0) {
-    // High mileage penalizes vehicle retention over time
-    mileageAdjustment = Math.pow(Math.max(0.5, 1 - mileageExcessRatio * 0.04), yr);
-  } else if (mileageExcessRatio < 0) {
-    // Low mileage preserves vehicle retention: dampened and capped so it cannot outpace annual depreciation
-    // Annual low-mileage bonus is dampened to <=1.5%/yr (below the minimum annual depreciation rate)
-    // and compounding is capped to 5 years (and overall multiplier capped at 1.15x)
-    const lowMileageRate = Math.min(0.015, Math.abs(mileageExcessRatio) * 0.015);
-    const effectiveCompoundingYears = Math.min(yr, 5);
-    mileageAdjustment = Math.min(1.15, Math.pow(1 + lowMileageRate, effectiveCompoundingYears));
-  }
-
-  // Combined retention bounded between 5% residual floor and 96% ceiling
-  const finalRetention = Math.min(0.96, Math.max(0.05, baseRetention * ptMultiplier * mileageAdjustment));
-  const residualValueUsd = Math.max(Math.round(price * 0.05), Math.round(price * finalRetention));
-  const cumulativeDepreciationUsd = Math.max(0, price - residualValueUsd);
-
-  return {
-    residualValueUsd,
-    cumulativeDepreciationUsd,
-    retentionPct: +(finalRetention * 100).toFixed(1),
-  };
-}
-
-/**
  * Pure financial & engineering TCO calculation engine.
  * Exported for deterministic unit testing and edge-case verification.
  */
@@ -953,7 +943,7 @@ export function calculateTcoProjection({
   aprPct = 6.2,
   loanTermMonths = 60,
   horizonYears = 5,
-  residualCurve10Yr = [0.81, 0.69, 0.59, 0.50, 0.43, 0.37, 0.31, 0.27, 0.23, 0.20],
+  residualCurve10Yr,
   homeChargePct = 80,
   homeTariffUsdPerKwh,
   dcFastTariffUsdPerKwh,
@@ -976,6 +966,7 @@ export function calculateTcoProjection({
     ? Math.max(0, Number(annualInsuranceUsd))
     : 1400;
   const years = Math.min(10, Math.max(1, Math.round(Number(horizonYears) || 5)));
+  const passedCurve = residualCurve10Yr || vehicle?.residualCurve10Yr;
 
   // Financing amortization math
   const dpPct = (downPaymentPct !== undefined && downPaymentPct !== null && downPaymentPct !== '' && !isNaN(Number(downPaymentPct)))
@@ -1007,15 +998,13 @@ export function calculateTcoProjection({
     // EV: blended charging cost using Home AC vs DC Fast Charging tariff split
     const homeFrac = Math.min(100, Math.max(0, Number(homeChargePct ?? 80))) / 100;
     const dcFrac = 1 - homeFrac;
-    const defaultEvHomeTariff = (fuelPriceUsdGal !== undefined && fuelPriceUsdGal !== null && fuelPriceUsdGal !== '' && !isNaN(Number(fuelPriceUsdGal)) && Number(fuelPriceUsdGal) <= 1.0)
-      ? Math.max(0, Number(fuelPriceUsdGal))
-      : 0.16;
-    const homeTariff = (homeTariffUsdPerKwh !== undefined && homeTariffUsdPerKwh !== null && homeTariffUsdPerKwh !== '' && !isNaN(Number(homeTariffUsdPerKwh)))
-      ? Math.max(0, Number(homeTariffUsdPerKwh))
-      : defaultEvHomeTariff;
-    const dcTariff = (dcFastTariffUsdPerKwh !== undefined && dcFastTariffUsdPerKwh !== null && dcFastTariffUsdPerKwh !== '' && !isNaN(Number(dcFastTariffUsdPerKwh)))
-      ? Math.max(0, Number(dcFastTariffUsdPerKwh))
-      : (homeTariff > 0 ? +(homeTariff * 2.5).toFixed(3) : 0);
+    const defaultEvHomeTariff = parseSanitizedNumber(fuelPriceUsdGal, 0.16, 0);
+    const homeTariff = parseSanitizedNumber(homeTariffUsdPerKwh, defaultEvHomeTariff, 0);
+    const dcTariff = parseSanitizedNumber(
+      dcFastTariffUsdPerKwh,
+      homeTariff > 0 ? +(homeTariff * 2.5).toFixed(3) : 0,
+      0
+    );
     const effectiveTariff = homeFrac * homeTariff + dcFrac * dcTariff;
     // eff is kWh / 100 miles
     annualFuelCostUsd = annualMi > 0 ? (annualMi / 100) * eff * effectiveTariff : 0;
@@ -1025,9 +1014,7 @@ export function calculateTcoProjection({
     const iceFrac = 1 - evFrac;
     const evEff = Number(phevKwhPer100Mi) > 0 ? Number(phevKwhPer100Mi) : 30.0;
     const iceEfficiency = Number(phevIceMpg) > 0 ? Number(phevIceMpg) : Math.max(5, eff);
-    const homeTariff = (homeTariffUsdPerKwh !== undefined && homeTariffUsdPerKwh !== null && !isNaN(Number(homeTariffUsdPerKwh)))
-      ? Math.max(0, Number(homeTariffUsdPerKwh))
-      : 0.16;
+    const homeTariff = parseSanitizedNumber(homeTariffUsdPerKwh, 0.16, 0);
     const gasRate = unitEnergyPrice;
 
     const electricCost = annualMi > 0 ? (annualMi * evFrac / 100) * evEff * homeTariff : 0;
@@ -1057,7 +1044,7 @@ export function calculateTcoProjection({
       annualDistanceMiles: annualMi,
       ownershipYear: yr,
       powertrainType: pType,
-      residualCurve10Yr,
+      residualCurve10Yr: passedCurve,
     });
     // Monotonicity invariant: vehicle asset must never appreciate in value
     const residualValueUsd = Math.min(depResult.residualValueUsd, prevResidualValueUsd);
@@ -1095,7 +1082,7 @@ export function calculateTcoProjection({
     const yearMaintenanceUsd = maintResult.yearMaintenanceUsd;
 
     const yearFuelUsd = annualFuelCostUsd;
-    const yearInsuranceUsd = insurancePerYr * Math.pow(0.985, yr - 1);
+    const yearInsuranceUsd = insurancePerYr * Math.pow(1.015, yr - 1);
 
     cumulativeFuelUsd += yearFuelUsd;
     cumulativeInsuranceUsd += yearInsuranceUsd;
@@ -1110,6 +1097,10 @@ export function calculateTcoProjection({
       cumulativeMaintenanceUsd +
       cumulativeInterestUsd;
 
+    const roundedLoanBalanceUsd = Math.round(remainingLoanBalanceUsd);
+    const isUnderwater = roundedLoanBalanceUsd > residualValueUsd;
+    const negativeEquityUsd = isUnderwater ? roundedLoanBalanceUsd - residualValueUsd : 0;
+
     yearlySchedule.push({
       year: yr,
       odometerMiles: Math.round(endOfYearOdo),
@@ -1122,8 +1113,10 @@ export function calculateTcoProjection({
       yearMaintenanceUsd: Math.round(yearMaintenanceUsd),
       yearInterestUsd: Math.round(yearInterestUsd),
       cumulativeInterestUsd: Math.round(cumulativeInterestUsd),
-      remainingLoanBalanceUsd: Math.round(remainingLoanBalanceUsd),
+      remainingLoanBalanceUsd: roundedLoanBalanceUsd,
       cumulativeTotalCostUsd: Math.round(yearTotalCarryingCostUsd),
+      isUnderwater,
+      negativeEquityUsd,
     });
   }
 
@@ -1191,6 +1184,10 @@ export function calculateTcoProjection({
     perMileUsd: totalDistanceMiles > 0 ? b.amountUsd / totalDistanceMiles : 0,
   }));
 
+  const hasUnderwaterEquity = yearlySchedule.some((s) => s.isUnderwater);
+  const maxUnderwaterEquityUsd = Math.max(0, ...yearlySchedule.map((s) => s.negativeEquityUsd));
+  const underwaterYears = yearlySchedule.filter((s) => s.isUnderwater).map((s) => s.year);
+
   return {
     totalEconomicCostUsd,
     totalCashOutflowUsd,
@@ -1207,6 +1204,11 @@ export function calculateTcoProjection({
     totalDistanceMiles,
     breakdown,
     yearlySchedule,
+    hasUnderwaterEquity,
+    maxUnderwaterEquityUsd,
+    underwaterYears,
+    hasNegativeEquity: hasUnderwaterEquity,
+    maxNegativeEquityUsd: maxUnderwaterEquityUsd,
   };
 }
 

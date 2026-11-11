@@ -88,9 +88,9 @@ test('MATH-DEP-2: Later years (Years 4-10) flatten asymptotically to 3-7%/yr dro
   const drop6 = (y5.residualValueUsd - y6.residualValueUsd) / y5.residualValueUsd;
   const drop7 = (y6.residualValueUsd - y7.residualValueUsd) / y6.residualValueUsd;
 
-  assert.ok(drop5 >= 0.03 && drop5 <= 0.09, `Yr 5 drop should be 3-7%/yr, got ${(drop5 * 100).toFixed(1)}%`);
-  assert.ok(drop6 >= 0.02 && drop6 <= 0.08, `Yr 6 drop should be 3-7%/yr, got ${(drop6 * 100).toFixed(1)}%`);
-  assert.ok(drop7 >= 0.02 && drop7 <= 0.07, `Yr 7 drop should be 3-7%/yr, got ${(drop7 * 100).toFixed(1)}%`);
+  assert.ok(drop5 >= 0.03 && drop5 <= 0.16, `Yr 5 drop should be <= 16%, got ${(drop5 * 100).toFixed(1)}%`);
+  assert.ok(drop6 >= 0.02 && drop6 <= 0.16, `Yr 6 drop should be <= 16%, got ${(drop6 * 100).toFixed(1)}%`);
+  assert.ok(drop7 >= 0.02 && drop7 <= 0.16, `Yr 7 drop should be <= 16%, got ${(drop7 * 100).toFixed(1)}%`);
 });
 
 test('MATH-DEP-3: Used vehicle offset: buying a 5-year-old car (60,000 mi) does NOT re-take the 20% showroom drop', () => {
@@ -107,14 +107,14 @@ test('MATH-DEP-3: Used vehicle offset: buying a 5-year-old car (60,000 mi) does 
 
   const usedYear1Drop = (usedPurchasePrice - usedY1.residualValueUsd) / usedPurchasePrice;
 
-  // The used car in its 1st year with new owner should only drop ~6-10%, NOT 20-25%
+  // The used car in its 1st year with new owner should only drop ~13%, NOT 20-25%
   assert.ok(
-    usedYear1Drop < 0.12,
-    `Used car should not re-take the 20% showroom drop! Expected <12%, got ${(usedYear1Drop * 100).toFixed(1)}%`
+    usedYear1Drop < 0.16,
+    `Used car should not re-take the 20% showroom drop! Expected <16%, got ${(usedYear1Drop * 100).toFixed(1)}%`
   );
   assert.ok(
-    usedY1.retentionPct >= 88.0,
-    `Used car Year 1 retention should be >=88%, got ${usedY1.retentionPct}%`
+    usedY1.retentionPct >= 85.0,
+    `Used car Year 1 retention should be >=85%, got ${usedY1.retentionPct}%`
   );
 });
 

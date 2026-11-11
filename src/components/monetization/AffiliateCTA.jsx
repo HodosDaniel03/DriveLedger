@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, ShieldCheck, Car, Zap, Landmark, Wrench } from 'lucide-react';
 import { Pill } from '../common/OdometerPrimitives';
 import { useUnits } from '../../context/UnitContext';
+import VinCheckBanner from './VinCheckBanner';
 import {
   resolveAffiliateOffer,
   buildAffiliateUrl,
@@ -42,6 +43,21 @@ export default function AffiliateCTA({
   className = '',
 }) {
   const { region, formatCurrency, formatDistance } = useUnits();
+
+  if (type === 'vin-check' || type === 'vinCheck') {
+    return (
+      <VinCheckBanner
+        placement="affiliate-cta"
+        vehicleName={vehicleName}
+        purchasePriceUsd={purchasePriceUsd}
+        odometerMiles={odometerMiles}
+        stepLabel={stepLabel}
+        headline={customHeadline}
+        description={customBody}
+        className={className}
+      />
+    );
+  }
 
   const offer = resolveAffiliateOffer({
     type,

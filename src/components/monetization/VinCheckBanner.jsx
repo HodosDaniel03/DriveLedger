@@ -1,0 +1,287 @@
+import React, { useState } from 'react';
+import { ShieldCheck, CheckCircle2, Check, ArrowRight, ExternalLink } from 'lucide-react';
+import CarVerticalLogo from '../common/CarVerticalLogo';
+import {
+  getCarVerticalUrl,
+  CARVERTICAL_DISCOUNT_CODE,
+  CARVERTICAL_LEGAL_ATTRIBUTION,
+  FTC_PROXIMATE_DISCLOSURE,
+} from '../../config/monetizationConfig';
+
+function CopyIcon({ className = 'w-3.5 h-3.5' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
+/**
+ * VinCheckBanner Component
+ *
+ * Official carVertical Affiliate Banner & Interactive Verification Card.
+ * Complies with:
+ * 1. Clause 1.3 Legal Attribution of Partnership Agreement:
+ *    "Vehicle history check services are provided and sold by carVertical. All intellectual property rights are owned by carVertical."
+ * 2. Official Brand Asset Usage Rules (#0068FF logo on high-contrast white pill).
+ * 3. Direct VIN / License Plate routing to Everflow sub3 parameter.
+ * 4. Interactive one-click 20% discount coupon code copy (Code: mydriveledger).
+ */
+export default function VinCheckBanner({
+  placement = 'general',
+  initialVin = '',
+  vehicleName = '',
+  purchasePriceUsd,
+  vehiclePriceFormatted,
+  odometerMiles,
+  compact = false,
+  stepLabel = '',
+  headline = '',
+  description = '',
+  className = '',
+}) {
+  const [vinOrPlate, setVinOrPlate] = useState(initialVin);
+  const [copied, setCopied] = useState(false);
+
+  const targetUrl = getCarVerticalUrl(vinOrPlate, placement);
+
+  const handleCopyCode = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(CARVERTICAL_DISCOUNT_CODE);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
+  const handleOpenReport = (e) => {
+    if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) return;
+    if (e) e.preventDefault();
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const formattedPrice =
+    vehiclePriceFormatted ||
+    (purchasePriceUsd ? `$${Number(purchasePriceUsd).toLocaleString()}` : '$28,500');
+
+  const displayTitle =
+    headline ||
+    (vehicleName
+      ? `Buying or owning this ${vehicleName}? Check odometer rollbacks & salvage records before paying ${formattedPrice}`
+      : 'Check odometer rollbacks & salvage records before you buy');
+
+  const displayDescription =
+    description ||
+    `Check chronological mileage records, past damage history, salvage or flood title status, and theft records via carVertical before paying ${formattedPrice}.`;
+
+  const features = [
+    'Odometer Rollback Detection',
+    'Salvage & Flood Title Records',
+    'Accident & Repair History',
+  ];
+
+  if (compact) {
+    return (
+      <aside
+        data-testid="affiliate-cta-vin-check"
+        className={`relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+        aria-label="carVertical Vehicle History Report"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
+          <div className="flex items-center gap-2">
+            <CarVerticalLogo withPill={true} imgClassName="h-5 w-auto object-contain" />
+            {stepLabel && (
+              <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                {stepLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Copyable Promo Code Badge */}
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            title="Click to copy 20% discount coupon code"
+            className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-[11px] font-sans font-semibold text-[#0068FF] dark:text-blue-300 transition-colors cursor-pointer"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-mono text-emerald-700 dark:text-emerald-300">Code Copied!</span>
+              </>
+            ) : (
+              <>
+                <span>Code: <span className="font-mono uppercase font-bold">{CARVERTICAL_DISCOUNT_CODE}</span> (20% OFF)</span>
+                <CopyIcon className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+              </>
+            )}
+          </button>
+        </div>
+
+        <h3 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50 leading-snug mb-1.5">
+          {displayTitle}
+        </h3>
+
+        <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed mb-3">
+          {displayDescription}
+        </p>
+
+        {/* Verification Features Badges */}
+        <div className="flex flex-col gap-1.5 pt-1 pb-3 text-xs font-sans font-medium text-body dark:text-zinc-300 border-t border-zinc-200/70 dark:border-zinc-800">
+          {features.map((feat) => (
+            <span key={feat} className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{feat}</span>
+            </span>
+          ))}
+        </div>
+
+        {/* Interactive VIN / Plate Input Strip */}
+        <form onSubmit={handleOpenReport} className="flex flex-col sm:flex-row gap-2 mb-3">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={vinOrPlate}
+              onChange={(e) => setVinOrPlate(e.target.value)}
+              placeholder="Enter 17-digit VIN or License Plate (Optional)"
+              maxLength={20}
+              className="w-full h-10 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-sans text-ink dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#0068FF] focus:border-transparent transition-all uppercase tracking-wide"
+            />
+          </div>
+          <a
+            href={targetUrl}
+            onClick={handleOpenReport}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            className="group shrink-0 h-10 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-[#0068FF] hover:bg-[#0055d4] active:scale-[0.98] text-white text-xs font-sans font-semibold shadow-sm transition-[background-color,transform]"
+          >
+            <span>Check Vehicle History (20% OFF)</span>
+            <span className="hidden sm:inline text-[10px] font-normal opacity-90">· Run Instant VIN Check</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </a>
+        </form>
+
+        <div className="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1">
+          <div className="flex flex-wrap items-center justify-between text-[10px] font-sans text-muted dark:text-zinc-400">
+            <span>{FTC_PROXIMATE_DISCLOSURE}</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">Run Instant VIN Check · 20% OFF</span>
+          </div>
+          <p className="text-[9.5px] font-sans text-faint dark:text-zinc-500 leading-normal">
+            {CARVERTICAL_LEGAL_ATTRIBUTION}
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  return (
+    <aside
+      data-testid="affiliate-cta-vin-check"
+      className={`relative overflow-hidden w-full max-w-full min-w-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+      aria-label="carVertical Vehicle History Report"
+    >
+      <div className="flex flex-col gap-4">
+        {/* Header: Logo, Step/Highlight Badges, Copyable Discount Code */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <CarVerticalLogo withPill={true} imgClassName="h-6 w-auto object-contain" />
+            {stepLabel && (
+              <span className="text-xs font-sans font-medium px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                {stepLabel}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1 text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+              <ShieldCheck className="w-3 h-3 text-[#0068FF]" />
+              <span>Official carVertical Partner · Run Instant VIN Check</span>
+            </span>
+          </div>
+
+          {/* Copyable Coupon Badge */}
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            title="Click to copy coupon code"
+            className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-xs font-sans font-semibold text-[#0068FF] dark:text-blue-300 transition-all cursor-pointer shadow-xs active:scale-95"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-mono text-emerald-700 dark:text-emerald-300">Code Copied!</span>
+              </>
+            ) : (
+              <>
+                <span>Code: <span className="font-mono uppercase font-bold">{CARVERTICAL_DISCOUNT_CODE}</span> (20% OFF)</span>
+                <CopyIcon className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Headline & Description */}
+        <div>
+          <h3 className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 leading-snug">
+            {displayTitle}
+          </h3>
+          <p className="mt-1 text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-4xl">
+            {displayDescription}
+          </p>
+        </div>
+
+        {/* Feature Badges */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-sans font-medium text-body dark:text-zinc-300">
+          {features.map((feat) => (
+            <span key={feat} className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{feat}</span>
+            </span>
+          ))}
+        </div>
+
+        {/* Interactive VIN / License Plate Input + CTA Action */}
+        <form onSubmit={handleOpenReport} className="mt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={vinOrPlate}
+              onChange={(e) => setVinOrPlate(e.target.value)}
+              placeholder="Enter 17-digit VIN or License Plate (Optional)"
+              maxLength={20}
+              className="w-full h-11 px-3.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm font-sans text-ink dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#0068FF] focus:border-transparent transition-all uppercase tracking-wider"
+            />
+          </div>
+          <a
+            href={targetUrl}
+            onClick={handleOpenReport}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            className="group shrink-0 h-11 inline-flex items-center justify-center gap-2 px-5 rounded-lg bg-[#0068FF] hover:bg-[#0055d4] active:scale-[0.98] text-white text-xs sm:text-sm font-sans font-semibold shadow-sm transition-[background-color,transform]"
+          >
+            <span>Check Vehicle History (20% OFF)</span>
+            <span className="hidden md:inline text-xs font-normal opacity-90">· Run Instant VIN Check</span>
+            <ExternalLink className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </a>
+        </form>
+
+        {/* Legal Attribution & FTC Disclosure */}
+        <div className="pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1">
+          <div className="flex flex-wrap items-center justify-between text-[11px] font-sans text-muted dark:text-zinc-400 gap-2">
+            <span>{FTC_PROXIMATE_DISCLOSURE}</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              Run Instant VIN Check · 20% discount automatically applied
+            </span>
+          </div>
+          <p className="text-[10px] font-sans text-faint dark:text-zinc-500 leading-normal">
+            {CARVERTICAL_LEGAL_ATTRIBUTION}
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}

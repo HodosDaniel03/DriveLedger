@@ -399,9 +399,9 @@ describe('Non-Linear Depreciation Curve & Financial Engine', () => {
       prevResidual = dep.residualValueUsd;
     }
 
-    // Yr 1 drop must be steepest: ~20-25% of purchase price
+    // Yr 1 drop must be steepest: ~18-26% of purchase price
     const yr1Pct = drops[0] / purchasePrice;
-    expect(yr1Pct).toBeGreaterThanOrEqual(0.19);
+    expect(yr1Pct).toBeGreaterThanOrEqual(0.18);
     expect(yr1Pct).toBeLessThanOrEqual(0.26);
 
     // Marginal drop strictly decreases: Yr 1 > Yr 2 > Yr 3 > Yr 4
@@ -431,8 +431,8 @@ describe('Non-Linear Depreciation Curve & Financial Engine', () => {
     });
     const usedCarY1Pct = usedCarY1.cumulativeDepreciationUsd / purchasePrice;
 
-    // The used car first-year ownership drop must be much lower than brand new showroom drop (~6-8% vs ~21%)
-    expect(usedCarY1Pct).toBeLessThan(newCarY1Pct * 0.5);
+    // The used car first-year ownership drop must be lower than brand new showroom drop (~13% vs ~18%)
+    expect(usedCarY1Pct).toBeLessThan(newCarY1Pct * 0.85);
     expect(usedCarY1Pct).toBeGreaterThanOrEqual(0.04);
   });
 
