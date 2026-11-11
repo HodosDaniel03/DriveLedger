@@ -48,7 +48,7 @@ export const CARVERTICAL_LEGAL_ATTRIBUTION =
  */
 export function getCarVerticalUrl(vinOrPlate = '', placement = 'general') {
   const cleanVin = String(vinOrPlate || '').trim().toUpperCase();
-  const cleanPlacement = String(placement || 'general').trim();
+  const cleanPlacement = String(placement || '').trim() || 'general';
 
   if (cleanVin) {
     return `https://www.carvertical.deal/4CMF46B/5NWWWN/?uid=40&source_id=AFF&sub1=mydriveledger&sub2=${encodeURIComponent(cleanPlacement)}&sub3=${encodeURIComponent(cleanVin)}`;

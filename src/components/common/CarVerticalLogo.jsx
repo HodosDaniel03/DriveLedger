@@ -18,12 +18,16 @@ export default function CarVerticalLogo({
 }) {
   const [hasError, setHasError] = useState(false);
 
+  const effectiveImgClass = withPill
+    ? imgClassName
+    : `${imgClassName} ${className}`.trim();
+
   const logoNode = !hasError ? (
     <img
       src="/carvertical-logo.png"
       alt={alt}
       onError={() => setHasError(true)}
-      className={imgClassName}
+      className={effectiveImgClass}
       loading="lazy"
       {...props}
     />
@@ -32,7 +36,7 @@ export default function CarVerticalLogo({
       viewBox="0 0 160 28"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={imgClassName}
+      className={effectiveImgClass}
       aria-label={alt}
       role="img"
       {...props}

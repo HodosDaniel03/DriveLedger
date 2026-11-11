@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, CheckCircle2, Check, ArrowRight, ExternalLink } from 'lucide-react';
 import CarVerticalLogo from '../common/CarVerticalLogo';
 import {
@@ -44,27 +44,54 @@ export default function VinCheckBanner({
   const [vinOrPlate, setVinOrPlate] = useState(initialVin);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (initialVin) {
+      setVinOrPlate(initialVin);
+    }
+  }, [initialVin]);
+
   const targetUrl = getCarVerticalUrl(vinOrPlate, placement);
 
   const handleCopyCode = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    let copiedSuccess = false;
     try {
-      if (navigator?.clipboard?.writeText) {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(CARVERTICAL_DISCOUNT_CODE);
+        copiedSuccess = true;
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
     } catch {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      // Fallback to legacy document.execCommand
     }
+
+    if (!copiedSuccess && typeof document !== 'undefined') {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = CARVERTICAL_DISCOUNT_CODE;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        copiedSuccess = true;
+      } catch {
+        // Safe silent fallback
+      }
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
   };
 
-  const handleOpenReport = (e) => {
-    if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) return;
-    if (e) e.preventDefault();
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const formattedPrice =
@@ -144,7 +171,7 @@ export default function VinCheckBanner({
         </div>
 
         {/* Interactive VIN / Plate Input Strip */}
-        <form onSubmit={handleOpenReport} className="flex flex-col sm:flex-row gap-2 mb-3">
+        <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row gap-2 mb-3">
           <div className="relative flex-1">
             <input
               type="text"
@@ -157,13 +184,11 @@ export default function VinCheckBanner({
           </div>
           <a
             href={targetUrl}
-            onClick={handleOpenReport}
             target="_blank"
             rel="sponsored noopener noreferrer"
             className="group shrink-0 h-10 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-[#0068FF] hover:bg-[#0055d4] active:scale-[0.98] text-white text-xs font-sans font-semibold shadow-sm transition-[background-color,transform]"
           >
             <span>Check Vehicle History (20% OFF)</span>
-            <span className="hidden sm:inline text-[10px] font-normal opacity-90">· Run Instant VIN Check</span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
           </a>
         </form>
@@ -245,7 +270,7 @@ export default function VinCheckBanner({
         </div>
 
         {/* Interactive VIN / License Plate Input + CTA Action */}
-        <form onSubmit={handleOpenReport} className="mt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <form onSubmit={handleFormSubmit} className="mt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <div className="relative flex-1">
             <input
               type="text"
@@ -258,13 +283,11 @@ export default function VinCheckBanner({
           </div>
           <a
             href={targetUrl}
-            onClick={handleOpenReport}
             target="_blank"
             rel="sponsored noopener noreferrer"
             className="group shrink-0 h-11 inline-flex items-center justify-center gap-2 px-5 rounded-lg bg-[#0068FF] hover:bg-[#0055d4] active:scale-[0.98] text-white text-xs sm:text-sm font-sans font-semibold shadow-sm transition-[background-color,transform]"
           >
             <span>Check Vehicle History (20% OFF)</span>
-            <span className="hidden md:inline text-xs font-normal opacity-90">· Run Instant VIN Check</span>
             <ExternalLink className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </a>
         </form>

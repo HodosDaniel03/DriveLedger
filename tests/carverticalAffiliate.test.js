@@ -85,13 +85,21 @@ test('carVertical: getCarVerticalUrl helper generates compliant tracking URLs', 
   assert.ok(guideUrl.includes('sub3=WVWZZZ3CZWE123456'));
   assert.ok(guideUrl.includes('uid=40'));
 
-  // Edge cases: null, undefined, numeric
+  // Edge cases: null, undefined, numeric, whitespace placement
   assert.equal(
     getCarVerticalUrl(null, 'test'),
     'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=test'
   );
   assert.equal(
     getCarVerticalUrl(undefined),
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=general'
+  );
+  assert.equal(
+    getCarVerticalUrl('WAUZZZ8V1KA123456', '   '),
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?uid=40&source_id=AFF&sub1=mydriveledger&sub2=general&sub3=WAUZZZ8V1KA123456'
+  );
+  assert.equal(
+    getCarVerticalUrl('', '   '),
     'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=general'
   );
 });
@@ -122,4 +130,13 @@ test('carVertical: VinCheckBanner implementation contains all mandated features'
   assert.ok(bannerContent.includes('CARVERTICAL_DISCOUNT_CODE'), 'Banner must bind 20% discount code');
   assert.ok(bannerContent.includes('CARVERTICAL_LEGAL_ATTRIBUTION'), 'Banner must render Clause 1.3 legal attribution');
   assert.ok(bannerContent.includes('handleCopyCode'), 'Banner must provide copy coupon code action');
+  assert.ok(bannerContent.includes('execCommand'), 'Banner must have clipboard fallback for non-secure / restricted environments');
+});
+
+test('carVertical: CarVerticalLogo component renders official static asset and SVG fallback', () => {
+  const logoContent = fs.readFileSync(path.join(projectRoot, 'src/components/common/CarVerticalLogo.jsx'), 'utf8');
+  assert.ok(logoContent.includes('/carvertical-logo.png'), 'CarVerticalLogo must point to /carvertical-logo.png');
+  assert.ok(logoContent.includes('withPill'), 'CarVerticalLogo must support high-contrast pill styling');
+  assert.ok(logoContent.includes('<svg'), 'CarVerticalLogo must have SVG fallback');
+  assert.ok(logoContent.includes('#0068FF'), 'CarVerticalLogo must render carVertical blue');
 });
