@@ -10,6 +10,7 @@ import VinCheckBanner from '../monetization/VinCheckBanner';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import AdUnit from '../monetization/AdUnit';
+import ToolEditorialSection from '../seo/ToolEditorialSection';
 import VehicleComparator from './VehicleComparator';
 import EvBreakEvenCalculator from './EvBreakEvenCalculator';
 import VehicleDossierExport from '../common/VehicleDossierExport';
@@ -1247,6 +1248,7 @@ export default function TcoCalculator({
               insuranceAndInterest5YrUsd={combinedUsd}
               insuranceSharePct={combinedSharePct}
             />
+            <ToolEditorialSection tool="tco" vehicleName={activePreset.name} />
             <AdUnit
               slotId="tco-bottom-leaderboard"
               variant="leaderboard"

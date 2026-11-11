@@ -6,6 +6,7 @@ import { calculateTcoProjection } from '../calculators/TcoCalculator';
 import { FAQ_ITEMS } from './TechnicalMethodologyGuide';
 import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
+import { GUIDES_DATA } from '../../data/guidesData';
 
 const SITE_ORIGIN = `https://${MONETIZATION_CONFIG.domain}`;
 
@@ -18,7 +19,10 @@ const CANONICAL_TAB_PATHS = {
   checklist: '/checklist',
   methodology: '/methodology',
   reviews: '/reviews',
-  blog: '/blog',
+  blog: '/guides',
+  guides: '/guides',
+  about: '/about',
+  contact: '/contact',
 };
 
 /**
@@ -133,6 +137,7 @@ function upsertCanonicalLink(href) {
 
 export default function DynamicSeoHead({
   activeTab = 'overview',
+  activeGuideSlug = null,
   selectedPresetId,
   secondaryPresetId,
   mileageBracketSlug,
@@ -260,6 +265,54 @@ export default function DynamicSeoHead({
       };
     }
 
+    if (activeTab === 'about') {
+      const canonicalPath = '/about';
+      const title = 'About DriveLedger — Independent Car Cost & Reliability Analytics';
+      const description = 'DriveLedger is an independent automotive engineering and financial analytics platform. Learn about our actuarial depreciation curves, mileage risk weighting, and regional labor rates.';
+      return {
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+      };
+    }
+
+    if (activeTab === 'contact') {
+      const canonicalPath = '/contact';
+      const title = 'Contact DriveLedger — Editorial, Engineering & Legal Desk';
+      const description = 'Contact the DriveLedger automotive engineering team for calculation inquiries, catalog corrections, or data protection assistance.';
+      return {
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+      };
+    }
+
+    if (activeTab === 'guides' || activeTab === 'blog') {
+      if (activeGuideSlug) {
+        const guide = GUIDES_DATA.find((g) => g.slug === activeGuideSlug);
+        if (guide) {
+          const canonicalPath = `/guides/${guide.slug}`;
+          return {
+            title: guide.metaTitle || `${guide.title} | DriveLedger`,
+            description: guide.metaDescription || guide.summary,
+            canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+            canonicalPath,
+          };
+        }
+      }
+      const canonicalPath = '/guides';
+      const title = 'Buyer Guides & Automotive Due Diligence Insights | DriveLedger';
+      const description = 'In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.';
+      return {
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+      };
+    }
+
     const baseTabPath = CANONICAL_TAB_PATHS[activeTab] || '/';
     const title = `${preset.name} TCO, Reliability Score (${telemetry.reliabilityScore}/100) & ${obdDossier.code} Diagnostics | DriveLedger`;
     const description = `Independent automotive engineering platform: ${preset.name} 5-year TCO ($${telemetry.total5YrTcoUsd.toLocaleString()}), powertrain reliability score (${telemetry.reliabilityScore}/100), and ${obdDossier.code} live PID diagnostic protocols.`;
@@ -269,7 +322,7 @@ export default function DynamicSeoHead({
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
     };
-  }, [activeTab, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
+  }, [activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -502,6 +555,82 @@ export default function DynamicSeoHead({
     };
   }, [activeTab, preset, telemetry, secondaryPreset, secondaryTelemetry]);
 
+  // 6. Editorial Guide Article Schema
+  const guideArticleSchema = useMemo(() => {
+    if ((activeTab !== 'guides' && activeTab !== 'blog') || !activeGuideSlug) return null;
+    const guide = GUIDES_DATA.find((g) => g.slug === activeGuideSlug);
+    if (!guide) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: guide.title,
+      description: guide.summary,
+      author: {
+        '@type': 'Organization',
+        name: guide.author,
+        url: SITE_ORIGIN,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'DriveLedger',
+        url: SITE_ORIGIN,
+      },
+      datePublished: guide.publishedDate,
+      dateModified: guide.lastUpdated || guide.publishedDate,
+      mainEntityOfPage: `${SITE_ORIGIN}/guides/${guide.slug}`,
+    };
+  }, [activeTab, activeGuideSlug]);
+
+  // 7. AboutPage Schema
+  const aboutPageSchema = useMemo(() => {
+    if (activeTab !== 'about') return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      name: 'About DriveLedger',
+      description: 'Independent automotive financial analytics and repair engineering platform.',
+      url: `${SITE_ORIGIN}/about`,
+      mainEntity: {
+        '@type': 'Organization',
+        name: 'DriveLedger',
+        url: SITE_ORIGIN,
+        contactPoint: {
+          '@type': 'ContactPoint',
+          email: 'contact@mydriveledger.com',
+          contactType: 'Customer Support',
+        },
+      },
+    };
+  }, [activeTab]);
+
+  // 8. ContactPage Schema
+  const contactPageSchema = useMemo(() => {
+    if (activeTab !== 'contact') return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      name: 'Contact DriveLedger',
+      url: `${SITE_ORIGIN}/contact`,
+      mainEntity: {
+        '@type': 'Organization',
+        name: 'DriveLedger',
+        url: SITE_ORIGIN,
+        contactPoint: [
+          {
+            '@type': 'ContactPoint',
+            email: 'contact@mydriveledger.com',
+            contactType: 'Technical Support',
+          },
+          {
+            '@type': 'ContactPoint',
+            email: 'legal@mydriveledger.com',
+            contactType: 'Data Protection Officer',
+          },
+        ],
+      },
+    };
+  }, [activeTab]);
+
   return (
     <>
       <script
@@ -531,6 +660,27 @@ export default function DynamicSeoHead({
           id="schema-compare-itemlist"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(compareItemListSchema) }}
+        />
+      )}
+      {guideArticleSchema && (
+        <script
+          id="schema-guide-article"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(guideArticleSchema) }}
+        />
+      )}
+      {aboutPageSchema && (
+        <script
+          id="schema-about-page"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
+        />
+      )}
+      {contactPageSchema && (
+        <script
+          id="schema-contact-page"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageSchema) }}
         />
       )}
     </>

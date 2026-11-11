@@ -301,3 +301,17 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     width: 100% !important;
   }
 }
+
+/* Google AdSense Zero-Placeholder Compliance (Under-Review & Unfilled Suppression) */
+ins.adsbygoogle[data-ad-status="unfilled"],
+div:has(> ins.adsbygoogle[data-ad-status="unfilled"]),
+div:has(ins.adsbygoogle[data-ad-status="unfilled"]),
+div[data-ad-unfilled="true"] {
+  display: none !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  outline: none !important;
+}

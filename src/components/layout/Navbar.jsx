@@ -6,18 +6,21 @@ import { useGarage } from '../../context/GarageContext';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 
 export const PRIMARY_WORKSPACE_TABS = [
-  { id: 'overview', label: 'Overview', fullLabel: 'DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database' },
-  { id: 'tco', label: 'True Cost to Own', fullLabel: '5-Yr True Cost to Own', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves' },
-  { id: 'risk', label: 'Maintenance Check', fullLabel: 'Powertrain Risk Matrix', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk' },
-  { id: 'obd', label: 'OBD-II Estimator', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs' },
-  { id: 'compare', label: 'Compare', fullLabel: 'Vehicle Comparator', icon: GitCompare, desc: '5-year TCO break-even graph and defect comparison' },
+  { id: 'overview', label: 'Overview', fullLabel: 'DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database', path: '/' },
+  { id: 'tco', label: 'True Cost to Own', fullLabel: '5-Yr True Cost to Own', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves', path: '/tco' },
+  { id: 'risk', label: 'Maintenance Check', fullLabel: 'Powertrain Risk Matrix', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk', path: '/risk-matrix' },
+  { id: 'obd', label: 'OBD-II Estimator', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs', path: '/obd-estimator' },
+  { id: 'compare', label: 'Compare', fullLabel: 'Vehicle Comparator', icon: GitCompare, desc: '5-year TCO break-even graph and defect comparison', path: '/compare' },
+  { id: 'guides', label: 'Guides', fullLabel: 'Buyer Guides & Insights', icon: BookOpen, desc: 'In-depth buyer protection & inspection guides', path: '/guides' },
 ];
 
 export const SECONDARY_WORKSPACE_TABS = [
-  { id: 'checklist', label: 'PPI Checklist', fullLabel: 'Pre-Purchase Inspection Checklist', icon: CheckCircle2, desc: 'On-site inspection checklist & printable report' },
-  { id: 'methodology', label: 'Methodology', fullLabel: 'Methodology & Data Sources', icon: BookOpen, desc: 'Mathematical models & data sources' },
-  { id: 'reviews', label: 'Reviews', fullLabel: 'Driver Reviews', icon: MessageSquare, desc: 'Owner feedback & repair quote comparisons' },
-  { id: 'blog', label: 'Blog', fullLabel: 'Practical Automotive Guides', icon: FileText, desc: 'Deep-dive reliability & buying guides' },
+  { id: 'checklist', label: 'PPI Checklist', fullLabel: 'Pre-Purchase Inspection Checklist', icon: CheckCircle2, desc: 'On-site inspection checklist & printable report', path: '/checklist' },
+  { id: 'about', label: 'About Us', fullLabel: 'About Us & Company Overview', icon: FileText, desc: 'Mission, engineering team & Impresszum', path: '/about' },
+  { id: 'contact', label: 'Contact', fullLabel: 'Contact Engineering Team', icon: MessageSquare, desc: 'Direct support & inquiries', path: '/contact' },
+  { id: 'methodology', label: 'Methodology', fullLabel: 'Methodology & Data Sources', icon: BookOpen, desc: 'Mathematical models & data sources', path: '/methodology' },
+  { id: 'reviews', label: 'Reviews', fullLabel: 'Driver Reviews', icon: MessageSquare, desc: 'Owner feedback & repair quote comparisons', path: '/reviews' },
+  { id: 'blog', label: 'Blog', fullLabel: 'Practical Automotive Guides', icon: FileText, desc: 'Deep-dive reliability & buying guides', path: '/guides' },
 ];
 
 export const WORKSPACE_TABS = [
@@ -212,6 +215,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   id={`tab-${t.id}`}
                   role="tab"
                   type="button"
+                  data-path={t.path || `/${t.id}`}
                   aria-selected={active}
                   aria-controls={`panel-${t.id}`}
                   onClick={() => {
@@ -267,6 +271,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     id={`tab-${t.id}`}
                     role="menuitem"
                     type="button"
+                    data-path={t.path || `/${t.id}`}
                     onClick={() => {
                       onSelectTab(t.id);
                       setMoreDropdownOpen(false);
@@ -785,10 +790,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     const IconComp = t.icon;
                     const active = activeTab === t.id;
                     return (
-                      <button
+                      <a
                         key={t.id}
-                        type="button"
-                        onClick={() => {
+                        href={t.path || `/${t.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
                           onSelectTab(t.id);
                           setMobileMenuOpen(false);
                         }}
@@ -807,7 +813,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                             </span>
                           )}
                         </div>
-                      </button>
+                      </a>
                     );
                   })}
                 </div>
@@ -823,10 +829,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     const IconComp = t.icon;
                     const active = activeTab === t.id;
                     return (
-                      <button
+                      <a
                         key={t.id}
-                        type="button"
-                        onClick={() => {
+                        href={t.path || `/${t.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
                           onSelectTab(t.id);
                           setMobileMenuOpen(false);
                         }}
@@ -838,7 +845,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                       >
                         {IconComp && <IconComp className="w-4 h-4 shrink-0" />}
                         <span>{t.label}</span>
-                      </button>
+                      </a>
                     );
                   })}
                 </div>

@@ -11,6 +11,7 @@ import { useUnits } from '../../context/UnitContext';
 import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import AdUnit from '../monetization/AdUnit';
+import ToolEditorialSection from '../seo/ToolEditorialSection';
 import LivePidEvaluator from './LivePidEvaluator';
 import FixOrSellCalculator from './FixOrSellCalculator';
 
@@ -940,6 +941,13 @@ export default function ObdEstimator({
         initialOdometerMiles={activePreset.defaultOdometerMiles}
         sourceLabel={`DTC ${activeDossier.code} Workshop Estimate`}
         onNavigateToCompare={onNavigateToCompare}
+      />
+
+      {/* Editorial Methodology & Technical Context */}
+      <ToolEditorialSection
+        tool="obd"
+        activeCode={activeDossier.code}
+        vehicleName={activePreset.name}
       />
 
       {/* 6. Zero-CLS Responsive AdSense Slot */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import {
   MONETIZATION_CONFIG,
@@ -23,7 +23,7 @@ function resolveAdSenseSlotId(slotId, variant) {
   return slots.topLeaderboard || '1111111111';
 }
 
-export default function AdUnit({
+export function AdUnit({
   slotId = 'topLeaderboard',
   variant = 'leaderboard',
   partnerKey = 'vinCheck',
@@ -35,6 +35,8 @@ export default function AdUnit({
   const [isActivated, setIsActivated] = useState(
     () => typeof IntersectionObserver === 'undefined'
   );
+  const [isUnfilled, setIsUnfilled] = useState(false);
+  const insRef = useRef(null);
 
   const adsenseEnabled = Boolean(MONETIZATION_CONFIG.adsenseEnabled);
   const publisherId = MONETIZATION_CONFIG.publisherId;
@@ -63,9 +65,10 @@ export default function AdUnit({
     return () => observer.disconnect();
   }, [isActivated, containerNode]);
 
+  // Push to adsbygoogle and observe fill status
   useEffect(() => {
     if (!adsenseEnabled || !isActivated || typeof window === 'undefined') {
-      return;
+      return undefined;
     }
     try {
       window.adsbygoogle = window.adsbygoogle || [];
@@ -73,10 +76,60 @@ export default function AdUnit({
     } catch (_err) {
       // Safeguard against ad-blocker or duplicate slot push errors
     }
+
+    const insEl = insRef.current;
+    if (!insEl) return undefined;
+
+    // MutationObserver to watch data-ad-status on <ins> element
+    let observer = null;
+    if (typeof MutationObserver !== 'undefined') {
+      observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (
+            mutation.type === 'attributes' &&
+            mutation.attributeName === 'data-ad-status'
+          ) {
+            const status = insEl.getAttribute('data-ad-status');
+            if (status === 'unfilled') {
+              setIsUnfilled(true);
+            }
+          }
+        }
+      });
+      observer.observe(insEl, { attributes: true, attributeFilter: ['data-ad-status'] });
+    }
+
+    // Safety timeout: if 3.5s elapsed and ad remains unfilled / empty, collapse container
+    const timeoutId = setTimeout(() => {
+      const status = insEl.getAttribute('data-ad-status');
+      if (status === 'unfilled') {
+        setIsUnfilled(true);
+      } else if (!status && insEl.childElementCount === 0) {
+        // No ad served and no iframe present
+        setIsUnfilled(true);
+      }
+    }, 3500);
+
+    return () => {
+      if (observer) observer.disconnect();
+      clearTimeout(timeoutId);
+    };
   }, [adsenseEnabled, isActivated, resolvedSlotId]);
 
   if (!adsenseEnabled && hideWhenDisabled) {
     return null;
+  }
+
+  // If AdSense unfilled state is confirmed, cleanly collapse to zero space
+  if (adsenseEnabled && isUnfilled) {
+    return (
+      <div
+        data-ad-slot={resolvedSlotId}
+        data-ad-unfilled="true"
+        className="hidden h-0 min-h-0 w-0 p-0 m-0 border-0 overflow-hidden pointer-events-none"
+        aria-hidden="true"
+      />
+    );
   }
 
   const minHeightClass = variant === 'rectangle' ? 'min-h-[250px]' : 'min-h-[90px]';
@@ -88,6 +141,7 @@ export default function AdUnit({
         data-ad-slot={resolvedSlotId}
         data-ad-client={publisherId}
         data-ad-activated={isActivated ? 'true' : 'false'}
+        data-ad-unfilled={isUnfilled ? 'true' : 'false'}
         className={`${minHeightClass} w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900/60 flex flex-col items-center justify-center p-3 relative overflow-hidden print:hidden no-print ${className}`}
         aria-label="Advertisement"
       >
@@ -96,6 +150,7 @@ export default function AdUnit({
         </span>
         {isActivated && (
           <ins
+            ref={insRef}
             className="adsbygoogle w-full"
             style={{ display: 'block' }}
             data-ad-client={publisherId}
@@ -148,3 +203,7 @@ export default function AdUnit({
     </div>
   );
 }
+
+export default AdUnit;
+export { AdUnit as AdSlot };
+

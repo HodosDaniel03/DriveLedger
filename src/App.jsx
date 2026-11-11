@@ -16,6 +16,9 @@ import PreInspectionChecklist from './components/home/PreInspectionChecklist';
 import TechnicalMethodologyGuide from './components/seo/TechnicalMethodologyGuide';
 import DynamicSeoHead from './components/seo/DynamicSeoHead';
 import ReviewsPage from './pages/ReviewsPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import GuidesPage from './pages/GuidesPage';
 import LegalModal from './components/legal/LegalModal';
 import CookieConsentBanner from './components/legal/CookieConsentBanner';
 import {
@@ -39,7 +42,10 @@ const PATH_TO_TAB = {
   '/checklist': 'checklist',
   '/methodology': 'methodology',
   '/reviews': 'reviews',
-  '/blog': 'blog',
+  '/blog': 'guides',
+  '/guides': 'guides',
+  '/about': 'about',
+  '/contact': 'contact',
 };
 
 const TAB_TO_PATH = {
@@ -51,10 +57,39 @@ const TAB_TO_PATH = {
   checklist: '/checklist',
   methodology: '/methodology',
   reviews: '/reviews',
-  blog: '/blog',
+  blog: '/guides',
+  guides: '/guides',
+  about: '/about',
+  contact: '/contact',
 };
 
+const VALID_TABS = [
+  'overview',
+  'tco',
+  'risk',
+  'obd',
+  'compare',
+  'checklist',
+  'methodology',
+  'reviews',
+  'blog',
+  'guides',
+  'about',
+  'contact',
+];
+
 const HYBRID_OBD_REGEX = /^\/obd\/([^/]+)\/([^/]+)$/i;
+const GUIDE_PATH_REGEX = /^\/guides(?:\/([a-z0-9-]+))?\/?$/i;
+
+function parseGuidePath(pathname) {
+  if (!pathname || typeof pathname !== 'string') return null;
+  const match = pathname.match(GUIDE_PATH_REGEX);
+  if (!match) return null;
+  return {
+    tab: 'guides',
+    slug: match[1] || null,
+  };
+}
 
 function parseHybridObdPath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
@@ -77,9 +112,11 @@ function DriveLedgerWorkspace() {
   // Derive initial tab from URL query param, programmatic SEO paths, or pathname
   const resolveInitialTab = () => {
     const qTab = searchParams.get('tab');
-    if (qTab && ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)) {
-      return qTab;
+    if (qTab && VALID_TABS.includes(qTab)) {
+      return qTab === 'blog' ? 'guides' : qTab;
     }
+    const guideMatch = parseGuidePath(location.pathname);
+    if (guideMatch) return 'guides';
     const hybrid = parseHybridObdPath(location.pathname);
     if (hybrid) return 'obd';
     const matchup = parseCompareMatchupPath(location.pathname);
@@ -147,6 +184,7 @@ function DriveLedgerWorkspace() {
   const [secondaryPresetId, setSecondaryPresetIdState] = useState(resolveInitialSecondaryPreset);
   const [riskOdometerOverride, setRiskOdometerOverride] = useState(resolveInitialRiskOdometer);
   const [selectedObdCode, setSelectedObdCodeState] = useState(resolveInitialObdCode);
+  const [activeGuideSlug, setActiveGuideSlug] = useState(() => parseGuidePath(location.pathname)?.slug || null);
   const [activeLegalModal, setActiveLegalModal] = useState(resolveInitialLegalModal);
   const [showCookieBannerOverride, setShowCookieBannerOverride] = useState(false);
 
@@ -161,6 +199,14 @@ function DriveLedgerWorkspace() {
         navigate(`/compare/${nextPreset}-vs-${nextSecondaryPreset}?${params.toString()}`, { replace: true });
         return;
       }
+      if (['about', 'contact', 'methodology', 'reviews'].includes(nextTab)) {
+        navigate(TAB_TO_PATH[nextTab] || `/${nextTab}`, { replace: true });
+        return;
+      }
+      if (nextTab === 'guides') {
+        navigate(activeGuideSlug ? `/guides/${activeGuideSlug}` : '/guides', { replace: true });
+        return;
+      }
       const targetPath = TAB_TO_PATH[nextTab] || '/tco';
       const params = new URLSearchParams();
       params.set('tab', nextTab);
@@ -168,10 +214,24 @@ function DriveLedgerWorkspace() {
       params.set('code', nextCode);
       navigate(`${targetPath}?${params.toString()}`, { replace: true });
     },
-    [navigate, secondaryPresetId]
+    [navigate, secondaryPresetId, activeGuideSlug]
   );
 
+  const handleSelectGuide = (slug) => {
+    setActiveGuideSlug(slug);
+    setActiveTabState('guides');
+    if (slug) {
+      navigate(`/guides/${slug}`, { replace: false });
+    } else {
+      navigate('/guides', { replace: false });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectTab = (tabId) => {
+    if (tabId === 'guides') {
+      setActiveGuideSlug(null);
+    }
     syncUrlParams(tabId, selectedPresetId, selectedObdCode);
     setActiveTabState(tabId);
     if (tabId !== 'risk') {
@@ -244,15 +304,23 @@ function DriveLedgerWorkspace() {
 
   // Synchronize state when location or search parameters change via router
   useEffect(() => {
+    const guideMatch = parseGuidePath(location.pathname);
     const hybrid = parseHybridObdPath(location.pathname);
     const matchup = parseCompareMatchupPath(location.pathname);
     const riskMileage = parseRiskMileagePath(location.pathname);
 
+    if (guideMatch) {
+      setActiveGuideSlug(guideMatch.slug);
+    } else {
+      setActiveGuideSlug(null);
+    }
+
     const qTab =
       searchParams.get('tab') ||
-      (hybrid ? 'obd' : matchup ? 'compare' : riskMileage ? 'risk' : PATH_TO_TAB[location.pathname]);
-    if (qTab && ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)) {
-      setActiveTabState((prev) => (prev !== qTab ? qTab : prev));
+      (guideMatch ? 'guides' : hybrid ? 'obd' : matchup ? 'compare' : riskMileage ? 'risk' : PATH_TO_TAB[location.pathname]);
+    if (qTab && VALID_TABS.includes(qTab)) {
+      const resolved = qTab === 'blog' ? 'guides' : qTab;
+      setActiveTabState((prev) => (prev !== resolved ? resolved : prev));
     }
 
     const qPreset =
@@ -308,15 +376,20 @@ function DriveLedgerWorkspace() {
     const handlePopState = () => {
       const applyPopState = () => {
         const params = new URLSearchParams(window.location.search || '');
+        const guideMatch = parseGuidePath(window.location.pathname);
         const hybrid = parseHybridObdPath(window.location.pathname);
+        if (guideMatch) {
+          setActiveGuideSlug(guideMatch.slug);
+        } else {
+          setActiveGuideSlug(null);
+        }
         const qTab =
           params.get('tab') ||
-          (hybrid ? 'obd' : PATH_TO_TAB[window.location.pathname]) ||
+          (guideMatch ? 'guides' : hybrid ? 'obd' : PATH_TO_TAB[window.location.pathname]) ||
           'overview';
+        const resolved = qTab === 'blog' ? 'guides' : qTab;
         setActiveTabState(
-          ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology', 'reviews', 'blog'].includes(qTab)
-            ? qTab
-            : 'overview'
+          VALID_TABS.includes(resolved) ? resolved : 'overview'
         );
 
         const qPreset = params.get('preset') || params.get('presetA') || hybrid?.preset;
@@ -358,6 +431,7 @@ function DriveLedgerWorkspace() {
       {/* Dynamic Programmatic SEO Meta Tags & Schema.org JSON-LD */}
       <DynamicSeoHead
         activeTab={activeTab}
+        activeGuideSlug={activeGuideSlug}
         selectedPresetId={selectedPresetId}
         secondaryPresetId={secondaryPresetId}
         mileageBracketSlug={riskOdometerOverride?.slug}
@@ -474,6 +548,25 @@ function DriveLedgerWorkspace() {
               onNavigateToTco={handleNavigateToPresetTco}
               onNavigateToRisk={handleNavigateToRiskMatrix}
             />
+          )}
+
+          {/* TAB 6: BUYER GUIDES & EDITORIAL INSIGHTS */}
+          {activeTab === 'guides' && (
+            <GuidesPage
+              activeSlug={activeGuideSlug}
+              onSelectGuide={handleSelectGuide}
+              onNavigateTab={handleSelectTab}
+            />
+          )}
+
+          {/* TAB 7: STANDALONE ABOUT US & METHODOLOGY PAGE */}
+          {activeTab === 'about' && (
+            <AboutPage onNavigateTab={handleSelectTab} />
+          )}
+
+          {/* TAB 8: STANDALONE CONTACT US PAGE */}
+          {activeTab === 'contact' && (
+            <ContactPage onNavigateTab={handleSelectTab} />
           )}
         </div>
 

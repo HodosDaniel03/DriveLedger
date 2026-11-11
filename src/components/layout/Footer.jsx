@@ -262,34 +262,39 @@ export default function Footer({
               <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Tools</span>
               <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('overview')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('overview'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Platform Overview
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('tco')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/tco" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('tco'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     5-Year True Cost to Own
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('risk')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/risk-matrix" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('risk'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Maintenance Risk Matrix
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('obd')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/obd-estimator" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('obd'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     OBD2 Repair Estimator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('compare')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/compare" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('compare'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Vehicle Comparator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('checklist')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/checklist" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('checklist'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Pre-Purchase Inspection (PPI)
-                  </button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/guides" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('guides'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    Buyer Guides &amp; Insights
+                  </a>
                 </li>
               </ul>
             </div>
@@ -299,29 +304,29 @@ export default function Footer({
               <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Platform</span>
               <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('blog')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
-                    From the Garage (Blog)
-                  </button>
+                  <a href="/guides" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('guides'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    Buyer Guides &amp; Insights
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('reviews')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/reviews" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('reviews'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Driver Reviews
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => onSelectTab && onSelectTab('methodology')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/methodology" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('methodology'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Methodology &amp; White Paper
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => triggerLegal('about')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/about" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('about'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     About Us
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button type="button" onClick={() => triggerLegal('contact')} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                  <a href="/contact" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('contact'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Contact ({MONETIZATION_CONFIG.contactEmail})
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>

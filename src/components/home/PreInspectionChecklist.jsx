@@ -23,6 +23,7 @@ import {
 import { estimateMileageAdjustedMarketValue } from '../../data/fixOrSellEngine.js';
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
+import ToolEditorialSection from '../seo/ToolEditorialSection';
 
 export { generatePpiChecklist };
 
@@ -752,6 +753,13 @@ export default function PreInspectionChecklist({
           )}
         </div>
       </div>
+
+      {/* Rich Editorial Methodology & Tips (Hidden in print) */}
+      <ToolEditorialSection
+        tool="checklist"
+        vehicleName={selectedPreset.name}
+        className="print:hidden"
+      />
     </section>
   );
 }
