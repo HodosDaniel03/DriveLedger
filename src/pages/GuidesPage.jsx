@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Collapse } from '../components/common/OdometerPrimitives';
+import VinCheckBanner from '../components/monetization/VinCheckBanner';
 
 export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -331,6 +332,14 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
             </div>
           </section>
 
+          {/* Official carVertical Vehicle History Verification Card */}
+          <VinCheckBanner
+            placement="buyer-guide"
+            vehicleName="a candidate vehicle"
+            headline="Run an Independent carVertical History Audit"
+            description="Cross-reference digital odometer readings, verify hidden structural collision records, and uncover secondary ECU tampering before purchasing."
+          />
+
           {/* FAQ Accordion */}
           {currentGuide.faqs && currentGuide.faqs.length > 0 && (
             <section className="bg-surface dark:bg-zinc-900 rounded-3xl p-6 sm:p-8 border border-border dark:border-zinc-800 shadow-sm space-y-4">
@@ -525,6 +534,13 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
             </div>
           ))}
         </div>
+
+        {/* Official carVertical Vehicle History Banner */}
+        <VinCheckBanner
+          placement="buyer-guide"
+          headline="Verify Used Vehicle History Before You Buy"
+          description="Check chronological mileage records, structural damage repair photos, salvage title status, and stolen vehicle registries with an official carVertical audit."
+        />
 
         {filteredGuides.length === 0 && (
           <div className="text-center py-16 bg-surface dark:bg-zinc-900 rounded-3xl border border-border dark:border-zinc-800 space-y-3">

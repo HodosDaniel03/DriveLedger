@@ -389,8 +389,6 @@ test('Adversarial 1: All valid clean paths resolve to canonical policy keys', ()
     '/disclaimer': 'disclaimer',
     '/cookies': 'cookies',
     '/affiliate-disclosure': 'affiliate-disclosure',
-    '/about': 'about',
-    '/contact': 'contact',
     '/affiliate': 'affiliate-disclosure', // alias to affiliate-disclosure
   };
 
@@ -411,8 +409,6 @@ test('Adversarial 2: Trailing slashes are reliably normalized', () => {
     '/disclaimer/': 'disclaimer',
     '/cookies/': 'cookies',
     '/affiliate-disclosure/': 'affiliate-disclosure',
-    '/about/': 'about',
-    '/contact/': 'contact',
     '/affiliate/': 'affiliate-disclosure',
   };
 
@@ -440,11 +436,6 @@ test('Adversarial 3: Uppercase and mixed-case paths resolve case-insensitively',
     ['/Cookies/', 'cookies'],
     ['/AFFILIATE-DISCLOSURE', 'affiliate-disclosure'],
     ['/Affiliate-Disclosure', 'affiliate-disclosure'],
-    ['/ABOUT', 'about'],
-    ['/About/', 'about'],
-    ['/aBoUt', 'about'],
-    ['/CONTACT', 'contact'],
-    ['/Contact/', 'contact'],
     ['/AFFILIATE', 'affiliate-disclosure'],
     ['/Affiliate/', 'affiliate-disclosure'],
   ];
@@ -484,7 +475,7 @@ test('Adversarial 4: Legacy hash routes and variants resolve correctly', () => {
   }
 });
 
-test('Adversarial 5: Collision guard on methodology paths MUST return null (never "about")', () => {
+test('Adversarial 5: Collision guard on methodology, about, contact, and guides paths MUST return null (never legal modal)', () => {
   const collisionProbes = [
     '/methodology',
     '/methodology/',
@@ -499,6 +490,17 @@ test('Adversarial 5: Collision guard on methodology paths MUST return null (neve
     '/methodology/details',
     '/methodology/nested/deep',
     'methodology/',
+    '/about',
+    '/about/',
+    '/ABOUT',
+    '/About/',
+    '/contact',
+    '/contact/',
+    '/CONTACT',
+    '/Contact/',
+    '/guides',
+    '/guides/',
+    '/guides/how-to-spot-odometer-rollback',
   ];
 
   for (const probe of collisionProbes) {
@@ -691,15 +693,15 @@ test('Adversarial 8: Browser History & Popstate Close Contract Simulation in App
   );
 
   // Test 8D: Browser Back/Forward navigation (popstate) between clean path and root
-  globalThis.window.location.pathname = '/contact';
+  globalThis.window.location.pathname = '/terms';
   globalThis.window.location.hash = '';
   globalThis.window.dispatchEvent({ type: 'popstate' });
   await new Promise((r) => setTimeout(r, 20));
 
   html = rootContainer.toHtml();
   assert.ok(
-    html.includes('data-testid="legal-modal-contact"'),
-    'Browser forward navigation to /contact must open contact modal'
+    html.includes('data-testid="legal-modal-terms"'),
+    'Browser forward navigation to /terms must open terms modal'
   );
 
   // Browser Back button to /
@@ -709,8 +711,8 @@ test('Adversarial 8: Browser History & Popstate Close Contract Simulation in App
 
   html = rootContainer.toHtml();
   assert.ok(
-    !html.includes('data-testid="legal-modal-contact"'),
-    'Browser back navigation to / must close contact modal'
+    !html.includes('data-testid="legal-modal-terms"'),
+    'Browser back navigation to / must close terms modal'
   );
 
   // Test 8E: In-modal policy switching retains clean path structure

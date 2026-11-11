@@ -20,6 +20,7 @@ import { VEHICLE_PRESETS, getPresetById } from '../data/vehiclePresets';
 import { generatePpiChecklist } from '../data/breakEvenAndPpi';
 import { useUnits } from '../context/UnitContext';
 import { BLOG_POSTS } from './BlogPage';
+import { GUIDES_DATA } from '../data/guidesData';
 import { RiskBadge, InfoTooltip } from '../components/common/OdometerPrimitives';
 
 export default function HomePage({
@@ -31,6 +32,8 @@ export default function HomePage({
   onNavigateToChecklist,
   onNavigateToMethodology,
   onNavigateToBlog,
+  onNavigateToGuides,
+  onSelectGuide,
 }) {
   const { formatCurrency, formatDistance } = useUnits();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
@@ -587,56 +590,71 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 11. Simplified From the Garage (Blog Preview) */}
+      {/* 11. Buyer Guides & Technical Reports Preview */}
       <section className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 sm:p-10">
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <span className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold block mb-1">
-              Field Notes
+              Buyer Guides &amp; Insights
             </span>
             <h2 className="text-2xl sm:text-3xl font-sans font-bold text-ink dark:text-zinc-50 tracking-tight">
-              From the garage
+              Automotive Cost &amp; Diagnostic Guides
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={() => (onNavigateToBlog ? onNavigateToBlog() : onNavigateToMethodology())}
+          <a
+            href="/guides"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onNavigateToGuides) onNavigateToGuides();
+              else if (onNavigateToBlog) onNavigateToBlog();
+              else onNavigateToMethodology();
+            }}
             className="text-xs sm:text-sm font-sans font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition flex items-center gap-1.5"
           >
-            <span>View all guides</span>
+            <span>View all 6 buyer guides</span>
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </a>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {BLOG_POSTS.slice(0, 3).map((post) => (
-            <div
-              key={post.id}
-              onClick={() => (onNavigateToBlog ? onNavigateToBlog() : onNavigateToMethodology())}
-              className="group p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 hover:bg-surface dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-card-hover transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer flex flex-col justify-between"
+          {(GUIDES_DATA || []).slice(0, 3).map((guide) => (
+            <a
+              key={guide.slug}
+              href={`/guides/${guide.slug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                if (onSelectGuide) {
+                  onSelectGuide(guide.slug);
+                } else if (onNavigateToGuides) {
+                  onNavigateToGuides();
+                } else if (onNavigateToBlog) {
+                  onNavigateToBlog();
+                }
+              }}
+              className="group p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 hover:bg-surface dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-card-hover transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer flex flex-col justify-between text-left no-underline"
             >
               <div>
                 <div className="flex items-center justify-between text-[11px] font-sans text-muted dark:text-zinc-400 mb-2">
                   <span className="font-sans font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700/60">
-                    {post.category}
+                    {guide.category}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {post.readTime}
+                    {guide.readingTimeMinutes} min read
                   </span>
                 </div>
                 <h3 className="font-sans font-bold tracking-tight text-ink dark:text-zinc-50 text-sm sm:text-base leading-snug group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors mb-2">
-                  {post.title}
+                  {guide.title}
                 </h3>
                 <p className="text-xs font-sans text-body dark:text-zinc-300 line-clamp-2 leading-relaxed">
-                  {post.summary}
+                  {guide.summary}
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-zinc-200/70 dark:border-zinc-800 flex items-center justify-between text-xs font-sans font-semibold text-primary-600 dark:text-primary-400">
-                <span>Read guide</span>
+                <span>Read technical guide</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </section>

@@ -1803,15 +1803,13 @@ assert.ok(
   'Navigating back via popstate to empty hash must close LegalModal'
 );
 
-// 7b. Verify Clean Path Routing, /methodology Collision Guard, and Clean Path Popstate
+// 7b. Verify Clean Path Routing, /methodology, /about, /contact Collision Guards, and Clean Path Popstate
 const cleanPaths = [
   '/privacy',
   '/terms',
   '/disclaimer',
   '/cookies',
   '/affiliate-disclosure',
-  '/about',
-  '/contact',
 ];
 for (const p of cleanPaths) {
   assert.ok(resolveLegalPolicyKey(p), `resolveLegalPolicyKey must resolve clean path ${p}`);
@@ -1820,6 +1818,8 @@ for (const p of cleanPaths) {
 assert.strictEqual(resolveLegalPolicyKey('/methodology'), null, '/methodology must return null (collision guard)');
 assert.strictEqual(resolveLegalPolicyKey('/methodology/'), null, '/methodology/ must return null (collision guard)');
 assert.strictEqual(resolveLegalPolicyKey('methodology'), null, 'methodology must return null (collision guard)');
+assert.strictEqual(resolveLegalPolicyKey('/about'), null, '/about must return null (collision guard)');
+assert.strictEqual(resolveLegalPolicyKey('/contact'), null, '/contact must return null (collision guard)');
 
 globalThis.window.location.pathname = '/privacy';
 globalThis.window.location.hash = '';

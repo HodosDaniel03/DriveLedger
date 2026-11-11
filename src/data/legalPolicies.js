@@ -4,7 +4,7 @@
  * Written in full, formal, multi-paragraph English legal prose with zero placeholders.
  */
 
-import { MONETIZATION_CONFIG } from '../config/monetizationConfig';
+import { MONETIZATION_CONFIG } from '../config/monetizationConfig.js';
 
 const { brandName, domain, contactEmail, legalEmail, lastUpdated } = MONETIZATION_CONFIG;
 
@@ -48,8 +48,6 @@ const HASH_TO_POLICY_KEY = {
   '/cookies': 'cookies',
   '/affiliate-disclosure': 'affiliate-disclosure',
   '/affiliate': 'affiliate-disclosure',
-  '/about': 'about',
-  '/contact': 'contact',
   // Bare keys
   privacy: 'privacy',
   terms: 'terms',
@@ -75,8 +73,14 @@ export function resolveLegalPolicyKey(rawInput) {
   if (!rawInput || typeof rawInput !== 'string') return null;
   const cleaned = rawInput.trim().toLowerCase();
 
-  // Collision guard: /methodology is an application workspace tab, NOT the 'about' modal
+  // Collision guard: /about, /contact, /guides, /methodology are standalone application tabs, NOT legal modal popups
   if (
+    cleaned === '/about' ||
+    cleaned.startsWith('/about/') ||
+    cleaned === '/contact' ||
+    cleaned.startsWith('/contact/') ||
+    cleaned === '/guides' ||
+    cleaned.startsWith('/guides/') ||
     cleaned === '/methodology' ||
     cleaned.startsWith('/methodology/') ||
     cleaned === 'methodology'

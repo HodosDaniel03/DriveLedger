@@ -466,7 +466,9 @@ function DriveLedgerWorkspace() {
               onNavigateToObd={handleNavigateToObd}
               onNavigateToChecklist={() => handleSelectTab('checklist')}
               onNavigateToMethodology={() => handleSelectTab('methodology')}
-              onNavigateToBlog={() => handleSelectTab('blog')}
+              onNavigateToBlog={() => handleSelectTab('guides')}
+              onNavigateToGuides={() => handleSelectTab('guides')}
+              onSelectGuide={handleSelectGuide}
             />
           )}
 

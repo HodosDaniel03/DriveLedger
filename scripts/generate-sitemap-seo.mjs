@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { VEHICLE_PRESETS } from '../src/data/vehiclePresets.js';
 import { MODULAR_BRANDS } from '../src/data/vehicles/index.js';
+import { GUIDES_DATA } from '../src/data/guidesData.js';
 import {
   generateFullVehicleObdMatrix,
   PROGRAMMATIC_COMPARE_PAIRS,
@@ -62,11 +63,19 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/obd-estimator`, '0.9', 'weekly');
   addUrl(`${SITE_ORIGIN}/compare`, '0.9', 'weekly');
   addUrl(`${SITE_ORIGIN}/checklist`, '0.9', 'weekly');
+  addUrl(`${SITE_ORIGIN}/guides`, '0.85', 'weekly');
+  addUrl(`${SITE_ORIGIN}/about`, '0.8', 'monthly');
+  addUrl(`${SITE_ORIGIN}/contact`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/methodology`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/reviews`, '0.8', 'weekly');
   addUrl(`${SITE_ORIGIN}/blog`, '0.8', 'weekly');
   addUrl(`${SITE_ORIGIN}/privacy`, '0.7', 'monthly');
   addUrl(`${SITE_ORIGIN}/terms`, '0.7', 'monthly');
+
+  // 1b. In-Depth Technical Buyer Guides (/guides/:slug)
+  for (const guide of GUIDES_DATA) {
+    addUrl(`${SITE_ORIGIN}/guides/${guide.slug}`, '0.80', 'weekly');
+  }
 
   // 2. Programmatic Preset Routes & Mileage-Bracket Risk Guides for all 179 Vehicle Presets
   const bracketKeys = Object.keys(MILEAGE_BRACKET_SLUGS);
