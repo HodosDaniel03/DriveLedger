@@ -126,9 +126,11 @@ export default function CookieConsentBanner({
       checkCmp();
       const t1 = setTimeout(checkCmp, 250);
       const t2 = setTimeout(checkCmp, 1000);
+      const t3 = setTimeout(checkCmp, 2500);
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);
+        clearTimeout(t3);
       };
     }
   }, [hasCmp]);
@@ -198,7 +200,7 @@ export default function CookieConsentBanner({
     <aside
       data-testid="cookie-consent-banner"
       aria-label="GDPR and CCPA Cookie Consent Banner"
-      className="fixed bottom-0 inset-x-0 z-40 p-2 sm:p-4 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print"
+      className={`fixed bottom-0 inset-x-0 ${isOpenOverride ? 'z-50' : 'z-40'} p-2 sm:p-4 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print`}
     >
       <div className="mx-auto max-w-[1280px] max-h-[90dvh] overflow-y-auto pointer-events-auto rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-xl p-4 sm:p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

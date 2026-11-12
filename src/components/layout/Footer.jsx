@@ -358,40 +358,56 @@ export default function Footer({
                   </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => triggerLegal('terms')}
+                  <a
+                    href="/terms"
+                    data-testid="footer-terms-of-service"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerLegal('terms');
+                    }}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Terms of Service
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => triggerLegal('disclaimer')}
+                  <a
+                    href="/disclaimer"
+                    data-testid="footer-liability-disclaimer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerLegal('disclaimer');
+                    }}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Liability Disclaimer
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => triggerLegal('affiliate-disclosure')}
+                  <a
+                    href="/affiliate-disclosure"
+                    data-testid="footer-affiliate-disclosure"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerLegal('affiliate-disclosure');
+                    }}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Affiliate Disclosure
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => triggerLegal('cookies')}
+                  <a
+                    href="/cookies"
+                    data-testid="footer-cookie-policy"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerLegal('cookies');
+                    }}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Cookie Policy
-                  </button>
+                  </a>
                 </li>
                 <li>
                   <button

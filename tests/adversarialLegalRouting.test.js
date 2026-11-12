@@ -1039,18 +1039,49 @@ test('Adversarial 14: DynamicSeoHead Legal Metadata & Crawlability for /privacy 
     'Visiting /do-not-sell must immediately render the legal-modal-do-not-sell modal'
   );
 
-  // Close modal from /do-not-sell -> path resets to /
+  // 14C. Standalone crawlability for /cookies, /terms, /disclaimer, /affiliate-disclosure
+  const additionalRoutes = [
+    { path: '/cookies', titleKeyword: 'Cookie Policy', testId: 'legal-modal-cookies' },
+    { path: '/terms', titleKeyword: 'Terms', testId: 'legal-modal-terms' },
+    { path: '/disclaimer', titleKeyword: 'Disclaimer', testId: 'legal-modal-disclaimer' },
+    { path: '/affiliate-disclosure', titleKeyword: 'Affiliate', testId: 'legal-modal-affiliate-disclosure' },
+  ];
+
+  for (const { path: routePath, titleKeyword, testId } of additionalRoutes) {
+    globalThis.window.location.pathname = routePath;
+    globalThis.window.dispatchEvent({ type: 'popstate' });
+    await new Promise((r) => setTimeout(r, 20));
+
+    assert.ok(
+      globalThis.document.title.includes(titleKeyword),
+      `document.title for ${routePath} must contain "${titleKeyword}", got: "${globalThis.document.title}"`
+    );
+
+    assert.strictEqual(
+      canonicalEl.getAttribute('href'),
+      `https://mydriveledger.com${routePath}`,
+      `Canonical URL for ${routePath} must be https://mydriveledger.com${routePath}`
+    );
+
+    html = rootContainer.toHtml();
+    assert.ok(
+      html.includes(`data-testid="${testId}"`),
+      `Visiting ${routePath} must immediately render the ${testId} modal`
+    );
+  }
+
+  // Close modal -> path resets to /
   const closeBtn = rootContainer.querySelectorAll(
     (el) => el.tagName === 'BUTTON' && el.getAttribute('aria-label') === 'Close modal'
   )[0];
-  assert.ok(closeBtn, 'Close button on do-not-sell modal must exist');
+  assert.ok(closeBtn, 'Close button on legal modal must exist');
   closeBtn.dispatchEvent({ type: 'click' });
   await new Promise((r) => setTimeout(r, 20));
 
   assert.strictEqual(
     globalThis.window.location.pathname,
     '/',
-    'Closing modal opened at /do-not-sell must reset pathname to "/"'
+    'Closing modal must reset pathname to "/"'
   );
 });
 
@@ -1073,12 +1104,25 @@ test('Adversarial 15: EU (GDPR / TCF v2.2) & US State (CCPA / CPRA / VCDPA / CPA
   assert.ok(privacyStr.includes('CPA'), 'Privacy policy must cover CPA');
   assert.ok(privacyStr.includes('CTDPA'), 'Privacy policy must cover CTDPA');
   assert.ok(privacyStr.includes('1798.125'), 'Privacy policy must guarantee non-discrimination under § 1798.125');
+  assert.ok(privacyStr.includes('Online Identifiers') || privacyStr.includes('Identifiers'), 'Privacy policy must detail categories of personal data collected');
+  assert.ok(privacyStr.includes('DO NOT collect') || privacyStr.includes('do not collect'), 'Privacy policy must detail categories NOT collected');
 
   // Cookie Policy Verifications
   assert.ok(cookiesStr.includes('ca-pub-6581535125716295'), 'Cookie policy must disclose publisher ID ca-pub-6581535125716295');
   assert.ok(cookiesStr.includes('DoubleClick'), 'Cookie policy must disclose DoubleClick advertising cookies');
   assert.ok(cookiesStr.includes('TCF v2.2'), 'Cookie policy must reference IAB TCF v2.2');
   assert.ok(cookiesStr.includes('https://policies.google.com/technologies/partner-sites'), 'Cookie policy must link to partner-sites');
+  assert.ok(cookiesStr.includes('Art. 6(1)(a)') || cookiesStr.includes('Article 6(1)(a)'), 'Cookie policy must disclose Consent under Art 6(1)(a)');
+  assert.ok(cookiesStr.includes('Art. 6(1)(f)') || cookiesStr.includes('Article 6(1)(f)'), 'Cookie policy must disclose Legitimate Interest under Art 6(1)(f)');
+  assert.ok(cookiesStr.includes('Your US State Privacy Rights & Do Not Sell or Share My Personal Information'), 'Cookie policy must contain dedicated US state privacy rights heading');
+  assert.ok(cookiesStr.includes('Global Privacy Control') && cookiesStr.includes('navigator.globalPrivacyControl'), 'Cookie policy must disclose GPC signal support');
+  assert.ok(cookiesStr.toLowerCase().includes('cross-context behavioral advertising'), 'Cookie policy must disclose opt-out of cross-context behavioral ads');
+  assert.ok(cookiesStr.includes('CCPA') && cookiesStr.includes('CPRA'), 'Cookie policy must cover CCPA/CPRA');
+  assert.ok(cookiesStr.includes('VCDPA'), 'Cookie policy must cover VCDPA');
+  assert.ok(cookiesStr.includes('CPA'), 'Cookie policy must cover CPA');
+  assert.ok(cookiesStr.includes('CTDPA'), 'Cookie policy must cover CTDPA');
+  assert.ok(cookiesStr.includes('1798.125'), 'Cookie policy must guarantee non-discrimination under § 1798.125');
+  assert.ok(cookiesStr.includes('Categories of Personal Information Collected'), 'Cookie policy must detail categories of personal information collected');
 
   // Do Not Sell Policy Verifications
   assert.ok(doNotSellStr, 'LEGAL_POLICIES["do-not-sell"] must exist');
@@ -1089,6 +1133,7 @@ test('Adversarial 15: EU (GDPR / TCF v2.2) & US State (CCPA / CPRA / VCDPA / CPA
   assert.ok(doNotSellStr.includes('CTDPA'), 'Do-not-sell policy must cover CTDPA');
   assert.ok(doNotSellStr.includes('Global Privacy Control'), 'Do-not-sell policy must cover GPC');
   assert.ok(doNotSellStr.includes('ca-pub-6581535125716295'), 'Do-not-sell policy must disclose publisher ID ca-pub-6581535125716295');
+  assert.ok(doNotSellStr.includes('1798.125'), 'Do-not-sell policy must guarantee non-discrimination under § 1798.125');
 });
 
 test('Adversarial 16: Footer Regulatory Compliance Navigation & Actions', async () => {
@@ -1102,6 +1147,26 @@ test('Adversarial 16: Footer Regulatory Compliance Navigation & Actions', async 
     (el) => el.getAttribute('data-testid') === 'footer-privacy-policy' || (el.tagName === 'A' && el.getAttribute('href') === '/privacy')
   );
   assert.ok(privacyLinks.length > 0, 'Footer must render visible Privacy Policy link to /privacy');
+
+  const termsLinks = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-terms-of-service' || (el.tagName === 'A' && el.getAttribute('href') === '/terms')
+  );
+  assert.ok(termsLinks.length > 0, 'Footer must render visible Terms of Service link to /terms');
+
+  const disclaimerLinks = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-liability-disclaimer' || (el.tagName === 'A' && el.getAttribute('href') === '/disclaimer')
+  );
+  assert.ok(disclaimerLinks.length > 0, 'Footer must render visible Liability Disclaimer link to /disclaimer');
+
+  const cookiePolicyLinks = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-cookie-policy' || (el.tagName === 'A' && el.getAttribute('href') === '/cookies')
+  );
+  assert.ok(cookiePolicyLinks.length > 0, 'Footer must render visible Cookie Policy link to /cookies');
+
+  const affiliateLinks = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-affiliate-disclosure' || (el.tagName === 'A' && el.getAttribute('href') === '/affiliate-disclosure')
+  );
+  assert.ok(affiliateLinks.length > 0, 'Footer must render visible Affiliate Disclosure link to /affiliate-disclosure');
 
   const cookieSettingsBtn = rootContainer.querySelectorAll(
     (el) => el.getAttribute('data-testid') === 'footer-cookie-preferences'

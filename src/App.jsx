@@ -302,6 +302,18 @@ function DriveLedgerWorkspace() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenLegalModal = useCallback((policyKey) => {
+    if (!policyKey) return;
+    if (typeof window !== 'undefined' && window.history?.pushState) {
+      window.history.pushState(
+        null,
+        '',
+        `/${policyKey}${window.location.search}`
+      );
+    }
+    setActiveLegalModal(policyKey);
+  }, []);
+
   // Synchronize state when location or search parameters change via router
   useEffect(() => {
     const guideMatch = parseGuidePath(location.pathname);
@@ -614,7 +626,7 @@ function DriveLedgerWorkspace() {
           onSelectPreset={handleNavigateToPresetTco}
           onSelectObdCode={handleNavigateToObd}
           onSelectHybridObd={handleNavigateToHybridObd}
-          onOpenLegalModal={setActiveLegalModal}
+          onOpenLegalModal={handleOpenLegalModal}
           onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
           hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
           selectedPresetId={selectedPresetId}
@@ -626,6 +638,11 @@ function DriveLedgerWorkspace() {
         <LegalModal
           activePolicy={activeLegalModal}
           onSelectPolicy={(policyKey) => {
+            if (policyKey === 'about' || policyKey === 'contact') {
+              setActiveLegalModal(null);
+              handleSelectTab(policyKey);
+              return;
+            }
             if (typeof window !== 'undefined' && window.history?.replaceState) {
               const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
               if (currentPathPolicy) {
