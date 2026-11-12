@@ -26,7 +26,6 @@ import ForumShareModal from '../common/ForumShareModal';
 import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
 import KnownIssuesDossier from '../common/KnownIssuesDossier';
 import FixOrSellCalculator from './FixOrSellCalculator';
-import AdUnit from '../monetization/AdUnit';
 
 const BAR_COLOR = {
   OPTIMAL: '#12A150',
@@ -1107,12 +1106,6 @@ export default function MaintenanceRiskMatrix({
         vehicleName={activePreset.name}
         odometerMiles={physicalOdometerMiles}
         serviceReserveUsd={serviceReserveUsd}
-      />
-
-      <AdUnit
-        slotId="risk-bottom-leaderboard"
-        variant="leaderboard"
-        contextLabel={`${activePreset.name} Powertrain Wear & Risk Matrix`}
       />
 
       {/* 7. Mobile Sticky Summary Bar for real-time odometer & schedule feedback on small screens */}

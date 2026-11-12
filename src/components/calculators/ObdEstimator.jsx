@@ -10,7 +10,6 @@ import { getHybridVehicleObdContext } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
-import AdUnit from '../monetization/AdUnit';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import LivePidEvaluator from './LivePidEvaluator';
 import FixOrSellCalculator from './FixOrSellCalculator';
@@ -948,13 +947,6 @@ export default function ObdEstimator({
         tool="obd"
         activeCode={activeDossier.code}
         vehicleName={activePreset.name}
-      />
-
-      {/* 6. Zero-CLS Responsive AdSense Slot */}
-      <AdUnit
-        slotId="obd-bottom-leaderboard"
-        variant="leaderboard"
-        contextLabel={`${activePreset.name} ${activeDossier.code} Repair Estimator`}
       />
 
       {/* 7. Mobile Sticky Summary Bar for real-time OBD-II workshop cost feedback on small screens */}

@@ -32,7 +32,6 @@ import { Card, Pill, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimiti
 import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
-import AdUnit from '../monetization/AdUnit';
 import { computeBreakEvenTrajectory } from '../../data/breakEvenAndPpi.js';
 
 export { computeBreakEvenTrajectory };
@@ -1201,13 +1200,6 @@ export default function VehicleComparator({
               purchasePriceUsd={winPrice}
               odometerMiles={winOdo}
             />
-            {standalone && (
-              <AdUnit
-                slotId="compare-bottom-leaderboard"
-                variant="leaderboard"
-                contextLabel={`${vehicleA.name} vs ${vehicleB.name} 5-Year Comparison`}
-              />
-            )}
           </div>
         );
       })()}

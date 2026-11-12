@@ -1248,15 +1248,6 @@ export default function TcoCalculator({
               insuranceSharePct={combinedSharePct}
             />
             <ToolEditorialSection tool="tco" vehicleName={activePreset.name} />
-            <VinCheckBanner
-              placement="tco-bottom"
-              vehicleName={activePreset.name}
-              purchasePriceUsd={purchasePriceUsd}
-              vehiclePriceFormatted={formatCurrency(purchasePriceUsd)}
-              odometerMiles={odometerMiles}
-              compact={false}
-              className="mt-6"
-            />
           </div>
         );
       })()}
