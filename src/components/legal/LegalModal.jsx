@@ -1,17 +1,19 @@
 import React from 'react';
-import { ShieldCheck, Scale, Lock, Settings2, ExternalLink, FileText, BookOpen } from 'lucide-react';
+import { ShieldCheck, Scale, Lock, Settings2, ExternalLink, FileText, BookOpen, Shield } from 'lucide-react';
 import {
   LEGAL_POLICIES,
   resolveLegalPolicyKey,
   NOMINATIVE_FAIR_USE_NOTICE,
 } from '../../data/legalPolicies';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
+import { openPrivacySettings } from './CookieConsentBanner';
 
 const POLICY_NAV_ITEMS = [
   { key: 'terms', label: 'Terms of Service', path: '/terms', hash: '#terms', Icon: Scale },
   { key: 'disclaimer', label: 'Liability Disclaimer', path: '/disclaimer', hash: '#disclaimer', Icon: ShieldCheck },
   { key: 'privacy', label: 'Privacy Policy', path: '/privacy', hash: '#privacy', Icon: Lock },
   { key: 'cookies', label: 'Cookie Policy', path: '/cookies', hash: '#cookies', Icon: Settings2 },
+  { key: 'do-not-sell', label: 'Do Not Sell / US Privacy', path: '/do-not-sell', hash: '#do-not-sell', Icon: Shield },
   { key: 'affiliate-disclosure', label: 'Affiliate Disclosure', path: '/affiliate-disclosure', hash: '#affiliate-disclosure', Icon: ExternalLink },
   { key: 'about', label: 'About & Methodology', path: '/about', hash: '#about', Icon: BookOpen },
   { key: 'contact', label: 'Contact', path: '/contact', hash: '#contact', Icon: FileText },
@@ -131,17 +133,20 @@ export default function LegalModal({
 
         {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {onOpenCookieSettings && (
               <button
                 type="button"
+                data-testid="legal-modal-cookie-settings"
                 onClick={() => {
-                  onClose();
-                  onOpenCookieSettings();
+                  openPrivacySettings(() => {
+                    onClose();
+                    onOpenCookieSettings();
+                  });
                 }}
                 className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                Manage Cookie Preferences
+                {policy.id === 'do-not-sell' ? 'Opt Out / Cookie Settings' : 'Manage Cookie Preferences'}
               </button>
             )}
           </div>

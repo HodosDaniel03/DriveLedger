@@ -4,6 +4,55 @@ import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 
 export const COOKIE_CONSENT_STORAGE_KEY = 'shiftmetric_cookie_consent';
 
+export function isGoogleCmpPresent() {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    window.googlefc ||
+    typeof window.__tcfapi === 'function' ||
+    typeof window.__gpp === 'function' ||
+    typeof window.__uspapi === 'function'
+  );
+}
+
+export function openPrivacySettings(fallbackCallback) {
+  if (typeof window !== 'undefined') {
+    // 1. Direct call if window.googlefc.showRevocationMessage is already available
+    if (window.googlefc && typeof window.googlefc.showRevocationMessage === 'function') {
+      try {
+        window.googlefc.showRevocationMessage();
+        return true;
+      } catch (_err) {
+        // Fall back if exception thrown
+      }
+    }
+
+    // 2. Queue via callbackQueue if window.googlefc is present or loading
+    if (window.googlefc && typeof window.googlefc === 'object') {
+      window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
+      try {
+        window.googlefc.callbackQueue.push({
+          CONSENT_DATA_READY: () => {
+            if (typeof window.googlefc.showRevocationMessage === 'function') {
+              window.googlefc.showRevocationMessage();
+            } else if (typeof fallbackCallback === 'function') {
+              fallbackCallback();
+            }
+          },
+        });
+        return true;
+      } catch (_err) {
+        // Fall back if exception thrown
+      }
+    }
+  }
+
+  // 3. Fallback to our internal cookie preferences modal if blocked by an adblocker
+  if (typeof fallbackCallback === 'function') {
+    fallbackCallback();
+  }
+  return false;
+}
+
 function resolveStorage() {
   if (typeof localStorage !== 'undefined' && localStorage) return localStorage;
   if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
@@ -58,12 +107,31 @@ export default function CookieConsentBanner({
 }) {
   const [savedConsent, setSavedConsent] = useState(() => getSavedCookieConsent());
   const [showSettings, setShowSettings] = useState(false);
+  const [hasCmp, setHasCmp] = useState(() => isGoogleCmpPresent());
   const [analyticsEnabled, setAnalyticsEnabled] = useState(
     () => savedConsent?.analytics ?? false
   );
   const [advertisingEnabled, setAdvertisingEnabled] = useState(
     () => savedConsent?.advertising ?? false
   );
+
+  useEffect(() => {
+    // If CMP is not detected immediately on mount, check again shortly after scripts execute
+    if (!hasCmp) {
+      const checkCmp = () => {
+        if (isGoogleCmpPresent()) {
+          setHasCmp(true);
+        }
+      };
+      checkCmp();
+      const t1 = setTimeout(checkCmp, 250);
+      const t2 = setTimeout(checkCmp, 1000);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [hasCmp]);
 
   useEffect(() => {
     if (isOpenOverride) {
@@ -75,6 +143,13 @@ export default function CookieConsentBanner({
       setShowSettings(true);
     }
   }, [isOpenOverride]);
+
+  // Suppress custom fallback bottom banner if Google's official CMP is present,
+  // preventing double overlapping consent popups for EU and US visitors.
+  // When explicitly opened by user via cookie settings (isOpenOverride === true), render our modal.
+  if (hasCmp && !isOpenOverride) {
+    return null;
+  }
 
   const isVisible = !savedConsent || isOpenOverride;
   if (!isVisible) return null;

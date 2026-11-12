@@ -271,9 +271,32 @@ globalThis.localStorage = {
 const rootContainer = new MockElement('div');
 rootContainer.id = 'root';
 
+const headElement = new MockElement('head');
+headElement.querySelector = (selector) => {
+  if (typeof selector === 'string' && selector.startsWith('meta[')) {
+    const match = selector.match(/meta\[([a-zA-Z0-9_-]+)="([^"]+)"\]/);
+    if (match) {
+      return headElement.childNodes.find(
+        (c) => c.tagName === 'META' && c.getAttribute(match[1]) === match[2]
+      ) || null;
+    }
+  }
+  if (typeof selector === 'string' && selector.startsWith('link[')) {
+    const match = selector.match(/link\[rel="([^"]+)"\]/);
+    if (match) {
+      return headElement.childNodes.find(
+        (c) => c.tagName === 'LINK' && c.getAttribute('rel') === match[1]
+      ) || null;
+    }
+  }
+  return null;
+};
+
 globalThis.document = {
   documentElement: new MockElement('html'),
+  head: headElement,
   activeElement: null,
+  title: '',
   createElement: (tag) => new MockElement(tag),
   createElementNS: (ns, tag) => new MockElement(tag, ns),
   createTextNode: (text) => new MockTextNode(text),
@@ -375,8 +398,9 @@ registerHooks({
 
 const React = (await import('react')).default;
 const { createRoot } = await import('react-dom/client');
-const { resolveLegalPolicyKey } = await import('../src/data/legalPolicies.js');
+const { resolveLegalPolicyKey, LEGAL_POLICIES } = await import('../src/data/legalPolicies.js');
 const { default: App } = await import('../src/App.jsx');
+const { isGoogleCmpPresent, openPrivacySettings } = await import('../src/components/legal/CookieConsentBanner.jsx');
 
 // =============================================================================
 // TEST SUITE: EMPIRICAL ADVERSARIAL STRESS-TESTING OF LEGAL ROUTING & CLOSE CONTRACT
@@ -390,6 +414,8 @@ test('Adversarial 1: All valid clean paths resolve to canonical policy keys', ()
     '/cookies': 'cookies',
     '/affiliate-disclosure': 'affiliate-disclosure',
     '/affiliate': 'affiliate-disclosure', // alias to affiliate-disclosure
+    '/do-not-sell': 'do-not-sell',
+    '/donotsell': 'do-not-sell',
   };
 
   for (const [route, expectedKey] of Object.entries(cleanPathExpectations)) {
@@ -410,6 +436,8 @@ test('Adversarial 2: Trailing slashes are reliably normalized', () => {
     '/cookies/': 'cookies',
     '/affiliate-disclosure/': 'affiliate-disclosure',
     '/affiliate/': 'affiliate-disclosure',
+    '/do-not-sell/': 'do-not-sell',
+    '/donotsell/': 'do-not-sell',
   };
 
   for (const [route, expectedKey] of Object.entries(trailingSlashExpectations)) {
@@ -438,6 +466,10 @@ test('Adversarial 3: Uppercase and mixed-case paths resolve case-insensitively',
     ['/Affiliate-Disclosure', 'affiliate-disclosure'],
     ['/AFFILIATE', 'affiliate-disclosure'],
     ['/Affiliate/', 'affiliate-disclosure'],
+    ['/DO-NOT-SELL', 'do-not-sell'],
+    ['/Do-Not-Sell', 'do-not-sell'],
+    ['/do-not-sell/', 'do-not-sell'],
+    ['/DONOTSELL', 'do-not-sell'],
   ];
 
   for (const [route, expectedKey] of caseVariants) {
@@ -463,6 +495,9 @@ test('Adversarial 4: Legacy hash routes and variants resolve correctly', () => {
     '#Privacy': 'privacy',
     '#TERMS': 'terms',
     '#ABOUT': 'about',
+    '#do-not-sell': 'do-not-sell',
+    '#DO-NOT-SELL': 'do-not-sell',
+    '#donotsell': 'do-not-sell',
   };
 
   for (const [hashRoute, expectedKey] of Object.entries(hashExpectations)) {
@@ -853,6 +888,14 @@ test('Adversarial 10: Static Hosting SPA Fallback & XML Sitemap Integrity', () =
     sitemapContent.includes('<loc>https://mydriveledger.com/terms</loc>'),
     'public/sitemap.xml must contain https://mydriveledger.com/terms'
   );
+  assert.ok(
+    sitemapContent.includes('<loc>https://mydriveledger.com/do-not-sell</loc>'),
+    'public/sitemap.xml must contain https://mydriveledger.com/do-not-sell'
+  );
+  assert.ok(
+    sitemapContent.includes('<loc>https://mydriveledger.com/cookies</loc>'),
+    'public/sitemap.xml must contain https://mydriveledger.com/cookies'
+  );
 });
 
 test('Adversarial 11: High-Resolution CMP Brand Assets Compliance', () => {
@@ -871,5 +914,203 @@ test('Adversarial 11: High-Resolution CMP Brand Assets Compliance', () => {
   assert.ok(fs.existsSync(faviconPath), 'public/favicon.svg must exist');
   const svgContent = fs.readFileSync(faviconPath, 'utf8');
   assert.ok(svgContent.includes('<svg') && svgContent.includes('</svg>'), 'Valid SVG markup in favicon.svg');
+});
+
+test('Adversarial 12: Google CMP Detection & Double-Banner Suppression Contract', () => {
+  // Clean up globals first
+  delete globalThis.window.googlefc;
+  delete globalThis.window.__tcfapi;
+  delete globalThis.window.__gpp;
+  delete globalThis.window.__uspapi;
+
+  assert.strictEqual(
+    isGoogleCmpPresent(),
+    false,
+    'When no CMP API is injected, isGoogleCmpPresent() MUST return false'
+  );
+
+  // 1. window.googlefc
+  globalThis.window.googlefc = {};
+  assert.strictEqual(isGoogleCmpPresent(), true, 'window.googlefc presence must return true');
+  delete globalThis.window.googlefc;
+
+  // 2. window.__tcfapi
+  globalThis.window.__tcfapi = () => {};
+  assert.strictEqual(isGoogleCmpPresent(), true, 'window.__tcfapi presence must return true');
+  delete globalThis.window.__tcfapi;
+
+  // 3. window.__gpp
+  globalThis.window.__gpp = () => {};
+  assert.strictEqual(isGoogleCmpPresent(), true, 'window.__gpp presence must return true');
+  delete globalThis.window.__gpp;
+
+  // 4. window.__uspapi
+  globalThis.window.__uspapi = () => {};
+  assert.strictEqual(isGoogleCmpPresent(), true, 'window.__uspapi presence must return true');
+  delete globalThis.window.__uspapi;
+});
+
+test('Adversarial 13: Google Funding Choices Revocation API & AdBlocker Fallback Helper', () => {
+  // Scenario A: window.googlefc.showRevocationMessage is available
+  let showRevocationCalled = false;
+  let fallbackACalled = false;
+  globalThis.window.googlefc = {
+    showRevocationMessage() {
+      showRevocationCalled = true;
+    },
+  };
+
+  const resA = openPrivacySettings(() => {
+    fallbackACalled = true;
+  });
+  assert.strictEqual(resA, true, 'openPrivacySettings must return true when googlefc is present');
+  assert.strictEqual(showRevocationCalled, true, 'showRevocationMessage must be invoked');
+  assert.strictEqual(fallbackACalled, false, 'fallback callback must NOT be called when revocation message succeeds');
+
+  // Scenario B: window.googlefc is loading with callbackQueue
+  delete globalThis.window.googlefc.showRevocationMessage;
+  globalThis.window.googlefc.callbackQueue = [];
+  let fallbackBCalled = false;
+
+  const resB = openPrivacySettings(() => {
+    fallbackBCalled = true;
+  });
+  assert.strictEqual(resB, true, 'openPrivacySettings must return true when callbackQueue is queued');
+  assert.strictEqual(globalThis.window.googlefc.callbackQueue.length, 1, 'callbackQueue must receive pushed job');
+  assert.ok(globalThis.window.googlefc.callbackQueue[0].CONSENT_DATA_READY, 'Must have CONSENT_DATA_READY hook');
+
+  // Scenario C: window.googlefc is blocked/absent (AdBlocker scenario)
+  delete globalThis.window.googlefc;
+  let fallbackCCalled = false;
+
+  const resC = openPrivacySettings(() => {
+    fallbackCCalled = true;
+  });
+  assert.strictEqual(resC, false, 'openPrivacySettings must return false when CMP is absent');
+  assert.strictEqual(fallbackCCalled, true, 'fallback callback MUST execute when CMP is blocked by adblocker');
+});
+
+test('Adversarial 14: DynamicSeoHead Legal Metadata & Crawlability for /privacy & /do-not-sell', async () => {
+  // 14A. Navigating to /privacy
+  globalThis.window.location.pathname = '/privacy';
+  globalThis.window.location.search = '';
+  globalThis.window.location.hash = '';
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.ok(
+    globalThis.document.title.includes('Privacy Policy'),
+    `document.title must contain "Privacy Policy", got: "${globalThis.document.title}"`
+  );
+
+  const canonicalEl = globalThis.document.head.querySelector('link[rel="canonical"]');
+  assert.ok(canonicalEl, 'Canonical <link> tag must exist in head');
+  assert.strictEqual(
+    canonicalEl.getAttribute('href'),
+    'https://mydriveledger.com/privacy',
+    'Canonical URL for /privacy must be https://mydriveledger.com/privacy'
+  );
+
+  let html = rootContainer.toHtml();
+  assert.ok(
+    html.includes('data-testid="legal-modal-privacy"'),
+    'Visiting /privacy must immediately render the legal-modal-privacy modal'
+  );
+
+  // 14B. Navigating to /do-not-sell
+  globalThis.window.location.pathname = '/do-not-sell';
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.ok(
+    globalThis.document.title.includes('Do Not Sell'),
+    `document.title must contain "Do Not Sell", got: "${globalThis.document.title}"`
+  );
+
+  assert.strictEqual(
+    canonicalEl.getAttribute('href'),
+    'https://mydriveledger.com/do-not-sell',
+    'Canonical URL for /do-not-sell must be https://mydriveledger.com/do-not-sell'
+  );
+
+  html = rootContainer.toHtml();
+  assert.ok(
+    html.includes('data-testid="legal-modal-do-not-sell"'),
+    'Visiting /do-not-sell must immediately render the legal-modal-do-not-sell modal'
+  );
+
+  // Close modal from /do-not-sell -> path resets to /
+  const closeBtn = rootContainer.querySelectorAll(
+    (el) => el.tagName === 'BUTTON' && el.getAttribute('aria-label') === 'Close modal'
+  )[0];
+  assert.ok(closeBtn, 'Close button on do-not-sell modal must exist');
+  closeBtn.dispatchEvent({ type: 'click' });
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.strictEqual(
+    globalThis.window.location.pathname,
+    '/',
+    'Closing modal opened at /do-not-sell must reset pathname to "/"'
+  );
+});
+
+test('Adversarial 15: EU (GDPR / TCF v2.2) & US State (CCPA / CPRA / VCDPA / CPA / CTDPA) Regulatory Prose Invariants', () => {
+  const privacyStr = JSON.stringify(LEGAL_POLICIES.privacy);
+  const cookiesStr = JSON.stringify(LEGAL_POLICIES.cookies);
+  const doNotSellStr = JSON.stringify(LEGAL_POLICIES['do-not-sell']);
+
+  // Privacy Policy Verifications
+  assert.ok(privacyStr.includes('ca-pub-6581535125716295'), 'Privacy policy must disclose publisher ID ca-pub-6581535125716295');
+  assert.ok(privacyStr.includes('https://policies.google.com/technologies/partner-sites'), 'Privacy policy must link to partner-sites');
+  assert.ok(privacyStr.includes('TCF v2.2'), 'Privacy policy must reference IAB TCF v2.2');
+  assert.ok(privacyStr.includes('GDPR Article 6(1)(a)'), 'Privacy policy must disclose Consent under Article 6(1)(a)');
+  assert.ok(privacyStr.includes('GDPR Article 6(1)(f)'), 'Privacy policy must disclose Legitimate Interest under Article 6(1)(f)');
+  assert.ok(privacyStr.includes('Your US State Privacy Rights & Do Not Sell or Share My Personal Information'), 'Privacy policy must contain dedicated US state privacy rights heading');
+  assert.ok(privacyStr.includes('Global Privacy Control') && privacyStr.includes('navigator.globalPrivacyControl'), 'Privacy policy must disclose GPC signal support');
+  assert.ok(privacyStr.toLowerCase().includes('cross-context behavioral advertising'), 'Privacy policy must disclose opt-out of cross-context behavioral ads');
+  assert.ok(privacyStr.includes('CCPA') && privacyStr.includes('CPRA'), 'Privacy policy must cover CCPA/CPRA');
+  assert.ok(privacyStr.includes('VCDPA'), 'Privacy policy must cover VCDPA');
+  assert.ok(privacyStr.includes('CPA'), 'Privacy policy must cover CPA');
+  assert.ok(privacyStr.includes('CTDPA'), 'Privacy policy must cover CTDPA');
+  assert.ok(privacyStr.includes('1798.125'), 'Privacy policy must guarantee non-discrimination under § 1798.125');
+
+  // Cookie Policy Verifications
+  assert.ok(cookiesStr.includes('ca-pub-6581535125716295'), 'Cookie policy must disclose publisher ID ca-pub-6581535125716295');
+  assert.ok(cookiesStr.includes('DoubleClick'), 'Cookie policy must disclose DoubleClick advertising cookies');
+  assert.ok(cookiesStr.includes('TCF v2.2'), 'Cookie policy must reference IAB TCF v2.2');
+  assert.ok(cookiesStr.includes('https://policies.google.com/technologies/partner-sites'), 'Cookie policy must link to partner-sites');
+
+  // Do Not Sell Policy Verifications
+  assert.ok(doNotSellStr, 'LEGAL_POLICIES["do-not-sell"] must exist');
+  assert.ok(doNotSellStr.includes('CCPA'), 'Do-not-sell policy must cover CCPA');
+  assert.ok(doNotSellStr.includes('CPRA'), 'Do-not-sell policy must cover CPRA');
+  assert.ok(doNotSellStr.includes('VCDPA'), 'Do-not-sell policy must cover VCDPA');
+  assert.ok(doNotSellStr.includes('CPA'), 'Do-not-sell policy must cover CPA');
+  assert.ok(doNotSellStr.includes('CTDPA'), 'Do-not-sell policy must cover CTDPA');
+  assert.ok(doNotSellStr.includes('Global Privacy Control'), 'Do-not-sell policy must cover GPC');
+  assert.ok(doNotSellStr.includes('ca-pub-6581535125716295'), 'Do-not-sell policy must disclose publisher ID ca-pub-6581535125716295');
+});
+
+test('Adversarial 16: Footer Regulatory Compliance Navigation & Actions', async () => {
+  globalThis.window.location.pathname = '/';
+  globalThis.window.location.search = '';
+  globalThis.window.location.hash = '';
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await new Promise((r) => setTimeout(r, 20));
+
+  const privacyLinks = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-privacy-policy' || (el.tagName === 'A' && el.getAttribute('href') === '/privacy')
+  );
+  assert.ok(privacyLinks.length > 0, 'Footer must render visible Privacy Policy link to /privacy');
+
+  const cookieSettingsBtn = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-cookie-preferences'
+  )[0];
+  assert.ok(cookieSettingsBtn, 'Footer must render Privacy & Cookie Settings button with data-testid="footer-cookie-preferences"');
+
+  const doNotSellLink = rootContainer.querySelectorAll(
+    (el) => el.getAttribute('data-testid') === 'footer-do-not-sell' || (el.tagName === 'A' && el.getAttribute('href') === '/do-not-sell')
+  )[0];
+  assert.ok(doNotSellLink, 'Footer must render Do Not Sell or Share My Personal Information link to /do-not-sell');
 });
 

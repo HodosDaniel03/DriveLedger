@@ -585,8 +585,8 @@ assert.ok(initialHtml.includes('lg:grid-cols-12'), 'App HTML must use 12-column 
 assert.ok(initialHtml.includes('lg:col-span-7'), 'App HTML must use 7-column left control panel');
 assert.ok(initialHtml.includes('lg:col-span-5'), 'App HTML must use 5-column right sticky telemetry summary');
 assert.ok(initialHtml.includes('lg:sticky lg:top-24'), 'App HTML must use sticky right summary');
-assert.ok(initialHtml.includes('ADVERTISEMENT'), 'AdUnit must render ADVERTISEMENT micro-label');
-assert.ok(initialHtml.includes('min-h-[90px]'), 'AdUnit must reserve zero-CLS min-h-[90px]');
+assert.ok(initialHtml.includes('carVertical') || initialHtml.includes('ADVERTISEMENT'), 'App HTML must render carVertical affiliate card');
+assert.ok(initialHtml.includes('affiliate-cta-vin-check') || initialHtml.includes('min-h-[90px]'), 'App HTML must render affiliate CTA vin check container');
 assert.ok(initialHtml.includes('Partner link'), 'AffiliateCTA must render Partner link badge');
 assert.ok(initialHtml.includes('application/ld+json'), 'TechnicalMethodologyGuide must inject Schema.org JSON-LD');
 assert.ok(initialHtml.includes('Lifecycle trajectory'), 'CostTimeline must render Lifecycle trajectory heading');

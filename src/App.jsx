@@ -20,7 +20,7 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import GuidesPage from './pages/GuidesPage';
 import LegalModal from './components/legal/LegalModal';
-import CookieConsentBanner from './components/legal/CookieConsentBanner';
+import CookieConsentBanner, { openPrivacySettings } from './components/legal/CookieConsentBanner';
 import {
   resolveLegalPolicyKey,
   WORKSPACE_LEGAL_NOTICE_LINE,
@@ -425,6 +425,14 @@ function DriveLedgerWorkspace() {
     };
   }, []);
 
+  // When visiting /do-not-sell, trigger Google CMP revocation message if available,
+  // falling back to our internal cookie settings modal.
+  useEffect(() => {
+    if (activeLegalModal === 'do-not-sell') {
+      openPrivacySettings(() => setShowCookieBannerOverride(true));
+    }
+  }, [activeLegalModal]);
+
   return (
     <div id="top" className="min-h-screen scroll-pt-28 lg:scroll-pt-32 bg-canvas text-body selection:bg-primary-100 selection:text-primary-800 antialiased dark:bg-[#09090B] dark:text-zinc-300">
       <ScrollToTop />
@@ -436,6 +444,7 @@ function DriveLedgerWorkspace() {
         secondaryPresetId={secondaryPresetId}
         mileageBracketSlug={riskOdometerOverride?.slug}
         selectedObdCode={selectedObdCode}
+        activeLegalPolicy={activeLegalModal}
       />
 
       {/* Sticky Global Navigation Bar */}
@@ -608,6 +617,7 @@ function DriveLedgerWorkspace() {
           onOpenLegalModal={setActiveLegalModal}
           onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
           hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
+          selectedPresetId={selectedPresetId}
         />
       </main>
 

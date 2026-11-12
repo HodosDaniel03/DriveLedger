@@ -71,6 +71,10 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/blog`, '0.8', 'weekly');
   addUrl(`${SITE_ORIGIN}/privacy`, '0.7', 'monthly');
   addUrl(`${SITE_ORIGIN}/terms`, '0.7', 'monthly');
+  addUrl(`${SITE_ORIGIN}/cookies`, '0.7', 'monthly');
+  addUrl(`${SITE_ORIGIN}/disclaimer`, '0.7', 'monthly');
+  addUrl(`${SITE_ORIGIN}/affiliate-disclosure`, '0.7', 'monthly');
+  addUrl(`${SITE_ORIGIN}/do-not-sell`, '0.7', 'monthly');
 
   // 1b. In-Depth Technical Buyer Guides (/guides/:slug)
   for (const guide of GUIDES_DATA) {

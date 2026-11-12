@@ -26,6 +26,7 @@ export const LEGAL_HASH_ROUTES = [
   '#disclaimer',
   '#affiliate-disclosure',
   '#cookies',
+  '#do-not-sell',
   '#about',
   '#contact',
 ];
@@ -36,6 +37,7 @@ export const LEGAL_CLEAN_ROUTES = [
   '/disclaimer',
   '/cookies',
   '/affiliate-disclosure',
+  '/do-not-sell',
   '/about',
   '/contact',
 ];
@@ -48,6 +50,8 @@ const HASH_TO_POLICY_KEY = {
   '/cookies': 'cookies',
   '/affiliate-disclosure': 'affiliate-disclosure',
   '/affiliate': 'affiliate-disclosure',
+  '/do-not-sell': 'do-not-sell',
+  '/donotsell': 'do-not-sell',
   // Bare keys
   privacy: 'privacy',
   terms: 'terms',
@@ -55,6 +59,8 @@ const HASH_TO_POLICY_KEY = {
   'affiliate-disclosure': 'affiliate-disclosure',
   affiliate: 'affiliate-disclosure',
   cookies: 'cookies',
+  'do-not-sell': 'do-not-sell',
+  donotsell: 'do-not-sell',
   about: 'about',
   contact: 'contact',
   // Hash routes
@@ -64,6 +70,8 @@ const HASH_TO_POLICY_KEY = {
   '#affiliate-disclosure': 'affiliate-disclosure',
   '#affiliate': 'affiliate-disclosure',
   '#cookies': 'cookies',
+  '#do-not-sell': 'do-not-sell',
+  '#donotsell': 'do-not-sell',
   '#about': 'about',
   '#methodology': 'about',
   '#contact': 'contact',
@@ -176,8 +184,8 @@ export const LEGAL_POLICIES = {
     id: 'privacy',
     hash: '#privacy',
     shortLabel: 'Privacy Policy',
-    title: 'Privacy Policy & Telemetry Data Governance (GDPR, UK GDPR & CCPA Compliant)',
-    subtitle: `Client-Side Data Architecture, Google AdSense DART Disclosures & Statutory Consumer Privacy Rights — Last Updated: ${lastUpdated}`,
+    title: 'Privacy Policy & Telemetry Data Governance (GDPR, UK GDPR & CCPA/CPRA Compliant)',
+    subtitle: `Client-Side Architecture, Google AdSense (ca-pub-6581535125716295) Disclosures, IAB TCF v2.2 & Statutory US State Privacy Rights — Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -188,30 +196,45 @@ export const LEGAL_POLICIES = {
         ],
       },
       {
-        heading: '2. Verbatim Google AdSense & DoubleClick DART Cookie Disclosure',
+        heading: '2. Third-Party Advertising, Google AdSense & DoubleClick Cookie Disclosures',
         paragraphs: [
           ADSENSE_DART_COOKIE_CLAUSE,
-          `When personalized or non-personalized advertising is active on https://${domain}, Google and its certified AdSense vendor partners may automatically receive your IP address, browser user-agent string, coarse geographic region, and page URL in order to deliver contextually relevant advertisements, cap ad frequency, and detect invalid traffic or click fraud. You may review Google's official Partner Sites Privacy Policy at https://policies.google.com/technologies/partner-sites.`,
+          `We use Google AdSense (Publisher ID: ca-pub-6581535125716295) and Google-certified third-party advertising partners to deliver display advertisements across https://${domain}. Google, as a third-party vendor, uses cookies (including the DoubleClick / AdSense advertising cookie) to serve advertisements based upon your visit to our website and other websites across the Internet.`,
+          `When advertisements are delivered on our platform, Google and certified advertising technology partners may automatically receive standard HTTP network metadata—such as your Internet Protocol (IP) address, browser user-agent string, coarse geographic location (country or metropolitan area), and requested URL—in order to evaluate ad delivery, frequency capping, fraud prevention, and invalid traffic filtering. You can review how Google processes personal data by visiting Google's Partner Sites Policy at https://policies.google.com/technologies/partner-sites.`,
         ],
       },
       {
-        heading: '3. Outbound Affiliate Links & Third-Party Merchant Privacy',
+        heading: '3. European Economic Area (EEA), UK & Switzerland Compliance (GDPR & IAB TCF v2.2)',
+        paragraphs: [
+          `If you access ${brandName} from the European Economic Area (EEA), the United Kingdom, or Switzerland, the processing of your personal information is governed by Regulation (EU) 2016/679 (General Data Protection Regulation / GDPR) and the UK Data Protection Act 2018, adhering strictly to the Interactive Advertising Bureau (IAB Europe) Transparency and Consent Framework (TCF v2.2).`,
+          `Legal Bases for Processing: (a) Consent (GDPR Article 6(1)(a)): In compliance with statutory requirements, we request your prior, explicit, and freely given consent via a certified Consent Management Platform (CMP) or consent banner before storing non-essential cookies, accessing device identifiers, or serving personalized advertisements tailored to your past browsing habits. (b) Legitimate Interest (GDPR Article 6(1)(f)): Where permitted under IAB TCF v2.2 specifications, certain basic operational functions—such as delivering non-personalized advertisements, measuring aggregate ad impressions, verifying ad viewability, combating click fraud, and ensuring infrastructure security—rely upon legitimate interests.`,
+          `Personalized vs. Non-Personalized Ad Serving: If you grant consent for personalized advertising, Google AdSense uses cookies and mobile ad identifiers to personalize the advertisements you see. If you refuse or withdraw consent, Google AdSense serves non-personalized advertisements (NPAs) that are contextual rather than behavioral, using cookies solely for frequency capping, aggregate reporting, and fraud prevention.`,
+          `Statutory Data Subject Rights (GDPR Articles 12–23): Under European law, you possess comprehensive statutory rights, including: the Right to Access your data (Article 15); the Right to Rectification (Article 16); the Right to Erasure / "Right to be Forgotten" (Article 17); the Right to Restrict processing (Article 18); the Right to Data Portability (Article 20); the Right to Object to processing based on legitimate interests or direct marketing (Article 21); and the Right not to be subjected to Automated Decision-Making (Article 22).`,
+          `Consent Withdrawal & Modification: You have the unqualified right to withdraw or modify your consent preferences at any time. You can invoke Google's official revocation dialog or our internal cookie management interface by clicking "Privacy & Cookie Settings (EU/UK)" in our global website footer or by adjusting browser cookie settings. Withdrawal does not affect the lawfulness of processing undertaken prior to revocation. For regulatory inquiries, contact our Data Protection Desk at ${legalEmail} or ${contactEmail}.`,
+        ],
+      },
+      {
+        heading: '4. Your US State Privacy Rights & Do Not Sell or Share My Personal Information',
+        paragraphs: [
+          `This dedicated section applies to residents of California, Virginia, Colorado, Connecticut, Utah, and other US states enacting comprehensive consumer privacy legislation, including the California Consumer Privacy Act of 2018 as amended by the California Privacy Rights Act of 2020 (CCPA / CPRA, Cal. Civ. Code § 1798.100 et seq.), the Virginia Consumer Data Protection Act (VCDPA), the Colorado Privacy Act (CPA), and the Connecticut Data Privacy Act (CTDPA).`,
+          `Right to Opt-Out of Sale or Sharing for Cross-Context Behavioral Advertising: US state laws grant consumers the statutory right to opt out of the "sale" or "sharing" of personal information, as well as the right to opt out of targeted advertising. While ${brandName} does not sell your personal information for monetary payment, our use of third-party advertising cookies via Google AdSense (ca-pub-6581535125716295) for cross-context behavioral ad delivery may be characterized as "sharing" or "targeted advertising" under statutory provisions.`,
+          `Global Privacy Control (GPC) Signal Support: We support and automatically respect frictionless Universal Opt-Out Preference Signals, including the Global Privacy Control (GPC). If your browser or operating system broadcasts an active GPC signal (navigator.globalPrivacyControl === true), our systems recognize this signal as a valid and binding directive to opt out of the sale, sharing, and targeted advertising usage of your browser telemetry.`,
+          `Categories of Data Collected & Disclosed: Over the past 12 months, we have collected and disclosed for business purposes: (a) Identifiers: Internet Protocol (IP) addresses, unique pseudonymous cookie identifiers, browser user-agent strings, and device fingerprints; (b) Internet or Network Activity Information: interaction timestamps, vehicle preset models viewed, and OBD-II trouble code queries. We DO NOT collect, process, or disclose sensitive personal information (such as Social Security numbers, financial account credentials, precise geolocation, or racial/ethnic origin).`,
+          `Non-Discrimination Guarantee: Pursuant to CCPA / CPRA § 1798.125 and comparable state laws, we will never discriminate against you for exercising any statutory privacy right. Opting out will never result in denied access to our automotive calculators, slower calculation runtimes, or altered service terms.`,
+          `How to Exercise Your Opt-Out Rights: You may exercise your right to opt out at any time by: (a) Visiting https://${domain}/do-not-sell directly; (b) Clicking "Do Not Sell or Share My Personal Information (US)" in the website footer; (c) Transmitting an automated Global Privacy Control (GPC) signal; or (d) Submitting a verified consumer request to our compliance desk at ${legalEmail}.`,
+        ],
+      },
+      {
+        heading: '5. Outbound Affiliate Links & Third-Party Merchant Privacy',
         paragraphs: [
           `Our calculators contain contextual partner links to third-party automotive platforms (such as VIN history registries, diagnostic hardware retailers, OEM parts catalogs, and insurance comparison marketplaces). When you voluntarily click an outbound partner link, your browser navigates to that third-party domain with a standard referral tracking parameter. ${brandName} does not receive any personal identity, payment card, or VIN query data that you subsequently submit on a third-party partner website; such interactions are governed solely by the privacy policy of the destination merchant.`,
         ],
       },
       {
-        heading: '4. EEA & UK GDPR Statutory Rights (Articles 12–23)',
+        heading: '6. Data Retention, International Transfers & Supervisory Authorities',
         paragraphs: [
-          `If you access https://${domain} from the European Economic Area (EEA), the United Kingdom, or Switzerland, you are entitled to comprehensive statutory rights under Regulation (EU) 2016/679 (GDPR) and the UK Data Protection Act 2018. Specifically, you hold: (a) the Right to Transparent Information (Articles 12–14); (b) the Right of Subject Access (Article 15); (c) the Right to Rectification (Article 16); (d) the Right to Erasure / "Right to be Forgotten" (Article 17); (e) the Right to Restriction of Processing (Article 18); (f) the Right to Data Portability (Article 20); (g) the Right to Object to Processing based on legitimate interests or direct marketing (Article 21); and (h) the Right not to be subject to Automated Individual Decision-Making (Article 22).`,
-          `Where we rely upon your consent for non-essential analytics or personalized advertising cookies under GDPR Article 6(1)(a), you have the absolute right to withdraw your consent at any time via the "Cookie Preferences" control in our site footer without affecting the lawfulness of processing prior to withdrawal. For all GDPR data protection inquiries, contact our Data Protection Desk at ${legalEmail} or ${contactEmail}.`,
-        ],
-      },
-      {
-        heading: '5. California CCPA / CPRA Rights ("Do Not Sell or Share My Personal Information")',
-        paragraphs: [
-          `Under the California Consumer Privacy Act of 2018 (CCPA) as amended by the California Privacy Rights Act of 2020 (CPRA, California Civil Code § 1798.100 et seq.), California residents hold: (a) the Right to Know what categories and specific pieces of personal information are collected, used, or disclosed; (b) the Right to Delete personal information; (c) the Right to Correct inaccurate personal information; (d) the Right to Opt-Out of the "Sale" or "Sharing" of personal information for cross-context behavioral advertising; and (e) the Right to Non-Discrimination for exercising any CCPA/CPRA privacy right.`,
-          `${brandName} does not sell personal information for monetary consideration. To opt out of third-party cross-context behavioral advertising cookies ("Do Not Sell or Share My Personal Information"), click "Cookie Preferences" in the website footer and select "Essential Only", or submit a formal request to ${legalEmail}.`,
+          `Because all calculation data is handled client-side in browser memory, ${brandName} retains no centralized repository of user financial or vehicle ownership inputs. Pseudonymous server logs collected for edge security and CDN caching (via Cloudflare, Inc.) are automatically purged on a rolling 30-day lifecycle.`,
+          `If you believe that our processing of personal data infringes applicable data protection statutes, you have the right to lodge a complaint with your competent supervisory authority (such as your EU Member State Data Protection Authority, the UK Information Commissioner's Office, or the California Privacy Protection Agency).`,
         ],
       },
     ],
@@ -222,27 +245,95 @@ export const LEGAL_POLICIES = {
     hash: '#cookies',
     shortLabel: 'Cookie Policy',
     title: 'GDPR / CCPA Cookie & Local Storage Governance Policy',
-    subtitle: `Granular Breakdown of First-Party Browser Storage, Google AdSense DART Cookies & Opt-Out Controls — Last Updated: ${lastUpdated}`,
+    subtitle: `Technical Specification of First-Party Local Storage, Google AdSense (ca-pub-6581535125716295) Cookies & Granular Opt-Out Controls — Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
-        heading: '1. How We Use Local Storage and Cookies',
+        heading: '1. Technical Architecture of First-Party Local Storage & Essential Storage',
         paragraphs: [
-          `${brandName} (https://${domain}) utilizes strictly necessary HTML5 Local Storage keys to preserve your user-interface state across page reloads, alongside optional third-party advertising cookies that are controlled by your explicit consent preferences.`,
-          `Essential First-Party Local Storage Keys include: "shiftmetric_theme" (persists Light or Dark display mode), "shiftmetric_unit_region" (persists US, UK, or EU currency and measurement units), "shiftmetric_garage_v1" (stores your locally bookmarked vehicle presets on your device), and "shiftmetric_cookie_consent" (records your GDPR/CCPA privacy banner selection). These essential keys never leave your browser and do not track you across external websites.`,
+          `${brandName} (https://${domain}) utilizes strictly necessary HTML5 Local Storage keys to preserve your user-interface configuration across browser sessions, alongside optional third-party advertising cookies that are strictly governed by your explicit consent preferences.`,
+          `Essential First-Party Local Storage Keys include: "shiftmetric_theme" (persists Light or Dark display mode), "shiftmetric_unit_region" (persists US, UK, or EU currency, distance, and consumption units), "shiftmetric_garage_v1" (stores your bookmarked vehicle presets locally on your device), and "shiftmetric_cookie_consent" (records your GDPR/CCPA privacy banner selection). These essential keys are stored solely on your client device, never leave your browser, and do not track your activity across third-party websites.`,
         ],
       },
       {
-        heading: '2. Advertising & Google DoubleClick DART Cookies',
+        heading: '2. Google AdSense (ca-pub-6581535125716295) & DoubleClick Advertising Cookies',
         paragraphs: [
-          ADSENSE_DART_COOKIE_CLAUSE,
-          `If you select "Essential Only" in our Cookie Consent Banner or Cookie Preferences modal, ${brandName} records your rejection of personalized tracking in localStorage and restricts optional third-party behavioral profiling scripts.`,
+          `When third-party advertising is active on https://${domain}, Google AdSense (Publisher ID: ca-pub-6581535125716295) and Google-certified vendor networks deploy HTTP cookies (including the DoubleClick / AdSense cookie) to measure ad delivery, prevent click fraud, and serve personalized or contextually relevant advertisements.`,
+          `Personalized Advertising: When consent is granted, advertising cookies store pseudonymous identifiers that allow Google and its ad partners to serve advertisements tailored to your interests based upon your previous visits to this and other websites across the web.`,
+          `Non-Personalized Advertising: When consent for personalized ads is refused or revoked, Google AdSense delivers non-personalized ads (NPAs). NPAs do not rely upon past user behavior profiles, but still utilize cookies strictly for frequency capping, aggregated ad reporting, and combating invalid traffic or fraud. Review Google's official privacy practices at https://policies.google.com/technologies/partner-sites.`,
         ],
       },
       {
-        heading: '3. Managing & Revoking Your Cookie Preferences',
+        heading: '3. European Economic Area (EEA), UK & Switzerland (GDPR & IAB TCF v2.2) Compliance',
         paragraphs: [
-          `You can modify or revoke your consent at any time using the interactive controls below or by clicking the permanent "Cookie Preferences" button in our global footer. Additionally, you may clear cookies and site data directly through your browser settings (Chrome, Safari, Firefox, or Edge) or manage industry-wide ad preferences via https://myadcenter.google.com/, https://www.aboutads.info/choices/, and https://www.youronlinechoices.eu/.`,
+          `In adherence to Regulation (EU) 2016/679 (GDPR), the UK Data Protection Act 2018, and IAB Europe Transparency and Consent Framework (TCF v2.2) standards:`,
+          `(a) Legal Basis of Consent (GDPR Art. 6(1)(a)): Storing and accessing non-essential cookies and processing personal data for personalized advertising, audience measurement, and content profiling requires your prior affirmative consent, captured through our certified CMP or cookie banner.`,
+          `(b) Legal Basis of Legitimate Interest (GDPR Art. 6(1)(f)): Where recognized under IAB TCF v2.2, select technical vendors may rely on legitimate interests for strictly technical ad delivery, security auditing, and fraud suppression.`,
+          `(c) Consent Revocation & Modification: You have the statutory right to withdraw or modify your cookie consent at any moment by clicking "Privacy & Cookie Settings (EU/UK)" in our website footer, which launches Google's official revocation interface or our internal cookie management tool.`,
+        ],
+      },
+      {
+        heading: '4. US State Privacy Rights & "Do Not Sell or Share My Personal Information"',
+        paragraphs: [
+          `Under the California Consumer Privacy Act (CCPA / CPRA), Virginia VCDPA, Colorado CPA, Connecticut CTDPA, and other applicable state laws, residents have the right to opt out of the "sale" or "sharing" of personal information for cross-context behavioral advertising.`,
+          `Global Privacy Control (GPC): We automatically honor the Global Privacy Control (navigator.globalPrivacyControl === true) signal. When detected, third-party advertising cookies are suppressed without requiring any manual interaction.`,
+          `Opt-Out Route: You may also visit our dedicated route at https://${domain}/do-not-sell or click "Do Not Sell or Share My Personal Information (US)" in the footer to restrict third-party behavioral advertising cookies immediately.`,
+        ],
+      },
+      {
+        heading: '5. Granular Cookie Management, Browser Controls & Industry-Wide Opt-Outs',
+        paragraphs: [
+          `In addition to using the interactive controls in our site footer, you can control and remove cookies through your web browser configuration (Chrome, Safari, Firefox, Edge, or Brave). You can configure your browser to reject all third-party cookies or alert you when a cookie is placed.`,
+          `Industry-Wide Advertising Opt-Out Portals: You may opt out of interest-based advertising from participating ad networks by visiting: Google Ads Settings (https://myadcenter.google.com/), Digital Advertising Alliance US (https://www.aboutads.info/choices/), European Interactive Digital Advertising Alliance (https://www.youronlinechoices.eu/), and Network Advertising Initiative (https://optout.networkadvertising.org/).`,
+        ],
+      },
+    ],
+  },
+
+  'do-not-sell': {
+    id: 'do-not-sell',
+    hash: '#do-not-sell',
+    path: '/do-not-sell',
+    shortLabel: 'Do Not Sell or Share',
+    title: 'Do Not Sell or Share My Personal Information & US State Privacy Rights',
+    subtitle: `Statutory Consumer Opt-Out Controls under CCPA, CPRA, VCDPA, CPA & CTDPA — Last Updated: ${lastUpdated}`,
+    lastUpdated,
+    sections: [
+      {
+        heading: '1. Notice of Statutory Right to Opt-Out of Sale or Sharing of Personal Information',
+        paragraphs: [
+          `Under the California Consumer Privacy Act of 2018 as amended by the California Privacy Rights Act of 2020 (CCPA / CPRA, Cal. Civ. Code § 1798.100 et seq.), the Virginia Consumer Data Protection Act (VCDPA), the Colorado Privacy Act (CPA), the Connecticut Data Privacy Act (CTDPA), and comparable state enactments, consumers possess the affirmative statutory right to direct businesses not to "sell" or "share" their personal information for cross-context behavioral advertising or targeted advertising.`,
+          `${brandName} (https://${domain}) does not sell personal information to third parties in exchange for monetary consideration. However, our deployment of third-party advertising cookies and scripts via Google AdSense (ca-pub-6581535125716295) and DoubleClick ad services to deliver tailored automotive advertisements may be classified as "sharing" or "targeted advertising" under applicable US state statutes.`,
+        ],
+      },
+      {
+        heading: '2. Global Privacy Control (GPC) Automated Opt-Out Recognition',
+        paragraphs: [
+          `We fully support and automatically respect frictionless opt-out preference signals transmitted by your browser runtime, specifically the Global Privacy Control (GPC) signal (navigator.globalPrivacyControl === true).`,
+          `When our platform detects an active GPC signal broadcast by your web browser (such as Brave, Mozilla Firefox, or DuckDuckGo) or through a verified privacy extension, we automatically suppress optional third-party cross-context behavioral advertising cookies and scripts without requiring any secondary interactive action.`,
+        ],
+      },
+      {
+        heading: '3. Categories of Personal Information Collected and Disclosed',
+        paragraphs: [
+          `Categories of Personal Information Collected: (a) Online Identifiers: Pseudonymous cookie IDs, Google advertising IDs, coarse IP geolocation (city/state level), and browser user-agent telemetry; (b) Internet Network Activity: Timestamps of platform interactions, vehicle presets evaluated, and OBD-II trouble code dossiers consulted.`,
+          `Categories NOT Collected: We do not collect names, physical postal addresses, telephone numbers, payment card numbers, vehicle identification numbers (VINs), credit scores, or sensitive personal information. All automotive calculation parameters are processed exclusively in client-side browser memory.`,
+        ],
+      },
+      {
+        heading: '4. Non-Discrimination Guarantees',
+        paragraphs: [
+          `Pursuant to CCPA / CPRA § 1798.125 and comparable state statutory provisions, ${brandName} will never discriminate against you for exercising your privacy rights. Opting out will never result in denied access to our calculators, diminished mathematical precision, degraded site functionality, or differential service levels.`,
+        ],
+      },
+      {
+        heading: '5. How to Exercise Your Opt-Out Rights',
+        paragraphs: [
+          `You may exercise your opt-out rights through any of the following mechanisms:`,
+          `(a) Interactive Settings: Click "Manage Cookie Preferences" or "Privacy & Cookie Settings (EU/UK)" in our site footer and select "Essential Only".`,
+          `(b) Automated Browser Signals: Enable Global Privacy Control (GPC) in your browser settings.`,
+          `(c) Industry-Wide Opt-Outs: Visit the Digital Advertising Alliance Consumer Choice tool at https://www.aboutads.info/choices/ or the Network Advertising Initiative Opt-Out tool at https://optout.networkadvertising.org/.`,
+          `(d) Direct Consumer Privacy Inquiries: Transmit a verified consumer request to our compliance desk at ${legalEmail}.`,
         ],
       },
     ],

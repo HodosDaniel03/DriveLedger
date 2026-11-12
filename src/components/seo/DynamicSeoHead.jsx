@@ -7,6 +7,7 @@ import { FAQ_ITEMS } from './TechnicalMethodologyGuide';
 import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 import { GUIDES_DATA } from '../../data/guidesData';
+import { LEGAL_POLICIES, resolveLegalPolicyKey } from '../../data/legalPolicies';
 
 const SITE_ORIGIN = `https://${MONETIZATION_CONFIG.domain}`;
 
@@ -142,7 +143,21 @@ export default function DynamicSeoHead({
   secondaryPresetId,
   mileageBracketSlug,
   selectedObdCode = 'P2002',
+  activeLegalPolicy = null,
 }) {
+  const resolvedLegalKey = useMemo(() => {
+    if (activeLegalPolicy) {
+      return resolveLegalPolicyKey(activeLegalPolicy);
+    }
+    if (typeof window !== 'undefined' && window.location) {
+      return (
+        resolveLegalPolicyKey(window.location.pathname) ||
+        resolveLegalPolicyKey(window.location.hash)
+      );
+    }
+    return null;
+  }, [activeLegalPolicy]);
+
   const preset = useMemo(
     () => getPresetById(selectedPresetId) || VEHICLE_PRESETS[0],
     [selectedPresetId]
@@ -172,6 +187,42 @@ export default function DynamicSeoHead({
   const telemetry = useMemo(() => computePresetSeoTelemetry(preset), [preset]);
 
   const seoMetadata = useMemo(() => {
+    if (resolvedLegalKey && LEGAL_POLICIES[resolvedLegalKey]) {
+      const policy = LEGAL_POLICIES[resolvedLegalKey];
+      const canonicalPath = policy.path || `/${resolvedLegalKey}`;
+      const canonicalUrl = `${SITE_ORIGIN}${canonicalPath}`;
+
+      let title = `${policy.title} | ${MONETIZATION_CONFIG.brandName}`;
+      let description = policy.subtitle;
+
+      if (resolvedLegalKey === 'privacy') {
+        title = `Privacy Policy & Telemetry Data Governance | ${MONETIZATION_CONFIG.brandName}`;
+        description = `DriveLedger Privacy Policy: European GDPR, UK GDPR, and US state regulations (CCPA/CPRA/VCDPA/CPA/CTDPA) compliance, Google AdSense (ca-pub-6581535125716295) disclosures, and telemetry governance.`;
+      } else if (resolvedLegalKey === 'terms') {
+        title = `Terms of Service, Liability Shield & Disclaimers | ${MONETIZATION_CONFIG.brandName}`;
+        description = `DriveLedger Terms of Service: workshop safety waiver, statistical depreciation disclaimers, and nominative trademark fair use notices.`;
+      } else if (resolvedLegalKey === 'cookies') {
+        title = `Cookie Policy, Local Storage & Consent Governance | ${MONETIZATION_CONFIG.brandName}`;
+        description = `DriveLedger Cookie Policy: First-party local storage, Google AdSense (ca-pub-6581535125716295) DoubleClick advertising cookies, IAB TCF v2.2 compliance, and opt-out controls.`;
+      } else if (resolvedLegalKey === 'disclaimer') {
+        title = `Comprehensive Automotive & Financial Disclaimer | ${MONETIZATION_CONFIG.brandName}`;
+        description = `DriveLedger Liability Disclaimer: Statistical financial estimates, workshop safety waivers, and nominative fair use declarations.`;
+      } else if (resolvedLegalKey === 'affiliate-disclosure') {
+        title = `FTC Affiliate Disclosure & Editorial Independence | ${MONETIZATION_CONFIG.brandName}`;
+        description = `DriveLedger FTC 16 CFR Part 255 compliance, Amazon Associates program disclosure, and algorithmic firewall guarantees.`;
+      } else if (resolvedLegalKey === 'do-not-sell') {
+        title = `Do Not Sell or Share My Personal Information | ${MONETIZATION_CONFIG.brandName}`;
+        description = `Exercise your US state privacy rights under CCPA, CPRA, VCDPA, CPA, and CTDPA to opt out of the sale or sharing of personal information for cross-context behavioral advertising.`;
+      }
+
+      return {
+        title,
+        description,
+        canonicalUrl,
+        canonicalPath,
+      };
+    }
+
     const codeLower = obdDossier.code.toLowerCase();
     const minParts = obdDossier.partsCostRangeUsd?.[0] ?? 95;
     const maxParts = obdDossier.partsCostRangeUsd?.[1] ?? 1650;
@@ -322,7 +373,7 @@ export default function DynamicSeoHead({
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
     };
-  }, [activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
+  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -631,8 +682,61 @@ export default function DynamicSeoHead({
     };
   }, [activeTab]);
 
+  // 9. Legal Policy WebPage Schema
+  const legalPageSchema = useMemo(() => {
+    if (!resolvedLegalKey || !LEGAL_POLICIES[resolvedLegalKey]) return null;
+    const policy = LEGAL_POLICIES[resolvedLegalKey];
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: seoMetadata.title,
+      description: seoMetadata.description,
+      url: seoMetadata.canonicalUrl,
+      inLanguage: 'en-US',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: MONETIZATION_CONFIG.brandName,
+        url: SITE_ORIGIN,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: MONETIZATION_CONFIG.brandName,
+        url: SITE_ORIGIN,
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'Legal & Privacy Desk',
+          email: MONETIZATION_CONFIG.legalEmail,
+        },
+      },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: SITE_ORIGIN,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: policy.shortLabel || policy.title,
+            item: seoMetadata.canonicalUrl,
+          },
+        ],
+      },
+    };
+  }, [resolvedLegalKey, seoMetadata]);
+
   return (
     <>
+      {legalPageSchema && (
+        <script
+          id="schema-legal-page"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(legalPageSchema) }}
+        />
+      )}
       <script
         id="schema-vehicle-telemetry"
         type="application/ld+json"

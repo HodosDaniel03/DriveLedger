@@ -124,6 +124,10 @@ test('carVertical: Placements across TCO, PPI, Comparator, and Guides have VinCh
   const guidesContent = fs.readFileSync(path.join(projectRoot, 'src/pages/GuidesPage.jsx'), 'utf8');
   assert.ok(guidesContent.includes('VinCheckBanner'), 'GuidesPage must import and use VinCheckBanner');
   assert.ok(guidesContent.includes('placement="buyer-guide"'), 'GuidesPage must specify placement="buyer-guide"');
+
+  const footerContent = fs.readFileSync(path.join(projectRoot, 'src/components/layout/Footer.jsx'), 'utf8');
+  assert.ok(footerContent.includes('VinCheckBanner'), 'Footer must import and use VinCheckBanner');
+  assert.ok(footerContent.includes('placement="footer"'), 'Footer must specify placement="footer"');
 });
 
 test('carVertical: VinCheckBanner implementation contains all mandated features', () => {

@@ -9,7 +9,6 @@ import CostTimeline from './CostTimeline';
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
-import AdUnit from '../monetization/AdUnit';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import VehicleComparator from './VehicleComparator';
 import EvBreakEvenCalculator from './EvBreakEvenCalculator';
@@ -1249,10 +1248,14 @@ export default function TcoCalculator({
               insuranceSharePct={combinedSharePct}
             />
             <ToolEditorialSection tool="tco" vehicleName={activePreset.name} />
-            <AdUnit
-              slotId="tco-bottom-leaderboard"
-              variant="leaderboard"
-              contextLabel={`${activePreset.name} ${horizonYears}-Year TCO Report`}
+            <VinCheckBanner
+              placement="tco-bottom"
+              vehicleName={activePreset.name}
+              purchasePriceUsd={purchasePriceUsd}
+              vehiclePriceFormatted={formatCurrency(purchasePriceUsd)}
+              odometerMiles={odometerMiles}
+              compact={false}
+              className="mt-6"
             />
           </div>
         );

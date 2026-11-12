@@ -4,13 +4,15 @@ import { OBD_CODES } from '../../data/obdCodes';
 import { PROGRAMMATIC_OBD_MATRIX } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Collapse } from '../common/OdometerPrimitives';
-import AdUnit from '../monetization/AdUnit';
+import VinCheckBanner from '../monetization/VinCheckBanner';
+import { getPresetById } from '../../data/vehiclePresets';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 import {
   WORKSPACE_LEGAL_NOTICE_LINE,
   NOMINATIVE_FAIR_USE_NOTICE,
   AMAZON_ASSOCIATES_CLAUSE,
 } from '../../data/legalPolicies';
+import { openPrivacySettings } from '../legal/CookieConsentBanner';
 
 const FAQS = [
   {
@@ -43,9 +45,11 @@ export default function Footer({
   onOpenLegalModal,
   onOpenCookiePreferences,
   hideFaq = false,
+  selectedPresetId,
 }) {
   const { formatCurrency } = useUnits();
   const [openFaq, setOpenFaq] = useState(null);
+  const activePreset = selectedPresetId ? getPresetById(selectedPresetId) : null;
 
   const benchmarkPresets = [
     { id: 'toyota-camry-hybrid', name: 'Toyota Camry Hybrid 2.5L', price: 31500 },
@@ -70,12 +74,15 @@ export default function Footer({
 
   return (
     <div className="mt-16 space-y-16">
-      {/* 1. Reserved Zero-CLS Ad Container Controlled by monetizationConfig.js */}
-      <AdUnit
-        slotId={MONETIZATION_CONFIG.slots.topLeaderboard}
-        variant="leaderboard"
-        partnerKey="vinCheck"
-        contextLabel="DriveLedger Automotive Cost & Diagnostic Benchmark"
+      {/* 1. Official carVertical Vehicle History Verification Card */}
+      <VinCheckBanner
+        placement="footer"
+        vehicleName={activePreset?.name || ''}
+        purchasePriceUsd={activePreset?.purchasePriceUsd}
+        vehiclePriceFormatted={activePreset?.purchasePriceUsd ? formatCurrency(activePreset.purchasePriceUsd) : undefined}
+        odometerMiles={activePreset?.defaultOdometerMiles}
+        compact={false}
+        className="max-w-[1380px] mx-auto w-full"
       />
 
       {/* 2. Collapsible FAQ Accordion with Stitch Clean Styling */}
@@ -234,15 +241,17 @@ export default function Footer({
             {/* Brand Col */}
             <div className="lg:col-span-2 flex flex-col gap-3">
               <div className="flex items-center gap-2.5 text-ink dark:text-zinc-50 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
-                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
-                  <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path d="M4 15a8 8 0 1 1 16 0" />
-                    <path d="m12 14 3-3" />
-                  </svg>
-                </span>
-                <span className="font-sans text-h3 tracking-tight font-bold text-ink dark:text-zinc-50">
-                  {MONETIZATION_CONFIG.brandName}
-                </span>
+                <img
+                  src="/driveledger-logo.png"
+                  alt="DriveLedger"
+                  className="h-8 w-auto object-contain dark:hidden"
+                />
+                <img
+                  src="/driveledger-logo-dark.png"
+                  alt="DriveLedger"
+                  className="h-8 w-auto object-contain hidden dark:block"
+                />
+                <span className="sr-only">{MONETIZATION_CONFIG.brandName}</span>
               </div>
               <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-sm">
                 Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.
@@ -336,13 +345,17 @@ export default function Footer({
               <span className="text-[11px] font-sans uppercase tracking-wider text-ink dark:text-zinc-50 font-semibold">Legal &amp; Compliance</span>
               <ul className="flex flex-col gap-2 text-xs font-sans text-muted dark:text-zinc-400">
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => triggerLegal('privacy')}
+                  <a
+                    href="/privacy"
+                    data-testid="footer-privacy-policy"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerLegal('privacy');
+                    }}
                     className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
                   >
                     Privacy Policy
-                  </button>
+                  </a>
                 </li>
                 <li>
                   <button
@@ -384,18 +397,39 @@ export default function Footer({
                   <button
                     type="button"
                     data-testid="footer-cookie-preferences"
+                    data-action="privacy-cookie-settings"
                     onClick={() => {
-                      if (onOpenCookiePreferences) {
-                        onOpenCookiePreferences();
-                      } else {
-                        triggerLegal('cookies');
-                      }
+                      openPrivacySettings(() => {
+                        if (onOpenCookiePreferences) {
+                          onOpenCookiePreferences();
+                        } else {
+                          triggerLegal('cookies');
+                        }
+                      });
                     }}
                     className="inline-flex items-center gap-1.5 font-medium text-primary-600 dark:text-primary-400 hover:underline transition-colors duration-150 text-left"
                   >
-                    <Settings2 className="w-3.5 h-3.5" />
-                    <span>Cookie Preferences</span>
+                    <Settings2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Privacy &amp; Cookie Settings (EU/UK)</span>
                   </button>
+                </li>
+                <li>
+                  <a
+                    href="/do-not-sell"
+                    data-testid="footer-do-not-sell"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openPrivacySettings(() => {
+                        if (onOpenCookiePreferences) {
+                          onOpenCookiePreferences();
+                        }
+                      });
+                      triggerLegal('do-not-sell');
+                    }}
+                    className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150 text-left"
+                  >
+                    Do Not Sell or Share My Personal Information (US)
+                  </a>
                 </li>
               </ul>
             </div>
