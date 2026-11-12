@@ -179,39 +179,22 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
     <header className="sticky top-0 left-0 right-0 z-40 w-full max-w-full border-b border-zinc-200 bg-[#F7F7F4]/95 backdrop-blur-md dark:bg-zinc-950/95 dark:border-zinc-800 transition-colors safe-area-x">
       {/* Main Horizontal Row: h-14 on mobile, h-16 on desktop, no outer whitespace-nowrap */}
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-14 lg:h-16 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
-        {/* Left: Brand Logo & Wordmark (wordmark hidden below 360px to guarantee room on tiny screens) */}
+        {/* Left: Brand Logo & Wordmark (wordmark hidden below 350px to guarantee room on 320px screens) */}
         <a
           href="#top"
           onClick={(e) => {
             e.preventDefault();
             onSelectTab('overview');
           }}
-          className="min-h-[44px] flex items-center group shrink-0 focus:outline-none"
+          className="min-h-[44px] flex items-center gap-2 sm:gap-2.5 text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
           aria-label="DriveLedger home"
         >
-          {/* Screens >= 360px: Full Brand Logo */}
-          <span className="hidden min-[360px]:inline-flex items-center transition-opacity duration-200 group-hover:opacity-90">
-            <img
-              src="/driveledger-logo.png"
-              alt="DriveLedger"
-              className="h-7 sm:h-8 w-auto object-contain dark:hidden"
-            />
-            <img
-              src="/driveledger-logo-dark.png"
-              alt="DriveLedger"
-              className="h-7 sm:h-8 w-auto object-contain hidden dark:block"
-            />
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white transition-transform duration-200 group-hover:scale-105 shadow-xs shrink-0">
+            <Gauge className="w-4 h-4 text-white" />
           </span>
-
-          {/* Screens < 360px: Icon Only */}
-          <span className="inline-flex min-[360px]:hidden items-center transition-transform duration-200 group-hover:scale-105">
-            <img
-              src="/driveledger-icon.png"
-              alt="DriveLedger"
-              className="h-7 w-auto object-contain"
-            />
+          <span className="hidden min-[360px]:inline font-sans font-bold text-base sm:text-lg tracking-tight text-ink dark:text-zinc-50 truncate">
+            DriveLedger
           </span>
-          <span className="sr-only">DriveLedger</span>
         </a>
 
         {/* Center (Desktop & Laptop >= 1024px): Priority Plus (5 Primary Tools + "More ▾" Dropdown) */}
@@ -717,23 +700,18 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             <div className="space-y-5">
               {/* Drawer Top Bar */}
               <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <div className="flex items-center">
-                    <img
-                      src="/driveledger-logo.png"
-                      alt="DriveLedger"
-                      className="h-7 w-auto object-contain dark:hidden"
-                    />
-                    <img
-                      src="/driveledger-logo-dark.png"
-                      alt="DriveLedger"
-                      className="h-7 w-auto object-contain hidden dark:block"
-                    />
-                    <span className="sr-only">DriveLedger</span>
-                  </div>
-                  <span className="font-sans text-[11px] text-muted dark:text-zinc-400 block truncate">
-                    Navigation &amp; Preferences
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white shrink-0">
+                    <Gauge className="w-4 h-4 text-white" />
                   </span>
+                  <div className="min-w-0">
+                    <span className="font-sans font-bold text-base text-ink dark:text-zinc-50 block truncate">
+                      DriveLedger
+                    </span>
+                    <span className="font-sans text-[11px] text-muted dark:text-zinc-400 block truncate">
+                      Navigation &amp; Preferences
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
