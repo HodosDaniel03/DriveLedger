@@ -335,9 +335,8 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
           {/* Official carVertical Vehicle History Verification Card */}
           <VinCheckBanner
             placement="buyer-guide"
-            vehicleName="a candidate vehicle"
-            headline="Run an Independent carVertical History Audit"
-            description="Cross-reference digital odometer readings, verify hidden structural collision records, and uncover secondary ECU tampering before purchasing."
+            vehicleName="your candidate vehicle"
+            className="my-8"
           />
 
           {/* FAQ Accordion */}
@@ -538,8 +537,7 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
         {/* Official carVertical Vehicle History Banner */}
         <VinCheckBanner
           placement="buyer-guide"
-          headline="Verify Used Vehicle History Before You Buy"
-          description="Check chronological mileage records, structural damage repair photos, salvage title status, and stolen vehicle registries with an official carVertical audit."
+          className="mt-8"
         />
 
         {filteredGuides.length === 0 && (

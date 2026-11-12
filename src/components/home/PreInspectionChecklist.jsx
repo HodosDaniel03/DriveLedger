@@ -488,7 +488,6 @@ export default function PreInspectionChecklist({
       {/* Step 0: Dynamic Geo-Routed Digital VIN & Odometer Rollback Verification */}
       <VinCheckBanner
         placement="ppi"
-        stepLabel="Step 0 · Digital Check"
         vehicleName={selectedPreset.name}
         purchasePriceUsd={askingPriceUsd}
         odometerMiles={odometerMiles}

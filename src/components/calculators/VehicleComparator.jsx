@@ -1197,7 +1197,6 @@ export default function VehicleComparator({
           <div className="space-y-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
             <VinCheckBanner
               placement="comparator"
-              stepLabel="Winner Verification"
               vehicleName={winVehicle.name}
               purchasePriceUsd={winPrice}
               odometerMiles={winOdo}

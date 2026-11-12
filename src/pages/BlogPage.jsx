@@ -364,8 +364,6 @@ export default function BlogPage({ onNavigateToTco, onNavigateToRisk, onNavigate
                           placement="buyer-guide"
                           vehicleName="a used vehicle"
                           purchasePriceUsd={24500}
-                          headline="Run an Independent carVertical History Audit"
-                          description="Verify chronological mileage records, inspect previous structural collision damage photos, and check international theft registries before signing an agreement."
                         />
                       )}
                     </div>
