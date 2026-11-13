@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, CircleCheck, Filter, Wrench, Shield, ArrowRight, RotateCcw, Info, Terminal, AlertTriangle, ShieldAlert, Car } from 'lucide-react';
+import { Search, CircleCheck, Filter, Wrench, Shield, ArrowRight, RotateCcw, Info, Terminal, AlertTriangle, ShieldAlert, Car, ChevronDown } from 'lucide-react';
 import {
   OBD_CODES,
   LABOR_RATE_TIERS,
@@ -8,7 +8,8 @@ import {
 import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
 import { getHybridVehicleObdContext } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
-import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
+import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar, Collapse } from '../common/OdometerPrimitives';
+import { buildAffiliateUrl } from '../../config/monetizationConfig';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import LivePidEvaluator from './LivePidEvaluator';
@@ -69,6 +70,8 @@ export default function ObdEstimator({
   const [laborTierId, setLaborTierId] = useState('independent'); // 'independent' | 'dealership' | 'diy'
   const [selectedSymptom, setSelectedSymptom] = useState(null);
   const [liveVerdict, setLiveVerdict] = useState(null);
+  const [showLivePids, setShowLivePids] = useState(false);
+  const [expandedCause, setExpandedCause] = useState(null);
 
   useEffect(() => {
     if (selectedPresetId && selectedPresetId !== localPresetId) {
@@ -177,6 +180,32 @@ export default function ObdEstimator({
     activeDossier.severity?.includes('CRITICAL') ? 'Critical — Stop Driving' :
     activeDossier.severity?.includes('HIGH') ? 'Limp Mode Risk — Service Soon' :
     'Safe for Short Trips';
+
+  const sevUpper = String(activeDossier.severity || '').toUpperCase();
+  const drivabilityTone = sevUpper.includes('CRITICAL')
+    ? 'risk'
+    : sevUpper.includes('HIGH')
+    ? 'warn'
+    : 'good';
+
+  const drivabilityLabel = sevUpper.includes('CRITICAL')
+    ? 'Do Not Drive'
+    : sevUpper.includes('HIGH')
+    ? 'Service Within 2 Weeks'
+    : 'Safe to Drive';
+
+  const drivabilityGuidance = sevUpper.includes('CRITICAL')
+    ? 'No. Stop driving immediately to prevent permanent engine or catalyst destruction.'
+    : sevUpper.includes('HIGH')
+    ? 'Avoid high load and highway driving. Service within 1–2 weeks to prevent limp mode.'
+    : 'Yes, short-term. Repair within 1–2 months to pass emissions testing and avoid component wear.';
+
+  const scannerCtaProps = useMemo(() => {
+    return buildAffiliateUrl('obd-scanner', {
+      activeCode: activeDossier.code,
+      vehicleName: activePreset.name,
+    });
+  }, [activeDossier.code, activePreset.name]);
 
   const obdTldrFacts = useMemo(() => [
     {
@@ -507,9 +536,9 @@ export default function ObdEstimator({
         </div>
       </div>
 
-      {/* Hero Row: 2 Equal Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* Hero Card 1: Code Information Card */}
+      {/* Hero Row: Single Unified Code Information Card */}
+      <div className="w-full">
+        {/* Hero Card: Code Information Card */}
         <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -552,8 +581,8 @@ export default function ObdEstimator({
             )}
           </div>
 
-          <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -579,64 +608,19 @@ export default function ObdEstimator({
               >
                 <span>Share ↗</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('workshop-summary-heading');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="bg-zinc-50 dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
+              >
+                <span>See cost breakdown</span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
+              </button>
             </div>
             <span className="font-sans text-[11px] font-medium text-muted dark:text-zinc-400">SAE J1979 Verified</span>
-          </div>
-        </div>
-
-        {/* Hero Card 2: Severity & Repair Overview Card */}
-        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight inline-flex items-center gap-1.5">
-                <span>Repair Severity</span>
-                <InfoTooltip
-                  label="How Repair Severity is rated"
-                  content="Evaluates immediate mechanical risk (catalyst meltdown, oil starvation, or limp-mode lockup) based on SAE J1979 diagnostic trouble code thresholds."
-                />
-              </h3>
-              <Info className="w-4 h-4 text-muted dark:text-zinc-400" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-              <div className="sm:col-span-5 flex flex-col items-center justify-center py-1">
-                <SeverityGauge severity={activeDossier.severity} size={144} />
-              </div>
-
-              <div className="sm:col-span-7 flex flex-col justify-center min-w-0">
-                <span className="font-sans text-[11px] font-semibold text-ink dark:text-zinc-100 uppercase tracking-wider mb-1">
-                  Can I keep driving?
-                </span>
-                <p className="font-sans text-body dark:text-zinc-300 leading-relaxed text-sm">
-                  {activeDossier.severity?.includes('CRITICAL')
-                    ? 'No. Stop driving immediately to prevent permanent engine or catalyst destruction.'
-                    : activeDossier.severity?.includes('HIGH')
-                    ? 'Avoid high load and highway driving. Service within 1–2 weeks to prevent limp mode.'
-                    : 'Yes, short-term. Repair within 1–2 months to pass emissions testing and avoid component wear.'}
-                </p>
-
-                <div className="mt-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl p-3 font-sans text-xs text-body dark:text-zinc-300 leading-normal border border-zinc-200 dark:border-zinc-800">
-                  Most drivers pay <strong className="font-mono tabular-nums text-ink dark:text-zinc-50">{formatCurrency(est.minTotalUsd)}–{formatCurrency(est.maxTotalUsd)}</strong> at an independent specialist. Dealers average <strong className="font-mono tabular-nums text-ink dark:text-zinc-50">38%</strong> more.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById('workshop-summary-heading');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="bg-zinc-50 dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
-            >
-              <span>See cost breakdown</span>
-              <ArrowRight className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
-            </button>
-            <span className="font-sans text-[11px] text-muted dark:text-zinc-400">
-              OEM Book Time: <span className="font-mono tabular-nums">{activeDossier.laborHoursRange ? `${activeDossier.laborHoursRange[0]}-${activeDossier.laborHoursRange[1]} hrs` : '1.5-3.0 hrs'}</span>
-            </span>
           </div>
         </div>
       </div>
@@ -656,7 +640,7 @@ export default function ObdEstimator({
               </p>
             </div>
 
-            <ol className="flex flex-col gap-5">
+            <ol className="flex flex-col gap-3">
               {topRootCauses.map((c, i) => {
                 const p0 = Math.max(0, Number(c.partsCostUsd?.[0]) || 0);
                 const p1 = Math.max(p0, Number(c.partsCostUsd?.[1]) || p0);
@@ -669,40 +653,62 @@ export default function ObdEstimator({
                 const rate = activeTierObj?.rateUsdPerHr ?? (laborTierId === 'dealership' ? 185 : laborTierId === 'diy' ? 0 : 115);
                 const avgLabor = ((h0 + h1) / 2) * rate;
                 const estimatedCulpritCost = Math.max(0, Math.round(avgPart + avgLabor));
+                const isExpanded = expandedCause === i;
 
                 return (
-                  <li key={c.cause} className="pb-4 border-b border-zinc-200 dark:border-zinc-800 last:border-0 last:pb-0">
-                    <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-sans text-ink dark:text-zinc-50 font-medium">
-                        <span className="mr-2 font-bold font-mono tabular-nums text-primary-600 dark:text-emerald-400">
+                  <li key={c.cause} className="pb-3 border-b border-zinc-200 dark:border-zinc-800 last:border-0 last:pb-0">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCause(isExpanded ? null : i)}
+                      aria-expanded={isExpanded}
+                      className="w-full flex items-center justify-between gap-3 text-left py-1 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0 font-bold font-mono tabular-nums text-primary-600 dark:text-emerald-400 text-sm">
                           {i + 1}.
                         </span>
-                        {c.cause}
-                      </span>
-                      <span className="shrink-0 tabular-nums font-mono text-muted dark:text-zinc-400">
-                        <span className="font-bold text-ink dark:text-zinc-50">{c.probabilityPct}%</span> ·{' '}
-                        <span className="font-semibold text-primary-600 dark:text-emerald-400">
+                        <span className="font-sans text-ink dark:text-zinc-50 font-medium text-sm group-hover:text-primary-600 dark:group-hover:text-emerald-400 truncate">
+                          {c.cause}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-xs font-mono font-bold tabular-nums">
+                          {c.probabilityPct}%
+                        </span>
+                        <span className="font-mono font-semibold text-sm text-primary-600 dark:text-emerald-400 tabular-nums">
                           {formatCurrency(estimatedCulpritCost)}
                         </span>
-                      </span>
-                    </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-muted dark:text-zinc-400 transition-transform duration-200 ${
+                            isExpanded ? 'rotate-180 text-primary-600 dark:text-emerald-400' : ''
+                          }`}
+                        />
+                      </div>
+                    </button>
 
-                    {/* Probability Progress Bar */}
-                    <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                      <div
-                        className="h-full rounded-full bg-primary-600 dark:bg-emerald-500 transition-[width] duration-200 ease-out"
-                        style={{ width: `${c.probabilityPct}%` }}
-                      />
-                    </div>
+                    <Collapse open={isExpanded} id={`root-cause-detail-${i}`}>
+                      <div className="pt-2 pb-1 space-y-2 text-xs">
+                        {/* Probability Progress Bar */}
+                        <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                          <div
+                            className="h-full rounded-full bg-primary-600 dark:bg-emerald-500 transition-[width] duration-200 ease-out"
+                            style={{ width: `${c.probabilityPct}%` }}
+                          />
+                        </div>
 
-                    <div className="mt-2 flex flex-wrap items-center justify-between font-sans text-xs text-muted dark:text-zinc-400">
-                      <span>
-                        Parts: <span className="font-mono tabular-nums">{formatCurrency(c.partsCostUsd[0])}–{formatCurrency(c.partsCostUsd[1])}</span> · Labour: <span className="font-mono tabular-nums">{c.laborHours[0]}–{c.laborHours[1]}</span> hrs
-                      </span>
-                      {c.componentNote && (
-                        <span className="text-faint dark:text-zinc-500">{c.componentNote}</span>
-                      )}
-                    </div>
+                        <div className="flex flex-wrap items-center justify-between font-sans text-muted dark:text-zinc-400 gap-2 pt-0.5">
+                          <span>
+                            Parts: <span className="font-mono tabular-nums">{formatCurrency(c.partsCostUsd[0])}–{formatCurrency(c.partsCostUsd[1])}</span> · Labour: <span className="font-mono tabular-nums">{c.laborHours[0]}–{c.laborHours[1]}</span> hrs
+                          </span>
+                        </div>
+
+                        {c.componentNote && (
+                          <p className="font-sans text-body dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-900 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 mt-1">
+                            {c.componentNote}
+                          </p>
+                        )}
+                      </div>
+                    </Collapse>
                   </li>
                 );
               })}
@@ -759,25 +765,61 @@ export default function ObdEstimator({
               </div>
             )}
 
-            <LivePidEvaluator
-              activeDossier={activeDossier}
-              workshopRate={effectiveLaborRate}
-              laborTierId={laborTierId}
-              onVerdictChange={setLiveVerdict}
-            />
+            {/* Progressive Disclosure Toggle & Carly / Bluetooth Scanner CTA */}
+            <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <button
+                type="button"
+                data-testid="live-pid-toggle"
+                onClick={() => setShowLivePids(!showLivePids)}
+                aria-expanded={showLivePids}
+                className="inline-flex items-center gap-2 font-sans text-xs sm:text-sm font-semibold text-primary-600 dark:text-emerald-400 hover:text-primary-700 dark:hover:text-emerald-300 transition-colors cursor-pointer group"
+              >
+                <span>Have an OBD-II scanner? Enter live sensor readings {showLivePids ? '▴' : '▾'}</span>
+              </button>
+
+              <a
+                href={scannerCtaProps.href}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+                className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                <span>Don't have a scanner yet? Read live fault codes &amp; DPF data from your phone →</span>
+              </a>
+            </div>
+
+            <Collapse open={showLivePids} id="live-telemetry-sliders-collapse">
+              <LivePidEvaluator
+                activeDossier={activeDossier}
+                workshopRate={effectiveLaborRate}
+                laborTierId={laborTierId}
+                onVerdictChange={setLiveVerdict}
+              />
+            </Collapse>
           </Card>
         </div>
 
         {/* Right Column: 5 cols (Sticky Summary & Single Integrated Partner CTA) */}
         <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 min-w-0">
           <Card className="h-fit shadow-card" aria-labelledby="workshop-summary-heading">
-            {/* Eyebrow */}
-            <div className="flex items-center justify-between">
+            {/* Eyebrow & Prominent 3-Tier Traffic-Light Drivability Status Badge */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider">
                 FAIR WORKSHOP ESTIMATE
               </span>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                Regional Benchmark
+              <span
+                data-testid="obd-drivability-status-badge"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-sans font-semibold border ${
+                  drivabilityTone === 'good'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+                    : drivabilityTone === 'warn'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
+                    : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/40'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  drivabilityTone === 'good' ? 'bg-emerald-500' : drivabilityTone === 'warn' ? 'bg-amber-500' : 'bg-rose-500'
+                }`} />
+                <span>{drivabilityLabel}</span>
               </span>
             </div>
 
@@ -788,6 +830,22 @@ export default function ObdEstimator({
             <p className="font-sans text-xs text-muted dark:text-zinc-400 mt-0.5">
               {activeDossier.title}
             </p>
+
+            {/* Drivability Guidance ("Can I keep driving?") */}
+            <div className="mt-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 space-y-1">
+              <span className="font-sans text-[11px] font-semibold text-ink dark:text-zinc-100 uppercase tracking-wider block">
+                Can I keep driving?
+              </span>
+              <p className="font-sans text-xs text-body dark:text-zinc-300 leading-relaxed">
+                {drivabilityGuidance}
+              </p>
+              <div className="pt-1.5 flex items-center justify-between text-[11px] text-muted dark:text-zinc-400 border-t border-zinc-200/80 dark:border-zinc-800/80">
+                <span>OEM Book Time:</span>
+                <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
+                  {activeDossier.laborHoursRange ? `${activeDossier.laborHoursRange[0]}–${activeDossier.laborHoursRange[1]} hrs` : '1.5–3.0 hrs'}
+                </span>
+              </div>
+            </div>
 
             {/* Price Range Display */}
             <div className="my-5">

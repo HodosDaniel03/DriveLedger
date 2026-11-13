@@ -14,6 +14,7 @@ import {
   Sliders,
   Check,
 } from 'lucide-react';
+import { Collapse } from '../common/OdometerPrimitives';
 
 export const FAQ_ITEMS = [
   {
@@ -131,6 +132,7 @@ export default function TechnicalMethodologyGuide({
   onOpenLegalModal,
 }) {
   const [openFaqIdx, setOpenFaqIdx] = useState(-1);
+  const [openWhitePaper, setOpenWhitePaper] = useState(true);
   const [cookiePrefs, setCookiePrefs] = useState({
     analytics: true,
     contextualAds: true,
@@ -195,8 +197,30 @@ export default function TechnicalMethodologyGuide({
         </p>
       </div>
 
-      {/* 3-Column Deep Technical Pillars (1,200+ Words Total Authoritative Content) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* White Paper Sections Collapsible Trigger */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setOpenWhitePaper(!openWhitePaper)}
+          aria-expanded={openWhitePaper}
+          className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer group"
+        >
+          <span className="flex items-center gap-2.5">
+            <BookOpen className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
+            <span>How We Calculate This &amp; Engineering Methodology ▾</span>
+          </span>
+          <ChevronDown
+            className={`w-5 h-5 text-muted dark:text-zinc-400 transition-transform duration-200 ${
+              openWhitePaper ? 'rotate-180 text-primary-600 dark:text-primary-400' : ''
+            }`}
+          />
+        </button>
+      </div>
+
+      <Collapse open={openWhitePaper} id="methodology-white-paper-collapse">
+        <div className="space-y-10 pt-2">
+          {/* 3-Column Deep Technical Pillars (1,200+ Words Total Authoritative Content) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pillar 1: Non-Linear Depreciation & Amortization Math */}
         <article className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-card space-y-4 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
           <div>
@@ -456,6 +480,8 @@ export default function TechnicalMethodologyGuide({
           </div>
         </details>
       </div>
+    </div>
+  </Collapse>
 
       {/* Interactive FAQ Accordion */}
       <div className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4 min-w-0 max-w-full overflow-hidden">

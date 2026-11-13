@@ -125,6 +125,7 @@ export default function ToolEditorialSection({
   className = '',
 }) {
   const [openFaq, setOpenFaq] = useState(null);
+  const [openMethodology, setOpenMethodology] = useState(false);
   const data = EDITORIAL_CONTENT[tool] || EDITORIAL_CONTENT.tco;
 
   // Generate Schema.org FAQPage structured data
@@ -143,8 +144,9 @@ export default function ToolEditorialSection({
 
   return (
     <section
+      id="tool-editorial-section"
       aria-label="Editorial Methodology and Technical Context"
-      className={`mt-12 bg-surface dark:bg-zinc-900 rounded-3xl p-6 sm:p-10 border border-border dark:border-zinc-800 shadow-sm space-y-8 ${className}`}
+      className={`mt-12 bg-surface dark:bg-zinc-900 rounded-3xl p-6 sm:p-10 border border-border dark:border-zinc-800 shadow-sm space-y-8 editorial ${className}`}
     >
       {/* Schema.org FAQPage JSON-LD */}
       <script
@@ -166,27 +168,49 @@ export default function ToolEditorialSection({
         </p>
       </div>
 
-      {/* Methodology Pillars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.pillars.map((pillar, idx) => {
-          const Icon = pillar.icon;
-          return (
-            <div
-              key={idx}
-              className="p-5 sm:p-6 rounded-2xl bg-canvas dark:bg-zinc-900/60 border border-border dark:border-zinc-800 space-y-3"
-            >
-              <div className="flex items-center gap-2.5 font-bold text-sm text-ink dark:text-zinc-100">
-                <div className="p-2 rounded-xl bg-primary-50 dark:bg-zinc-800 text-primary-600 dark:text-emerald-400">
-                  <Icon className="w-4 h-4" />
+      {/* Methodology Pillars Collapsible Accordion */}
+      <div className="space-y-4">
+        <button
+          type="button"
+          data-testid="methodology-accordion-toggle"
+          onClick={() => setOpenMethodology(!openMethodology)}
+          aria-expanded={openMethodology}
+          className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-canvas dark:bg-zinc-900/60 border border-border dark:border-zinc-800 text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
+        >
+          <span className="flex items-center gap-2.5">
+            <Calculator className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+            <span>How We Calculate This &amp; Engineering Methodology ▾</span>
+          </span>
+          <ChevronDown
+            className={`w-5 h-5 text-muted dark:text-zinc-400 transition-transform duration-200 ${
+              openMethodology ? 'rotate-180 text-primary-600 dark:text-emerald-400' : ''
+            }`}
+          />
+        </button>
+
+        <Collapse open={openMethodology} id={`tool-methodology-${tool}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            {data.pillars.map((pillar, idx) => {
+              const Icon = pillar.icon;
+              return (
+                <div
+                  key={idx}
+                  className="p-5 sm:p-6 rounded-2xl bg-canvas dark:bg-zinc-900/60 border border-border dark:border-zinc-800 space-y-3"
+                >
+                  <div className="flex items-center gap-2.5 font-bold text-sm text-ink dark:text-zinc-100">
+                    <div className="p-2 rounded-xl bg-primary-50 dark:bg-zinc-800 text-primary-600 dark:text-emerald-400">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span>{pillar.heading}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed">
+                    {pillar.text}
+                  </p>
                 </div>
-                <span>{pillar.heading}</span>
-              </div>
-              <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed">
-                {pillar.text}
-              </p>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </Collapse>
       </div>
 
       {/* FAQ Accordion */}

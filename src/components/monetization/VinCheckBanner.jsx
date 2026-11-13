@@ -118,8 +118,10 @@ export default function VinCheckBanner({
 
   return (
     <aside
-      data-testid="affiliate-cta-vin-check"
-      className={`relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+      id="affiliate-cta-vin-check"
+      data-testid="vin-check-banner"
+      data-placement={placement}
+      className={`affiliate-cta-vin-check relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
       aria-label="carVertical Vehicle History Report"
     >
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">

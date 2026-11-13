@@ -6,15 +6,15 @@ import { useGarage } from '../../context/GarageContext';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 
 export const PRIMARY_WORKSPACE_TABS = [
-  { id: 'overview', label: 'Overview', fullLabel: 'DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database', path: '/' },
-  { id: 'tco', label: 'True Cost to Own', fullLabel: '5-Yr True Cost to Own', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves', path: '/tco' },
-  { id: 'risk', label: 'Maintenance Check', fullLabel: 'Powertrain Risk Matrix', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk', path: '/risk-matrix' },
-  { id: 'obd', label: 'OBD-II Estimator', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs', path: '/obd-estimator' },
-  { id: 'compare', label: 'Compare', fullLabel: 'Vehicle Comparator', icon: GitCompare, desc: '5-year TCO break-even graph and defect comparison', path: '/compare' },
+  { id: 'overview', label: 'Overview', fullLabel: 'Overview · DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database', path: '/' },
+  { id: 'tco', label: 'Cost Calculator', fullLabel: '5-Yr True Cost to Own · Cost Calculator', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves', path: '/tco' },
+  { id: 'risk', label: 'Maintenance', fullLabel: 'Powertrain Risk Matrix · Maintenance Check', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk', path: '/risk-matrix' },
+  { id: 'obd', label: 'OBD-II Lookup', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator · OBD-II Lookup', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs', path: '/obd-estimator' },
   { id: 'guides', label: 'Guides', fullLabel: 'Buyer Guides & Insights', icon: BookOpen, desc: 'In-depth buyer protection & inspection guides', path: '/guides' },
 ];
 
 export const SECONDARY_WORKSPACE_TABS = [
+  { id: 'compare', label: 'Compare', fullLabel: 'Vehicle Comparator', icon: GitCompare, desc: '5-year TCO break-even graph and defect comparison', path: '/compare' },
   { id: 'checklist', label: 'PPI Checklist', fullLabel: 'Pre-Purchase Inspection Checklist', icon: CheckCircle2, desc: 'On-site inspection checklist & printable report', path: '/checklist' },
   { id: 'about', label: 'About Us', fullLabel: 'About Us & Company Overview', icon: FileText, desc: 'Mission, engineering team & Impresszum', path: '/about' },
   { id: 'contact', label: 'Contact', fullLabel: 'Contact Engineering Team', icon: MessageSquare, desc: 'Direct support & inquiries', path: '/contact' },
@@ -41,7 +41,6 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [garageDropdownOpen, setGarageDropdownOpen] = useState(false);
-  const [vehicleSwitcherOpen, setVehicleSwitcherOpen] = useState(false);
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
   const [drawerVehicleExpanded, setDrawerVehicleExpanded] = useState(false);
 
@@ -136,7 +135,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
 
   // Close popovers on outside click or Escape key
   useEffect(() => {
-    if (!garageDropdownOpen && !moreDropdownOpen && !vehicleSwitcherOpen) return undefined;
+    if (!garageDropdownOpen && !moreDropdownOpen) return undefined;
     const handleDocClick = (e) => {
       const target = e.target;
       if (garageDropdownOpen) {
@@ -147,16 +146,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
         const isInsideMore = target && typeof target.closest === 'function' && target.closest('#more-dropdown-container');
         if (!isInsideMore) setMoreDropdownOpen(false);
       }
-      if (vehicleSwitcherOpen) {
-        const isInsideVehicle = target && typeof target.closest === 'function' && target.closest('#navbar-vehicle-switcher-container');
-        if (!isInsideVehicle) setVehicleSwitcherOpen(false);
-      }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setGarageDropdownOpen(false);
         setMoreDropdownOpen(false);
-        setVehicleSwitcherOpen(false);
       }
     };
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
@@ -173,7 +167,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
         window.removeEventListener('keydown', handleKeyDown);
       }
     };
-  }, [garageDropdownOpen, moreDropdownOpen, vehicleSwitcherOpen]);
+  }, [garageDropdownOpen, moreDropdownOpen]);
 
   return (
     <header className="sticky top-0 left-0 right-0 z-40 w-full max-w-full border-b border-zinc-200 bg-[#F7F7F4]/95 backdrop-blur-md dark:bg-zinc-950/95 dark:border-zinc-800 transition-colors safe-area-x">
@@ -324,152 +318,21 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             })}
           </div>
 
-          {/* Global Active Vehicle Quick-Switcher Pill & Popover (compact on mobile, 44px touch target) */}
-          <div id="navbar-vehicle-switcher-container" className="relative min-w-0 shrink">
-            <button
-              type="button"
-              data-testid="navbar-active-vehicle-picker"
-              aria-haspopup="true"
-              aria-expanded={vehicleSwitcherOpen}
-              title={`Active vehicle: ${activePreset.name} — Click to switch`}
-              onClick={() => {
-                setVehicleSwitcherOpen((prev) => !prev);
-                setGarageDropdownOpen(false);
-                setMoreDropdownOpen(false);
-              }}
-              className="min-h-[44px] lg:min-h-0 inline-flex items-center gap-1.5 px-2.5 py-2 lg:py-1 rounded-lg border border-emerald-200/90 bg-emerald-50/70 text-[#183D22] font-sans text-xs font-semibold hover:bg-emerald-100/80 transition-colors duration-150 shadow-xs dark:bg-emerald-950/35 dark:border-emerald-800/50 dark:text-emerald-300 dark:hover:bg-emerald-950/60 min-w-0 max-w-full"
-            >
-              <Car className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-[#183D22] dark:text-emerald-400 shrink-0" />
-              <span className="min-w-0 max-w-[95px] min-[390px]:max-w-[110px] min-[420px]:max-w-[135px] sm:max-w-[160px] truncate">
-                {activePreset.shortName || activePreset.name}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 lg:w-3 lg:h-3 shrink-0 transition-transform duration-150 ${vehicleSwitcherOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {vehicleSwitcherOpen && (
-              <div
-                role="dialog"
-                aria-label="Global Active Vehicle Switcher"
-                className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2.5 sm:w-96 max-h-[80dvh] flex flex-col rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3.5 z-50 animate-fade-in whitespace-normal"
-              >
-                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
-                  <div className="min-w-0">
-                    <span className="font-sans text-[11px] uppercase tracking-wider font-bold text-muted dark:text-zinc-400 block">
-                      Active Vehicle Context
-                    </span>
-                    <span className="font-sans text-xs font-bold text-ink dark:text-zinc-50 truncate block mt-0.5">
-                      {activePreset.name}
-                    </span>
-                  </div>
-                  <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-mono tabular-nums font-bold shrink-0">
-                    {formatCurrency ? formatCurrency(activePreset.purchasePriceUsd) : `$${activePreset.purchasePriceUsd}`}
-                  </span>
-                </div>
-
-                {/* Quick Search Input (16px on mobile to prevent iOS auto-zoom) */}
-                <div className="relative mt-2.5">
-                  <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={vehicleSearchQuery}
-                    onChange={(e) => setVehicleSearchQuery(e.target.value)}
-                    placeholder="Quick switch model (e.g. Golf, BMW, Tesla)..."
-                    className="w-full h-11 sm:h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 pl-9 pr-8 text-base sm:text-xs font-sans text-ink dark:text-zinc-100 placeholder:text-faint focus:border-[#183D22] dark:focus:border-emerald-500 outline-none"
-                  />
-                  {vehicleSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setVehicleSearchQuery('')}
-                      aria-label="Clear search"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-ink"
-                    >
-                      <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Preset List */}
-                <ul className="mt-2 space-y-1 max-h-60 overflow-y-auto pr-0.5">
-                  {filteredNavbarPresets.map((p) => {
-                    const isCurrent = p.id === selectedPresetId;
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onSelectPreset) onSelectPreset(p.id);
-                            setVehicleSwitcherOpen(false);
-                            setVehicleSearchQuery('');
-                          }}
-                          className={`w-full min-h-[44px] flex items-center justify-between gap-2 p-2 rounded-xl text-left text-xs transition-colors ${
-                            isCurrent
-                              ? 'bg-emerald-50/80 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/50 font-semibold text-[#183D22] dark:text-emerald-300'
-                              : 'hover:bg-zinc-100 dark:hover:bg-zinc-900 text-ink dark:text-zinc-200'
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate font-sans font-bold">{p.name}</div>
-                            <div className="text-[11px] font-sans text-muted dark:text-zinc-400 truncate">
-                              {p.powerHp} HP · {p.fuelType} · {p.engineCode}
-                            </div>
-                          </div>
-                          <span className="font-mono tabular-nums text-[11px] font-bold text-ink dark:text-zinc-300 shrink-0">
-                            {formatCurrency ? formatCurrency(p.purchasePriceUsd) : `$${p.purchasePriceUsd}`}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {/* Quick Jump Links for Active Car */}
-                <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-1.5 text-xs sm:text-[11px] font-sans">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectTab('tco');
-                      setVehicleSwitcherOpen(false);
-                    }}
-                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
-                  >
-                    5-Yr TCO
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectTab('risk');
-                      setVehicleSwitcherOpen(false);
-                    }}
-                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
-                  >
-                    Wear &amp; Risk
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectTab('compare');
-                      setVehicleSwitcherOpen(false);
-                    }}
-                    className="flex-1 min-h-[40px] sm:min-h-0 py-2 sm:py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-semibold text-center transition-colors"
-                  >
-                    Compare
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Compact My Garage Button - hidden on mobile (in drawer instead) */}
-          <div id="garage-dropdown-container" className="hidden lg:block relative">
+          {/* Unified Garage & Compare Pill Button with Count Badge */}
+          <div id="garage-dropdown-container" className="relative shrink-0">
             <button
               type="button"
               aria-haspopup="true"
               aria-expanded={garageDropdownOpen}
               onClick={() => setGarageDropdownOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-zinc-200 bg-white text-zinc-900 font-sans text-xs font-medium hover:bg-zinc-100 transition-colors duration-150 shadow-xs dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 lg:py-1 rounded-lg border font-sans text-xs font-medium transition-colors duration-150 shadow-xs ${
+                activeTab === 'compare'
+                  ? 'border-emerald-300 bg-emerald-50 text-[#183D22] dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 font-semibold'
+                  : 'border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800'
+              }`}
             >
-              <Car className="w-3.5 h-3.5 text-[#183D22] dark:text-emerald-400" />
-              <span className="hidden xl:inline font-sans text-xs font-medium">My Garage</span>
+              <GitCompare className="w-3.5 h-3.5 text-[#183D22] dark:text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline font-sans text-xs">Garage &amp; Compare</span>
               <span
                 data-testid="garage-count-badge"
                 className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-md text-[10px] font-mono tabular-nums font-bold bg-[#183D22] text-white dark:bg-emerald-600"
@@ -478,20 +341,20 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
               </span>
             </button>
 
-            {/* Garage Popover Dropdown */}
+            {/* Garage & Compare Popover */}
             {garageDropdownOpen && (
               <div
                 role="menu"
-                aria-label="My Garage Saved Vehicles"
-                className="absolute top-full right-0 mt-2.5 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3 z-50 animate-fade-in whitespace-normal"
+                aria-label="Garage and Vehicle Comparator"
+                className="absolute top-full right-0 mt-2.5 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-xl p-3.5 z-50 animate-fade-in whitespace-normal"
               >
                 <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
                   <div>
                     <span className="font-sans text-xs font-bold text-ink dark:text-zinc-50 block">
-                      My Garage (<span className="font-mono tabular-nums">{savedVehicles.length}</span>)
+                      Garage &amp; Compare (<span className="font-mono tabular-nums">{savedVehicles.length}</span>)
                     </span>
                     <span className="font-sans text-[11px] text-muted dark:text-zinc-400">
-                      Saved vehicles, odometer &amp; service logs
+                      Saved vehicles &amp; side-by-side comparison
                     </span>
                   </div>
                   {selectedPresetId && garage?.saveVehicleToGarage && (
@@ -513,77 +376,97 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   )}
                 </div>
 
+                {/* Compare Quick CTA */}
+                <div className="py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('compare');
+                      setGarageDropdownOpen(false);
+                    }}
+                    className="w-full min-h-[38px] flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#183D22] hover:bg-[#122e1a] text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 font-sans text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span>Open Side-by-Side Comparator</span>
+                  </button>
+                </div>
+
                 {savedVehicles.length === 0 ? (
-                  <div className="py-6 text-center space-y-1.5">
-                    <Car className="w-6 h-6 text-zinc-400 dark:text-zinc-500 mx-auto" />
+                  <div className="py-4 text-center space-y-1.5 border-t border-zinc-200 dark:border-zinc-800">
+                    <Car className="w-5 h-5 text-zinc-400 dark:text-zinc-500 mx-auto" />
                     <p className="font-sans text-xs font-medium text-ink dark:text-zinc-200">
-                      Your garage is empty
+                      No saved vehicles in your garage
                     </p>
                     <p className="font-sans text-[11px] text-muted dark:text-zinc-400">
-                      Click &ldquo;Save to My Garage&rdquo; in any calculator to bookmark vehicles and service checklists.
+                      Save any vehicle from the calculators to bookmark and compare specs.
                     </p>
                   </div>
                 ) : (
-                  <ul className="mt-2 space-y-1.5 max-h-72 overflow-y-auto">
-                    {savedVehicles.map((v) => {
-                      const isCurrent = v.presetId === selectedPresetId;
-                      const completedMilestones = garage?.getCompletedMilestones
-                        ? Object.values(garage.getCompletedMilestones(v.presetId)).filter(Boolean).length
-                        : 0;
-                      const servicedComps = garage?.getServicedComponents
-                        ? Object.values(garage.getServicedComponents(v.presetId)).filter(Boolean).length
-                        : 0;
-                      const totalDone = completedMilestones + servicedComps || v.completedCount || 0;
+                  <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2">
+                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 block mb-1.5">
+                      Saved Vehicles
+                    </span>
+                    <ul className="space-y-1.5 max-h-60 overflow-y-auto">
+                      {savedVehicles.map((v) => {
+                        const isCurrent = v.presetId === selectedPresetId;
+                        const completedMilestones = garage?.getCompletedMilestones
+                          ? Object.values(garage.getCompletedMilestones(v.presetId)).filter(Boolean).length
+                          : 0;
+                        const servicedComps = garage?.getServicedComponents
+                          ? Object.values(garage.getServicedComponents(v.presetId)).filter(Boolean).length
+                          : 0;
+                        const totalDone = completedMilestones + servicedComps || v.completedCount || 0;
 
-                      return (
-                        <li
-                          key={v.presetId}
-                          className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border transition-colors duration-150 ${
-                            isCurrent
-                              ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/40'
-                              : 'bg-white border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800'
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onSelectPreset) {
-                                onSelectPreset(v.presetId);
-                              }
-                              setGarageDropdownOpen(false);
-                            }}
-                            className="flex-1 text-left min-w-0"
+                        return (
+                          <li
+                            key={v.presetId}
+                            className={`flex items-center justify-between gap-2 p-2 rounded-xl border transition-colors duration-150 ${
+                              isCurrent
+                                ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/40'
+                                : 'bg-white border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800'
+                            }`}
                           >
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-sans text-xs font-bold text-ink dark:text-zinc-50 truncate">
-                                {v.name}
-                              </span>
-                              {isCurrent && (
-                                <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                                  Active
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onSelectPreset) {
+                                  onSelectPreset(v.presetId);
+                                }
+                                setGarageDropdownOpen(false);
+                              }}
+                              className="flex-1 text-left min-w-0"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-sans text-xs font-bold text-ink dark:text-zinc-50 truncate">
+                                  {v.name}
                                 </span>
-                              )}
-                            </div>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-sans text-muted dark:text-zinc-400">
-                              <span className="font-mono tabular-nums">{formatDistance ? formatDistance(v.odometerMiles || 58000) : `${v.odometerMiles || 58000} mi`}</span>
-                              <span>·</span>
-                              <span className="text-[#183D22] dark:text-emerald-400 font-sans font-semibold">
-                                <span className="font-mono tabular-nums">{totalDone}</span> services logged
-                              </span>
-                            </div>
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${v.name} from garage`}
-                            onClick={() => garage?.removeVehicleFromGarage?.(v.presetId)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:text-zinc-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 transition-colors duration-150"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                                {isCurrent && (
+                                  <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-1.5 py-0.5 text-[10px] font-sans font-medium">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-sans text-muted dark:text-zinc-400">
+                                <span className="font-mono tabular-nums">{formatDistance ? formatDistance(v.odometerMiles || 58000) : `${v.odometerMiles || 58000} mi`}</span>
+                                <span>·</span>
+                                <span className="text-[#183D22] dark:text-emerald-400 font-sans font-semibold">
+                                  <span className="font-mono tabular-nums">{totalDone}</span> services
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${v.name} from garage`}
+                              onClick={() => garage?.removeVehicleFromGarage?.(v.presetId)}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:text-zinc-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 transition-colors duration-150"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 )}
               </div>
             )}
@@ -669,7 +552,8 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-800'
                 }`}
               >
-                {t.label}
+                <span>{t.label}</span>
+                <span className="sr-only"> ({t.fullLabel})</span>
               </button>
             );
           })}
@@ -911,33 +795,46 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   </div>
                 </div>
 
-                {/* My Garage in Mobile Drawer */}
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="text-xs font-sans font-bold text-ink dark:text-zinc-100 block">
-                      My Garage ({savedVehicles.length} saved)
-                    </span>
-                    <span className="text-[11px] font-sans text-muted dark:text-zinc-400 block truncate">
-                      Bookmark vehicles &amp; service logs
-                    </span>
+                {/* Garage & Compare in Mobile Drawer */}
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="text-xs font-sans font-bold text-ink dark:text-zinc-100 block">
+                        Garage &amp; Compare ({savedVehicles.length} saved)
+                      </span>
+                      <span className="text-[11px] font-sans text-muted dark:text-zinc-400 block truncate">
+                        Bookmark vehicles &amp; compare side-by-side
+                      </span>
+                    </div>
+                    {selectedPresetId && garage?.saveVehicleToGarage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const preset = getPresetById(selectedPresetId);
+                          garage.saveVehicleToGarage({
+                            presetId: preset.id,
+                            name: preset.name,
+                            odometerMiles: preset.defaultOdometerMiles,
+                            purchasePriceUsd: preset.purchasePriceUsd,
+                          });
+                        }}
+                        className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white text-xs font-sans font-semibold shrink-0"
+                      >
+                        + Save Car
+                      </button>
+                    )}
                   </div>
-                  {selectedPresetId && garage?.saveVehicleToGarage && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const preset = getPresetById(selectedPresetId);
-                        garage.saveVehicleToGarage({
-                          presetId: preset.id,
-                          name: preset.name,
-                          odometerMiles: preset.defaultOdometerMiles,
-                          purchasePriceUsd: preset.purchasePriceUsd,
-                        });
-                      }}
-                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white text-xs font-sans font-semibold shrink-0"
-                    >
-                      + Save Car
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('compare');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full min-h-[38px] flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-ink dark:text-zinc-100 text-xs font-sans font-semibold"
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span>Open Side-by-Side Comparator</span>
+                  </button>
                 </div>
               </div>
             </div>

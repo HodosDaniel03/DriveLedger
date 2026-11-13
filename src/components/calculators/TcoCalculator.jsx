@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Printer, Info, CheckCircle2, RotateCcw, BookOpen, Car, FileText, Share2, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Printer, Info, CheckCircle2, RotateCcw, BookOpen, Car, FileText, Share2, ChevronDown, AlertTriangle, X } from 'lucide-react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP } from '../../context/GarageContext';
@@ -79,6 +79,7 @@ export default function TcoCalculator({
   const [justSavedGarage, setJustSavedGarage] = useState(false);
   const [highlightedCategory, setHighlightedCategory] = useState(null);
   const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
+  const [showSwitchCarModal, setShowSwitchCarModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const garage = useGarage();
@@ -201,6 +202,29 @@ export default function TcoCalculator({
     return Math.min(94, Math.max(45, Math.round(score)));
   }, [activePreset, tco]);
 
+  // Dynamic 3-tier plain-English verdict badge
+  const ownershipVerdict = useMemo(() => {
+    if (ownershipValueScore >= 75) {
+      return {
+        text: 'Great Long-Term Value',
+        badgeClass: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40',
+        barClass: 'bg-emerald-600 dark:bg-emerald-500',
+      };
+    }
+    if (ownershipValueScore >= 60) {
+      return {
+        text: 'Average Ownership Cost',
+        badgeClass: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40',
+        barClass: 'bg-amber-500 dark:bg-amber-400',
+      };
+    }
+    return {
+      text: 'High Depreciation / Repair Risk',
+      badgeClass: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/40',
+      barClass: 'bg-rose-600 dark:bg-rose-500',
+    };
+  }, [ownershipValueScore]);
+
   // Converted display values
   const displayPrice = Math.round(convertUsdToRegion(purchasePriceUsd));
   const displayOdometer = Math.round(convertMilesToRegion(odometerMiles));
@@ -303,80 +327,69 @@ export default function TcoCalculator({
         {/* Left Column: 7 cols (Your Vehicle & Sliders) */}
         <div className="lg:col-span-7 flex flex-col gap-6 min-w-0">
           {/* Card 1: Your Vehicle & Purchase Price */}
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6" aria-labelledby="vehicle-heading">
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-6 sm:p-7 shadow-card" aria-labelledby="vehicle-heading">
+            <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
               <div>
-                <h2 id="vehicle-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
+                <h2 id="vehicle-heading" className="font-sans text-xl sm:text-2xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
                   Your vehicle &amp; purchase price
                 </h2>
-                <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-0.5">
-                  Select model and acquisition price.
+                <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-1">
+                  Adjust vehicle price and ownership assumptions.
                 </p>
               </div>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
+              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
                 {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
               </span>
             </div>
 
-            {/* Compact Real Vehicle Photo & Single-Row Spec Micro-Tags */}
-            <div className="mb-3">
+            {/* Active Vehicle Hero Card with Prominent Switch Car Action */}
+            <div className="mb-6">
               <VehicleVisualCard
                 vehicle={activePreset}
                 variant="hero"
-                className="!p-4 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80"
-                onChangeVehicle={() => setShowVehicleCatalog((prev) => !prev)}
-                onShareReport={() => setShowDossierModal(true)}
+                className="!p-5 sm:!p-6 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl"
+                actionButtons={
+                  <div className="flex flex-wrap items-center justify-between w-full gap-3">
+                    <button
+                      type="button"
+                      data-testid="tco-switch-car-button"
+                      onClick={() => setShowSwitchCarModal(true)}
+                      className="min-h-[44px] sm:min-h-0 bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Switch Car</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDossierModal(true)}
+                      className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs sm:text-sm font-medium text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Share report ↗</span>
+                    </button>
+                  </div>
+                }
               />
             </div>
 
-            {/* Compact Collapsible Toggle for Full Make/Model/Engine Selector */}
-            <div className="mb-3">
-              <button
-                type="button"
-                aria-expanded={showVehicleCatalog}
-                onClick={() => setShowVehicleCatalog((prev) => !prev)}
-                className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-100/80 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-xs font-sans font-semibold text-[#183D22] dark:text-emerald-400 transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Car className="w-3.5 h-3.5" />
-                  <span>{showVehicleCatalog ? 'Hide full vehicle catalog selector' : 'Search or browse 120+ models & engines'}</span>
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showVehicleCatalog ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Cascading vehicle selector (kept mounted in DOM for instant switching & test compatibility) */}
-              <div className={showVehicleCatalog ? 'mt-3 block animate-fade-in' : 'sr-only'}>
+            {/* Persistent accessible preset benchmarks & full vehicle catalog selector mounted in DOM */}
+            {!showSwitchCarModal && (
+              <div className="sr-only" aria-hidden="false">
+                <span className="sr-only">TELEMETRY PRESET BENCHMARKS:</span>
+                {testShortcuts.map((sc) => (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={() => onSelectPreset(sc.id)}
+                  >
+                    {sc.label}
+                  </button>
+                ))}
                 <VehicleSelect
                   selectedPresetId={selectedPresetId}
                   onSelectPreset={onSelectPreset}
                 />
               </div>
-            </div>
-
-            {/* Benchmark Preset Shortcuts */}
-            <div className="pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="sr-only">TELEMETRY PRESET BENCHMARKS:</span>
-              <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 mr-1">
-                Quick presets:
-              </span>
-              {testShortcuts.map((sc) => {
-                const isSelected = sc.id === selectedPresetId;
-                return (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    onClick={() => onSelectPreset(sc.id)}
-                    className={`px-2.5 py-1 rounded-md font-sans text-[11px] font-medium transition-colors duration-150 border ${
-                      isSelected
-                        ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-                    }`}
-                  >
-                    {sc.label}
-                  </button>
-                );
-              })}
-            </div>
+            )}
 
             {/* Core Slider 1: Purchase Price (Default Visible) + Market Deal Tag */}
             <div className="mt-6 flex flex-col gap-4">
@@ -453,12 +466,12 @@ export default function TcoCalculator({
           </Card>
 
           {/* Card 2: Driving Habits & Ownership Horizon */}
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6" aria-labelledby="driving-heading">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-6 sm:p-7 shadow-card" aria-labelledby="driving-heading">
             <div className="mb-5">
-              <h2 id="driving-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight">
+              <h2 id="driving-heading" className="font-sans text-xl sm:text-2xl text-ink dark:text-zinc-50 font-bold tracking-tight">
                 Driving habits &amp; horizon
               </h2>
-              <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-0.5">
+              <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-1">
                 Annual distance and ownership period.
               </p>
             </div>
@@ -870,14 +883,14 @@ export default function TcoCalculator({
         </div>
 
         {/* Right Column: 5 cols (Sticky Summary, Cost Breakdown & Compact Utility Toolbar) */}
-        <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-24 min-w-0">
-          <Card className="h-fit shadow-card" aria-labelledby="summary-heading">
+        <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 min-w-0">
+          <Card className="h-fit shadow-card p-6 sm:p-7" aria-labelledby="summary-heading">
             {/* Eyebrow */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span id="summary-heading" className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider scroll-mt-28 lg:scroll-mt-32">
+              <span id="summary-heading" className="font-sans text-xs font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider scroll-mt-28 lg:scroll-mt-32">
                 ESTIMATED COST TO OWN
               </span>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium shrink-0">
+              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium shrink-0">
                 {horizonYears}-Year Forecast
               </span>
             </div>
@@ -936,9 +949,9 @@ export default function TcoCalculator({
             </div>
 
             {/* Compact Ownership Value Score Bar (Integrated inside Summary Card) */}
-            <div className="mb-5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80">
+            <div className="mb-5 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 inline-flex items-center gap-1 min-w-0">
+                <span className="font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-200 inline-flex items-center gap-1 min-w-0">
                   <span className="truncate">Ownership Value Score</span>
                   <InfoTooltip
                     label="What is Ownership Value Score?"
@@ -946,17 +959,20 @@ export default function TcoCalculator({
                   />
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="font-mono tabular-nums text-xs font-bold text-ink dark:text-zinc-50">
+                  <span className="font-mono tabular-nums text-xs sm:text-sm font-bold text-ink dark:text-zinc-50">
                     {ownershipValueScore}/100
                   </span>
-                  <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                    Good Value
+                  <span
+                    data-testid="ownership-value-verdict-badge"
+                    className={`rounded-md border px-2 py-0.5 text-xs font-sans font-semibold ${ownershipVerdict.badgeClass}`}
+                  >
+                    {ownershipVerdict.text}
                   </span>
                 </div>
               </div>
               <div className="h-1.5 w-full rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500 transition-all duration-300"
+                  className={`h-full rounded-full transition-all duration-300 ${ownershipVerdict.barClass}`}
                   style={{ width: `${ownershipValueScore}%` }}
                 />
               </div>
@@ -1141,20 +1157,100 @@ export default function TcoCalculator({
                 </button>
               </div>
             </div>
-
-            {/* Single Clean VIN Check Partner CTA at bottom of Summary Dossier */}
-            <VinCheckBanner
-              placement="tco"
-              vehicleName={activePreset.name}
-              purchasePriceUsd={purchasePriceUsd}
-              vehiclePriceFormatted={formatCurrency(purchasePriceUsd)}
-              odometerMiles={odometerMiles}
-              compact={true}
-              className="mt-5"
-            />
           </Card>
+
+          {/* Contextual carVertical Vehicle History Verification Card */}
+          <VinCheckBanner
+            placement="tco"
+            vehicleName={activePreset.name}
+            purchasePriceUsd={purchasePriceUsd}
+            vehiclePriceFormatted={formatCurrency(purchasePriceUsd)}
+            odometerMiles={odometerMiles}
+            compact={true}
+            className="mt-6 shadow-card"
+          />
         </div>
       </div>
+
+      {/* Switch Car Modal Dialog */}
+      {showSwitchCarModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="switch-car-modal-title"
+          data-testid="vehicle-catalog-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => setShowSwitchCarModal(false)}
+        >
+          <div
+            className="relative w-full max-w-2xl rounded-2xl bg-surface dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
+              <div>
+                <h3 id="switch-car-modal-title" className="font-sans text-lg sm:text-xl font-bold text-ink dark:text-zinc-50">
+                  Switch Vehicle
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+                  Choose a quick preset or search our 120+ model database.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close modal"
+                onClick={() => setShowSwitchCarModal(false)}
+                className="p-1.5 rounded-lg text-muted hover:text-ink dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Presets Strip */}
+            <div className="py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <span className="sr-only">TELEMETRY PRESET BENCHMARKS:</span>
+              <span className="block font-sans text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 mb-2.5">
+                Popular Benchmarks:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {testShortcuts.map((sc) => {
+                  const isSelected = sc.id === selectedPresetId;
+                  return (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => {
+                        onSelectPreset(sc.id);
+                        setShowSwitchCarModal(false);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-sans text-xs sm:text-sm font-medium transition-colors border cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+                          : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                      }`}
+                    >
+                      {sc.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Full Vehicle Catalog Select */}
+            <div className="pt-4">
+              <span className="block font-sans text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 mb-2.5">
+                Search or Browse Catalog:
+              </span>
+              <VehicleSelect
+                selectedPresetId={selectedPresetId}
+                onSelectPreset={(newId) => {
+                  onSelectPreset(newId);
+                  setShowSwitchCarModal(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conditionally rendered side-by-side comparator drawer */}
       {showComparator && (

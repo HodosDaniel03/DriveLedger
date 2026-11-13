@@ -16,6 +16,7 @@ import {
 import HeroVehicleFinder from '../components/home/HeroVehicleFinder';
 import SubsystemGrid from '../components/home/SubsystemGrid';
 import ReviewsSection from '../components/home/ReviewsSection';
+import VehicleImageResolver from '../components/common/vehicle/VehicleImageResolver.jsx';
 import { VEHICLE_PRESETS, getPresetById } from '../data/vehiclePresets';
 import { generatePpiChecklist } from '../data/breakEvenAndPpi';
 import { useUnits } from '../context/UnitContext';
@@ -37,6 +38,7 @@ export default function HomePage({
 }) {
   const { formatCurrency, formatDistance } = useUnits();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+  const [selectedBodyStyle, setSelectedBodyStyle] = useState('all');
 
   const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
   const previewPpiItems = useMemo(
@@ -44,15 +46,35 @@ export default function HomePage({
     [activePreset]
   );
 
-  // Featured canonical presets for the Telemetry Benchmark section
-  const featuredPresets = [
-    VEHICLE_PRESETS.find((p) => p.id === 'vw-golf-20-tdi') || VEHICLE_PRESETS[1],
-    VEHICLE_PRESETS.find((p) => p.id === 'bmw-320d-b47') || VEHICLE_PRESETS[10],
-    VEHICLE_PRESETS.find((p) => p.id === 'peugeot-208-12-puretech') || VEHICLE_PRESETS[15],
-    VEHICLE_PRESETS.find((p) => p.id === 'toyota-corolla-18-hybrid') || VEHICLE_PRESETS[20],
-    VEHICLE_PRESETS.find((p) => p.id === 'skoda-octavia-20-tdi') || VEHICLE_PRESETS[6],
-    VEHICLE_PRESETS.find((p) => p.id === 'tesla-model-3-lr') || VEHICLE_PRESETS[25],
-  ];
+  const POPULAR_BODY_TYPES = useMemo(() => [
+    { id: 'all', label: 'All Body Styles', count: VEHICLE_PRESETS.length },
+    { id: 'sedan', label: 'Sedans', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'sedan').length },
+    { id: 'suv', label: 'SUVs & Crossovers', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'suv').length },
+    { id: 'hatchback', label: 'Hatchbacks', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'hatchback').length },
+    { id: 'wagon', label: 'Wagons & Estates', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'wagon').length },
+    { id: 'truck', label: 'Trucks', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'truck').length },
+    { id: 'coupe', label: 'Coupes', count: VEHICLE_PRESETS.filter((p) => p.bodyType === 'coupe' || p.segment?.toLowerCase().includes('coupe')).length },
+  ], []);
+
+  const displayedVehicles = useMemo(() => {
+    if (selectedBodyStyle === 'all') {
+      return [
+        VEHICLE_PRESETS.find((p) => p.id === 'vw-golf-20-tdi') || VEHICLE_PRESETS[1],
+        VEHICLE_PRESETS.find((p) => p.id === 'bmw-320d-b47') || VEHICLE_PRESETS[10],
+        VEHICLE_PRESETS.find((p) => p.id === 'peugeot-208-12-puretech') || VEHICLE_PRESETS[15],
+        VEHICLE_PRESETS.find((p) => p.id === 'toyota-corolla-18-hybrid') || VEHICLE_PRESETS[20],
+        VEHICLE_PRESETS.find((p) => p.id === 'skoda-octavia-20-tdi') || VEHICLE_PRESETS[6],
+        VEHICLE_PRESETS.find((p) => p.id === 'tesla-model-3-lr') || VEHICLE_PRESETS[25],
+      ];
+    }
+    const filtered = VEHICLE_PRESETS.filter((p) => {
+      if (selectedBodyStyle === 'coupe') {
+        return p.bodyType === 'coupe' || p.segment?.toLowerCase().includes('coupe');
+      }
+      return p.bodyType === selectedBodyStyle;
+    });
+    return filtered.slice(0, 6);
+  }, [selectedBodyStyle]);
 
   const faqs = [
     {
@@ -79,12 +101,13 @@ export default function HomePage({
 
   return (
     <div className="space-y-16">
-      {/* 1. Hero with Vehicle Finder & Body Type Selector */}
+      {/* 1. Hero with Vehicle Finder */}
       <HeroVehicleFinder
         selectedPresetId={selectedPresetId}
         onSelectPreset={onSelectPreset}
         onNavigateToTco={onNavigateToTco}
         onNavigateToRisk={onNavigateToRisk}
+        onNavigateToObd={onNavigateToObd}
       />
 
       {/* 2. Unified Process & Trust Stats Strip */}
@@ -287,100 +310,141 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 5. Featured Vehicle Telemetry Benchmarks Section */}
+      {/* 5. Browse Popular Vehicles Section */}
       <section id="telemetry-preset-benchmarks-section" className="scroll-mt-28 lg:scroll-mt-32">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-1">
-              <Gauge className="w-3.5 h-3.5" />
+              <Car className="w-3.5 h-3.5" />
               <span>VEHICLE BENCHMARKS</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-              Featured 5-Year Ownership Dossiers
+              Browse Popular Vehicles
             </h2>
+            <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-1">
+              Filter 120+ benchmarked vehicles by body style and compare real-world ownership costs
+            </p>
           </div>
           <button
             type="button"
             onClick={() => onNavigateToTco()}
-            className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors shrink-0"
           >
             <span>All <span className="font-mono tabular-nums">{VEHICLE_PRESETS.length}</span> Vehicles &amp; Engines</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {featuredPresets.map((car) => {
+        {/* 7 Body Style Filter Chips */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {POPULAR_BODY_TYPES.map((bt) => {
+            const isActive = selectedBodyStyle === bt.id;
+            return (
+              <button
+                key={bt.id}
+                type="button"
+                onClick={() => setSelectedBodyStyle(bt.id)}
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-sans font-semibold transition-colors duration-150 border cursor-pointer ${
+                  isActive
+                    ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+                    : 'bg-surface dark:bg-[#121215] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
+              >
+                <span>{bt.label}</span>
+                <span className={`ml-1.5 text-[10px] font-mono tabular-nums ${isActive ? 'text-emerald-100' : 'text-muted dark:text-zinc-400'}`}>
+                  ({bt.count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Responsive Vehicle Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedVehicles.map((car) => {
             const isSelected = car.id === selectedPresetId;
             return (
               <div
                 key={car.id}
-                onClick={() => {
-                  onSelectPreset(car.id);
-                  onNavigateToTco(car.id);
-                }}
-                className={`group p-6 rounded-2xl bg-surface dark:bg-[#121215] border transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer flex flex-col justify-between shadow-sm hover:shadow-card-hover ${
+                className={`group rounded-2xl bg-surface dark:bg-[#121215] border transition-[transform,box-shadow,border-color] duration-200 ease-out flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden ${
                   isSelected
                     ? 'border-primary-600 ring-2 ring-primary-600/20'
                     : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
+                {/* Vehicle Studio Photography Frame */}
+                <div className="aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900 relative border-b border-zinc-200 dark:border-zinc-800">
+                  <VehicleImageResolver vehicle={car} variant="card" className="w-full h-full" interactive />
+                  <div className="absolute top-2.5 left-2.5">
+                    <span className="text-[10px] font-sans font-medium px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700/80 backdrop-blur-xs shadow-2xs">
                       {car.segment}
                     </span>
-                    <span className="text-xs font-mono font-bold text-ink dark:text-zinc-50 tabular-nums">
+                  </div>
+                  <div className="absolute top-2.5 right-2.5">
+                    <span className="text-xs font-mono font-bold text-ink dark:text-zinc-50 bg-white/90 dark:bg-zinc-900/90 px-2 py-0.5 rounded-md border border-zinc-200/80 dark:border-zinc-700/80 backdrop-blur-xs tabular-nums shadow-2xs">
                       {formatCurrency(car.purchasePriceUsd)}
                     </span>
                   </div>
-
-                  <h3 className="text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 mb-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                    {car.name}
-                  </h3>
-                  <p className="text-xs text-muted dark:text-zinc-400 line-clamp-1 mb-4 font-sans font-medium">
-                    {car.powertrainLabel}
-                  </p>
-
-                  <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center text-xs">
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Baseline</span>
-                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
-                        {formatDistance(car.defaultOdometerMiles)}
-                      </strong>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Economy</span>
-                      <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
-                        {car.isEv ? `${car.mpgUs} kWh` : `${car.mpgUs} MPG`}
-                      </strong>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 flex items-center justify-center gap-0.5">
-                        <span>Wear</span>
-                        <InfoTooltip
-                          term="Maintenance Wear Factor"
-                          explanation="Compares expected component wear and repair costs against the segment average (1.00x). Lower is more reliable; above 1.30x indicates higher maintenance exposure."
-                        />
-                      </span>
-                      <strong
-                        className={`text-xs font-mono tabular-nums font-bold block truncate ${
-                          car.maintenanceWearFactor > 1.3
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : car.maintenanceWearFactor < 0.9
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-amber-600 dark:text-amber-400'
-                        }`}
-                      >
-                        {car.maintenanceWearFactor.toFixed(2)}x
-                      </strong>
-                    </div>
-                  </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-sans font-semibold text-primary-600 dark:text-primary-400">
-                  <span>Calculate True Cost</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                {/* Card Body */}
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                      {car.name}
+                    </h3>
+                    <p className="text-xs text-muted dark:text-zinc-400 line-clamp-1 mb-4 font-sans font-medium mt-0.5">
+                      {car.powertrainLabel || `${car.powerHp} HP · ${car.fuelType}`}
+                    </p>
+
+                    {/* 3-Col Key Indicators */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 text-center text-xs">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Odometer</span>
+                        <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
+                          {formatDistance(car.defaultOdometerMiles)}
+                        </strong>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Economy</span>
+                        <strong className="text-ink dark:text-zinc-50 text-xs font-mono tabular-nums font-bold block truncate">
+                          {car.isEv ? `${car.mpgUs} kWh` : `${car.mpgUs} MPG`}
+                        </strong>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400 block truncate">Annual Service</span>
+                        <strong className="text-primary-600 dark:text-primary-400 text-xs font-mono tabular-nums font-bold block truncate">
+                          {formatCurrency(car.baseAnnualMaintenanceUsd)}/yr
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons: Calculate True Cost & Risk Matrix */}
+                  <div className="mt-4 pt-3 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectPreset(car.id);
+                        onNavigateToTco(car.id);
+                      }}
+                      className="flex-1 min-h-[38px] bg-primary-600 hover:bg-primary-700 text-white font-sans font-semibold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <Calculator className="w-3.5 h-3.5 shrink-0" />
+                      <span>Calculate True Cost</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectPreset(car.id);
+                        onNavigateToRisk(car);
+                      }}
+                      className="min-h-[38px] bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-sans font-semibold text-xs py-2 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>Risk Matrix</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
