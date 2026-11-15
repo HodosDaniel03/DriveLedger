@@ -33,7 +33,7 @@ export const FAQ_ITEMS = [
     question:
       'What is a "First-Principles Live Telemetry Check" before approving an OBD-II workshop quote?',
     answer:
-      'A Diagnostic Trouble Code (DTC) such as P2002, P0171, or P0420 does not condemn a specific part—it only reports that a sensor signal crossed an engineering threshold. First-principles diagnostics uses SAE J1979 Mode $01 and Mode $06 live Parameter IDs (PIDs) to test the physical system before buying parts. For example, checking DPF Differential Pressure at Key-ON Engine-OFF isolates a drifted $110 pressure sensor from an $1,800 DPF monolith, and comparing Short-Term + Long-Term Fuel Trims (STFT/LTFT) at 750 RPM idle versus 2,500 RPM immediately distinguishes an intake vacuum leak from a failing fuel pump or MAF sensor.',
+      'A Diagnostic Trouble Code (DTC) such as P2002, P0171, or P0420 does not condemn a specific part; it only reports that a sensor signal crossed an engineering threshold. First-principles diagnostics uses SAE J1979 Mode $01 and Mode $06 live Parameter IDs (PIDs) to test the physical system before buying parts. For example, checking DPF Differential Pressure at Key-ON Engine-OFF isolates a drifted $110 pressure sensor from an $1,800 DPF monolith, and comparing Short-Term + Long-Term Fuel Trims (STFT/LTFT) at 750 RPM idle versus 2,500 RPM immediately distinguishes an intake vacuum leak from a failing fuel pump or MAF sensor.',
   },
   {
     question:
@@ -251,7 +251,7 @@ export default function TechnicalMethodologyGuide({
 
             <div className="mt-4 pt-3 border-t border-border/50 dark:border-zinc-800 space-y-3 text-xs leading-relaxed text-body dark:text-zinc-300 cursor-default">
               <p>
-                Depreciation represents the single largest wealth outflow in automotive ownership—typically accounting for <strong>38% to 52% of 5-year True Cost to Own (TCO)</strong>. Automobiles do not depreciate linearly; instead, they follow a steep exponential decay curve influenced by powertrain segment, warranty expiration cliffs (at 36,000 and 60,000 miles), and annual mileage intensity.
+                Depreciation represents the single largest wealth outflow in automotive ownership, typically accounting for <strong>38% to 52% of 5-year True Cost to Own (TCO)</strong>. Automobiles do not depreciate linearly; instead, they follow a steep exponential decay curve influenced by powertrain segment, warranty expiration cliffs (at 36,000 and 60,000 miles), and annual mileage intensity.
               </p>
 
               <div className="p-3 rounded-lg bg-surface-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 font-sans text-[11px] space-y-1">
@@ -451,7 +451,7 @@ export default function TechnicalMethodologyGuide({
                 </tr>
                 <tr>
                   <td className="py-2.5 pr-3 font-sans font-semibold text-ink dark:text-zinc-100">
-                    Belt-in-Oil (Wet Timing Belt — EcoBlue / PureTech)
+                    Belt-in-Oil (Wet Timing Belt: EcoBlue / PureTech)
                   </td>
                   <td className="py-2.5 px-3 text-muted dark:text-zinc-400">100,000 – 140,000 mi</td>
                   <td className="py-2.5 px-3 text-success-text dark:text-emerald-400 font-bold">

@@ -1,5 +1,5 @@
 /**
- * DriveLedger — "Should I Fix It or Sell It?" 4-Factor Economic Decision Engine
+ * DriveLedger | "Should I Fix It or Sell It?" 4-Factor Economic Decision Engine
  * & Mileage-Adjusted Market Benchmark Estimator
  */
 
@@ -56,7 +56,7 @@ export function evaluateMarketPriceDeal(vehicle, askingPriceUsd, odometerMiles) 
       deltaUsd,
       deltaPct,
       tier: 'good-deal',
-      label: `${Math.abs(deltaPct)}% Below Market — Strong Deal`,
+      label: `${Math.abs(deltaPct)}% Below Market | Strong Deal`,
     };
   }
   if (deltaPct >= 7) {
@@ -65,7 +65,7 @@ export function evaluateMarketPriceDeal(vehicle, askingPriceUsd, odometerMiles) 
       deltaUsd,
       deltaPct,
       tier: 'overpriced',
-      label: `${deltaPct}% Above Market — Negotiate Down`,
+      label: `${deltaPct}% Above Market | Negotiate Down`,
     };
   }
   return {
@@ -235,7 +235,7 @@ export function evaluateFixOrSellDecision({
 
   return {
     verdict: 'SELL_AS_IS',
-    headline: 'Do Not Repair — Sell As-Is or Trade In',
+    headline: 'Do Not Repair: Sell As-Is or Trade In',
     tone: 'critical',
     badgeLabel: 'Economic Total-Loss Zone',
     rvr,

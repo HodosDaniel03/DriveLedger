@@ -23,7 +23,7 @@ export const BLOG_POSTS = [
       'A 60,000-mile rollback can push you unexpectedly into overdue timing chain, DPF, or transmission service windows.',
     ],
     content: `
-Odometer fraud remains one of the costliest risks in the used-car market. Because modern digital instrument clusters can be altered via the diagnostic port, an artificially low mileage reading not only inflates the purchase price by thousands of dollars—it also hides critical preventative maintenance deadlines.
+Odometer fraud remains one of the costliest risks in the used-car market. Because modern digital instrument clusters can be altered via the diagnostic port, an artificially low mileage reading not only inflates the purchase price by thousands of dollars; it also hides critical preventative maintenance deadlines.
 
 ### 1. Physical Wear vs. Displayed Mileage
 Before plugging in any diagnostic tool, evaluate high-contact cabin touchpoints:
@@ -58,7 +58,7 @@ Paper service books are easily forged with custom rubber stamps. Before finalizi
       'B47 diesel and B48 petrol engines are significantly more durable than earlier N47/N20 units, but require strict 8,000–10,000 mile oil changes.',
       'BMW calls ZF 8-speed automatic transmission fluid "lifetime," whereas ZF recommends servicing it every 50,000–75,000 miles (80,000–120,000 km).',
       'Inspect plastic coolant flanges and oil filter housing gaskets on B48 engines past 55,000 miles.',
-      'Former corporate lease and fleet cars frequently cover high highway mileage—always verify chronological odometer records by VIN.',
+      'Former corporate lease and fleet cars frequently cover high highway mileage. Always verify chronological odometer records by VIN.',
     ],
     content: `
 The post-2015 BMW 3 Series (F30 LCI and G20 generations) equipped with modular B47 (2.0L diesel) and B48 (2.0L turbo petrol) powertrains offers an appealing balance of fuel economy and driving dynamics. However, buying a 4-to-8-year-old example requires verifying both mechanical condition and historical provenance.
@@ -96,7 +96,7 @@ Because the 320d Touring and 330i Saloon are staples of European and UK executiv
       'Verify that emission equipment (DPF, AdBlue/SCR, catalytic converters) has not been coded out prior to import.',
     ],
     content: `
-Cross-border used car trade is a normal part of the European and North American automotive market. Well-maintained lease returns from Germany, Belgium, the Netherlands, or out-of-state auctions can make solid purchases—provided their pre-export history is transparent.
+Cross-border used car trade is a normal part of the European and North American automotive market. Well-maintained lease returns from Germany, Belgium, the Netherlands, or out-of-state auctions can make solid purchases, provided their pre-export history is transparent.
 
 ### Why Domestic Checks Miss Pre-Import History
 When a vehicle is imported and registered in a new country, the local transport authority records its odometer reading on the day of first domestic inspection. Any mileage rollbacks or severe insurance write-offs that occurred *before* the border crossing will not appear on a purely domestic registration lookup.
@@ -204,7 +204,7 @@ Check receipts, not just dealer stamps. Look for specific line items: transmissi
     content: `
 P0420 is the most commonly triggered OBD-II trouble code in the automotive industry. It simply means the downstream oxygen sensor (after the catalyst) is cycling too similarly to the upstream sensor (before the catalyst), indicating the converter is not storing sufficient oxygen.
 
-However, the catalytic converter itself is rarely the root cause of the initial failure—it is usually the victim of an upstream condition or a faulty sensor signal.
+However, the catalytic converter itself is rarely the root cause of the initial failure; it is usually the victim of an upstream condition or a faulty sensor signal.
 
 ### Step 1: Check for Exhaust Leaks First ($20–$50)
 A tiny hairline crack in the exhaust manifold, flex pipe, or flange gasket draws in atmospheric oxygen due to exhaust pulse venturi effects. The downstream O2 sensor detects this extra oxygen and triggers P0420, even though the catalyst is completely healthy.

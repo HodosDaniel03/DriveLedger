@@ -487,7 +487,7 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
       primarySuspectCause = cheapest.cause;
       recommendation =
         activeDossier?.code === 'P2002'
-          ? 'Live DPF backpressure and soot load are within healthy OEM limits. High probability of a drifted G450 Differential Pressure Sensor or cracked silicone reference hose—do NOT replace the DPF monolith.'
+          ? 'Live DPF backpressure and soot load are within healthy OEM limits. High probability of a drifted G450 Differential Pressure Sensor or cracked silicone reference hose. Do NOT replace the DPF monolith.'
           : `Live telemetry parameters remain within healthy bounds. Fault is most likely triggered by ${cheapest.cause.toLowerCase()} rather than a major mechanical failure.`;
     } else if (tone === 'warn') {
       narrowedMinUsd = Math.min(cheapest.maxCost, middle.minCost);
@@ -504,7 +504,7 @@ export function evaluatePidTelemetryVerdict(pidConfigs, pidValues, activeDossier
       primarySuspectCause = costliest.cause;
       recommendation =
         activeDossier?.code === 'P2002'
-          ? 'Critical exhaust restriction (>150 hPa / ≥80% soot load) confirmed. ECU active regeneration is locked out due to thermal runaway risk—off-car pneumatic/thermal DPF flush or core replacement required.'
+          ? 'Critical exhaust restriction (>150 hPa / ≥80% soot load) confirmed. ECU active regeneration is locked out due to thermal runaway risk: off-car pneumatic/thermal DPF flush or core replacement required.'
           : `Severe telemetry threshold breach confirms hardware degradation (${costliest.cause.toLowerCase()}). Budget for major component overhaul or replacement.`;
     }
   }

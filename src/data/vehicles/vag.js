@@ -1,5 +1,5 @@
 /**
- * Volkswagen Auto Group (VAG) — Detailed Generation, Engine & Known Issues Database
+ * Volkswagen Auto Group (VAG) | Detailed Generation, Engine & Known Issues Database
  */
 
 export const vagData = {

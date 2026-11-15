@@ -1,5 +1,5 @@
 /**
- * Tesla — Comprehensive Generation, Powertrain (LFP vs NMC) & Known Issues Database
+ * Tesla | Comprehensive Generation, Powertrain (LFP vs NMC) & Known Issues Database
  */
 
 export const teslaData = {

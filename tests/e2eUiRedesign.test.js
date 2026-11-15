@@ -1263,7 +1263,7 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     'Active vehicle card Switch Car button must NOT render before a vehicle is selected'
   );
 
-  // Main monthly figure must be neutral placeholder ($—) with no pre-selected Camry/Focus photo or metrics
+  // Main monthly figure must be neutral placeholder ($-) with no pre-selected Camry/Focus photo or metrics
   const camryOrFocusImgs = container.querySelectorAll(
     (el) => el.tagName === 'IMG' && /camry|focus/i.test(el.getAttribute('alt') || '')
   );
@@ -1280,8 +1280,8 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
   );
   const monthlyTotalEl = container.getElementById('monthly-total');
   assert.ok(
-    monthlyTotalEl && monthlyTotalEl.textContent.includes('$—'),
-    `Monthly cost must show neutral $— placeholder before selecting a vehicle (got ${monthlyTotalEl?.textContent})`
+    monthlyTotalEl && monthlyTotalEl.textContent.includes('$-'),
+    `Monthly cost must show neutral $- placeholder before selecting a vehicle (got ${monthlyTotalEl?.textContent})`
   );
   const verdictBadge = findByTestId(container, 'ownership-value-verdict-badge');
   assert.ok(
@@ -1289,14 +1289,14 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     'Verdict badge must prompt "Select a Vehicle" before selection'
   );
 
-  // Switching region to EU before choosing a car updates the currency placeholder (€—) cleanly
+  // Switching region to EU before choosing a car updates the currency placeholder (€-) cleanly
   const regionGroup = container.querySelectorAll((el) => el.getAttribute('role') === 'radiogroup')[0];
   const euRadio = regionGroup.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('EU'))[0];
   euRadio.dispatchEvent({ type: 'click' });
   await sleep(35);
   assert.ok(
-    container.getElementById('monthly-total').textContent.includes('€—'),
-    'Switching to EU region before selecting a car must update placeholder currency to €—'
+    container.getElementById('monthly-total').textContent.includes('€-'),
+    'Switching to EU region before selecting a car must update placeholder currency to €-'
   );
 
   // Clicking a quick-pick chip selects the vehicle explicitly, clears the inline picker, shows Switch Car, and sets /tco/:presetId without code=P2002
@@ -1311,7 +1311,7 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     'Active vehicle card "Switch Car" button must mount after selecting a vehicle'
   );
   assert.ok(
-    !container.getElementById('monthly-total').textContent.includes('—'),
+    !/[$€]-/.test(container.getElementById('monthly-total').textContent),
     'Monthly cost must show real computed value after vehicle selection'
   );
   assert.ok(

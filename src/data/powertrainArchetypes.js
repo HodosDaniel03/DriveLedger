@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Normalized Powertrain Archetype & Brand Tier Telemetry Engine (Phase 5.1)
+ * DriveLedger | Normalized Powertrain Archetype & Brand Tier Telemetry Engine (Phase 5.1)
  * Decouples mechanical risk architectures (8 core powertrain archetypes) and brand labor/parts
  * tier multipliers from individual vehicle model shells, enabling compact normalized model records
  * to hydrate dynamically into full DriveLedger TCO & Risk Matrix telemetry presets.
@@ -545,7 +545,7 @@ export function hydrateVehiclePreset(presetOrCompactRecord) {
     engineCode,
     powerHp,
     fuelType: merged.fuelType || archetype.fuelType,
-    segment: merged.segment || `${brandTierObj.label} — ${archetype.shortLabel}`,
+    segment: merged.segment || `${brandTierObj.label} | ${archetype.shortLabel}`,
     powertrain: merged.powertrain || archetype.powertrain,
     powertrainType,
     powertrainLabel: merged.powertrainLabel || archetype.label,

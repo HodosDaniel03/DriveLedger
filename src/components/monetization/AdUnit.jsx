@@ -181,7 +181,7 @@ export function AdUnit({
             ADVERTISEMENT · PARTNER RESOURCE
           </span>
           <p className="text-xs font-sans text-body dark:text-zinc-300 truncate">
-            {contextLabel} — External resource via {fallbackPartnerLink.partnerName}.
+            {contextLabel} | External resource via {fallbackPartnerLink.partnerName}.
           </p>
         </div>
       </div>

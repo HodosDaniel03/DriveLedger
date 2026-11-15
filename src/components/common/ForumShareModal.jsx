@@ -296,7 +296,7 @@ export default function ForumShareModal({
       `### DriveLedger Telemetry Report: ${resolvedVehicle.name}`,
       '',
       '| Metric | Telemetry Value | Notes |',
-      '| :--- | :--- | :--- |',
+      '| :- | :- | :- |',
       `| **5-Yr TCO** | **${tcoFormatted}** | ${distanceFormatted} odometer · ${costPerUnitFormatted}/${distanceUnit} carrying cost |`,
       `| **Monthly Cost** | **${monthlyFormatted}/mo** | Depreciation, fuel/energy, insurance, maintenance & financing |`,
       `| **Reliability Score** | **${score}/100** | ${

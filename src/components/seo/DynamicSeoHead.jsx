@@ -8,8 +8,11 @@ import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 import { GUIDES_DATA } from '../../data/guidesData';
 import { LEGAL_POLICIES, resolveLegalPolicyKey } from '../../data/legalPolicies';
+import { resolveVehiclePhotoUrl } from '../common/vehicle/VehicleImageResolver';
 
 const SITE_ORIGIN = `https://${MONETIZATION_CONFIG.domain}`;
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image.png`;
+const BRAND_LOGO_URL = `${SITE_ORIGIN}/logo-512.png`;
 
 const CANONICAL_TAB_PATHS = {
   overview: '/',
@@ -209,7 +212,18 @@ export default function DynamicSeoHead({
     return false;
   }, [hasSelectedVehicle, activeMileageBracket, activeTab, selectedPresetId]);
 
+  const vehicleImageUrl = useMemo(() => {
+    if (!isVehicleSelected) return DEFAULT_OG_IMAGE;
+    return resolveVehiclePhotoUrl({ vehicle: preset }) || DEFAULT_OG_IMAGE;
+  }, [isVehicleSelected, preset]);
+
   const seoMetadata = useMemo(() => {
+    const resolvedImageUrl = isVehicleSelected ? vehicleImageUrl : DEFAULT_OG_IMAGE;
+    const withImage = (meta) => ({
+      ...meta,
+      imageUrl: meta.imageUrl || resolvedImageUrl,
+    });
+
     if (resolvedLegalKey && LEGAL_POLICIES[resolvedLegalKey]) {
       const policy = LEGAL_POLICIES[resolvedLegalKey];
       const canonicalPath = policy.path || `/${resolvedLegalKey}`;
@@ -238,12 +252,24 @@ export default function DynamicSeoHead({
         description = `Exercise your US state privacy rights under CCPA, CPRA, VCDPA, CPA, and CTDPA to opt out of the sale or sharing of personal information for cross-context behavioral advertising.`;
       }
 
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl,
         canonicalPath,
-      };
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
+    }
+
+    if (activeTab === 'overview' && !isVehicleSelected) {
+      return withImage({
+        title: 'DriveLedger | Independent Car Ownership Cost, Reliability & OBD-II Platform',
+        description:
+          'Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 120+ models.',
+        canonicalUrl: `${SITE_ORIGIN}/`,
+        canonicalPath: '/',
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
     }
 
     const codeLower = obdDossier.code.toLowerCase();
@@ -256,24 +282,24 @@ export default function DynamicSeoHead({
       const canonicalPath = `/obd/${preset.id}/${codeLower}`;
       const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
       const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+      });
     }
 
     if (activeTab === 'tco') {
       const canonicalPath = isVehicleSelected ? `/tco/${preset.id}` : '/tco';
       const title = `${preset.name} 5-Year True Cost to Own & Depreciation | DriveLedger`;
       const description = `${preset.name} (${preset.engineCode}) 5-year True Cost to Own is projected at $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/mo or $${telemetry.costPerMileUsd}/mi), including $${telemetry.depreciation5YrUsd.toLocaleString()} non-linear depreciation and maintenance reserves.`;
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+      });
     }
 
     if (activeTab === 'risk') {
@@ -281,22 +307,22 @@ export default function DynamicSeoHead({
         const canonicalPath = `/risk-matrix/${preset.id}/${activeMileageBracket.slug}`;
         const title = `${preset.name} at ${activeMileageBracket.label}: Reliability Risk & Maintenance Costs | DriveLedger`;
         const description = `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect imminent timing, transmission, DPF, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
-        return {
+        return withImage({
           title,
           description,
           canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
           canonicalPath,
-        };
+        });
       }
       const canonicalPath = isVehicleSelected ? `/risk-matrix/${preset.id}` : '/risk-matrix';
       const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | DriveLedger`;
       const description = `${preset.name} achieves a ${telemetry.reliabilityScore}/100 Engineering Reliability Score at ${telemetry.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+      });
     }
 
     if (activeTab === 'compare') {
@@ -309,58 +335,60 @@ export default function DynamicSeoHead({
             : preset.name;
         const title = `${preset.name} vs ${secondaryPreset.name}: 5-Year TCO & Reliability Comparison | DriveLedger`;
         const description = `${preset.name} ($${telemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telemetry.reliabilityScore}/100 reliability) vs ${secondaryPreset.name} ($${secondaryTelemetry.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${secondaryTelemetry.reliabilityScore}/100 reliability). ${cheaperName} saves $${delta5Yr.toLocaleString()} over 5 years.`;
-        return {
+        return withImage({
           title,
           description,
           canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
           canonicalPath,
-        };
+        });
       }
       const canonicalPath = isVehicleSelected ? `/compare?presetA=${preset.id}` : '/compare';
       const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | DriveLedger`;
       const description = `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+      });
     }
 
     if (activeTab === 'checklist') {
       const canonicalPath = isVehicleSelected ? `/checklist/${preset.id}` : '/checklist';
       const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | DriveLedger`;
       const description = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+      });
     }
 
     if (activeTab === 'about') {
       const canonicalPath = '/about';
-      const title = 'About DriveLedger — Independent Car Cost & Reliability Analytics';
+      const title = 'About DriveLedger | Independent Car Cost & Reliability Analytics';
       const description = 'DriveLedger is an independent automotive engineering and financial analytics platform. Learn about our actuarial depreciation curves, mileage risk weighting, and regional labor rates.';
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
     }
 
     if (activeTab === 'contact') {
       const canonicalPath = '/contact';
-      const title = 'Contact DriveLedger — Editorial, Engineering & Legal Desk';
+      const title = 'Contact DriveLedger | Editorial, Engineering & Legal Desk';
       const description = 'Contact the DriveLedger automotive engineering team for calculation inquiries, catalog corrections, or data protection assistance.';
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
     }
 
     if (activeTab === 'guides' || activeTab === 'blog') {
@@ -368,35 +396,37 @@ export default function DynamicSeoHead({
         const guide = GUIDES_DATA.find((g) => g.slug === activeGuideSlug);
         if (guide) {
           const canonicalPath = `/guides/${guide.slug}`;
-          return {
+          return withImage({
             title: guide.metaTitle || `${guide.title} | DriveLedger`,
             description: guide.metaDescription || guide.summary,
             canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
             canonicalPath,
-          };
+            imageUrl: DEFAULT_OG_IMAGE,
+          });
         }
       }
       const canonicalPath = '/guides';
       const title = 'Buyer Guides & Automotive Due Diligence Insights | DriveLedger';
       const description = 'In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.';
-      return {
+      return withImage({
         title,
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
-      };
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
     }
 
     const baseTabPath = CANONICAL_TAB_PATHS[activeTab] || '/';
     const title = `${preset.name} TCO, Reliability Score (${telemetry.reliabilityScore}/100) & ${obdDossier.code} Diagnostics | DriveLedger`;
     const description = `Independent automotive engineering platform: ${preset.name} 5-year TCO ($${telemetry.total5YrTcoUsd.toLocaleString()}), powertrain reliability score (${telemetry.reliabilityScore}/100), and ${obdDossier.code} live PID diagnostic protocols.`;
-    return {
+    return withImage({
       title,
       description,
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
-    };
-  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode]);
+    });
+  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode, vehicleImageUrl]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -405,12 +435,43 @@ export default function DynamicSeoHead({
       upsertMetaTag('property', 'og:title', seoMetadata.title);
       upsertMetaTag('property', 'og:description', seoMetadata.description);
       upsertMetaTag('property', 'og:url', seoMetadata.canonicalUrl);
+      upsertMetaTag('property', 'og:image', seoMetadata.imageUrl || DEFAULT_OG_IMAGE);
       upsertMetaTag('name', 'twitter:card', 'summary_large_image');
       upsertMetaTag('name', 'twitter:title', seoMetadata.title);
       upsertMetaTag('name', 'twitter:description', seoMetadata.description);
+      upsertMetaTag('name', 'twitter:image', seoMetadata.imageUrl || DEFAULT_OG_IMAGE);
       upsertCanonicalLink(seoMetadata.canonicalUrl);
     }
   }, [seoMetadata]);
+
+  // 0. Top-Level Organization & WebSite Schema for Google Search Brand Identity
+  const organizationAndWebsiteSchema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Organization',
+          '@id': `${SITE_ORIGIN}/#organization`,
+          name: 'DriveLedger',
+          url: SITE_ORIGIN,
+          logo: BRAND_LOGO_URL,
+          image: DEFAULT_OG_IMAGE,
+        },
+        {
+          '@type': 'WebSite',
+          '@id': `${SITE_ORIGIN}/#website`,
+          name: 'DriveLedger',
+          url: SITE_ORIGIN,
+          publisher: {
+            '@id': `${SITE_ORIGIN}/#organization`,
+          },
+          logo: BRAND_LOGO_URL,
+          image: DEFAULT_OG_IMAGE,
+        },
+      ],
+    }),
+    []
+  );
 
   // 1. Vehicle / TCO / Reliability Quantitative Schema
   const vehicleSchema = useMemo(
@@ -418,6 +479,7 @@ export default function DynamicSeoHead({
       '@context': 'https://schema.org',
       '@type': 'Vehicle',
       name: preset.name,
+      image: vehicleImageUrl,
       brand: {
         '@type': 'Brand',
         name: preset.brand,
@@ -476,7 +538,7 @@ export default function DynamicSeoHead({
         },
       },
     }),
-    [preset, telemetry]
+    [preset, telemetry, vehicleImageUrl]
   );
 
   // 2. OBD Diagnostic TechArticle + HowTo Schema
@@ -753,6 +815,11 @@ export default function DynamicSeoHead({
 
   return (
     <>
+      <script
+        id="schema-organization-website"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationAndWebsiteSchema) }}
+      />
       {legalPageSchema && (
         <script
           id="schema-legal-page"

@@ -746,7 +746,7 @@ export default function MaintenanceRiskMatrix({
                       <span className="truncate">Effective wear</span>
                       <InfoTooltip
                         label="What is Effective Wear?"
-                        content="Mechanical stress age adjusted for urban stop-and-go thermal cycles and oil drain intervals — often 20–45% higher than raw physical odometer miles."
+                        content="Mechanical stress age adjusted for urban stop-and-go thermal cycles and oil drain intervals, often 20-45% higher than raw physical odometer miles."
                       />
                     </dt>
                     <dd className="font-semibold tabular-nums font-mono text-white mt-0.5 truncate">{formatDistance(effectiveWearMax)}</dd>

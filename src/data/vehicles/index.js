@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Central Vehicle Known Issues (Red Flags & Common Defects) & Modular Catalog Registry
+ * DriveLedger | Central Vehicle Known Issues (Red Flags & Common Defects) & Modular Catalog Registry
  */
 
 import { VehicleBrandSchema } from './schema.js';

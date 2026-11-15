@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Comprehensive Legal, Liability, Privacy & Regulatory Policy Suite
+ * DriveLedger | Comprehensive Legal, Liability, Privacy & Regulatory Policy Suite
  * Dynamically bound to `src/config/monetizationConfig.js`.
  * Written in full, formal, multi-paragraph English legal prose with zero placeholders.
  */
@@ -108,7 +108,7 @@ export const LEGAL_POLICIES = {
     hash: '#terms',
     shortLabel: 'Terms of Service',
     title: 'Terms of Service, Liability Shield & Mathematical Disclaimers',
-    subtitle: `Binding Conditions of Use, Workshop Safety Waiver & Nominative Trademark Notice — Effective & Last Updated: ${lastUpdated}`,
+    subtitle: `Binding Conditions of Use, Workshop Safety Waiver & Nominative Trademark Notice | Effective & Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -136,7 +136,7 @@ export const LEGAL_POLICIES = {
         heading: '4. Assumption of Risk & Comprehensive Limitation of Liability',
         paragraphs: [
           `Inspecting, diagnosing, testing, or performing maintenance on motor vehicles involves severe and potentially fatal physical hazards, including but not limited to lethal high-voltage electric vehicle (EV) and hybrid traction battery systems (300V–800V DC), high-pressure common-rail diesel and direct-injection fuel lines exceeding 2,000 bar, scalding pressurized cooling systems, toxic exhaust gases, rotating engine accessory drives, pyrotechnic supplemental restraint (airbag) systems, and structural crushing hazards associated with hydraulic jacks or vehicle lifts.`,
-          `You expressly assume all physical, mechanical, and financial risks associated with inspecting, operating, or servicing any motor vehicle. To the maximum extent permitted by applicable statutory and common law, ${brandName}, its owners, principal engineers, affiliates, licensors, and contributors shall not be liable for any direct, indirect, incidental, consequential, special, or exemplary damages—including without limitation catastrophic engine or transmission failure, improper repair, misdiagnosed fault codes, voided manufacturer or aftermarket warranties, diminished vehicle resale value, overpayment on a vehicle purchase, personal injury, or wrongful death—arising out of or connected with your access to, use of, or reliance upon any content, calculator, or partner link on https://${domain}.`,
+          `You expressly assume all physical, mechanical, and financial risks associated with inspecting, operating, or servicing any motor vehicle. To the maximum extent permitted by applicable statutory and common law, ${brandName}, its owners, principal engineers, affiliates, licensors, and contributors shall not be liable for any direct, indirect, incidental, consequential, special, or exemplary damages (including without limitation catastrophic engine or transmission failure, improper repair, misdiagnosed fault codes, voided manufacturer or aftermarket warranties, diminished vehicle resale value, overpayment on a vehicle purchase, personal injury, or wrongful death) arising out of or connected with your access to, use of, or reliance upon any content, calculator, or partner link on https://${domain}.`,
         ],
       },
       {
@@ -154,7 +154,7 @@ export const LEGAL_POLICIES = {
     hash: '#disclaimer',
     shortLabel: 'Liability Disclaimer',
     title: 'Comprehensive Automotive, Financial & Trademark Liability Disclaimer',
-    subtitle: `Mandatory Consumer Risk Disclosures, Workshop Safety Waiver & Nominative Fair Use Declaration — Last Updated: ${lastUpdated}`,
+    subtitle: `Mandatory Consumer Risk Disclosures, Workshop Safety Waiver & Nominative Fair Use Declaration | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -185,7 +185,7 @@ export const LEGAL_POLICIES = {
     hash: '#privacy',
     shortLabel: 'Privacy Policy',
     title: 'Privacy Policy & Telemetry Data Governance (GDPR, UK GDPR & CCPA/CPRA Compliant)',
-    subtitle: `Client-Side Architecture, Google AdSense (ca-pub-6581535125716295) Disclosures, IAB TCF v2.2 & Statutory US State Privacy Rights — Last Updated: ${lastUpdated}`,
+    subtitle: `Client-Side Architecture, Google AdSense (ca-pub-6581535125716295) Disclosures, IAB TCF v2.2 & Statutory US State Privacy Rights | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -200,7 +200,7 @@ export const LEGAL_POLICIES = {
         paragraphs: [
           ADSENSE_DART_COOKIE_CLAUSE,
           `We use Google AdSense (Publisher ID: ca-pub-6581535125716295) and Google-certified third-party advertising partners to deliver display advertisements across https://${domain}. Google, as a third-party vendor, uses cookies (including the DoubleClick / AdSense advertising cookie) to serve advertisements based upon your visit to our website and other websites across the Internet.`,
-          `When advertisements are delivered on our platform, Google and certified advertising technology partners may automatically receive standard HTTP network metadata—such as your Internet Protocol (IP) address, browser user-agent string, coarse geographic location (country or metropolitan area), and requested URL—in order to evaluate ad delivery, frequency capping, fraud prevention, and invalid traffic filtering. You can review how Google processes personal data by visiting Google's Partner Sites Policy at https://policies.google.com/technologies/partner-sites.`,
+          `When advertisements are delivered on our platform, Google and certified advertising technology partners may automatically receive standard HTTP network metadata (such as your Internet Protocol (IP) address, browser user-agent string, coarse geographic location (country or metropolitan area), and requested URL) in order to evaluate ad delivery, frequency capping, fraud prevention, and invalid traffic filtering. You can review how Google processes personal data by visiting Google's Partner Sites Policy at https://policies.google.com/technologies/partner-sites.`,
         ],
       },
       {
@@ -208,7 +208,7 @@ export const LEGAL_POLICIES = {
         paragraphs: [
           `If you access ${brandName} from the European Economic Area (EEA), the United Kingdom, or Switzerland, the processing of your personal information is governed by Regulation (EU) 2016/679 (General Data Protection Regulation / GDPR) and the UK Data Protection Act 2018, adhering strictly to the Interactive Advertising Bureau (IAB Europe) Transparency and Consent Framework (TCF v2.2).`,
           `Google AdSense & Advertising Cookies: We deploy Google AdSense (Publisher ID: ca-pub-6581535125716295) across https://${domain}. Google, as a third-party vendor, uses advertising cookies (including the DoubleClick / AdSense cookie) to serve advertisements based upon your prior visits to our platform and other websites on the Internet. You can review how Google processes personal data by consulting Google's Partner Sites Policy at https://policies.google.com/technologies/partner-sites.`,
-          `Legal Bases for Processing: (a) Consent (GDPR Article 6(1)(a)): In compliance with statutory requirements, we request your prior, explicit, and freely given consent via a certified Consent Management Platform (CMP) or consent banner before storing non-essential cookies, accessing device identifiers, or serving personalized advertisements tailored to your past browsing habits. (b) Legitimate Interest (GDPR Article 6(1)(f)): Where permitted under IAB TCF v2.2 specifications, certain basic operational functions—such as delivering non-personalized advertisements, measuring aggregate ad impressions, verifying ad viewability, combating click fraud, and ensuring infrastructure security—rely upon legitimate interests.`,
+          `Legal Bases for Processing: (a) Consent (GDPR Article 6(1)(a)): In compliance with statutory requirements, we request your prior, explicit, and freely given consent via a certified Consent Management Platform (CMP) or consent banner before storing non-essential cookies, accessing device identifiers, or serving personalized advertisements tailored to your past browsing habits. (b) Legitimate Interest (GDPR Article 6(1)(f)): Where permitted under IAB TCF v2.2 specifications, certain basic operational functions (such as delivering non-personalized advertisements, measuring aggregate ad impressions, verifying ad viewability, combating click fraud, and ensuring infrastructure security) rely upon legitimate interests.`,
           `Personalized vs. Non-Personalized Ad Serving: If you grant consent for personalized advertising, Google AdSense uses cookies and mobile ad identifiers to personalize the advertisements you see. If you refuse or withdraw consent, Google AdSense serves non-personalized advertisements (NPAs) that are contextual rather than behavioral, using cookies solely for frequency capping, aggregate reporting, and fraud prevention.`,
           `Statutory Data Subject Rights (GDPR Articles 12–23): Under European law, you possess comprehensive statutory rights, including: the Right to Access your data (Article 15); the Right to Rectification (Article 16); the Right to Erasure / "Right to be Forgotten" (Article 17); the Right to Restrict processing (Article 18); the Right to Data Portability (Article 20); the Right to Object to processing based on legitimate interests or direct marketing (Article 21); and the Right not to be subjected to Automated Decision-Making (Article 22).`,
           `Consent Withdrawal & Modification: You have the unqualified right to withdraw or modify your consent preferences at any time. You can invoke Google's official revocation dialog or our internal cookie management interface by clicking "Privacy & Cookie Settings (EU/UK)" in our global website footer or by adjusting browser cookie settings. Withdrawal does not affect the lawfulness of processing undertaken prior to revocation. For regulatory inquiries, contact our Data Protection Desk at ${legalEmail} or ${contactEmail}.`,
@@ -246,7 +246,7 @@ export const LEGAL_POLICIES = {
     hash: '#cookies',
     shortLabel: 'Cookie Policy',
     title: 'GDPR / CCPA Cookie & Local Storage Governance Policy',
-    subtitle: `Technical Specification of First-Party Local Storage, Google AdSense (ca-pub-6581535125716295) Cookies & Granular Opt-Out Controls — Last Updated: ${lastUpdated}`,
+    subtitle: `Technical Specification of First-Party Local Storage, Google AdSense (ca-pub-6581535125716295) Cookies & Granular Opt-Out Controls | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -302,7 +302,7 @@ export const LEGAL_POLICIES = {
     path: '/do-not-sell',
     shortLabel: 'Do Not Sell or Share',
     title: 'Do Not Sell or Share My Personal Information & US State Privacy Rights',
-    subtitle: `Statutory Consumer Opt-Out Controls under CCPA, CPRA, VCDPA, CPA & CTDPA — Last Updated: ${lastUpdated}`,
+    subtitle: `Statutory Consumer Opt-Out Controls under CCPA, CPRA, VCDPA, CPA & CTDPA | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
@@ -350,14 +350,14 @@ export const LEGAL_POLICIES = {
     hash: '#affiliate-disclosure',
     shortLabel: 'Affiliate Disclosure',
     title: 'FTC Affiliate Disclosure & Editorial Independence Notice',
-    subtitle: `Full Compliance with US FTC 16 CFR Part 255 & Amazon Associates Program Operating Agreement — Last Updated: ${lastUpdated}`,
+    subtitle: `Full Compliance with US FTC 16 CFR Part 255 & Amazon Associates Program Operating Agreement | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
         heading: '1. FTC 16 CFR Part 255 Material Connection Disclosure',
         paragraphs: [
           `In accordance with the United States Federal Trade Commission (FTC) Guides Concerning the Use of Endorsements and Testimonials in Advertising (16 CFR Part 255), the UK Competition and Markets Authority (CMA) transparency guidelines, and European Union Unfair Commercial Practices Directive standards, ${brandName} (https://${domain}) discloses that we maintain commercial affiliate relationships with select automotive data, diagnostic hardware, replacement parts, and insurance comparison providers.`,
-          `When you click on a partner call-to-action button or hyperlink marked with a "Partner link" or "Sponsored" disclosure on our platform and subsequently complete a qualifying purchase, VIN history check, or rate inquiry on the partner's website, ${brandName} may receive a referral fee or affiliate commission. This commission comes at zero additional cost to you—the price you pay on the partner's website is identical whether you access it through ${brandName} or visit the vendor directly.`,
+          `When you click on a partner call-to-action button or hyperlink marked with a "Partner link" or "Sponsored" disclosure on our platform and subsequently complete a qualifying purchase, VIN history check, or rate inquiry on the partner's website, ${brandName} may receive a referral fee or affiliate commission. This commission comes at zero additional cost to you; the price you pay on the partner's website is identical whether you access it through ${brandName} or visit the vendor directly.`,
         ],
       },
       {
@@ -381,15 +381,15 @@ export const LEGAL_POLICIES = {
     id: 'about',
     hash: '#about',
     shortLabel: 'About & Methodology',
-    title: `About ${brandName} — Independent Car Cost & Reliability Tool`,
-    subtitle: `How We Estimate Ownership Costs, Maintenance Risks & Repair Prices — Last Updated: ${lastUpdated}`,
+    title: `About ${brandName} | Independent Car Cost & Reliability Tool`,
+    subtitle: `How We Estimate Ownership Costs, Maintenance Risks & Repair Prices | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {
         heading: '1. What DriveLedger Is & Who It Is For',
         paragraphs: [
           `${brandName} (https://${domain}) is a free, independent web application built for used-car buyers and vehicle owners across the United States, the United Kingdom, and the European Union. Most buyers compare cars based solely on the asking price and official fuel consumption, overlooking multi-year depreciation and mileage-triggered maintenance expenses.`,
-          `Our goal is to put practical cost calculators, common powertrain maintenance checklists, and OBD-II fault code repair estimates in one place—with no sign-up, no paywalls, and full transparency about how our numbers are estimated.`,
+          `Our goal is to put practical cost calculators, common powertrain maintenance checklists, and OBD-II fault code repair estimates in one place, with no sign-up, no paywalls, and full transparency about how our numbers are estimated.`,
         ],
       },
       {
@@ -407,7 +407,7 @@ export const LEGAL_POLICIES = {
         ],
       },
       {
-        heading: '4. Imprint (Impresszum) — Independent Operator Identification & Contact',
+        heading: '4. Imprint (Impresszum) | Independent Operator Identification & Contact',
         paragraphs: [
           `${brandName} is operated as an independent digital publishing and web tool project (https://${domain}). To keep the calculators 100% free for all users, the site may include clearly labeled partner links (such as vehicle history report providers like carVertical or diagnostic tool retailers). Commercial links never alter our cost formulas or vehicle scores.`,
           `Operator & Publisher (Impresszum pursuant to EU Directive 2000/31/EC & Hungarian Act CVIII of 2001 on Electronic Commerce Services): DriveLedger Editorial & Development (${domain}) · Operating Jurisdiction: European Union / Hungary · Electronic Contact: ${contactEmail} · Legal, Privacy (GDPR/CCPA) & Editorial Inquiries: ${legalEmail} · Edge Hosting & CDN Infrastructure: Cloudflare, Inc.`,
@@ -420,8 +420,8 @@ export const LEGAL_POLICIES = {
     id: 'contact',
     hash: '#contact',
     shortLabel: 'Contact Us',
-    title: `Contact ${brandName} — Editorial, Engineering & Legal Desk`,
-    subtitle: `Direct Communication Channels for User Support, Data Corrections & Regulatory Inquiries — Last Updated: ${lastUpdated}`,
+    title: `Contact ${brandName} | Editorial, Engineering & Legal Desk`,
+    subtitle: `Direct Communication Channels for User Support, Data Corrections & Regulatory Inquiries | Last Updated: ${lastUpdated}`,
     lastUpdated,
     sections: [
       {

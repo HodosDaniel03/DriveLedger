@@ -67,7 +67,7 @@ export default function CarVerticalLogo({
     return (
       <span
         className={`inline-flex items-center justify-center rounded-lg bg-white px-2.5 py-1 shadow-xs border border-zinc-200/80 transition-shadow ${className}`}
-        title="carVertical — Official Vehicle History Partner"
+        title="carVertical | Official Vehicle History Partner"
       >
         {logoNode}
       </span>

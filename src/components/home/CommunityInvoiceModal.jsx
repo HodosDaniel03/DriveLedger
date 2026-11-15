@@ -163,8 +163,8 @@ export function calculateInvoiceAuditStats({
     workshopTier === 'dealership' ? 'franchise dealership' : 'independent specialist';
 
   const calloutText = isBelowAvg
-    ? `You paid $${paid.toLocaleString()}. That is ${pctDiff}% lower than our ${tierLabel} average ($${avg.toLocaleString()}) for this powertrain! (${getOrdinalSuffix(percentile)} Percentile — ${verdictBadge})`
-    : `You paid $${paid.toLocaleString()}. That is ${pctDiff}% above our ${tierLabel} average ($${avg.toLocaleString()}) for this powertrain — ${verdictBadge}. (${getOrdinalSuffix(percentile)} Percentile)`;
+    ? `You paid $${paid.toLocaleString()}. That is ${pctDiff}% lower than our ${tierLabel} average ($${avg.toLocaleString()}) for this powertrain! (${getOrdinalSuffix(percentile)} Percentile - ${verdictBadge})`
+    : `You paid $${paid.toLocaleString()}. That is ${pctDiff}% above our ${tierLabel} average ($${avg.toLocaleString()}) for this powertrain: ${verdictBadge}. (${getOrdinalSuffix(percentile)} Percentile)`;
 
   return {
     paid,
@@ -327,7 +327,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                       : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60'
                   }`}
                 >
-                  {activeStats.ordinalPercentile} Percentile — {activeStats.verdictBadge}
+                  {activeStats.ordinalPercentile} Percentile - {activeStats.verdictBadge}
                 </span>
               </div>
 

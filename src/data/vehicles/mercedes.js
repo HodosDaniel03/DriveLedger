@@ -1,5 +1,5 @@
 /**
- * Mercedes-Benz — Detailed Generation, Engine & Known Issues Database
+ * Mercedes-Benz | Detailed Generation, Engine & Known Issues Database
  */
 
 export const mercedesData = {

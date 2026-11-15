@@ -1,5 +1,5 @@
 /**
- * Ford Motor Company — Detailed Generation, Engine & Known Issues Database
+ * Ford Motor Company | Detailed Generation, Engine & Known Issues Database
  */
 
 export const fordData = {

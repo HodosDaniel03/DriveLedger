@@ -75,7 +75,7 @@ export default function ReviewsSection({
             Be the first to share your experience or compare a workshop quote
           </h3>
           <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed mb-5">
-            DriveLedger is a newly launched independent project — we do not display fabricated testimonials. You can compare your repair quote against our regional cost estimates and save your notes locally in your browser.
+            DriveLedger is a newly launched independent project, and we do not display fabricated testimonials. You can compare your repair quote against our regional cost estimates and save your notes locally in your browser.
           </p>
           <button
             type="button"

@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Turnkey Monetization & Site Configuration Control Center
+ * DriveLedger | Turnkey Monetization & Site Configuration Control Center
  * Single Source of Truth for Site Metadata, Google AdSense Slots, and Affiliate Partner Links.
  *
  * To activate live monetization in production:
@@ -321,7 +321,7 @@ export function resolveAffiliateOffer({
       partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
       badge: `Partner link · ${resolvedPartnerName}`,
-      title: `Avoid unexpected workshop bills for ${vehicleName} — Compare repair protection & OEM replacement part prices (save up to ${savingsPerYr}/yr)`,
+      title: `Avoid unexpected workshop bills for ${vehicleName} | Compare repair protection & OEM replacement part prices (save up to ${savingsPerYr}/yr)`,
       description: `${reserveText}Compare OEM replacement part pricing and extended coverage options for fuel system, timing assembly, turbocharger, and transmission repairs.`,
       features: [
         `Save up to ${savingsPerYr}/yr on Coverage`,
@@ -356,7 +356,7 @@ export function resolveAffiliateOffer({
       partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
       badge: `Partner link · ${resolvedPartnerName}`,
-      title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName} — trim ~${monthlySave}/mo`,
+      title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName}: trim ~${monthlySave}/mo`,
       description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare motor insurance tariffs and refinancing quotes via ${resolvedPartnerName}.`,
       features: [
         `Trim ~${monthlySave}/mo off Fixed Costs`,
@@ -393,7 +393,7 @@ export function resolveAffiliateOffer({
     partnerName: resolvedPartnerName,
     badgeText: partner.badgeText,
     badge: `Partner link · ${resolvedPartnerName}`,
-    title: `Don't pay ${diagFee}+ in workshop diagnostic fees — Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
+    title: `Don't pay ${diagFee}+ in workshop diagnostic fees | Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
     description: hasCauseDelta
       ? `Before authorizing a ${formatCurrency(costliestCauseUsd)} replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} triggers ${activeCode}, check live sensor PIDs on your phone with a ${scannerCost} scanner.`
       : `Read freeze-frame data, live O2/boost/fuel PIDs, and clear fault codes on your phone. Compatible hardware diagnostic tool for ${activeCodeTitle}.`,

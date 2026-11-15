@@ -75,9 +75,9 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
     }
   };
 
-  // -------------------------------------------------------------
+  // =============================================================
   // DETAIL ARTICLE VIEW
-  // -------------------------------------------------------------
+  // =============================================================
   if (currentGuide) {
     const otherGuides = GUIDES_DATA.filter((g) => g.slug !== currentGuide.slug).slice(0, 2);
 
@@ -410,9 +410,9 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
     );
   }
 
-  // -------------------------------------------------------------
+  // =============================================================
   // HUB VIEW (LIST OF ALL 6 GUIDES)
-  // -------------------------------------------------------------
+  // =============================================================
   return (
     <div className="min-h-screen bg-canvas dark:bg-[#09090B] text-ink dark:text-zinc-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-12">

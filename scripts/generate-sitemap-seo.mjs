@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Programmatic SEO & Dynamic XML Sitemap Generator
+ * DriveLedger | Programmatic SEO & Dynamic XML Sitemap Generator
  *
  * Generates public/sitemap.xml at build-time containing 4,800+ powertrain-validated URLs:
  * 1. Core workspace & editorial routes (/overview, /tco, /risk-matrix, /obd-estimator, /compare, /checklist, /methodology, /reviews, /blog)
@@ -7,7 +7,7 @@
  * 3. Mileage-Bracket Buyer & Reliability Guides (/risk-matrix/:presetId/60k-miles | 100k-miles | 150k-miles)
  * 4. Head-to-Head Vehicle Comparison Matchups (/compare/:carA-vs-:carB)
  * 5. Modular Vehicle Model & Engine Variant PPI Checklist routes
- * 6. Powertrain-Validated Vehicle × OBD-II Diagnostic routes (/obd/:preset/:code — strictly 0 ICE/DPF codes on EVs)
+ * 6. Powertrain-Validated Vehicle × OBD-II Diagnostic routes (/obd/:preset/:code | strictly 0 ICE/DPF codes on EVs)
  */
 
 import fs from 'node:fs';

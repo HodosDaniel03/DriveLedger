@@ -30,7 +30,7 @@ DriveLedger is a Vite + React automotive total cost of ownership (TCO) and maint
 | 17 | Buyer Negotiation Script in TcoCalculator | 1-click collapsible Negotiation Battlecard & Seller Script with data-backed target offer & clipboard copy | Worker (Phase 5 R1) | DONE | ORIGINAL_REQUEST §R1 |
 | 18 | Shareable Garage URL | ?garage= query parameter parsing, preset merging, getShareableGarageUrl & Navbar copy button | Worker (Phase 5 R2) | DONE | ORIGINAL_REQUEST §R2 |
 | 19 | Functional Contact Dispatch | 1-click formatted inquiry copy & pre-filled mailto button on ContactPage confirmation card | Worker (Phase 5 R3) | DONE | ORIGINAL_REQUEST §R3 |
-| 20 | Phase 5 QA, Build & Git Push | Clean npm test (Node + Vitest), npm run build, commit, and git push to origin main | Worker (Phase 5 R4) | IN_PROGRESS | ORIGINAL_REQUEST §R4 |
+| 20 | Phase 5 QA, Build & Git Push | Clean npm test (Node + Vitest), npm run build, commit, and git push to origin main | Worker (Phase 5 R4) | DONE | ORIGINAL_REQUEST §R4 |
 
 ## Workstreams & File Ownership Boundaries
 | Workstream | Sub-Agent Role | Exclusive File Boundaries |
@@ -54,4 +54,4 @@ DriveLedger is a Vite + React automotive total cost of ownership (TCO) and maint
 | M3 | Verification Squad & Gate | Reviewers, Challengers, and Forensic Auditor evaluate full overhaul | M2 | DONE (Gate PASS) |
 | M4 | Phase 5 Survey | 3 Explorers map R1, R2, R3, R4 in codebase | none | DONE |
 | M5 | Phase 5 Implementation | Worker implements R1, R2, R3, and test suite additions | M4 | DONE |
-| M6 | Phase 5 Verification & Gate | 2 Reviewers, 2 Challengers, Forensic Auditor verify, then git push | M5 | IN_PROGRESS |
+| M6 | Phase 5 Verification & Gate | 2 Reviewers, 2 Challengers, Forensic Auditor verify, then git push | M5 | DONE |

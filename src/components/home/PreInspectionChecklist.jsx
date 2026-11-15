@@ -356,7 +356,7 @@ export default function PreInspectionChecklist({
             </span>
           </div>
           <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-            {selectedPreset.name} — Field Inspection Checklist
+            {selectedPreset.name} | Field Inspection Checklist
           </h2>
           <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700 break-words">
             {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
@@ -528,7 +528,7 @@ export default function PreInspectionChecklist({
         <div className="flex justify-between items-start">
           <div>
             <h1 className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
-              DriveLedger — Pre-Purchase Inspection &amp; Negotiation Battlecard
+              DriveLedger | Pre-Purchase Inspection &amp; Negotiation Battlecard
             </h1>
             <p className="font-sans text-sm text-gray-700 mt-1">
               Vehicle: <strong>{selectedPreset.name}</strong> · Engine: <strong>{selectedPreset.engineCode}</strong> · Powertrain: <strong>{selectedPreset.fuelType}</strong>

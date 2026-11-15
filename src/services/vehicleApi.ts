@@ -1,5 +1,5 @@
 /**
- * DriveLedger — External Automotive API Client
+ * DriveLedger | External Automotive API Client
  * Integrates Free NHTSA APIs (vPIC, Recalls, Complaints) and EPA FuelEconomy.gov API
  */
 

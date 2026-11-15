@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Regional Partner Geo-Routing & Dynamic Telemetry CRO Engine
+ * DriveLedger | Regional Partner Geo-Routing & Dynamic Telemetry CRO Engine
  * Dynamically binds live calculator numbers (asking price, odometer, 12-month wear reserve,
  * OBD root-cause price delta, and 5-year insurance/APR spend) to regional partners across US, UK, and EU.
  */
@@ -150,7 +150,7 @@ export function resolveRegionalPartnerOffer({
       region: regKey,
       partnerName: partner.partnerName,
       badge: `Partner link · ${partner.partnerName}`,
-      title: `Avoid unexpected workshop bills for ${vehicleName} — Compare repair protection & save up to ${savingsPerYr}/yr`,
+      title: `Avoid unexpected workshop bills for ${vehicleName} | Compare repair protection & save up to ${savingsPerYr}/yr`,
       description: `${reserveText}Compare extended coverage options for fuel system, timing assembly, turbocharger, and transmission repairs.`,
       features: [
         `Save up to ${savingsPerYr}/yr on Coverage`,
@@ -177,7 +177,7 @@ export function resolveRegionalPartnerOffer({
       region: regKey,
       partnerName: partner.partnerName,
       badge: `Partner link · ${partner.partnerName}`,
-      title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName} — trim ~${monthlySave}/mo`,
+      title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName}: trim ~${monthlySave}/mo`,
       description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare regional motor insurance tariffs and refinancing quotes via ${partner.partnerName}.`,
       features: [
         `Trim ~${monthlySave}/mo off Fixed Costs`,
@@ -208,7 +208,7 @@ export function resolveRegionalPartnerOffer({
     region: regKey,
     partnerName: partner.partnerName,
     badge: `Partner link · ${partner.partnerName}`,
-    title: `Don't pay ${diagFee}+ in workshop diagnostic fees — Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
+    title: `Don't pay ${diagFee}+ in workshop diagnostic fees | Read ${activeCode} and live sensor PIDs yourself with a Bluetooth OBD2 scanner`,
     description: hasCauseDelta
       ? `Before authorizing a ${formatCurrency(costliestCauseUsd)} assembly replacement when a ${formatCurrency(cheapestCauseUsd)} sensor or seal fault${probLabel} can trigger ${activeCode}, check live sensor PIDs on your phone with a ${scannerCost} scanner.`
       : `Read freeze-frame data, live O2/boost/fuel PIDs, and clear fault codes on your phone. Compatible hardware diagnostic tool for ${activeCodeTitle}.`,

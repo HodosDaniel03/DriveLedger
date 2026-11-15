@@ -1,5 +1,5 @@
 /**
- * DriveLedger — Hybrid Vehicle Intelligence & Data Provider Service
+ * DriveLedger | Hybrid Vehicle Intelligence & Data Provider Service
  * Combines NHTSA & EPA Live APIs with In-Memory / LocalStorage Caching
  * and Instant (<50ms) Curated Database Fallback.
  */

@@ -177,8 +177,8 @@ export default function ObdEstimator({
     activeDossier.severity?.includes('HIGH') ? 'warn' : 'good';
 
   const severityLabel =
-    activeDossier.severity?.includes('CRITICAL') ? 'Critical — Stop Driving' :
-    activeDossier.severity?.includes('HIGH') ? 'Limp Mode Risk — Service Soon' :
+    activeDossier.severity?.includes('CRITICAL') ? 'Critical: Stop Driving' :
+    activeDossier.severity?.includes('HIGH') ? 'Limp Mode Risk: Service Soon' :
     'Safe for Short Trips';
 
   const sevUpper = String(activeDossier.severity || '').toUpperCase();

@@ -1,5 +1,5 @@
 /**
- * Hyundai & Kia — Comprehensive Generation, E-GMP Platform & Known Issues Database
+ * Hyundai & Kia | Comprehensive Generation, E-GMP Platform & Known Issues Database
  */
 
 export const hyundaiKiaData = {

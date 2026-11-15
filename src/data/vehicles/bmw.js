@@ -1,5 +1,5 @@
 /**
- * BMW — Comprehensive Generation, Engine & Known Issues Database
+ * BMW | Comprehensive Generation, Engine & Known Issues Database
  */
 
 export const bmwData = {

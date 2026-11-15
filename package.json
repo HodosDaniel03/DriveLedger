@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap-seo.mjs && vite build && node scripts/prerender-seo-routes.mjs",
+    "build": "node scripts/generate-brand-logo.mjs && node scripts/generate-sitemap-seo.mjs && vite build && node scripts/prerender-seo-routes.mjs",
     "preview": "vite preview",
     "sitemap": "node scripts/generate-sitemap-seo.mjs",
     "test": "node --test tests/adversarialOverhaulHarness.test.js tests/adversarialPowertrain.test.js tests/adversarialLegalRouting.test.js tests/guidesEditorial.test.js tests/calculatorMath.test.js tests/driveledger.test.js tests/jevCatalogJudge.test.js tests/powertrainBranching.test.js tests/vehicleArchetypes.test.js tests/vehicleCatalog.test.js tests/vehicleKnownIssues.test.js tests/vehicleDataService.test.js tests/viralSeoFeatures.test.js tests/nextPhaseProductFeatures.test.js tests/carverticalAffiliate.test.js tests/phase0Calculations.test.js tests/prerenderSeoRoutes.test.js && vitest run",

@@ -1,5 +1,5 @@
 /**
- * DriveLedger — 20 High-CPC OBD-II Diagnostic Dossiers & Live PID Telemetry Database
+ * DriveLedger | 20 High-CPC OBD-II Diagnostic Dossiers & Live PID Telemetry Database
  * Includes First-Principles Live Telemetry Checks to prevent unnecessary parts replacement.
  */
 
@@ -152,7 +152,7 @@ export const OBD_CODES = [
       baselineValues:
         'Key ON / Engine OFF: 0.0 kPa. Warm Idle (800 RPM): 0.5 to 1.8 kPa (5–18 mbar). 2,500 RPM no-load: < 6.5 kPa (65 mbar).',
       diagnosticProtocol:
-        'Check DPF Differential Pressure PID with Key ON, Engine OFF first—if it reads -3 kPa or +8 kPa with the engine stopped, the $110 pressure sensor is drifted, NOT the $1,800 DPF! Next, verify Coolant Temp reaches >82°C; a stuck-open thermostat (P0128) silently blocks all ECU DPF regenerations.',
+        'Check DPF Differential Pressure PID with Key ON, Engine OFF first: if it reads -3 kPa or +8 kPa with the engine stopped, the $110 pressure sensor is drifted, NOT the $1,800 DPF! Next, verify Coolant Temp reaches >82°C; a stuck-open thermostat (P0128) silently blocks all ECU DPF regenerations.',
       costTrapWarning:
         'Never authorize an $1,800+ DPF replacement without first inspecting the differential pressure sensor zero-offset and rubber reference hoses.',
     },
@@ -212,7 +212,7 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Log Commanded vs. Actual MAP during a 2,000-to-3,500 RPM pull while monitoring Mass Air Flow (MAF g/s). If Actual MAP is 40 kPa low AND MAF g/s is higher than expected (with negative fuel trims), boost is leaking out of a charge pipe after the MAF sensor. Do not replace the turbocharger!',
       costTrapWarning:
-        'Over 40% of P0299 fault codes are caused by a $90 diverter valve or $120 intercooler O-ring/hose—not a blown $2,000 turbocharger.',
+        'Over 40% of P0299 fault codes are caused by a $90 diverter valve or $120 intercooler O-ring/hose, not a blown $2,000 turbocharger.',
     },
   },
   {
@@ -260,16 +260,16 @@ export const OBD_CODES = [
     ],
     liveTelemetryCheck: {
       pidsToMonitor: [
-        'Short-Term Fuel Trim Bank 1 — STFT (%)',
-        'Long-Term Fuel Trim Bank 1 — LTFT (%)',
-        'Mass Air Flow Rate — MAF (g/s)',
+        'Short-Term Fuel Trim Bank 1 (STFT, %)',
+        'Long-Term Fuel Trim Bank 1 (LTFT, %)',
+        'Mass Air Flow Rate (MAF, g/s)',
       ],
       baselineValues:
         'Combined Fuel Trim (STFT + LTFT) should remain within ±8%. P0171 triggers when LTFT consistently exceeds +20% to +25%.',
       diagnosticProtocol:
         'Perform the 2-Minute Idle vs. 2,500 RPM Fuel Trim Test: Note STFT + LTFT at warm idle (750 RPM), then hold engine at 2,500 RPM in Park/Neutral for 30 seconds. If Total Trim drops from +24% at idle down to +4% at 2,500 RPM, you have a 100% confirmed vacuum/PCV leak. If Total Trim WORSENS at 2,500 RPM, suspect a dirty MAF sensor or weak fuel delivery.',
       costTrapWarning:
-        'Workshops frequently sell oxygen sensors for P0171. The O2 sensor is almost never faulty—it is accurately reporting excess oxygen from an intake leak.',
+        'Workshops frequently sell oxygen sensors for P0171. The O2 sensor is almost never faulty; it is accurately reporting excess oxygen from an intake leak.',
     },
   },
   {
@@ -388,7 +388,7 @@ export const OBD_CODES = [
   },
   {
     code: 'P0087',
-    title: 'Fuel Rail / System Pressure — Too Low',
+    title: 'Fuel Rail / System Pressure: Too Low',
     systemCategory: 'Fuel & Air Induction',
     severity: 'CRITICAL - STOP DRIVING',
     symptoms: [
@@ -441,7 +441,7 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Compare Commanded vs. Actual Fuel Rail Pressure during cranking and full-load acceleration while watching Low-Pressure Pump Duty Cycle. If Low-Pressure Duty Cycle maxes out at >85% before high-pressure drops, a clogged $65 fuel filter or weak lift pump is starving the HPFP.',
       costTrapWarning:
-        'On 2.0 TDI / EcoBlue / BMW / Ford diesels, remove the HPFP metering valve to check for micron metal shavings before cranking repeatedly—catching swarf early saves $4,000 in injectors.',
+        'On 2.0 TDI / EcoBlue / BMW / Ford diesels, remove the HPFP metering valve to check for micron metal shavings before cranking repeatedly; catching swarf early saves $4,000 in injectors.',
     },
   },
   {
@@ -490,7 +490,7 @@ export const OBD_CODES = [
     liveTelemetryCheck: {
       pidsToMonitor: [
         'TCM Specific Sub-Fault Code (e.g., P17BF, P0730, P0715)',
-        'Transmission Fluid Temperature — TFT (°C)',
+        'Transmission Fluid Temperature (TFT, °C)',
         'Clutch 1 & Clutch 2 Actual vs. Specified Pressure (bar)',
         'TCM Supply Voltage Terminal 30 (V)',
       ],
@@ -499,12 +499,12 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Generic basic OBD-II readers only show P0700 from the Engine ECU. You MUST query Module 02 (Transmission Control Module) to extract the specific hydraulic or speed-sensor sub-code, and log Input vs. Output Shaft RPM to distinguish a $250 speed sensor / fluid service from a $2,500 clutch pack.',
       costTrapWarning:
-        'Never approve a full transmission rebuild based solely on P0700—in 46% of cases, a mechatronic solenoid repair kit or fluid/conductor plate service resolves the fault.',
+        'Never approve a full transmission rebuild based solely on P0700: in 46% of cases, a mechatronic solenoid repair kit or fluid/conductor plate service resolves the fault.',
     },
   },
   {
     code: 'P2463',
-    title: 'Diesel Particulate Filter Restriction — Soot Accumulation Too High',
+    title: 'Diesel Particulate Filter Restriction: Soot Accumulation Too High',
     systemCategory: 'Emissions & Exhaust',
     severity: 'CRITICAL - STOP DRIVING',
     symptoms: [
@@ -598,7 +598,7 @@ export const OBD_CODES = [
     ],
     liveTelemetryCheck: {
       pidsToMonitor: [
-        'Engine Coolant Temperature — ECT (°C / °F)',
+        'Engine Coolant Temperature (ECT, °C / °F)',
         'Radiator Outlet Coolant Temperature (°C / °F)',
         'Ambient Air Temperature (°C / °F)',
       ],
@@ -612,7 +612,7 @@ export const OBD_CODES = [
   },
   {
     code: 'P0455',
-    title: 'Evaporative Emission (EVAP) System Leak Detected — Gross / Large Leak',
+    title: 'Evaporative Emission (EVAP) System Leak Detected: Gross / Large Leak',
     systemCategory: 'Emissions & Exhaust',
     severity: 'MODERATE - EMISSIONS/EFFICIENCY',
     symptoms: [
@@ -657,19 +657,19 @@ export const OBD_CODES = [
       pidsToMonitor: [
         'EVAP Canister Purge Commanded Duty Cycle (%)',
         'Fuel Tank Vapor Pressure Sensor (Pa / inH2O)',
-        'Short-Term Fuel Trim — STFT (%) at Idle',
+        'Short-Term Fuel Trim (STFT, %) at Idle',
       ],
       baselineValues:
         'With Purge Commanded at 0% (closed) and Vent Valve Open, Fuel Tank Pressure must equal 0 Pa atmospheric. If tank pressure pulls negative at 0% purge, the purge valve is leaking.',
       diagnosticProtocol:
-        'Disconnect the vapor hose from the tank side of the under-hood EVAP Purge Valve while idling with Purge Duty Cycle at 0%. Place your finger over the valve port—if you feel intake manifold suction when commanded 0%, the $65 purge solenoid is stuck open.',
+        'Disconnect the vapor hose from the tank side of the under-hood EVAP Purge Valve while idling with Purge Duty Cycle at 0%. Place your finger over the valve port: if you feel intake manifold suction when commanded 0%, the $65 purge solenoid is stuck open.',
       costTrapWarning:
         'Do not pay for a $250 smoke-machine diagnostic before performing the 60-second under-hood purge valve suction test.',
     },
   },
   {
     code: 'P0016',
-    title: 'Crankshaft Position — Camshaft Position Correlation (Bank 1 Sensor A)',
+    title: 'Crankshaft Position to Camshaft Position Correlation (Bank 1 Sensor A)',
     systemCategory: 'Engine Mechanical & Ignition',
     severity: 'CRITICAL - STOP DRIVING',
     symptoms: [
@@ -719,9 +719,9 @@ export const OBD_CODES = [
       baselineValues:
         'New timing chain phase adaptation is 0.0° to -1.5°. Warning threshold is ±4.0°; P0016 triggers when phase deviation exceeds ±6.0° to ±8.5°.',
       diagnosticProtocol:
-        'At warm idle (oil >80°C), read Camshaft Phase Adaptation Angle and compare Specified vs. Actual Cam Angle. Remove and inspect the VVT Oil Control Valve solenoid first (15 minutes)—if the fine mesh screen is packed with varnish or metallic flakes, clean/replace it before tearing down the timing cover.',
+        'At warm idle (oil >80°C), read Camshaft Phase Adaptation Angle and compare Specified vs. Actual Cam Angle. Remove and inspect the VVT Oil Control Valve solenoid first (15 minutes): if the fine mesh screen is packed with varnish or metallic flakes, clean/replace it before tearing down the timing cover.',
       costTrapWarning:
-        'If Phase Adaptation exceeds ±5.5° accompanied by cold-start chain slap, stop driving immediately—replacing a stretched chain ($1,300) prevents a $6,500 bent-valve engine replacement.',
+        'If Phase Adaptation exceeds ±5.5° accompanied by cold-start chain slap, stop driving immediately; replacing a stretched chain ($1,300) prevents a $6,500 bent-valve engine replacement.',
     },
   },
   {
@@ -739,7 +739,7 @@ export const OBD_CODES = [
     partsCostRangeUsd: [45, 780],
     rootCauses: [
       {
-        cause: 'Worn Plastic Stop-Limit Arm on Intake Flap Actuator Motor (V157 — VW/Audi 2.0 TDI)',
+        cause: 'Worn Plastic Stop-Limit Arm on Intake Flap Actuator Motor (V157: VW/Audi 2.0 TDI)',
         probabilityPct: 45,
         partsCostUsd: [45, 220],
         laborHours: [0.8, 1.5],
@@ -811,8 +811,8 @@ export const OBD_CODES = [
     ],
     liveTelemetryCheck: {
       pidsToMonitor: [
-        'Mass Air Flow Rate — MAF (g/s)',
-        'Engine Speed — RPM',
+        'Mass Air Flow Rate (MAF, g/s)',
+        'Engine Speed (RPM)',
         'Absolute Load Value (%) & Intake Air Temp (°C)',
       ],
       baselineValues:
@@ -820,7 +820,7 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Check MAF g/s at warm idle and during a 2nd-gear full-throttle pull to 5,000 RPM. A healthy 200 HP engine must reach ~155–165 g/s near redline. If it plateaus at 105 g/s, clean the sensor with dedicated MAF spray first and re-log before purchasing a replacement Bosch/Hitachi sensor.',
       costTrapWarning:
-        'Never install cheap unbranded $28 aftermarket MAF sensors—their thermistor calibration curves are frequently off by 15%+, causing transmission shift shock.',
+        'Never install cheap unbranded $28 aftermarket MAF sensors; their thermistor calibration curves are frequently off by 15%+, causing transmission shift shock.',
     },
   },
   {
@@ -868,7 +868,7 @@ export const OBD_CODES = [
     ],
     liveTelemetryCheck: {
       pidsToMonitor: [
-        'Control Module Voltage — PID $42 (V)',
+        'Control Module Voltage (PID $42, V)',
         'Gateway Installation List / CAN-Bus Node Status',
         'DLC Pin 6 (CAN-High) & Pin 14 (CAN-Low) Resistance (Ω)',
       ],
@@ -877,12 +877,12 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Before allowing any shop to order a $1,400 Engine Computer (ECM), measure resistance across OBD-II Pin 6 and Pin 14 with battery disconnected. If it reads 120 Ω, one terminating line is open. Next, load-test the ECM main power relay and ground pins with a 55W halogen bulb.',
       costTrapWarning:
-        'Over 75% of condemned "bad ECUs" tested on bench rigs have zero internal defects—the fault was a $30 ECM power relay or corroded ground point.',
+        'Over 75% of condemned "bad ECUs" tested on bench rigs have zero internal defects; the fault was a $30 ECM power relay or corroded ground point.',
     },
   },
   {
     code: 'P0442',
-    title: 'Evaporative Emission (EVAP) System Leak Detected — Small Leak (0.040" Orifice)',
+    title: 'Evaporative Emission (EVAP) System Leak Detected: Small Leak (0.040" Orifice)',
     systemCategory: 'Emissions & Exhaust',
     severity: 'MODERATE - EMISSIONS/EFFICIENCY',
     symptoms: [
@@ -958,7 +958,7 @@ export const OBD_CODES = [
     ],
     liveTelemetryCheck: {
       pidsToMonitor: [
-        'Intake Air Temperature — IAT (°C / °F)',
+        'Intake Air Temperature (IAT, °C / °F)',
         'Ambient Air Temperature (°C / °F)',
       ],
       baselineValues:
@@ -1019,11 +1019,11 @@ export const OBD_CODES = [
   },
   {
     code: 'P20EE',
-    title: 'SCR NOx Catalyst Efficiency Below Threshold (Bank 1 — AdBlue / DEF System)',
+    title: 'SCR NOx Catalyst Efficiency Below Threshold (Bank 1: AdBlue / DEF System)',
     systemCategory: 'Emissions & Exhaust',
     severity: 'HIGH - LIMP MODE RISK',
     symptoms: [
-      'Dashboard countdown warning: "No Engine Start in 650 Miles (1,000 km) — AdBlue Fault"',
+      'Dashboard countdown warning: "No Engine Start in 650 Miles (1,000 km): AdBlue Fault"',
       'Check Engine Light + DEF / AdBlue wrench symbol',
       'White crystallized urea deposits around exhaust AdBlue dosing injector',
     ],
@@ -1070,7 +1070,7 @@ export const OBD_CODES = [
       diagnosticProtocol:
         'Unbolt the AdBlue injector from the exhaust pipe (2 bolts) and inspect for white rock-like urea crust. Dissolve crystals in warm distilled water, test spray pattern, and check if an OEM ECU software TSB exists for P20EE before replacing the $1,600 SCR catalyst.',
       costTrapWarning:
-        'Almost half of P20EE faults are caused by a crusted AdBlue injector nozzle or degraded fluid—not a failed SCR catalytic converter.',
+        'Almost half of P20EE faults are caused by a crusted AdBlue injector nozzle or degraded fluid, not a failed SCR catalytic converter.',
     },
   },
   {
@@ -1112,7 +1112,7 @@ export const OBD_CODES = [
     liveTelemetryCheck: {
       pidsToMonitor: [
         'HV Battery Block Voltages 1 through 14/28 (V)',
-        'Max Block Voltage minus Min Block Voltage — Delta-V (V)',
+        'Max Block Voltage minus Min Block Voltage (Delta-V, V)',
         'HV Battery Internal Resistance R1–R14 (Ω)',
         'HV Battery Inlet & Module Temps 1–3 (°C)',
       ],

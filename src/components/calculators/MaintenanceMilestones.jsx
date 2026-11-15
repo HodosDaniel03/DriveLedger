@@ -436,7 +436,7 @@ export default function MaintenanceMilestones({
                 </span>
               </div>
               <p className="mt-1.5 font-sans text-xs text-amber-100/90 leading-relaxed">
-                Dealership multi-point checklists prioritize superficial visual checks while omitting crucial thermodynamic wear items — such as <strong>transmission fluid changes ("sealed for life")</strong>, <strong>intake valve walnut decoking</strong>, and <strong>preventative timing assembly replacement</strong>. Vehicles stamped with "Full Dealer Service History" often suffer catastrophic gearbox, wet-belt, or valvetrain failures because factory schedules are tuned to minimize initial warranty-period fleet ownership figures rather than 150k+ mile mechanical longevity.
+                Dealership multi-point checklists prioritize superficial visual checks while omitting crucial thermodynamic wear items, such as <strong>transmission fluid changes ("sealed for life")</strong>, <strong>intake valve walnut decoking</strong>, and <strong>preventative timing assembly replacement</strong>. Vehicles stamped with "Full Dealer Service History" often suffer catastrophic gearbox, wet-belt, or valvetrain failures because factory schedules are tuned to minimize initial warranty-period fleet ownership figures rather than 150k+ mile mechanical longevity.
               </p>
               <div className="mt-2.5 flex items-center gap-2 text-[11px] font-sans font-medium text-amber-300">
                 <span>⚠️ Red strikethrough items below are omitted or deferred by OEM dealer schedules.</span>

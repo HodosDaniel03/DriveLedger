@@ -1,5 +1,5 @@
 /**
- * Toyota — Comprehensive Generation, Hybrid e-CVT & Known Issues Database
+ * Toyota | Comprehensive Generation, Hybrid e-CVT & Known Issues Database
  */
 
 export const toyotaData = {
@@ -134,7 +134,7 @@ export const toyotaData = {
           modelKnownIssues: [
             {
               id: 'rav4-cablegate-corrosion',
-              name: 'Cablegate — High-voltage rear electric motor (MGR) cable connector shield corrosion (AWD-i)',
+              name: 'Cablegate: High-voltage rear electric motor (MGR) cable connector shield corrosion (AWD-i)',
               severity: 'critical',
               category: 'electrical',
               criticalMileage: {
@@ -177,7 +177,7 @@ export const toyotaData = {
               knownIssues: [
                 {
                   id: 'rav4-cablegate-corrosion-engine',
-                  name: 'Cablegate — High-voltage rear electric motor (MGR) cable connector shield corrosion (AWD-i)',
+                  name: 'Cablegate: High-voltage rear electric motor (MGR) cable connector shield corrosion (AWD-i)',
                   severity: 'critical',
                   category: 'electrical',
                   criticalMileage: {

@@ -1,5 +1,5 @@
 /**
- * Stellantis (Peugeot, Citroën, Opel) — Generation, Engine & Known Issues Database
+ * Stellantis (Peugeot, Citroën, Opel) | Generation, Engine & Known Issues Database
  */
 
 export const stellantisData = {

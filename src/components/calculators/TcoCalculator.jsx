@@ -350,7 +350,7 @@ export default function TcoCalculator({
       return [
         {
           label: 'Monthly & 5-Year Total Cost',
-          value: `${currencySymbol}— / mo`,
+          value: `${currencySymbol}- / mo`,
           subtext: `Select a vehicle to compute your ${horizonYears}-year economic total and per-${distanceUnit} rate.`,
           badge: null,
         },
@@ -362,7 +362,7 @@ export default function TcoCalculator({
         },
         {
           label: 'Risk Level & Assessment',
-          value: '—/100 pts',
+          value: '-/100 pts',
           subtext: 'Benchmark score appears once a vehicle model is selected.',
           badge: null,
         },
@@ -1147,7 +1147,7 @@ export default function TcoCalculator({
             <div className="my-4 min-w-0">
               <div className="flex items-baseline gap-1 flex-wrap" aria-live="polite">
                 <span id="monthly-total" className="text-[clamp(2.5rem,12vw,4rem)] font-bold font-mono tabular-nums text-ink dark:text-zinc-50 tracking-tight leading-none">
-                  {hasSelectedVehicle ? formatCurrency(tco.monthlyEconomicCostUsd) : `${currencySymbol}—`}
+                  {hasSelectedVehicle ? formatCurrency(tco.monthlyEconomicCostUsd) : `${currencySymbol}-`}
                 </span>
                 <span className="font-sans text-lg text-muted dark:text-zinc-400 font-medium">/mo</span>
               </div>
@@ -1186,7 +1186,7 @@ export default function TcoCalculator({
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
                 <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
-                  {hasSelectedVehicle ? formatCurrency(tco.totalEconomicCostUsd) : `${currencySymbol}—`}
+                  {hasSelectedVehicle ? formatCurrency(tco.totalEconomicCostUsd) : `${currencySymbol}-`}
                 </span>
                 <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
                   {horizonYears}-yr total
@@ -1194,7 +1194,7 @@ export default function TcoCalculator({
               </div>
               <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
                 <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
-                  {hasSelectedVehicle ? formatCurrency(costPerLocalUnit, 2) : `${currencySymbol}—`}
+                  {hasSelectedVehicle ? formatCurrency(costPerLocalUnit, 2) : `${currencySymbol}-`}
                 </span>
                 <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
                   per {distanceUnit}
@@ -1214,7 +1214,7 @@ export default function TcoCalculator({
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="font-mono tabular-nums text-xs sm:text-sm font-bold text-ink dark:text-zinc-50">
-                    {hasSelectedVehicle ? `${ownershipValueScore}/100` : '—/100'}
+                    {hasSelectedVehicle ? `${ownershipValueScore}/100` : '-/100'}
                   </span>
                   <span
                     data-testid="ownership-value-verdict-badge"
@@ -1311,7 +1311,7 @@ export default function TcoCalculator({
                           <span className="text-muted dark:text-zinc-400">({Math.round(c.sharePct)}%)</span>
                         </>
                       ) : (
-                        <span className="text-muted dark:text-zinc-500">—</span>
+                        <span className="text-muted dark:text-zinc-500">-</span>
                       )}
                     </span>
                   </div>
