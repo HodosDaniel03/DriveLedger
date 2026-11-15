@@ -3,11 +3,11 @@ import { Card } from '../common/OdometerPrimitives';
 import { useUnits } from '../../context/UnitContext';
 
 const DEFAULT_CATEGORIES = [
-  { id: 'depreciation', label: 'Depreciation', color: '#0F5BFF' },
-  { id: 'fuel', label: 'Fuel / Energy', color: '#5B8CFF' },
-  { id: 'insurance', label: 'Insurance', color: '#12A150' },
-  { id: 'maintenance', label: 'Maintenance & Repairs', color: '#F2B705' },
-  { id: 'interest', label: 'Financing Interest', color: '#98A2B3' },
+  { id: 'depreciation', label: 'Depreciation', color: '#183D22' },
+  { id: 'fuel', label: 'Fuel / Energy', color: '#3B82F6' },
+  { id: 'insurance', label: 'Insurance', color: '#10B981' },
+  { id: 'maintenance', label: 'Maintenance & Repairs', color: '#F59E0B' },
+  { id: 'interest', label: 'Financing Interest', color: '#94A3B8' },
 ];
 
 export default function CostTimeline({

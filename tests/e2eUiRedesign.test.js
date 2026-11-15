@@ -1320,3 +1320,64 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     `URL must record clean /tco/tesla-model-3-lr path without bogus OBD code (got ${globalThis.window.location.pathname}${globalThis.window.location.search})`
   );
 });
+
+test('Tier 4 / UI Polish: HomePage pill CTAs, TCO Expense Allocation colors & formatted inputs, Maintenance 2-column consolidation', async () => {
+  createRoot(rootContainer).render(null);
+  await sleep(20);
+  const { rootContainer: container } = await renderApp('/');
+
+  // 1. HomePage: tactile pill CTA buttons & updated mini stacked bar palette
+  const homeHtml = container.toHtml();
+  assert.ok(homeHtml.includes('bg-[#183D22]') && homeHtml.includes('bg-[#3B82F6]'), 'HomePage mini preview bar must use updated TCO palette');
+  for (const label of ['Open TCO calculator', 'Open risk matrix', 'Open OBD2 estimator']) {
+    const btn = findButtonByText(container, label);
+    assert.ok(btn, `HomePage must render tactile pill button "${label}"`);
+    assert.ok(String(btn.getAttribute('class') || '').includes('rounded-full'), `"${label}" button must use full-width rounded-full pill styling`);
+  }
+
+  // 2. Navigate to TCO via button & select a preset
+  const tcoPill = findButtonByText(container, 'Open TCO calculator');
+  tcoPill.dispatchEvent({ type: 'click' });
+  await sleep(40);
+  const emptyPicker = findByTestId(container, 'tco-empty-vehicle-picker');
+  if (emptyPicker) {
+    const camryQuickPick = findButtonByText(emptyPicker, 'Camry') || findButtonByText(emptyPicker, 'Model 3');
+    if (camryQuickPick) {
+      camryQuickPick.dispatchEvent({ type: 'click' });
+      await sleep(40);
+    }
+  }
+  const tcoHtml = container.toHtml();
+  assert.ok(!tcoHtml.includes('monthly report.'), 'TCO header must not render clipped "monthly report." text');
+  assert.ok(
+    tcoHtml.includes('#183D22') && tcoHtml.includes('#3B82F6') && tcoHtml.includes('#10B981') && tcoHtml.includes('#F59E0B') && tcoHtml.includes('#94A3B8'),
+    'TCO Expense Allocation stacked bar and legend must share the strict 5-color palette'
+  );
+  const priceInput = container.getElementById('input-purchase-price');
+  const distInput = container.getElementById('input-annual-distance');
+  assert.ok(priceInput && priceInput.value.includes(','), `TCO purchase price input must format with thousand separator (got ${priceInput?.value})`);
+  assert.ok(distInput && distInput.value.includes(','), `TCO annual distance input must format with thousand separator (got ${distInput?.value})`);
+
+  // 3. Navigate to Maintenance Risk Matrix
+  const riskTab = container.getElementById('tab-risk') || findButtonByText(container, 'Powertrain Risk Matrix');
+  assert.ok(riskTab, 'Navbar must expose Powertrain Risk Matrix tab');
+  riskTab.dispatchEvent({ type: 'click' });
+  await sleep(40);
+
+  const riskHtml = container.toHtml();
+  assert.ok(riskHtml.includes('Switch Car'), 'Maintenance page must render unified "Switch Car" button');
+  assert.ok(!riskHtml.includes('Change vehicle') && !riskHtml.includes('Switch Model'), 'Maintenance page must not render duplicate vehicle selectors');
+  assert.ok(riskHtml.includes('from-[#0F291A]'), 'Maintenance reserve banner must use refined dark emerald/slate gradient');
+  assert.ok(
+    riskHtml.includes('Specialist Preventative') && riskHtml.includes('OEM Standard'),
+    'Protocol toggle must use non-truncated "Specialist Preventative" and "OEM Standard" labels'
+  );
+  assert.ok(
+    !/Next service in -|Due in -|Overdue by -/.test(riskHtml),
+    'Powertrain assembly cards must never display negative service mileage'
+  );
+  assert.ok(
+    riskHtml.includes('Due in ') || riskHtml.includes('Overdue by '),
+    'Powertrain assembly cards must display "Due in" or "Overdue by" status counters'
+  );
+});

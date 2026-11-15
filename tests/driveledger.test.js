@@ -545,15 +545,15 @@ for (const preset of VEHICLE_PRESETS) {
   assert.ok(Math.abs(pctSum - 100) <= 0.3, `${preset.id} breakdown shares must sum to ~100% (got ${pctSum})`);
   assert.equal(proj.breakdown.length, 5, `${preset.id} must have exactly 5 breakdown categories`);
   assert.equal(proj.breakdown[0].id, 'depreciation');
-  assert.equal(proj.breakdown[0].color, '#0F5BFF');
+  assert.equal(proj.breakdown[0].color, '#183D22');
   assert.equal(proj.breakdown[1].id, 'fuel');
-  assert.equal(proj.breakdown[1].color, '#5B8CFF');
+  assert.equal(proj.breakdown[1].color, '#3B82F6');
   assert.equal(proj.breakdown[2].id, 'insurance');
-  assert.equal(proj.breakdown[2].color, '#12A150');
+  assert.equal(proj.breakdown[2].color, '#10B981');
   assert.equal(proj.breakdown[3].id, 'maintenance');
-  assert.equal(proj.breakdown[3].color, '#F2B705');
+  assert.equal(proj.breakdown[3].color, '#F59E0B');
   assert.equal(proj.breakdown[4].id, 'interest');
-  assert.equal(proj.breakdown[4].color, '#98A2B3');
+  assert.equal(proj.breakdown[4].color, '#94A3B8');
 }
 
 const cashProj = calculateTcoProjection({
@@ -612,7 +612,7 @@ assert.equal(
   priceSliderBefore,
   'In-place DOM reconciler must preserve exact <input type="range"> DOM element during continuous dragging'
 );
-assert.equal(rootContainer.getElementById('input-purchase-price').value, '58000');
+assert.equal(rootContainer.getElementById('input-purchase-price').value, '58,000');
 console.log('✓ 6A. In-place <input type="range"> slider drag & DOM node preservation verified');
 
 // 6B. Test Tab Switching (TCO -> Powertrain Risk Matrix -> OBD-II Estimator) without hook state collision
@@ -733,28 +733,28 @@ const consecutivePresets = [
     id: 'ford-focus-ecoblue',
     shortName: 'Ford 2.0 EcoBlue Diesel',
     fullName: 'Ford Focus / Mondeo 2.0 EcoBlue TDCi Diesel',
-    expectedPriceUsd: '24800',
+    expectedPriceUsd: '24,800',
     expectedOdometerMi: '48000',
   },
   {
     id: 'toyota-camry-hybrid',
     shortName: 'Toyota Camry Hybrid',
     fullName: 'Toyota Camry Hybrid 2.5L Dynamic Force e-CVT',
-    expectedPriceUsd: '31500',
+    expectedPriceUsd: '31,500',
     expectedOdometerMi: '28000',
   },
   {
     id: 'tesla-model-3-lr',
     shortName: 'Tesla Model 3 Long Range',
     fullName: 'Tesla Model 3 Long Range Dual-Motor AWD',
-    expectedPriceUsd: '42900',
+    expectedPriceUsd: '42,900',
     expectedOdometerMi: '30000',
   },
   {
     id: 'bmw-330i-g20',
     shortName: 'BMW 3 Series 2.0T',
     fullName: 'BMW 3 Series 2.0T (330i B48 TwinPower Turbo)',
-    expectedPriceUsd: '43500',
+    expectedPriceUsd: '43,500',
     expectedOdometerMi: '34000',
   },
 ];
@@ -938,8 +938,8 @@ euPriceSlider.value = '45000';
 euPriceSlider.dispatchEvent({ type: 'input' });
 assert.equal(
   rootContainer.getElementById('input-purchase-price').value,
-  '45000',
-  'Dragging price slider to 45000 in EU mode must set input-purchase-price to 45000 EUR'
+  '45,000',
+  'Dragging price slider to 45000 in EU mode must set input-purchase-price to 45,000 EUR'
 );
 
 // 3. Drag annual mileage slider in EU mode -> must operate in km (25,000 km)
@@ -949,8 +949,8 @@ euDistSlider.value = '25000';
 euDistSlider.dispatchEvent({ type: 'input' });
 assert.equal(
   rootContainer.getElementById('input-annual-distance').value,
-  '25000',
-  'Dragging annual distance slider to 25000 in EU mode must set input-annual-distance to 25000 km'
+  '25,000',
+  'Dragging annual distance slider to 25000 in EU mode must set input-annual-distance to 25,000 km'
 );
 
 // 4. Test EV Efficiency slider bounds and fill calculation for Tesla Model 3 LR
@@ -1247,15 +1247,15 @@ allFilterBtn.dispatchEvent({ type: 'click' });
 
 // 8. Preventative vs. OEM Telemetry Toggle verification (Feladat 2.2)
 const oemToggleBtn = rootContainer.querySelectorAll(
-  (el) => el.tagName === 'BUTTON' && el.textContent.includes('OEM "Lifetime" Marketing Schedule')
+  (el) => el.tagName === 'BUTTON' && el.textContent.includes('OEM Standard')
 )[0];
-assert.ok(oemToggleBtn, 'Must find OEM "Lifetime" Marketing Schedule toggle button');
+assert.ok(oemToggleBtn, 'Must find OEM Standard toggle button');
 oemToggleBtn.dispatchEvent({ type: 'click' });
 
 const oemActiveHtml = rootContainer.toHtml();
 assert.ok(
-  oemActiveHtml.includes('OEM Marketing Schedule Active'),
-  'Dossier header must indicate active OEM Marketing Schedule'
+  oemActiveHtml.includes('OEM Standard Active') || oemActiveHtml.includes('OEM Marketing Schedule Active'),
+  'Dossier header must indicate active OEM Standard schedule'
 );
 assert.ok(
   oemActiveHtml.includes('🚨 OEM "LIFETIME FLUID" FALLACY'),
@@ -1279,17 +1279,21 @@ assert.ok(
   'Reliability score explanation must highlight OEM lifetime risk alert'
 );
 
-// Toggle back to Engineering Preventative Schedule
+// Toggle back to Specialist Preventative
 const preventativeToggleBtn = rootContainer.querySelectorAll(
-  (el) => el.tagName === 'BUTTON' && el.textContent.includes('Engineering Preventative Schedule')
+  (el) => el.tagName === 'BUTTON' && el.textContent.includes('Specialist Preventative')
 )[0];
-assert.ok(preventativeToggleBtn, 'Must find Engineering Preventative Schedule toggle button');
+assert.ok(preventativeToggleBtn, 'Must find Specialist Preventative toggle button');
 preventativeToggleBtn.dispatchEvent({ type: 'click' });
 
 const preventativeActiveHtml = rootContainer.toHtml();
 assert.ok(
-  preventativeActiveHtml.includes('Engineering Preventative Active'),
-  'Dossier header must indicate active Engineering Preventative Protocol'
+  preventativeActiveHtml.includes('Specialist Preventative Active') || preventativeActiveHtml.includes('Engineering Preventative Active'),
+  'Dossier header must indicate active Specialist Preventative protocol'
+);
+assert.ok(
+  !/Overdue by -|Due in -|Next service in -/.test(preventativeActiveHtml),
+  'Telemetry counters must never show negative remaining/overdue distance values'
 );
 assert.ok(
   !preventativeActiveHtml.includes('[OMITTED / DEFERRED BY OEM]'),

@@ -3,7 +3,7 @@ import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Prin
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP } from '../../context/GarageContext';
-import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, RadialScoreGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar } from '../common/OdometerPrimitives';
+import { Card, PageHeader, RangeSlider, Segmented, Pill, Collapse, RadialScoreGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar, FormattedNumericInput } from '../common/OdometerPrimitives';
 import VehicleSelect from '../common/VehicleSelect';
 import CostTimeline from './CostTimeline';
 import VinCheckBanner from '../monetization/VinCheckBanner';
@@ -23,6 +23,14 @@ import {
 export {
   calculateNonLinearDepreciation,
   calculateTcoProjection,
+};
+
+const ALLOCATION_COLOR_MAP = {
+  depreciation: '#183D22',
+  fuel: '#3B82F6',
+  insurance: '#10B981',
+  maintenance: '#F59E0B',
+  interest: '#94A3B8',
 };
 
 export default function TcoCalculator({
@@ -350,10 +358,11 @@ export default function TcoCalculator({
   }, [hasSelectedVehicle, currencySymbol, tco, horizonYears, formatCurrency, distanceUnit, primaryExpense, ownershipValueScore, costPerLocalUnit]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="What your car really costs"
-        subtitle="Depreciation, fuel, insurance, maintenance and financing — rolled into one honest monthly report."
+        subtitle="Depreciation, fuel, insurance, maintenance, and financing in one transparent forecast."
+        className="!mb-0 max-w-none"
       />
 
       {/* 1. Primary Interactive 2-Column Calculator Above the Fold (7 cols controls, 5 cols sticky summary) */}
@@ -519,23 +528,15 @@ export default function TcoCalculator({
                       explanation="Compares your entered purchase price against the mileage-adjusted fair market value for this specific model and engine."
                     />
                   </div>
-                  <div className="flex items-center gap-1 font-mono font-semibold text-lg text-ink dark:text-zinc-50 tabular-nums bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
-                    <span>{currencySymbol}</span>
-                    <input
-                      id="input-purchase-price"
-                      type="number"
-                      min={0}
-                      max={200000}
-                      step={500}
-                      value={displayPrice}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        const val = Math.max(0, Number(e.target.value) || 0);
-                        setPurchasePriceUsd(convertRegionToUsd(val));
-                      }}
-                      className="w-24 text-right bg-transparent outline-none font-mono tabular-nums text-ink dark:text-zinc-50"
-                    />
-                  </div>
+                  <FormattedNumericInput
+                    id="input-purchase-price"
+                    value={displayPrice}
+                    min={0}
+                    max={200000}
+                    prefix={currencySymbol}
+                    onChangeValue={(val) => setPurchasePriceUsd(convertRegionToUsd(val))}
+                    inputClassName="w-20 text-right bg-transparent outline-none font-mono font-semibold text-base sm:text-lg tabular-nums text-ink dark:text-zinc-50"
+                  />
                 </div>
                 <input
                   id="slider-purchase-price"
@@ -586,23 +587,15 @@ export default function TcoCalculator({
                   <label htmlFor="slider-annual-distance" className="font-sans text-sm font-medium text-body dark:text-zinc-300">
                     Annual mileage
                   </label>
-                  <div className="flex items-center gap-1 font-mono font-semibold text-base sm:text-lg text-ink dark:text-zinc-50 tabular-nums bg-zinc-50 dark:bg-zinc-900 px-2.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
-                    <input
-                      id="input-annual-distance"
-                      type="number"
-                      min={0}
-                      max={60000}
-                      step={500}
-                      value={displayAnnualDist}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        const val = Math.max(0, Number(e.target.value) || 0);
-                        setAnnualDistanceMiles(convertRegionToMiles(val));
-                      }}
-                      className="w-20 text-right bg-transparent outline-none font-mono text-base sm:text-lg tabular-nums text-ink dark:text-zinc-50"
-                    />
-                    <span className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400">{distanceUnit}</span>
-                  </div>
+                  <FormattedNumericInput
+                    id="input-annual-distance"
+                    value={displayAnnualDist}
+                    min={0}
+                    max={60000}
+                    unitLabel={`${distanceUnit}/yr`}
+                    onChangeValue={(val) => setAnnualDistanceMiles(convertRegionToMiles(val))}
+                    inputClassName="w-20 text-right bg-transparent outline-none font-mono font-semibold text-base sm:text-lg tabular-nums text-ink dark:text-zinc-50"
+                  />
                 </div>
                 <input
                   id="slider-annual-distance"
@@ -667,23 +660,16 @@ export default function TcoCalculator({
                         <label htmlFor="slider-odometer-local" className="text-xs font-bold uppercase tracking-wider text-ink dark:text-zinc-200 font-sans">
                           Current Odometer
                         </label>
-                        <div className="flex items-center gap-1 font-mono font-semibold text-xs text-ink dark:text-zinc-50 tabular-nums bg-surface dark:bg-zinc-950 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800">
-                          <input
-                            id="input-odometer-local"
-                            type="number"
-                            min={0}
-                            max={400000}
-                            step={1000}
-                            value={displayOdometer}
-                            onChange={(e) => {
-                              if (e.target.value === '') return;
-                              const val = Math.max(0, Number(e.target.value) || 0);
-                              setOdometerMiles(convertRegionToMiles(val));
-                            }}
-                            className="w-20 text-right bg-transparent outline-none font-mono tabular-nums"
-                          />
-                          <span className="font-sans text-muted dark:text-zinc-400">{distanceUnit}</span>
-                        </div>
+                        <FormattedNumericInput
+                          id="input-odometer-local"
+                          value={displayOdometer}
+                          min={0}
+                          max={400000}
+                          unitLabel={distanceUnit}
+                          onChangeValue={(val) => setOdometerMiles(convertRegionToMiles(val))}
+                          className="bg-surface dark:bg-zinc-950"
+                          inputClassName="w-20 text-right bg-transparent outline-none font-mono font-semibold text-xs tabular-nums text-ink dark:text-zinc-50"
+                        />
                       </div>
                       {(() => {
                         const maxOdoDisplay = region === 'EU' ? 320000 : 200000;
@@ -1110,31 +1096,36 @@ export default function TcoCalculator({
                 aria-hidden="true"
                 onMouseLeave={() => setHighlightedCategory(null)}
               >
-                {hasSelectedVehicle && tco.breakdown.map((c) => {
-                  const isDimmed = highlightedCategory !== null && highlightedCategory !== c.id;
-                  const isHighlighted = highlightedCategory === c.id;
-                  return (
-                    <div
-                      key={c.id}
-                      onMouseEnter={() => setHighlightedCategory(c.id)}
-                      className={`h-full transition-[flex-grow,opacity] duration-200 ease-out first:rounded-l-full last:rounded-r-full cursor-pointer ${
-                        isDimmed ? 'opacity-25' : 'opacity-100'
-                      } ${isHighlighted ? 'brightness-110 saturate-125' : ''}`}
-                      style={{
-                        flexGrow: c.amountUsd,
-                        flexBasis: 0,
-                        backgroundColor: c.color,
-                      }}
-                      title={`${c.label}: ${Math.round(c.sharePct)}%`}
-                    />
-                  );
-                })}
+                {hasSelectedVehicle &&
+                  tco.breakdown
+                    .filter((c) => c.amountUsd > 0)
+                    .map((c) => {
+                      const segmentColor = ALLOCATION_COLOR_MAP[c.id] || c.color;
+                      const isDimmed = highlightedCategory !== null && highlightedCategory !== c.id;
+                      const isHighlighted = highlightedCategory === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          onMouseEnter={() => setHighlightedCategory(c.id)}
+                          className={`h-full transition-[flex-grow,opacity] duration-200 ease-out first:rounded-l-full last:rounded-r-full cursor-pointer ${
+                            isDimmed ? 'opacity-25' : 'opacity-100'
+                          } ${isHighlighted ? 'ring-1 ring-inset ring-white/40' : ''}`}
+                          style={{
+                            flexGrow: c.amountUsd,
+                            flexBasis: 0,
+                            backgroundColor: segmentColor,
+                          }}
+                          title={`${c.label}: ${Math.round(c.sharePct)}%`}
+                        />
+                      );
+                    })}
               </div>
             </div>
 
             {/* Legend Breakdown Rows */}
             <div className="flex flex-col gap-2 text-xs" onMouseLeave={() => setHighlightedCategory(null)}>
               {tco.breakdown.map((c) => {
+                const segmentColor = ALLOCATION_COLOR_MAP[c.id] || c.color;
                 const isDimmed = hasSelectedVehicle && highlightedCategory !== null && highlightedCategory !== c.id;
                 const isHighlighted = hasSelectedVehicle && highlightedCategory === c.id;
                 return (
@@ -1148,7 +1139,10 @@ export default function TcoCalculator({
                     } ${isHighlighted ? 'bg-zinc-100 dark:bg-zinc-900 font-semibold' : hasSelectedVehicle ? 'hover:bg-zinc-50 dark:hover:bg-zinc-900/60' : ''}`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/15"
+                        style={{ backgroundColor: segmentColor }}
+                      />
                       <span className="font-sans font-medium text-ink dark:text-zinc-200 text-sm truncate">{c.label}</span>
                     </div>
                     <span className="font-mono text-xs font-medium text-ink dark:text-zinc-100 tabular-nums shrink-0 ml-2">

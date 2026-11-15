@@ -212,10 +212,10 @@ export default function HomePage({
               {/* Mini Preview: Stacked Bar */}
               <div className="bg-zinc-50 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 mb-6">
                 <div className="h-2.5 rounded-sm bg-zinc-200 dark:bg-zinc-800 flex overflow-hidden mb-2">
-                  <div className="h-full bg-primary-600 w-[45%]" title="Depreciation (45%)" />
-                  <div className="h-full bg-[#5B8CFF] w-[25%]" title="Fuel (25%)" />
-                  <div className="h-full bg-emerald-500 w-[18%]" title="Insurance (18%)" />
-                  <div className="h-full bg-amber-500 w-[12%]" title="Maintenance (12%)" />
+                  <div className="h-full bg-[#183D22] w-[45%]" title="Depreciation (45%)" />
+                  <div className="h-full bg-[#3B82F6] w-[25%]" title="Fuel (25%)" />
+                  <div className="h-full bg-[#10B981] w-[18%]" title="Insurance (18%)" />
+                  <div className="h-full bg-[#F59E0B] w-[12%]" title="Maintenance (12%)" />
                 </div>
                 <div className="flex items-center justify-between text-xs font-sans">
                   <span className="text-muted dark:text-zinc-400 font-medium">Segment benchmark:</span>
@@ -223,10 +223,17 @@ export default function HomePage({
                 </div>
               </div>
             </div>
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-sans font-semibold text-primary-600 dark:text-primary-400">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateToTco();
+              }}
+              className="w-full py-2.5 px-4 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 text-xs font-sans font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:bg-emerald-600 hover:text-white hover:border-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white transition-all duration-200"
+            >
               <span>Open TCO calculator</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
+            </button>
           </div>
 
           {/* Card 2: Risk Matrix */}
@@ -267,10 +274,17 @@ export default function HomePage({
                 </div>
               </div>
             </div>
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-sans font-semibold text-primary-600 dark:text-primary-400">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateToRisk();
+              }}
+              className="w-full py-2.5 px-4 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 text-xs font-sans font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:bg-emerald-600 hover:text-white hover:border-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white transition-all duration-200"
+            >
               <span>Open risk matrix</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
+            </button>
           </div>
 
           {/* Card 3: OBD-II Estimator */}
@@ -304,10 +318,17 @@ export default function HomePage({
                 </div>
               </div>
             </div>
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-sans font-semibold text-primary-600 dark:text-primary-400">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateToObd();
+              }}
+              className="w-full py-2.5 px-4 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 text-xs font-sans font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:bg-emerald-600 hover:text-white hover:border-emerald-600 dark:hover:bg-emerald-600 dark:hover:text-white transition-all duration-200"
+            >
               <span>Open OBD2 estimator</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </div>
+            </button>
           </div>
         </div>
       </section>

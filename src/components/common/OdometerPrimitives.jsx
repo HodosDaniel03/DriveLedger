@@ -133,10 +133,10 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
                   : 'text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
-              <span className="truncate max-w-full">{o.label}</span>
+              <span className="max-w-full leading-snug">{o.label}</span>
               {o.hint && (
                 <span
-                  className={`mt-0.5 text-[10px] sm:text-[11px] font-normal tabular-nums font-sans truncate max-w-full ${
+                  className={`mt-0.5 text-[10px] sm:text-[11px] font-normal tabular-nums font-sans max-w-full leading-tight ${
                     active ? 'text-primary-700 dark:text-emerald-400 font-semibold' : 'text-faint dark:text-zinc-500'
                   }`}
                 >
@@ -177,6 +177,67 @@ export function SelectField({ label, value, options, onChange, id, className = '
           className="pointer-events-none absolute top-1/2 right-3 w-4 h-4 -translate-y-1/2 text-muted dark:text-zinc-400"
         />
       </div>
+    </div>
+  );
+}
+
+export function FormattedNumericInput({
+  id,
+  value,
+  min = 0,
+  max,
+  onChangeValue,
+  prefix = '',
+  unitLabel = '',
+  className = '',
+  inputClassName = 'w-24 text-right bg-transparent outline-none font-mono font-semibold tabular-nums text-ink dark:text-zinc-50',
+}) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const numericValue = Number.isFinite(Number(value)) ? Math.round(Number(value)) : 0;
+  const formattedValue = numericValue.toLocaleString('en-US');
+
+  return (
+    <div
+      className={`inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700/80 shadow-2xs focus-within:border-[#183D22] focus-within:ring-2 focus-within:ring-[#183D22]/15 dark:focus-within:border-emerald-500 transition-colors ${className}`}
+    >
+      {prefix && (
+        <span className="font-mono text-sm sm:text-base font-semibold text-muted dark:text-zinc-400 select-none">
+          {prefix}
+        </span>
+      )}
+      <input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        value={focused ? draft : formattedValue}
+        onFocus={() => {
+          setFocused(true);
+          setDraft(String(numericValue));
+        }}
+        onBlur={() => {
+          setFocused(false);
+          setDraft('');
+        }}
+        onChange={(e) => {
+          const raw = e.target.value;
+          const cleaned = raw.replace(/[^0-9]/g, '');
+          setDraft(raw);
+          if (cleaned === '') return;
+          let parsed = Math.max(min, Number(cleaned) || 0);
+          if (typeof max === 'number') {
+            parsed = Math.min(max, parsed);
+          }
+          onChangeValue(parsed);
+        }}
+        className={inputClassName}
+      />
+      {unitLabel && (
+        <span className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-300 bg-zinc-200/70 dark:bg-zinc-800 px-1.5 py-0.5 rounded select-none shrink-0">
+          {unitLabel}
+        </span>
+      )}
     </div>
   );
 }
@@ -253,18 +314,29 @@ export function PartnerCard({ text, cta, href, badge = 'Partner link', className
   );
 }
 
-export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', size = 144, className = '' }) {
+export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', size = 144, inverted = false, className = '' }) {
   const clamped = Math.min(100, Math.max(0, Math.round(score)));
   const tone = clamped >= 70 ? 'good' : clamped >= 40 ? 'fair' : 'poor';
-  const color = tone === 'good' ? '#12A150' : tone === 'fair' ? '#F2B705' : '#F04438';
-  const trackColor = tone === 'good' ? '#E8F7EE' : tone === 'fair' ? '#FFF3C4' : '#FDE3E1';
+  const color = tone === 'good' ? '#10B981' : tone === 'fair' ? '#F59E0B' : '#F04438';
+  const trackColor = inverted
+    ? 'rgba(255, 255, 255, 0.14)'
+    : tone === 'good'
+    ? '#E8F7EE'
+    : tone === 'fair'
+    ? '#FFF3C4'
+    : '#FDE3E1';
   const toneLabel = tone === 'good' ? 'Good Value' : tone === 'fair' ? 'Fair condition' : 'Needs attention';
-  const toneBg =
-    tone === 'good'
-      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
+  const toneBg = inverted
+    ? tone === 'good'
+      ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40'
       : tone === 'fair'
-      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
-      : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40';
+      ? 'bg-amber-500/20 text-amber-200 border border-amber-400/40'
+      : 'bg-rose-500/25 text-rose-200 border border-rose-400/40'
+    : tone === 'good'
+    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
+    : tone === 'fair'
+    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+    : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40';
 
   const strokeWidth = 11;
   const radius = (120 - strokeWidth) / 2;
@@ -274,7 +346,7 @@ export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', 
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }}>
       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={radius} fill="none" stroke={trackColor} className="dark:stroke-zinc-800" strokeWidth={strokeWidth} />
+        <circle cx="60" cy="60" r={radius} fill="none" stroke={trackColor} className={inverted ? '' : 'dark:stroke-zinc-800'} strokeWidth={strokeWidth} />
         <circle
           cx="60"
           cy="60"
@@ -290,8 +362,8 @@ export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', 
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <div className="flex items-baseline">
-          <span className="text-metric-l font-bold font-mono text-ink dark:text-zinc-50 tracking-tight tabular-nums">{clamped}</span>
-          <span className="text-small text-muted dark:text-zinc-400 font-medium font-mono tabular-nums">/100</span>
+          <span className={`text-metric-l font-bold font-mono tracking-tight tabular-nums ${inverted ? 'text-white' : 'text-ink dark:text-zinc-50'}`}>{clamped}</span>
+          <span className={`text-small font-medium font-mono tabular-nums ${inverted ? 'text-white/65' : 'text-muted dark:text-zinc-400'}`}>/100</span>
         </div>
         <span className={`${toneBg} px-2 py-0.5 text-[11px] font-sans font-medium rounded-md mt-0.5 whitespace-nowrap`}>
           {toneLabel}

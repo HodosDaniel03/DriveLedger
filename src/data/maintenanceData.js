@@ -678,6 +678,15 @@ export function evaluateComponentHealth(firstArg, ...rest) {
     0,
     Math.round((component.criticalLimitMiles - cycleMiles) / combinedMultiplier)
   );
+  const serviceThresholdMiles = Number(component.serviceIntervalMiles) || Number(component.criticalLimitMiles) || 60000;
+  const milesUntilServiceInterval = Math.max(
+    0,
+    Math.round((serviceThresholdMiles - cycleMiles) / combinedMultiplier)
+  );
+  const overduePhysicalMiles =
+    cycleMiles > serviceThresholdMiles
+      ? Math.max(1, Math.round((cycleMiles - serviceThresholdMiles) / combinedMultiplier))
+      : 0;
 
   let status = 'OPTIMAL';
   let statusBadgeText = 'OPTIMAL';
@@ -699,6 +708,8 @@ export function evaluateComponentHealth(firstArg, ...rest) {
     wearPctOfCritical,
     remainingLifespanPct,
     remainingPhysicalMiles,
+    milesUntilServiceInterval,
+    overduePhysicalMiles,
     status,
     statusBadgeText,
   };
@@ -1143,37 +1154,37 @@ export function calculateTcoProjection({
   const costPerMileUsd = totalDistanceMiles > 0 ? +(totalEconomicCostUsd / totalDistanceMiles).toFixed(3) : 0;
   const monthlyEconomicCostUsd = Math.round(totalEconomicCostUsd / (years * 12));
 
-  // Stitch stacked bar segment palette: Depreciation #0F5BFF, Fuel #5B8CFF, Insurance #12A150, Maintenance #F2B705, Financing #98A2B3
+  // Expense allocation palette: Depreciation #183D22, Fuel/Energy #3B82F6, Insurance #10B981, Maintenance & Repairs #F59E0B, Financing Interest #94A3B8
   const breakdownRaw = [
     {
       id: 'depreciation',
       label: 'Depreciation',
       amountUsd: totalDepreciationUsd,
-      color: '#0F5BFF',
+      color: '#183D22',
     },
     {
       id: 'fuel',
       label: isPureEv ? 'Electricity Charging' : (pType === POWERTRAIN_TYPES.PHEV ? 'Electricity & Fuel' : 'Fuel / Energy'),
       amountUsd: Math.round(cumulativeFuelUsd),
-      color: '#5B8CFF',
+      color: '#3B82F6',
     },
     {
       id: 'insurance',
       label: 'Insurance',
       amountUsd: Math.round(cumulativeInsuranceUsd),
-      color: '#12A150',
+      color: '#10B981',
     },
     {
       id: 'maintenance',
       label: 'Maintenance & Repairs',
       amountUsd: Math.round(cumulativeMaintenanceUsd),
-      color: '#F2B705',
+      color: '#F59E0B',
     },
     {
       id: 'interest',
       label: 'Financing Interest',
       amountUsd: Math.round(cumulativeInterestUsd),
-      color: '#98A2B3',
+      color: '#94A3B8',
     },
   ];
 
