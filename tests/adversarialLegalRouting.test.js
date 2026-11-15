@@ -1179,3 +1179,61 @@ test('Adversarial 16: Footer Regulatory Compliance Navigation & Actions', async 
   assert.ok(doNotSellLink, 'Footer must render Do Not Sell or Share My Personal Information link to /do-not-sell');
 });
 
+test('Adversarial 17: Base vs. Vehicle-Specific Canonical URL Resolution in DynamicSeoHead', async () => {
+  const canonicalEl = globalThis.document.head.querySelector('link[rel="canonical"]');
+  assert.ok(canonicalEl, 'Canonical <link> tag must exist in head');
+
+  // Base routes without selected vehicle must emit clean base canonical URLs
+  const baseRoutes = ['/tco', '/risk-matrix', '/checklist', '/compare'];
+  for (const routePath of baseRoutes) {
+    globalThis.window.location.pathname = routePath;
+    globalThis.window.location.search = '';
+    globalThis.window.location.hash = '';
+    globalThis.window.dispatchEvent({ type: 'popstate' });
+    await new Promise((r) => setTimeout(r, 20));
+
+    assert.strictEqual(
+      canonicalEl.getAttribute('href'),
+      `https://mydriveledger.com${routePath}`,
+      `Base route ${routePath} without selected vehicle must canonicalize to https://mydriveledger.com${routePath}`
+    );
+  }
+
+  // Vehicle-specific clean routes must emit vehicle-specific canonical URLs
+  const vehicleRoutes = [
+    '/tco/ford-focus-ecoblue',
+    '/risk-matrix/ford-focus-ecoblue',
+    '/checklist/ford-focus-ecoblue',
+  ];
+  for (const routePath of vehicleRoutes) {
+    globalThis.window.location.pathname = routePath;
+    globalThis.window.location.search = '';
+    globalThis.window.location.hash = '';
+    globalThis.window.dispatchEvent({ type: 'popstate' });
+    await new Promise((r) => setTimeout(r, 20));
+
+    assert.strictEqual(
+      canonicalEl.getAttribute('href'),
+      `https://mydriveledger.com${routePath}`,
+      `Vehicle route ${routePath} must canonicalize to https://mydriveledger.com${routePath}`
+    );
+  }
+
+  // Backward-compatible ?preset= query route must canonicalize to clean vehicle path
+  globalThis.window.location.pathname = '/tco';
+  globalThis.window.location.search = '?preset=toyota-camry-hybrid';
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(
+    canonicalEl.getAttribute('href'),
+    'https://mydriveledger.com/tco/toyota-camry-hybrid',
+    'Legacy /tco?preset=toyota-camry-hybrid must canonicalize to /tco/toyota-camry-hybrid'
+  );
+
+  // Reset cleanly
+  globalThis.window.location.pathname = '/';
+  globalThis.window.location.search = '';
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await new Promise((r) => setTimeout(r, 20));
+});
+

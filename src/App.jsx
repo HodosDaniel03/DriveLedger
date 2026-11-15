@@ -104,6 +104,28 @@ function parseHybridObdPath(pathname) {
   };
 }
 
+const CLEAN_VEHICLE_PATH_REGEX = /^\/(tco|risk-matrix|checklist)\/([^/]+)\/?$/i;
+
+function parseCleanVehiclePath(pathname) {
+  if (!pathname || typeof pathname !== 'string') return null;
+  if (parseRiskMileagePath(pathname)) return null;
+  const match = pathname.match(CLEAN_VEHICLE_PATH_REGEX);
+  if (!match) return null;
+  const prefix = match[1].toLowerCase();
+  const rawPreset = decodeURIComponent(match[2]).toLowerCase();
+  const matchedPreset = VEHICLE_PRESETS.find((p) => p.id.toLowerCase() === rawPreset);
+  if (!matchedPreset) return null;
+  const tabMap = {
+    tco: 'tco',
+    'risk-matrix': 'risk',
+    checklist: 'checklist',
+  };
+  return {
+    tab: tabMap[prefix] || 'tco',
+    preset: matchedPreset.id,
+  };
+}
+
 function getSamplePresetIdForRegion(region) {
   const targetId = region === 'US' ? 'toyota-camry-hybrid' : 'vw-golf-20-tdi';
   return VEHICLE_PRESETS.some((p) => p.id === targetId) ? targetId : VEHICLE_PRESETS[0].id;
@@ -125,6 +147,8 @@ function findExplicitPresetFromLocation(params, pathname) {
   if (matchup?.presetA) return matchup.presetA;
   const riskMileage = parseRiskMileagePath(pathname);
   if (riskMileage?.preset) return riskMileage.preset;
+  const cleanVehicle = parseCleanVehiclePath(pathname);
+  if (cleanVehicle?.preset) return cleanVehicle.preset;
   return null;
 }
 
@@ -158,6 +182,8 @@ function DriveLedgerWorkspace() {
     if (matchup) return 'compare';
     const riskMileage = parseRiskMileagePath(location.pathname);
     if (riskMileage) return 'risk';
+    const cleanVehicle = parseCleanVehiclePath(location.pathname);
+    if (cleanVehicle) return cleanVehicle.tab;
     return PATH_TO_TAB[location.pathname] || 'overview';
   };
 
@@ -247,6 +273,14 @@ function DriveLedgerWorkspace() {
       const targetPath = TAB_TO_PATH[nextTab] || '/tco';
       if (!explicitPreset && !explicitCode) {
         navigate(targetPath, { replace: true });
+        return;
+      }
+      if (
+        explicitPreset &&
+        nextPreset &&
+        (nextTab === 'tco' || nextTab === 'risk' || nextTab === 'checklist')
+      ) {
+        navigate(`${targetPath}/${nextPreset}`, { replace: true });
         return;
       }
       const params = new URLSearchParams();
@@ -385,6 +419,7 @@ function DriveLedgerWorkspace() {
     const hybrid = parseHybridObdPath(location.pathname);
     const matchup = parseCompareMatchupPath(location.pathname);
     const riskMileage = parseRiskMileagePath(location.pathname);
+    const cleanVehicle = parseCleanVehiclePath(location.pathname);
 
     if (guideMatch) {
       setActiveGuideSlug(guideMatch.slug);
@@ -394,7 +429,17 @@ function DriveLedgerWorkspace() {
 
     const qTab =
       searchParams.get('tab') ||
-      (guideMatch ? 'guides' : hybrid ? 'obd' : matchup ? 'compare' : riskMileage ? 'risk' : PATH_TO_TAB[location.pathname]);
+      (guideMatch
+        ? 'guides'
+        : hybrid
+          ? 'obd'
+          : matchup
+            ? 'compare'
+            : riskMileage
+              ? 'risk'
+              : cleanVehicle
+                ? cleanVehicle.tab
+                : PATH_TO_TAB[location.pathname]);
     if (qTab && VALID_TABS.includes(qTab)) {
       const resolved = qTab === 'blog' ? 'guides' : qTab;
       setActiveTabState((prev) => (prev !== resolved ? resolved : prev));
@@ -415,6 +460,8 @@ function DriveLedgerWorkspace() {
       setRiskOdometerOverride({ miles: riskMileage.odometerMiles, slug: riskMileage.mileageSlug });
     } else if (Number(searchParams.get('odo')) > 0) {
       setRiskOdometerOverride({ miles: Math.round(Number(searchParams.get('odo'))), slug: null });
+    } else {
+      setRiskOdometerOverride({ miles: null, slug: null });
     }
 
     const explicitCode = findExplicitObdCodeFromLocation(searchParams, location.pathname);
@@ -452,6 +499,9 @@ function DriveLedgerWorkspace() {
         const params = new URLSearchParams(window.location.search || '');
         const guideMatch = parseGuidePath(window.location.pathname);
         const hybrid = parseHybridObdPath(window.location.pathname);
+        const matchup = parseCompareMatchupPath(window.location.pathname);
+        const riskMileage = parseRiskMileagePath(window.location.pathname);
+        const cleanVehicle = parseCleanVehiclePath(window.location.pathname);
         if (guideMatch) {
           setActiveGuideSlug(guideMatch.slug);
         } else {
@@ -459,7 +509,17 @@ function DriveLedgerWorkspace() {
         }
         const qTab =
           params.get('tab') ||
-          (guideMatch ? 'guides' : hybrid ? 'obd' : PATH_TO_TAB[window.location.pathname]) ||
+          (guideMatch
+            ? 'guides'
+            : hybrid
+              ? 'obd'
+              : matchup
+                ? 'compare'
+                : riskMileage
+                  ? 'risk'
+                  : cleanVehicle
+                    ? cleanVehicle.tab
+                    : PATH_TO_TAB[window.location.pathname]) ||
           'overview';
         const resolved = qTab === 'blog' ? 'guides' : qTab;
         setActiveTabState(
@@ -471,6 +531,19 @@ function DriveLedgerWorkspace() {
         setSelectedPresetIdState(
           explicitPreset || getSamplePresetIdForRegion(regionRef.current)
         );
+
+        const qPresetB = params.get('presetB') || matchup?.presetB;
+        setSecondaryPresetIdState(
+          qPresetB && VEHICLE_PRESETS.some((p) => p.id === qPresetB) ? qPresetB : null
+        );
+
+        if (riskMileage?.odometerMiles) {
+          setRiskOdometerOverride({ miles: riskMileage.odometerMiles, slug: riskMileage.mileageSlug });
+        } else if (Number(params.get('odo')) > 0) {
+          setRiskOdometerOverride({ miles: Math.round(Number(params.get('odo'))), slug: null });
+        } else {
+          setRiskOdometerOverride({ miles: null, slug: null });
+        }
 
         const explicitCode = findExplicitObdCodeFromLocation(params, window.location.pathname);
         setHasSelectedObdCode(Boolean(explicitCode));
@@ -517,6 +590,8 @@ function DriveLedgerWorkspace() {
         mileageBracketSlug={riskOdometerOverride?.slug}
         selectedObdCode={selectedObdCode}
         activeLegalPolicy={activeLegalModal}
+        hasSelectedVehicle={hasSelectedVehicle}
+        hasSelectedObdCode={hasSelectedObdCode}
       />
 
       {/* Sticky Global Navigation Bar */}

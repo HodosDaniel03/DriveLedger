@@ -1031,10 +1031,10 @@ test('Tier 3 / Cross-Feature: Hero Action Starter Pills navigate to target tabs 
   pill1.dispatchEvent({ type: 'click' });
   await sleep(35);
 
-  assert.strictEqual(
-    globalThis.window.location.pathname,
-    '/tco',
-    'Clicking "Calculate 5-Yr Cost" pill must route to /tco'
+  assert.ok(
+    globalThis.window.location.pathname === '/tco' ||
+      globalThis.window.location.pathname.startsWith('/tco/'),
+    `Clicking "Calculate 5-Yr Cost" pill must route to /tco or /tco/:presetId (got ${globalThis.window.location.pathname})`
   );
 
   // Return to homepage
@@ -1052,10 +1052,10 @@ test('Tier 3 / Cross-Feature: Hero Action Starter Pills navigate to target tabs 
   pill2.dispatchEvent({ type: 'click' });
   await sleep(35);
 
-  assert.strictEqual(
-    globalThis.window.location.pathname,
-    '/risk-matrix',
-    'Clicking "Check Maintenance Risks" pill must route to /risk-matrix'
+  assert.ok(
+    globalThis.window.location.pathname === '/risk-matrix' ||
+      globalThis.window.location.pathname.startsWith('/risk-matrix/'),
+    `Clicking "Check Maintenance Risks" pill must route to /risk-matrix or /risk-matrix/:presetId (got ${globalThis.window.location.pathname})`
   );
 
   // Return to homepage
@@ -1149,7 +1149,11 @@ test('Tier 4 / User Flow 1: Complete Car Buyer Discovery, TCO Calculation & Affi
   calcPill.dispatchEvent({ type: 'click' });
   await sleep(35);
 
-  assert.strictEqual(globalThis.window.location.pathname, '/tco');
+  assert.ok(
+    globalThis.window.location.pathname === '/tco' ||
+      globalThis.window.location.pathname.startsWith('/tco/'),
+    `Expected /tco or /tco/:presetId, got ${globalThis.window.location.pathname}`
+  );
 
   // Step 3: Inspect active vehicle card and Ownership Value Score badge
   const tcoHtml = rootContainer.toHtml();
@@ -1295,7 +1299,7 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     'Switching to EU region before selecting a car must update placeholder currency to €—'
   );
 
-  // Clicking a quick-pick chip selects the vehicle explicitly, clears the inline picker, shows Switch Car, and sets ?tab=tco&preset=... without code=P2002
+  // Clicking a quick-pick chip selects the vehicle explicitly, clears the inline picker, shows Switch Car, and sets /tco/:presetId without code=P2002
   const quickPickBtn = findButtonByText(emptyPicker, 'Model 3');
   assert.ok(quickPickBtn, 'Quick pick button for Model 3 must exist inside empty picker');
   quickPickBtn.dispatchEvent({ type: 'click' });
@@ -1311,8 +1315,8 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutr
     'Monthly cost must show real computed value after vehicle selection'
   );
   assert.ok(
-    globalThis.window.location.search.includes('preset=tesla-model-3-lr') &&
+    globalThis.window.location.pathname === '/tco/tesla-model-3-lr' &&
       !globalThis.window.location.search.includes('code='),
-    `URL must record selected preset without bogus OBD code (got ${globalThis.window.location.search})`
+    `URL must record clean /tco/tesla-model-3-lr path without bogus OBD code (got ${globalThis.window.location.pathname}${globalThis.window.location.search})`
   );
 });

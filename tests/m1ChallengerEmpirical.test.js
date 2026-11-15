@@ -842,7 +842,7 @@ test('CHALLENGER 2.4: Browse Popular Vehicles Section, 7 Body Style Filter Chips
   // 5. Click Calculate True Cost on a card
   tcoBtn.dispatchEvent({ type: 'click' });
   await sleep(35);
-  assert.strictEqual(globalThis.window.location.pathname, '/tco', 'Clicking card Calculate True Cost navigates to /tco');
+  assert.ok(globalThis.window.location.pathname.startsWith('/tco/'), 'Clicking card Calculate True Cost navigates to /tco/:presetId');
 });
 
 test('CHALLENGER 2.5: Body Style Filter Completeness & Invariant Validation', async () => {
@@ -888,7 +888,7 @@ test('CHALLENGER 2.6: Autocomplete Click Selection — Clicking Vehicle Result a
   carBtn.dispatchEvent({ type: 'click' });
   await sleep(35);
 
-  assert.strictEqual(globalThis.window.location.pathname, '/tco', 'Clicking vehicle autocomplete result navigates to /tco');
+  assert.ok(globalThis.window.location.pathname.startsWith('/tco/'), 'Clicking vehicle autocomplete result navigates to /tco/:presetId');
 
   // 2. Return home and search for OBD "P2002"
   await renderApp('/');
@@ -949,7 +949,7 @@ test('CHALLENGER 2.8: Popular Model Shortcuts Click Navigation', async () => {
     assert.ok(btn, `Shortcut button "${label}" exists`);
     btn.dispatchEvent({ type: 'click' });
     await sleep(35);
-    assert.strictEqual(globalThis.window.location.pathname, '/tco', `Clicking "${label}" shortcut routes to /tco`);
+    assert.ok(globalThis.window.location.pathname.startsWith('/tco/'), `Clicking "${label}" shortcut routes to /tco/:presetId`);
   }
 });
 

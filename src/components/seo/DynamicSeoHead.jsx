@@ -144,6 +144,8 @@ export default function DynamicSeoHead({
   mileageBracketSlug,
   selectedObdCode = 'P2002',
   activeLegalPolicy = null,
+  hasSelectedVehicle = false,
+  hasSelectedObdCode = false,
 }) {
   const resolvedLegalKey = useMemo(() => {
     if (activeLegalPolicy) {
@@ -185,6 +187,27 @@ export default function DynamicSeoHead({
   }, [selectedObdCode]);
 
   const telemetry = useMemo(() => computePresetSeoTelemetry(preset), [preset]);
+
+  const isVehicleSelected = useMemo(() => {
+    if (hasSelectedVehicle || Boolean(activeMileageBracket)) return true;
+    if (typeof window !== 'undefined' && window.location) {
+      const pathname = String(window.location.pathname || '');
+      const cleanMatch = pathname.match(/^\/(?:tco|risk-matrix|checklist)\/([^/]+)(?:\/[^/]+)?\/?$/i);
+      if (cleanMatch) {
+        const seg = decodeURIComponent(cleanMatch[1]).toLowerCase();
+        if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+      }
+      const obdMatch = pathname.match(/^\/obd\/([^/]+)\/[^/]+\/?$/i);
+      if (obdMatch) {
+        const seg = decodeURIComponent(obdMatch[1]).toLowerCase();
+        if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+      }
+      const params = new URLSearchParams(window.location.search || '');
+      const qPreset = params.get('preset') || params.get('presetA');
+      if (qPreset && VEHICLE_PRESETS.some((p) => p.id === qPreset)) return true;
+    }
+    return false;
+  }, [hasSelectedVehicle, activeMileageBracket, activeTab, selectedPresetId]);
 
   const seoMetadata = useMemo(() => {
     if (resolvedLegalKey && LEGAL_POLICIES[resolvedLegalKey]) {
@@ -242,7 +265,7 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'tco') {
-      const canonicalPath = `/tco?preset=${preset.id}`;
+      const canonicalPath = isVehicleSelected ? `/tco/${preset.id}` : '/tco';
       const title = `${preset.name} 5-Year True Cost to Own & Depreciation | DriveLedger`;
       const description = `${preset.name} (${preset.engineCode}) 5-year True Cost to Own is projected at $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/mo or $${telemetry.costPerMileUsd}/mi), including $${telemetry.depreciation5YrUsd.toLocaleString()} non-linear depreciation and maintenance reserves.`;
       return {
@@ -265,7 +288,7 @@ export default function DynamicSeoHead({
           canonicalPath,
         };
       }
-      const canonicalPath = `/risk-matrix?preset=${preset.id}`;
+      const canonicalPath = isVehicleSelected ? `/risk-matrix/${preset.id}` : '/risk-matrix';
       const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | DriveLedger`;
       const description = `${preset.name} achieves a ${telemetry.reliabilityScore}/100 Engineering Reliability Score at ${telemetry.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
       return {
@@ -293,7 +316,7 @@ export default function DynamicSeoHead({
           canonicalPath,
         };
       }
-      const canonicalPath = `/compare?presetA=${preset.id}`;
+      const canonicalPath = isVehicleSelected ? `/compare?presetA=${preset.id}` : '/compare';
       const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | DriveLedger`;
       const description = `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
       return {
@@ -305,7 +328,7 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'checklist') {
-      const canonicalPath = `/checklist?preset=${preset.id}`;
+      const canonicalPath = isVehicleSelected ? `/checklist/${preset.id}` : '/checklist';
       const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | DriveLedger`;
       const description = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
       return {
@@ -373,7 +396,7 @@ export default function DynamicSeoHead({
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
     };
-  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry]);
+  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -444,7 +467,7 @@ export default function DynamicSeoHead({
       potentialAction: {
         '@type': 'AssessAction',
         name: `Calculate 5-Year TCO & Reliability Risk for ${preset.name}`,
-        target: `${SITE_ORIGIN}/tco?preset=${preset.id}`,
+        target: `${SITE_ORIGIN}/tco/${preset.id}`,
         result: {
           '@type': 'QuantitativeValue',
           name: '5-Year Net Economic Ownership Cost',

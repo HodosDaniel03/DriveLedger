@@ -153,7 +153,9 @@ test('6. generateSitemapXml: Generates Valid XML with Core, Preset and Diagnosti
   assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix</loc>'), 'Risk matrix route required');
 
   // Verify Programmatic Vehicle Routes
-  assert.ok(xml.includes('<loc>https://mydriveledger.com/checklist?preset=ford-focus-ecoblue</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/tco/ford-focus-ecoblue</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix/ford-focus-ecoblue</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/checklist/ford-focus-ecoblue</loc>'));
   assert.ok(xml.includes('<loc>https://mydriveledger.com/compare?presetA=tesla-model-3-lr</loc>'));
 
   // Verify Hybrid OBD-II Routes

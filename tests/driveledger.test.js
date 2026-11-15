@@ -625,7 +625,11 @@ navButtons[0].dispatchEvent({ type: 'click' });
 const riskHtml = rootContainer.toHtml();
 assert.ok(riskHtml.includes('POWERTRAIN TELEMETRY DOSSIER'), 'Risk Matrix tab must render telemetry dossier');
 assert.ok(riskHtml.includes('5 Assemblies'), 'Diesel preset must evaluate all 5 applicable diesel assemblies');
-assert.ok(globalThis.window.location.search.includes('tab=risk'), 'URL must update to tab=risk');
+assert.strictEqual(
+  globalThis.window.location.pathname,
+  '/risk-matrix/ford-focus-ecoblue',
+  'URL must update to /risk-matrix/ford-focus-ecoblue'
+);
 
 // Verify Risk Matrix odometer slider drag increases wear monotonically
 const riskSlider = rootContainer.getElementById('risk-odometer-slider');
@@ -685,10 +689,10 @@ const camryFooterBtn = rootContainer.querySelectorAll(
 )[0];
 assert.ok(camryFooterBtn, 'Must find Toyota Camry Hybrid link in Footer');
 camryFooterBtn.dispatchEvent({ type: 'click' });
-assert.ok(
-  globalThis.window.location.search.includes('tab=tco') &&
-    globalThis.window.location.search.includes('preset=toyota-camry-hybrid'),
-  `Footer preset click must atomically set tab=tco and preset=toyota-camry-hybrid in URL (got ${globalThis.window.location.search})`
+assert.strictEqual(
+  globalThis.window.location.pathname,
+  '/tco/toyota-camry-hybrid',
+  `Footer preset click must atomically set pathname to /tco/toyota-camry-hybrid (got ${globalThis.window.location.pathname})`
 );
 
 // Verify EU efficiency slider uses L/100km bounds (3.5 to 16)
@@ -768,9 +772,10 @@ for (const target of consecutivePresets) {
     target.id,
     `Single click on ${target.shortName} must immediately set activePreset to ${target.id} without reverting`
   );
-  assert.ok(
-    globalThis.window.location.search.includes(`preset=${target.id}`),
-    `Single click on ${target.shortName} must immediately set URL preset=${target.id} (got ${globalThis.window.location.search})`
+  assert.strictEqual(
+    globalThis.window.location.pathname,
+    `/tco/${target.id}`,
+    `Single click on ${target.shortName} must immediately set URL pathname to /tco/${target.id} (got ${globalThis.window.location.pathname})`
   );
   assert.ok(
     rootContainer.toHtml().includes(target.fullName),
@@ -789,10 +794,10 @@ for (const target of consecutivePresets) {
 }
 
 const consecutiveTabs = [
-  { id: 'tco', path: '/tco', buttonText: '5-Yr True Cost to Own', expectedMarker: 'TELEMETRY PRESET BENCHMARKS' },
-  { id: 'risk', path: '/risk-matrix', buttonText: 'Powertrain Risk Matrix', expectedMarker: 'POWERTRAIN TELEMETRY DOSSIER' },
-  { id: 'obd', path: '/obd-estimator', buttonText: 'OBD-II Workshop Estimator', expectedMarker: 'First-Principles Live Telemetry Check' },
-  { id: 'tco', path: '/tco', buttonText: '5-Yr True Cost to Own', expectedMarker: 'TELEMETRY PRESET BENCHMARKS' },
+  { id: 'tco', path: '/tco/bmw-330i-g20', buttonText: '5-Yr True Cost to Own', expectedMarker: 'TELEMETRY PRESET BENCHMARKS' },
+  { id: 'risk', path: '/risk-matrix/bmw-330i-g20', buttonText: 'Powertrain Risk Matrix', expectedMarker: 'POWERTRAIN TELEMETRY DOSSIER' },
+  { id: 'obd', path: '/obd-estimator', expectedSearch: 'tab=obd', buttonText: 'OBD-II Workshop Estimator', expectedMarker: 'First-Principles Live Telemetry Check' },
+  { id: 'tco', path: '/tco/bmw-330i-g20', buttonText: '5-Yr True Cost to Own', expectedMarker: 'TELEMETRY PRESET BENCHMARKS' },
 ];
 
 for (const tabTarget of consecutiveTabs) {
@@ -807,10 +812,12 @@ for (const tabTarget of consecutiveTabs) {
     tabTarget.path,
     `Single click on ${tabTarget.buttonText} must immediately update pathname to ${tabTarget.path}`
   );
-  assert.ok(
-    globalThis.window.location.search.includes(`tab=${tabTarget.id}`),
-    `Single click on ${tabTarget.buttonText} must immediately update URL to tab=${tabTarget.id} (got ${globalThis.window.location.search})`
-  );
+  if (tabTarget.expectedSearch) {
+    assert.ok(
+      globalThis.window.location.search.includes(tabTarget.expectedSearch),
+      `Single click on ${tabTarget.buttonText} must immediately update URL to ${tabTarget.expectedSearch} (got ${globalThis.window.location.search})`
+    );
+  }
   assert.ok(
     rootContainer.toHtml().includes(tabTarget.expectedMarker),
     `Single click on ${tabTarget.buttonText} must immediately render ${tabTarget.expectedMarker} without reverting`
@@ -824,7 +831,7 @@ const inspectRiskBtn = rootContainer.querySelectorAll(
 assert.ok(inspectRiskBtn, 'Must find Inspect Component Wear Matrix button in TcoCalculator');
 inspectRiskBtn.dispatchEvent({ type: 'click' });
 assert.ok(
-  globalThis.window.location.search.includes('tab=risk') &&
+  globalThis.window.location.pathname === '/risk-matrix/bmw-330i-g20' &&
     rootContainer.toHtml().includes('POWERTRAIN TELEMETRY DOSSIER'),
   'Clicking Inspect Component Wear Matrix must immediately switch to Risk Matrix tab'
 );
@@ -867,6 +874,38 @@ assert.equal(
   rootContainer.getElementById('risk-preset-sync').value,
   'toyota-camry-hybrid',
   'Browser popstate must sync selectedPresetId to toyota-camry-hybrid'
+);
+
+// Verify clean programmatic vehicle paths via popstate (/tco/:presetId, /risk-matrix/:presetId, /checklist/:presetId)
+globalThis.window.history.pushState({}, '', '/tco/ford-focus-ecoblue');
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  rootContainer.toHtml().includes('Ford Focus / Mondeo 2.0 EcoBlue TDCi Diesel'),
+  'Browser popstate to /tco/ford-focus-ecoblue must activate TCO tab with Ford Focus preset'
+);
+assert.equal(
+  rootContainer.getElementById('preset-select-dropdown').value,
+  'ford-focus-ecoblue',
+  'Browser popstate to /tco/ford-focus-ecoblue must sync selectedPresetId'
+);
+
+globalThis.window.history.pushState({}, '', '/risk-matrix/toyota-camry-hybrid');
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  rootContainer.toHtml().includes('POWERTRAIN TELEMETRY DOSSIER'),
+  'Browser popstate to /risk-matrix/toyota-camry-hybrid must switch activeTab to risk'
+);
+assert.equal(
+  rootContainer.getElementById('risk-preset-sync').value,
+  'toyota-camry-hybrid',
+  'Browser popstate to /risk-matrix/toyota-camry-hybrid must sync selectedPresetId'
+);
+
+globalThis.window.history.pushState({}, '', '/checklist/tesla-model-3-lr');
+globalThis.window.dispatchEvent({ type: 'popstate' });
+assert.ok(
+  rootContainer.toHtml().includes('Tesla Model 3 Long Range Dual-Motor AWD'),
+  'Browser popstate to /checklist/tesla-model-3-lr must activate checklist tab with Tesla Model 3 preset'
 );
 
 // Verify browser Back/Forward (popstate) to bare root URL (/) falls back to default tab and regional sample preset

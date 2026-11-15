@@ -4,8 +4,12 @@ Allow: /overview
 Allow: /tco
 Allow: /risk-matrix
 Allow: /obd-estimator
+Allow: /obd/
 Allow: /compare
 Allow: /checklist
+Allow: /guides
+Allow: /about
+Allow: /contact
 Allow: /methodology
 Allow: /reviews
 Allow: /blog

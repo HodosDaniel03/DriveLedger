@@ -84,9 +84,9 @@ export function generateSitemapXml() {
   // 2. Programmatic Preset Routes & Mileage-Bracket Risk Guides for all 179 Vehicle Presets
   const bracketKeys = Object.keys(MILEAGE_BRACKET_SLUGS);
   for (const preset of VEHICLE_PRESETS) {
-    addUrl(`${SITE_ORIGIN}/tco?preset=${preset.id}`, '0.85', 'weekly');
-    addUrl(`${SITE_ORIGIN}/risk-matrix?preset=${preset.id}`, '0.85', 'weekly');
-    addUrl(`${SITE_ORIGIN}/checklist?preset=${preset.id}`, '0.85', 'weekly');
+    addUrl(`${SITE_ORIGIN}/tco/${preset.id}`, '0.85', 'weekly');
+    addUrl(`${SITE_ORIGIN}/risk-matrix/${preset.id}`, '0.85', 'weekly');
+    addUrl(`${SITE_ORIGIN}/checklist/${preset.id}`, '0.85', 'weekly');
     addUrl(`${SITE_ORIGIN}/compare?presetA=${preset.id}`, '0.75', 'weekly');
 
     for (const bracketSlug of bracketKeys) {
