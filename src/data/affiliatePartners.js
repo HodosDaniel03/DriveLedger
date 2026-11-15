@@ -8,17 +8,17 @@ export const REGIONAL_PARTNER_URLS = {
   'vin-check': {
     US: {
       partnerName: 'carVertical US',
-      href: 'https://www.carvertical.com/us',
+      href: 'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_us',
       trustProof: 'North American & International VIN History Check',
     },
     UK: {
       partnerName: 'carVertical UK',
-      href: 'https://www.carvertical.com/gb',
+      href: 'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_uk',
       trustProof: 'UK & Cross-Border VIN History Check',
     },
     EU: {
       partnerName: 'carVertical Europe',
-      href: 'https://www.carvertical.com/eu',
+      href: 'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_eu',
       trustProof: 'European Cross-Border VIN History Check',
     },
   },

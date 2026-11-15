@@ -11,8 +11,10 @@ import {
   CARVERTICAL_DISCOUNT_PERCENT,
   CARVERTICAL_LEGAL_ATTRIBUTION,
   affiliatePartners,
+  buildAffiliateUrl,
   MONETIZATION_CONFIG,
 } from '../src/config/monetizationConfig.js';
+import { REGIONAL_PARTNER_URLS } from '../src/data/affiliatePartners.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -44,11 +46,35 @@ test('carVertical: Constants and Everflow configuration in monetizationConfig.js
     'Vehicle history check services are provided and sold by carVertical. All intellectual property rights are owned by carVertical.'
   );
 
+  assert.equal(affiliatePartners.vinCheck.baseUrl, CARVERTICAL_AFFILIATE_URL);
+  assert.equal(affiliatePartners.vinCheck.affiliateParam, undefined);
   assert.equal(affiliatePartners.vinCheck.discountCode, 'mydriveledger');
   assert.equal(affiliatePartners.vinCheck.discountPercent, 20);
   assert.equal(affiliatePartners.vinCheck.legalAttribution, CARVERTICAL_LEGAL_ATTRIBUTION);
   assert.equal(MONETIZATION_CONFIG.carVerticalAttribution, CARVERTICAL_LEGAL_ATTRIBUTION);
   assert.equal(MONETIZATION_CONFIG.carVertical.discountCode, 'mydriveledger');
+
+  assert.equal(
+    buildAffiliateUrl('vinCheck').href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=partner-slot'
+  );
+  assert.equal(
+    buildAffiliateUrl('vinCheck', { vin: 'WAUZZZ8V1KA123456', placement: 'ad-unit' }).href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?uid=40&source_id=AFF&sub1=mydriveledger&sub2=ad-unit&sub3=WAUZZZ8V1KA123456'
+  );
+
+  assert.equal(
+    REGIONAL_PARTNER_URLS['vin-check'].US.href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_us'
+  );
+  assert.equal(
+    REGIONAL_PARTNER_URLS['vin-check'].UK.href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_uk'
+  );
+  assert.equal(
+    REGIONAL_PARTNER_URLS['vin-check'].EU.href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_eu'
+  );
 });
 
 test('carVertical: getCarVerticalUrl helper generates compliant tracking URLs', () => {

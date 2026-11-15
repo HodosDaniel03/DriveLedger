@@ -49,7 +49,10 @@ test('1. resolveRegionalPartnerOffer: Geo-routes VIN, OBD2, Warranty, and Insura
     formatCurrency: (v) => `£${Math.round(v * 0.79).toLocaleString('en-GB')}`,
     formatDistance: (m) => `${Math.round(m).toLocaleString('en-GB')} mi`,
   });
-  assert.equal(ukVin.href, 'https://www.carvertical.com/gb');
+  assert.equal(
+    ukVin.href,
+    'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=regional_uk'
+  );
   assert.ok(ukVin.partnerName.includes('carVertical UK'));
   assert.ok(ukVin.title.includes('£'));
 

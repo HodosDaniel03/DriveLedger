@@ -60,8 +60,7 @@ export function getCarVerticalUrl(vinOrPlate = '', placement = 'general') {
 export const affiliatePartners = {
   vinCheck: {
     name: 'carVertical',
-    baseUrl: 'https://www.carvertical.com/en/landing/v3',
-    affiliateParam: 'a=YOUR_CARVERTICAL_ID',
+    baseUrl: CARVERTICAL_AFFILIATE_URL,
     buttonText: 'Check Vehicle VIN History',
     badgeText: 'Official History Report',
     // Live Everflow Affiliate & Discount Configuration
@@ -173,7 +172,10 @@ function appendTrackingParam(rawBaseUrl, affiliateParam, { skipPlaceholder = fal
 export function buildAffiliateUrl(partnerKey = 'vinCheck', vehicleContext = null) {
   const canonicalKey = resolvePartnerKey(partnerKey);
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
-  const href = appendTrackingParam(partner.baseUrl, partner.affiliateParam);
+  const href =
+    canonicalKey === 'vinCheck'
+      ? getCarVerticalUrl(vehicleContext?.vin || '', vehicleContext?.placement || 'partner-slot')
+      : appendTrackingParam(partner.baseUrl, partner.affiliateParam);
 
   const linkProps = {
     href,

@@ -1617,8 +1617,11 @@ assert.deepEqual(MONETIZATION_CONFIG.slots, {
 });
 
 assert.strictEqual(affiliatePartners.vinCheck.name, 'carVertical');
-assert.strictEqual(affiliatePartners.vinCheck.baseUrl, 'https://www.carvertical.com/en/landing/v3');
-assert.strictEqual(affiliatePartners.vinCheck.affiliateParam, 'a=YOUR_CARVERTICAL_ID');
+assert.strictEqual(
+  affiliatePartners.vinCheck.baseUrl,
+  'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger'
+);
+assert.strictEqual(affiliatePartners.vinCheck.affiliateParam, undefined);
 assert.strictEqual(affiliatePartners.vinCheck.buttonText, 'Check Vehicle VIN History');
 assert.strictEqual(affiliatePartners.vinCheck.badgeText, 'Official History Report');
 
@@ -1642,7 +1645,10 @@ assert.strictEqual(affiliatePartners.partsLookup.badgeText, 'Parts Supplier');
 
 // Verify buildAffiliateUrl helper
 const vinLink = buildAffiliateUrl('vinCheck', { vehicleName: 'BMW 330i' });
-assert.strictEqual(vinLink.href, 'https://www.carvertical.com/en/landing/v3?a=YOUR_CARVERTICAL_ID');
+assert.strictEqual(
+  vinLink.href,
+  'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger&sub2=partner-slot'
+);
 assert.strictEqual(vinLink.target, '_blank');
 assert.strictEqual(vinLink.rel, 'sponsored noopener noreferrer');
 
