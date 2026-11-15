@@ -190,7 +190,11 @@ export function resolvePresetBrandTier(preset) {
 export default function VehicleSelect({
   selectedPresetId,
   onSelectPreset,
+  onAutocompleteSelect,
   selectDropdownId = 'preset-select-dropdown',
+  showTelemetryStrip = true,
+  hideHiddenSelect = false,
+  dropdownInFlow = false,
   className = '',
 }) {
   let unitCtx = null;
@@ -496,7 +500,11 @@ export default function VehicleSelect({
   };
 
   const handleSelectAutocomplete = (presetId) => {
-    onSelectPreset(presetId);
+    if (typeof onAutocompleteSelect === 'function') {
+      onAutocompleteSelect(presetId);
+    } else {
+      onSelectPreset(presetId);
+    }
     setIsSearchOpen(false);
     setSearchQuery('');
     setDebouncedQuery('');
@@ -592,7 +600,9 @@ export default function VehicleSelect({
             id="vehicle-command-search-results"
             role="listbox"
             aria-label="Matching vehicle presets"
-            className="absolute z-40 mt-1.5 max-h-96 w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-xl dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100"
+            className={`${
+              dropdownInFlow ? 'relative mt-2 max-h-64' : 'absolute z-40 mt-1.5 max-h-96'
+            } w-full overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-xl dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100`}
           >
             {autocompleteMatches.length === 0 ? (
               <div className="px-3.5 py-4 text-center text-xs text-muted dark:text-zinc-400">
@@ -706,53 +716,57 @@ export default function VehicleSelect({
       </div>
 
       {/* Compact Active Archetype & Brand-Tier Telemetry Pill Strip */}
-      <div
-        id="vehicle-telemetry-strip"
-        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-surface-subtle/70 px-3 py-2 text-xs dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 min-w-0"
-      >
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
-            <Cpu className="h-3 w-3 text-primary-600 dark:text-primary-400" />
-            <span>{activeArchetype.label}</span>
-            <span className="text-[10px] text-muted dark:text-zinc-400">({activeArchetype.id})</span>
-          </span>
+      {showTelemetryStrip && (
+        <div
+          id="vehicle-telemetry-strip"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-surface-subtle/70 px-3 py-2 text-xs dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 min-w-0"
+        >
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
+              <Cpu className="h-3 w-3 text-primary-600 dark:text-primary-400" />
+              <span>{activeArchetype.label}</span>
+              <span className="text-[10px] text-muted dark:text-zinc-400">({activeArchetype.id})</span>
+            </span>
 
-          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
-            <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-            <span>{activeBrandTier.label}</span>
-            <span className="font-mono tabular-nums text-[10px] text-muted dark:text-zinc-400">· {activeBrandTier.multiplierLabel}</span>
-          </span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
+              <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              <span>{activeBrandTier.label}</span>
+              <span className="font-mono tabular-nums text-[10px] text-muted dark:text-zinc-400">· {activeBrandTier.multiplierLabel}</span>
+            </span>
 
-          {activePreset.engineCode && (
-            <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
-              {activePreset.engineCode}
+            {activePreset.engineCode && (
+              <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 font-sans text-[11px] font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
+                {activePreset.engineCode}
+              </span>
+            )}
+          </div>
+
+          {activePreset.criticalDefectTag && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
+              <ShieldAlert className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>{activePreset.criticalDefectTag}</span>
             </span>
           )}
         </div>
-
-        {activePreset.criticalDefectTag && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
-            <ShieldAlert className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
-            <span>{activePreset.criticalDefectTag}</span>
-          </span>
-        )}
-      </div>
+      )}
 
       {/* Hidden / accessible test selector to preserve #preset-select-dropdown test compatibility */}
-      <div className="sr-only">
-        <label htmlFor={selectDropdownId}>Select Preset Dropdown</label>
-        <select
-          id={selectDropdownId}
-          value={selectedPresetId}
-          onChange={(e) => onSelectPreset(e.target.value)}
-        >
-          {VEHICLE_PRESETS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!hideHiddenSelect && (
+        <div className="sr-only">
+          <label htmlFor={selectDropdownId}>Select Preset Dropdown</label>
+          <select
+            id={selectDropdownId}
+            value={selectedPresetId}
+            onChange={(e) => onSelectPreset(e.target.value)}
+          >
+            {VEHICLE_PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

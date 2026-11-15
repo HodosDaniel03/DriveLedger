@@ -82,18 +82,27 @@ export default function TcoCalculator({
   const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
   const [showSwitchCarModal, setShowSwitchCarModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [draftPresetId, setDraftPresetId] = useState(selectedPresetId);
+
+  useEffect(() => {
+    setDraftPresetId(selectedPresetId);
+  }, [selectedPresetId]);
+
+  const draftPreset = useMemo(() => getPresetById(draftPresetId), [draftPresetId]);
 
   const garage = useGarage();
 
   const isSavedInGarage = useMemo(() => {
+    if (!hasSelectedVehicle) return false;
     if (justSavedGarage) return true;
     if (!garage?.savedVehicles) return false;
     return garage.savedVehicles.some(
       (v) => v.presetId === activePreset.id && v.purchasePriceUsd === purchasePriceUsd
     );
-  }, [garage?.savedVehicles, activePreset.id, purchasePriceUsd, justSavedGarage]);
+  }, [hasSelectedVehicle, garage?.savedVehicles, activePreset.id, purchasePriceUsd, justSavedGarage]);
 
   const handleSaveToGarage = () => {
+    if (!hasSelectedVehicle) return;
     if (garage?.saveVehicleToGarage) {
       garage.saveVehicleToGarage({
         presetId: activePreset.id,
@@ -290,31 +299,55 @@ export default function TcoCalculator({
     return [...(tco.breakdown || [])].sort((a, b) => b.amountUsd - a.amountUsd)[0];
   }, [tco.breakdown]);
 
-  const tcoTldrFacts = useMemo(() => [
-    {
-      label: 'Monthly & 5-Year Total Cost',
-      value: `${formatCurrency(tco.monthlyEconomicCostUsd)} / mo`,
-      subtext: `${horizonYears}-yr total: ${formatCurrency(tco.totalEconomicCostUsd)} · ${formatCurrency(costPerLocalUnit, 2)} / ${distanceUnit}`,
-      badge: null,
-    },
-    {
-      label: 'Primary Cost Driver',
-      value: `${primaryExpense?.label || 'Depreciation'}: ${primaryExpense?.sharePct || 0}%`,
-      subtext: `${formatCurrency(primaryExpense?.amountUsd || 0)} over ${horizonYears} years.`,
-      badge: <RiskBadge level={(primaryExpense?.sharePct || 0) > 40 ? 'critical' : 'moderate'} label={`${primaryExpense?.sharePct || 0}% share`} />,
-    },
-    {
-      label: 'Risk Level & Assessment',
-      value: `${ownershipValueScore}/100 pts`,
-      subtext: '11% below segment median operating cost.',
-      badge: (
-        <RiskBadge
-          level={ownershipValueScore >= 70 ? 'low' : ownershipValueScore >= 45 ? 'moderate' : 'critical'}
-          label={ownershipValueScore >= 70 ? 'Low Risk' : ownershipValueScore >= 45 ? 'Moderate Risk' : 'High Risk'}
-        />
-      ),
-    },
-  ], [tco, horizonYears, formatCurrency, distanceUnit, primaryExpense, ownershipValueScore, costPerLocalUnit]);
+  const tcoTldrFacts = useMemo(() => {
+    if (!hasSelectedVehicle) {
+      return [
+        {
+          label: 'Monthly & 5-Year Total Cost',
+          value: `${currencySymbol}— / mo`,
+          subtext: `Select a vehicle to compute your ${horizonYears}-year economic total and per-${distanceUnit} rate.`,
+          badge: null,
+        },
+        {
+          label: 'Primary Cost Driver',
+          value: 'Select a Vehicle',
+          subtext: 'Depreciation, fuel/charging, insurance, and repair curves adapt per powertrain.',
+          badge: null,
+        },
+        {
+          label: 'Risk Level & Assessment',
+          value: '—/100 pts',
+          subtext: 'Benchmark score appears once a vehicle model is selected.',
+          badge: null,
+        },
+      ];
+    }
+    return [
+      {
+        label: 'Monthly & 5-Year Total Cost',
+        value: `${formatCurrency(tco.monthlyEconomicCostUsd)} / mo`,
+        subtext: `${horizonYears}-yr total: ${formatCurrency(tco.totalEconomicCostUsd)} · ${formatCurrency(costPerLocalUnit, 2)} / ${distanceUnit}`,
+        badge: null,
+      },
+      {
+        label: 'Primary Cost Driver',
+        value: `${primaryExpense?.label || 'Depreciation'}: ${primaryExpense?.sharePct || 0}%`,
+        subtext: `${formatCurrency(primaryExpense?.amountUsd || 0)} over ${horizonYears} years.`,
+        badge: <RiskBadge level={(primaryExpense?.sharePct || 0) > 40 ? 'critical' : 'moderate'} label={`${primaryExpense?.sharePct || 0}% share`} />,
+      },
+      {
+        label: 'Risk Level & Assessment',
+        value: `${ownershipValueScore}/100 pts`,
+        subtext: '11% below segment median operating cost.',
+        badge: (
+          <RiskBadge
+            level={ownershipValueScore >= 70 ? 'low' : ownershipValueScore >= 45 ? 'moderate' : 'critical'}
+            label={ownershipValueScore >= 70 ? 'Low Risk' : ownershipValueScore >= 45 ? 'Moderate Risk' : 'High Risk'}
+          />
+        ),
+      },
+    ];
+  }, [hasSelectedVehicle, currencySymbol, tco, horizonYears, formatCurrency, distanceUnit, primaryExpense, ownershipValueScore, costPerLocalUnit]);
 
   return (
     <div className="space-y-8">
@@ -332,40 +365,94 @@ export default function TcoCalculator({
             <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
               <div>
                 <h2 id="vehicle-heading" className="font-sans text-xl sm:text-2xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
-                  Your vehicle &amp; purchase price
+                  {hasSelectedVehicle ? 'Your vehicle & purchase price' : 'Select your vehicle'}
                 </h2>
                 <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-1">
-                  Adjust vehicle price and ownership assumptions.
+                  {hasSelectedVehicle
+                    ? 'Adjust vehicle price and ownership assumptions.'
+                    : 'Search 120+ models or filter by Make, Model & Engine to unlock exact costs.'}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                {!hasSelectedVehicle && (
-                  <span
-                    data-testid="tco-sample-badge"
-                    className="rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 text-xs font-sans font-semibold"
-                  >
-                    Sample Benchmark
-                  </span>
-                )}
+              {hasSelectedVehicle ? (
                 <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
                   {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
                 </span>
-              </div>
+              ) : (
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
+                  120+ Models
+                </span>
+              )}
             </div>
 
-            {!hasSelectedVehicle && (
+            {hasSelectedVehicle ? (
+              /* Active Vehicle Hero Card with Prominent Switch Car Action */
+              <div className="mb-6">
+                <VehicleVisualCard
+                  vehicle={activePreset}
+                  variant="hero"
+                  className="!p-5 sm:!p-6 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl"
+                  actionButtons={
+                    <div className="flex flex-wrap items-center justify-between w-full gap-3">
+                      <button
+                        type="button"
+                        data-testid="tco-switch-car-button"
+                        onClick={() => {
+                          setDraftPresetId(selectedPresetId);
+                          setShowSwitchCarModal(true);
+                        }}
+                        className="min-h-[44px] sm:min-h-0 bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Switch Car</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDossierModal(true)}
+                        className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs sm:text-sm font-medium text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Share report ↗</span>
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
+            ) : (
+              /* Clean Inline Vehicle Picker (Zero fake car photos or pre-selected numbers) */
               <div
-                data-testid="tco-unselected-callout"
-                className="mb-5 rounded-xl border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/60 dark:bg-amber-950/20 p-3.5 sm:p-4 space-y-2.5"
+                data-testid="tco-empty-vehicle-picker"
+                className="mb-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-sans text-xs sm:text-sm text-amber-950 dark:text-amber-100 font-medium">
-                    No car selected yet — showing an example benchmark. Pick your vehicle for an exact 5-year forecast:
-                  </p>
+                <VehicleSelect
+                  selectedPresetId={draftPresetId}
+                  onSelectPreset={setDraftPresetId}
+                  onAutocompleteSelect={(id) => onSelectPreset(id)}
+                  showTelemetryStrip={false}
+                  dropdownInFlow={true}
+                />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800">
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+                      Selected from dropdown:
+                    </span>
+                    <span className="block font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 truncate">
+                      {draftPreset.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="tco-apply-vehicle-button"
+                    onClick={() => onSelectPreset(draftPresetId)}
+                    className="min-h-[42px] bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  >
+                    <Car className="w-4 h-4 shrink-0" />
+                    <span>Calculate This Vehicle</span>
+                  </button>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] font-sans font-semibold text-amber-800 dark:text-amber-300 mr-1">
-                    Quick pick:
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/70">
+                  <span className="text-[11px] font-sans font-semibold text-muted dark:text-zinc-400 mr-1">
+                    Popular:
                   </span>
                   {[
                     { id: 'vw-golf-20-tdi', label: 'VW Golf TDI' },
@@ -378,7 +465,7 @@ export default function TcoCalculator({
                       key={item.id}
                       type="button"
                       onClick={() => onSelectPreset(item.id)}
-                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/60 text-xs font-sans font-medium text-ink dark:text-zinc-100 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-sans font-medium text-zinc-700 dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
                     >
                       {item.label}
                     </button>
@@ -387,37 +474,8 @@ export default function TcoCalculator({
               </div>
             )}
 
-            {/* Active Vehicle Hero Card with Prominent Switch / Select Car Action */}
-            <div className="mb-6">
-              <VehicleVisualCard
-                vehicle={activePreset}
-                variant="hero"
-                className="!p-5 sm:!p-6 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl"
-                actionButtons={
-                  <div className="flex flex-wrap items-center justify-between w-full gap-3">
-                    <button
-                      type="button"
-                      data-testid="tco-switch-car-button"
-                      onClick={() => setShowSwitchCarModal(true)}
-                      className="min-h-[44px] sm:min-h-0 bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
-                    >
-                      {hasSelectedVehicle ? <RotateCcw className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
-                      <span>{hasSelectedVehicle ? 'Switch Car' : 'Select Your Car'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDossierModal(true)}
-                      className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs sm:text-sm font-medium text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Share report ↗</span>
-                    </button>
-                  </div>
-                }
-              />
-            </div>
-
             {/* Persistent accessible preset benchmarks & full vehicle catalog selector mounted in DOM */}
-            {!showSwitchCarModal && (
+            {hasSelectedVehicle && !showSwitchCarModal && (
               <div className="sr-only" aria-hidden="false">
                 <span className="sr-only">TELEMETRY PRESET BENCHMARKS:</span>
                 {testShortcuts.map((sc) => (
@@ -933,7 +991,7 @@ export default function TcoCalculator({
             {/* Eyebrow */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span id="summary-heading" className="font-sans text-xs font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider scroll-mt-28 lg:scroll-mt-32">
-                {hasSelectedVehicle ? 'ESTIMATED COST TO OWN' : 'SAMPLE COST ESTIMATE'}
+                ESTIMATED COST TO OWN
               </span>
               <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium shrink-0">
                 {horizonYears}-Year Forecast
@@ -944,14 +1002,20 @@ export default function TcoCalculator({
             <div className="my-4 min-w-0">
               <div className="flex items-baseline gap-1 flex-wrap" aria-live="polite">
                 <span id="monthly-total" className="text-[clamp(2.5rem,12vw,4rem)] font-bold font-mono tabular-nums text-ink dark:text-zinc-50 tracking-tight leading-none">
-                  {formatCurrency(tco.monthlyEconomicCostUsd)}
+                  {hasSelectedVehicle ? formatCurrency(tco.monthlyEconomicCostUsd) : `${currencySymbol}—`}
                 </span>
                 <span className="font-sans text-lg text-muted dark:text-zinc-400 font-medium">/mo</span>
               </div>
               <p className="mt-1 truncate font-sans text-xs text-muted dark:text-zinc-400">
-                {activePreset.name} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
+                {hasSelectedVehicle ? (
+                  <>
+                    {activePreset.name} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
+                  </>
+                ) : (
+                  'Select a vehicle on the left to calculate your forecast'
+                )}
               </p>
-              {verifiedGarageCreditUsd > 0 && (
+              {hasSelectedVehicle && verifiedGarageCreditUsd > 0 && (
                 <div
                   data-testid="garage-service-credit-badge"
                   className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium max-w-full"
@@ -960,7 +1024,7 @@ export default function TcoCalculator({
                   <span className="truncate">Verified Garage Service Credit: -<span className="font-mono tabular-nums">{formatCurrency(verifiedGarageCreditUsd)}</span> applied</span>
                 </div>
               )}
-              {tco.hasUnderwaterEquity && financeType !== 'cash' && (
+              {hasSelectedVehicle && tco.hasUnderwaterEquity && financeType !== 'cash' && (
                 <div
                   data-testid="summary-underwater-alert"
                   className="mt-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 text-[11px] font-sans font-medium max-w-full"
@@ -977,7 +1041,7 @@ export default function TcoCalculator({
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
                 <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
-                  {formatCurrency(tco.totalEconomicCostUsd)}
+                  {hasSelectedVehicle ? formatCurrency(tco.totalEconomicCostUsd) : `${currencySymbol}—`}
                 </span>
                 <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
                   {horizonYears}-yr total
@@ -985,7 +1049,7 @@ export default function TcoCalculator({
               </div>
               <div className="min-w-0 p-2.5 sm:px-3.5 sm:py-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5">
                 <span className="font-mono tabular-nums text-sm font-bold text-ink dark:text-zinc-50 truncate">
-                  {formatCurrency(costPerLocalUnit, 2)}
+                  {hasSelectedVehicle ? formatCurrency(costPerLocalUnit, 2) : `${currencySymbol}—`}
                 </span>
                 <span className="font-sans text-[11px] sm:text-xs text-muted dark:text-zinc-400 truncate">
                   per {distanceUnit}
@@ -1005,20 +1069,26 @@ export default function TcoCalculator({
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="font-mono tabular-nums text-xs sm:text-sm font-bold text-ink dark:text-zinc-50">
-                    {ownershipValueScore}/100
+                    {hasSelectedVehicle ? `${ownershipValueScore}/100` : '—/100'}
                   </span>
                   <span
                     data-testid="ownership-value-verdict-badge"
-                    className={`rounded-md border px-2 py-0.5 text-xs font-sans font-semibold ${ownershipVerdict.badgeClass}`}
+                    className={`rounded-md border px-2 py-0.5 text-xs font-sans font-semibold ${
+                      hasSelectedVehicle
+                        ? ownershipVerdict.badgeClass
+                        : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700/60'
+                    }`}
                   >
-                    {ownershipVerdict.text}
+                    {hasSelectedVehicle ? ownershipVerdict.text : 'Select a Vehicle'}
                   </span>
                 </div>
               </div>
               <div className="h-1.5 w-full rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-300 ${ownershipVerdict.barClass}`}
-                  style={{ width: `${ownershipValueScore}%` }}
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    hasSelectedVehicle ? ownershipVerdict.barClass : 'bg-zinc-300 dark:bg-zinc-700'
+                  }`}
+                  style={{ width: hasSelectedVehicle ? `${ownershipValueScore}%` : '0%' }}
                 />
               </div>
             </div>
@@ -1033,14 +1103,14 @@ export default function TcoCalculator({
                     content="Hover over any color segment or category row to highlight how depreciation, fuel, maintenance, insurance, and financing split your monthly cost."
                   />
                 </span>
-                <span className="font-mono tabular-nums">100%</span>
+                <span className="font-mono tabular-nums">{hasSelectedVehicle ? '100%' : '0%'}</span>
               </div>
               <div
                 className="h-3 rounded-full overflow-hidden flex bg-zinc-100 dark:bg-zinc-900 gap-0.5"
                 aria-hidden="true"
                 onMouseLeave={() => setHighlightedCategory(null)}
               >
-                {tco.breakdown.map((c) => {
+                {hasSelectedVehicle && tco.breakdown.map((c) => {
                   const isDimmed = highlightedCategory !== null && highlightedCategory !== c.id;
                   const isHighlighted = highlightedCategory === c.id;
                   return (
@@ -1065,23 +1135,31 @@ export default function TcoCalculator({
             {/* Legend Breakdown Rows */}
             <div className="flex flex-col gap-2 text-xs" onMouseLeave={() => setHighlightedCategory(null)}>
               {tco.breakdown.map((c) => {
-                const isDimmed = highlightedCategory !== null && highlightedCategory !== c.id;
-                const isHighlighted = highlightedCategory === c.id;
+                const isDimmed = hasSelectedVehicle && highlightedCategory !== null && highlightedCategory !== c.id;
+                const isHighlighted = hasSelectedVehicle && highlightedCategory === c.id;
                 return (
                   <div
                     key={c.id}
-                    onMouseEnter={() => setHighlightedCategory(c.id)}
-                    className={`flex items-center justify-between rounded-lg p-1.5 -mx-1.5 cursor-pointer transition-colors duration-150 ${
+                    onMouseEnter={() => hasSelectedVehicle && setHighlightedCategory(c.id)}
+                    className={`flex items-center justify-between rounded-lg p-1.5 -mx-1.5 transition-colors duration-150 ${
+                      hasSelectedVehicle ? 'cursor-pointer' : ''
+                    } ${
                       isDimmed ? 'opacity-25' : 'opacity-100'
-                    } ${isHighlighted ? 'bg-zinc-100 dark:bg-zinc-900 font-semibold' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900/60'}`}
+                    } ${isHighlighted ? 'bg-zinc-100 dark:bg-zinc-900 font-semibold' : hasSelectedVehicle ? 'hover:bg-zinc-50 dark:hover:bg-zinc-900/60' : ''}`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
                       <span className="font-sans font-medium text-ink dark:text-zinc-200 text-sm truncate">{c.label}</span>
                     </div>
                     <span className="font-mono text-xs font-medium text-ink dark:text-zinc-100 tabular-nums shrink-0 ml-2">
-                      {formatCurrency(Math.round(c.amountUsd / (horizonYears * 12)))}/mo{' '}
-                      <span className="text-muted dark:text-zinc-400">({Math.round(c.sharePct)}%)</span>
+                      {hasSelectedVehicle ? (
+                        <>
+                          {formatCurrency(Math.round(c.amountUsd / (horizonYears * 12)))}/mo{' '}
+                          <span className="text-muted dark:text-zinc-400">({Math.round(c.sharePct)}%)</span>
+                        </>
+                      ) : (
+                        <span className="text-muted dark:text-zinc-500">—</span>
+                      )}
                     </span>
                   </div>
                 );
@@ -1110,11 +1188,14 @@ export default function TcoCalculator({
               {/* Primary Action: Save to My Garage */}
               <button
                 type="button"
+                disabled={!hasSelectedVehicle}
                 onClick={handleSaveToGarage}
                 className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 font-sans text-xs font-semibold transition-colors border shadow-xs ${
-                  isSavedInGarage
+                  !hasSelectedVehicle
+                    ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 cursor-not-allowed shadow-none'
+                    : isSavedInGarage
                     ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
-                    : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 dark:hover:bg-emerald-500'
+                    : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 dark:hover:bg-emerald-500 cursor-pointer'
                 }`}
               >
                 {isSavedInGarage ? (
@@ -1207,7 +1288,7 @@ export default function TcoCalculator({
           {/* Contextual carVertical Vehicle History Verification Card */}
           <VinCheckBanner
             placement="tco"
-            vehicleName={activePreset.name}
+            vehicleName={hasSelectedVehicle ? activePreset.name : 'your next vehicle'}
             purchasePriceUsd={purchasePriceUsd}
             vehiclePriceFormatted={formatCurrency(purchasePriceUsd)}
             odometerMiles={odometerMiles}
@@ -1224,11 +1305,11 @@ export default function TcoCalculator({
           aria-modal="true"
           aria-labelledby="switch-car-modal-title"
           data-testid="vehicle-catalog-modal"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => setShowSwitchCarModal(false)}
         >
           <div
-            className="relative w-full max-w-2xl rounded-2xl bg-surface dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-xl rounded-2xl bg-surface dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -1281,17 +1362,51 @@ export default function TcoCalculator({
             </div>
 
             {/* Full Vehicle Catalog Select */}
-            <div className="pt-4">
-              <span className="block font-sans text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 mb-2.5">
+            <div className="pt-4 space-y-4">
+              <span className="block font-sans text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted dark:text-zinc-400">
                 Search or Browse Catalog:
               </span>
               <VehicleSelect
-                selectedPresetId={selectedPresetId}
-                onSelectPreset={(newId) => {
+                selectedPresetId={draftPresetId}
+                onSelectPreset={setDraftPresetId}
+                onAutocompleteSelect={(newId) => {
                   onSelectPreset(newId);
                   setShowSwitchCarModal(false);
                 }}
+                showTelemetryStrip={false}
+                dropdownInFlow={true}
               />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+                    Selected vehicle:
+                  </span>
+                  <span className="block font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 truncate">
+                    {draftPreset.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowSwitchCarModal(false)}
+                    className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-sans text-xs sm:text-sm font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="tco-modal-apply-button"
+                    onClick={() => {
+                      onSelectPreset(draftPresetId);
+                      setShowSwitchCarModal(false);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 font-sans text-xs sm:text-sm font-semibold transition-colors shadow-xs cursor-pointer"
+                  >
+                    Apply Vehicle
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1382,23 +1497,23 @@ export default function TcoCalculator({
           <div className="space-y-5 pt-2">
             <AffiliateCTA
               type="insurance-finance"
-              vehicleName={activePreset.name}
+              vehicleName={hasSelectedVehicle ? activePreset.name : 'your vehicle'}
               purchasePriceUsd={purchasePriceUsd}
               odometerMiles={odometerMiles}
               insuranceAndInterest5YrUsd={combinedUsd}
               insuranceSharePct={combinedSharePct}
             />
-            <ToolEditorialSection tool="tco" vehicleName={activePreset.name} />
+            <ToolEditorialSection tool="tco" vehicleName={hasSelectedVehicle ? activePreset.name : 'your vehicle'} />
           </div>
         );
       })()}
 
       {/* 5. Mobile Sticky Summary Bar for real-time slider feedback on small screens */}
       <MobileStickySummaryBar
-        label={`${activePreset.name} · ${horizonYears}-Yr TCO`}
-        primaryValue={`${formatCurrency(tco.monthlyEconomicCostUsd)}/mo`}
-        secondaryValue={`${formatCurrency(tco.totalEconomicCostUsd)} total`}
-        badgeText={`Score ${ownershipValueScore}/100`}
+        label={hasSelectedVehicle ? `${activePreset.name} · ${horizonYears}-Yr TCO` : `Select a vehicle · ${horizonYears}-Yr TCO`}
+        primaryValue={hasSelectedVehicle ? `${formatCurrency(tco.monthlyEconomicCostUsd)}/mo` : 'Pick a car'}
+        secondaryValue={hasSelectedVehicle ? `${formatCurrency(tco.totalEconomicCostUsd)} total` : '120+ models'}
+        badgeText={hasSelectedVehicle ? `Score ${ownershipValueScore}/100` : 'Ready'}
         actionLabel="View Breakdown"
         onAction={() => {
           const el = document.getElementById('summary-heading');

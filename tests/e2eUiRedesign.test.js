@@ -714,18 +714,20 @@ test('Tier 1 / R2: Homepage Hero - Decluttered search input, 3 starter pills & b
 });
 
 test('Tier 1 / R3: TCO Calculator - Consolidated Active Vehicle Card, Switch Car button & 3-tier value verdict', async () => {
-  const { rootContainer } = await renderApp('/tco');
+  createRoot(rootContainer).render(null);
+  await sleep(20);
+  const { rootContainer: container } = await renderApp('/tco', '?preset=toyota-camry-hybrid');
 
   // 1. Consolidated active vehicle header card with prominent "Switch Car" button
-  const switchCarBtn = findByTestId(rootContainer, 'tco-switch-car-button') ||
-    findButtonByText(rootContainer, 'Switch Car');
+  const switchCarBtn = findByTestId(container, 'tco-switch-car-button') ||
+    findButtonByText(container, 'Switch Car');
   assert.ok(
     switchCarBtn,
     'TCO Calculator must feature a prominent "Switch Car" button on the active vehicle card'
   );
 
   // 2. Verified consolidation: redundant vehicle selectors removed from main column view
-  const oldCatalogToggle = findButtonByText(rootContainer, 'Search or browse 120+ models & engines');
+  const oldCatalogToggle = findButtonByText(container, 'Search or browse 120+ models & engines');
   assert.strictEqual(
     oldCatalogToggle,
     null,
@@ -733,8 +735,8 @@ test('Tier 1 / R3: TCO Calculator - Consolidated Active Vehicle Card, Switch Car
   );
 
   // 3. Ownership Value Score 3-tier verdict badge
-  const verdictBadge = findByTestId(rootContainer, 'ownership-value-verdict-badge') ||
-    rootContainer.querySelectorAll((el) => {
+  const verdictBadge = findByTestId(container, 'ownership-value-verdict-badge') ||
+    container.querySelectorAll((el) => {
       const text = el.textContent || '';
       return (
         text.includes('Great Long-Term Value') ||
@@ -749,9 +751,9 @@ test('Tier 1 / R3: TCO Calculator - Consolidated Active Vehicle Card, Switch Car
   );
 
   // 4. carVertical placement below summary card
-  const vinBanner = findByTestId(rootContainer, 'vin-check-banner') ||
-    rootContainer.querySelectorAll((el) => el.getAttribute('data-placement') === 'tco')[0] ||
-    rootContainer.querySelectorAll((el) => (el.textContent || '').includes('mydriveledger'))[0];
+  const vinBanner = findByTestId(container, 'vin-check-banner') ||
+    container.querySelectorAll((el) => el.getAttribute('data-placement') === 'tco')[0] ||
+    container.querySelectorAll((el) => (el.textContent || '').includes('mydriveledger'))[0];
   assert.ok(
     vinBanner,
     'carVertical history check banner must be rendered below TCO summary card'
@@ -929,18 +931,20 @@ test('Tier 2 / Boundary: Hero Smart Search - Edge inputs, whitespace, case insen
 });
 
 test('Tier 2 / Boundary: TCO Switch Car Modal - Open, Close & Catalog Search Filter', async () => {
-  const { rootContainer } = await renderApp('/tco');
+  createRoot(rootContainer).render(null);
+  await sleep(20);
+  const { rootContainer: container } = await renderApp('/tco', '?preset=toyota-camry-hybrid');
 
-  const switchBtn = findByTestId(rootContainer, 'tco-switch-car-button') ||
-    findButtonByText(rootContainer, 'Switch Car');
+  const switchBtn = findByTestId(container, 'tco-switch-car-button') ||
+    findButtonByText(container, 'Switch Car');
 
   if (switchBtn) {
     switchBtn.dispatchEvent({ type: 'click' });
     await sleep(25);
 
     // Modal / Drawer container must open
-    const modal = findByTestId(rootContainer, 'vehicle-catalog-modal') ||
-      rootContainer.querySelectorAll((el) => el.getAttribute('role') === 'dialog')[0];
+    const modal = findByTestId(container, 'vehicle-catalog-modal') ||
+      container.querySelectorAll((el) => el.getAttribute('role') === 'dialog')[0];
 
     if (modal) {
       assert.ok(modal, 'Switch Car modal must mount on button click');
@@ -1224,7 +1228,7 @@ test('Tier 4 / User Flow 3: Adversarial Keyboard, Mobile Viewport & Rapid Tab Cy
   );
 });
 
-test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean URL, Sample Benchmark Badge & Quick Pick Transition', async () => {
+test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean Empty Picker, Neutral Summary & Smooth Selection', async () => {
   // Unmount any prior mounted App instance from earlier tests to simulate a fresh page load
   createRoot(rootContainer).render(null);
   await sleep(20);
@@ -1244,40 +1248,67 @@ test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean URL, Sample Benchma
     'URL search must stay empty when no vehicle or OBD code has been explicitly chosen'
   );
 
-  // Sample Benchmark badge, unselected callout, and "Select Your Car" CTA must be visible
-  const sampleBadge = findByTestId(container, 'tco-sample-badge');
-  assert.ok(sampleBadge, 'Sample Benchmark badge must render when no vehicle has been selected');
-  const callout = findByTestId(container, 'tco-unselected-callout');
-  assert.ok(callout, 'Unselected vehicle callout with quick-pick options must render');
-  const selectBtn = findByTestId(container, 'tco-switch-car-button');
-  assert.ok(selectBtn && selectBtn.textContent.includes('Select Your Car'), 'CTA must read "Select Your Car" before vehicle selection');
-
-  // Default US sample vehicle must not be Ford Focus EcoBlue
-  assert.ok(
-    container.toHtml().includes('Toyota Camry Hybrid'),
-    'Default US sample vehicle must be Toyota Camry Hybrid'
+  // Inline empty-state picker & apply button must be visible (no popup Switch Car button yet)
+  const emptyPicker = findByTestId(container, 'tco-empty-vehicle-picker');
+  assert.ok(emptyPicker, 'Inline vehicle picker must render when no vehicle has been selected');
+  const applyBtn = findByTestId(container, 'tco-apply-vehicle-button');
+  assert.ok(applyBtn, 'Apply vehicle button must render inside the inline empty-state picker');
+  assert.strictEqual(
+    findByTestId(container, 'tco-switch-car-button'),
+    null,
+    'Active vehicle card Switch Car button must NOT render before a vehicle is selected'
   );
 
-  // Switching region to EU before choosing a car must update the sample vehicle to VW Golf TDI
+  // Main monthly figure must be neutral placeholder ($—) with no pre-selected Camry/Focus photo or metrics
+  const camryOrFocusImgs = container.querySelectorAll(
+    (el) => el.tagName === 'IMG' && /camry|focus/i.test(el.getAttribute('alt') || '')
+  );
+  assert.strictEqual(
+    camryOrFocusImgs.length,
+    0,
+    'Must NOT render a Toyota Camry or Ford Focus car image before user selects a vehicle'
+  );
+  const summaryHeading = container.getElementById('summary-heading');
+  const summaryCardHtml = summaryHeading?.parentNode?.parentNode?.toHtml() || '';
+  assert.ok(
+    !summaryCardHtml.includes('Toyota Camry') && !summaryCardHtml.includes('Ford Focus'),
+    'Summary card must NOT show Toyota Camry or Ford Focus vehicle name before selection'
+  );
+  const monthlyTotalEl = container.getElementById('monthly-total');
+  assert.ok(
+    monthlyTotalEl && monthlyTotalEl.textContent.includes('$—'),
+    `Monthly cost must show neutral $— placeholder before selecting a vehicle (got ${monthlyTotalEl?.textContent})`
+  );
+  const verdictBadge = findByTestId(container, 'ownership-value-verdict-badge');
+  assert.ok(
+    verdictBadge && verdictBadge.textContent.includes('Select a Vehicle'),
+    'Verdict badge must prompt "Select a Vehicle" before selection'
+  );
+
+  // Switching region to EU before choosing a car updates the currency placeholder (€—) cleanly
   const regionGroup = container.querySelectorAll((el) => el.getAttribute('role') === 'radiogroup')[0];
   const euRadio = regionGroup.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('EU'))[0];
   euRadio.dispatchEvent({ type: 'click' });
   await sleep(35);
   assert.ok(
-    container.toHtml().includes('Volkswagen Golf'),
-    'Switching to EU region before selecting a car must switch the sample vehicle to Volkswagen Golf'
+    container.getElementById('monthly-total').textContent.includes('€—'),
+    'Switching to EU region before selecting a car must update placeholder currency to €—'
   );
 
-  // Clicking a quick-pick chip selects the vehicle explicitly, switches CTA to "Switch Car", and sets ?tab=tco&preset=... without code=P2002
-  const quickPickBtn = findButtonByText(callout, 'Model 3');
-  assert.ok(quickPickBtn, 'Quick pick button for Model 3 must exist inside callout');
+  // Clicking a quick-pick chip selects the vehicle explicitly, clears the inline picker, shows Switch Car, and sets ?tab=tco&preset=... without code=P2002
+  const quickPickBtn = findButtonByText(emptyPicker, 'Model 3');
+  assert.ok(quickPickBtn, 'Quick pick button for Model 3 must exist inside empty picker');
   quickPickBtn.dispatchEvent({ type: 'click' });
   await sleep(35);
 
-  assert.strictEqual(findByTestId(container, 'tco-sample-badge'), null, 'Sample badge must clear once a vehicle is chosen');
+  assert.strictEqual(findByTestId(container, 'tco-empty-vehicle-picker'), null, 'Empty picker must clear once a vehicle is chosen');
   assert.ok(
     findByTestId(container, 'tco-switch-car-button').textContent.includes('Switch Car'),
-    'CTA must change to "Switch Car" after selecting a vehicle'
+    'Active vehicle card "Switch Car" button must mount after selecting a vehicle'
+  );
+  assert.ok(
+    !container.getElementById('monthly-total').textContent.includes('—'),
+    'Monthly cost must show real computed value after vehicle selection'
   );
   assert.ok(
     globalThis.window.location.search.includes('preset=tesla-model-3-lr') &&
