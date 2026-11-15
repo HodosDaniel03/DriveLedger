@@ -1896,7 +1896,20 @@ assert.strictEqual(logoBuf.readUInt32BE(16), 512, 'public/logo-512.png width mus
 assert.strictEqual(logoBuf.readUInt32BE(20), 512, 'public/logo-512.png height must be 512');
 
 assert.ok(fs.existsSync(faviconPath), 'public/favicon.svg must exist');
-assert.ok(fs.readFileSync(faviconPath, 'utf8').includes('<svg'), 'public/favicon.svg must be valid SVG');
+const faviconSvg = fs.readFileSync(faviconPath, 'utf8');
+assert.ok(faviconSvg.includes('<svg'), 'public/favicon.svg must be valid SVG');
+assert.ok(faviconSvg.includes('#0F172A') && faviconSvg.includes('#10B981'), 'public/favicon.svg must use #10B981 emerald gauge on #0F172A dark slate');
+
+for (const emblemFile of ['DriveLedgeremblem.png', 'driveledger-emblem.png']) {
+  const emblemPath = path.join(projectRoot, 'public', emblemFile);
+  assert.ok(fs.existsSync(emblemPath), `public/${emblemFile} must exist`);
+  const emblemStat = fs.statSync(emblemPath);
+  assert.ok(emblemStat.size > 0, `public/${emblemFile} must be non-empty`);
+}
+
+const brandLogoSource = fs.readFileSync(path.join(projectRoot, 'src/components/common/BrandLogo.jsx'), 'utf8');
+assert.ok(brandLogoSource.includes('#10B981') && brandLogoSource.includes('#0F172A') && brandLogoSource.includes('#F8FAFC'), 'BrandLogo must encode emerald, ink slate, and dark-mode white tokens');
+assert.ok(initialHtml.includes('#10B981') && initialHtml.includes('DriveLedger'), 'Rendered Navbar & Footer must mount BrandLogo emblem and DriveLedger text');
 
 // 8. Verify AdUnit live AdSense rendering (adsenseEnabled: true), slot key resolution, ad-blocker resilience, and hideWhenDisabled
 const { default: AdUnit } = await import('../src/components/monetization/AdUnit.jsx');

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { Pill } from './OdometerPrimitives';
+import BrandLogo from './BrandLogo';
 import {
   MAINTENANCE_COMPONENTS,
   evaluateComponentHealth,
@@ -309,6 +310,7 @@ export default function VehicleDossierExport({
           {/* Shared Vehicle Summary Header, Odometer & Reliability Score (0-100) Badge */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b-2 border-primary-600 print:pb-2.5 print:border-black">
             <div>
+              <BrandLogo size="sm" className="mb-1.5" />
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 print:text-black font-bold">
                   DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT

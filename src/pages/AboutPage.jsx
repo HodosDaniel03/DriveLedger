@@ -13,6 +13,7 @@ import {
   Award,
   AlertTriangle,
 } from 'lucide-react';
+import BrandLogo from '../components/common/BrandLogo';
 
 export default function AboutPage({ onNavigateTab }) {
   const handleNav = (tab) => {
@@ -26,6 +27,9 @@ export default function AboutPage({ onNavigateTab }) {
       <div className="max-w-5xl mx-auto space-y-16">
         {/* Hero Section */}
         <header className="text-center space-y-4">
+          <div className="flex justify-center">
+            <BrandLogo size="lg" />
+          </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold tracking-wide uppercase">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             Empirical Automotive Intelligence

@@ -4,6 +4,7 @@ import { OBD_CODES } from '../../data/obdCodes';
 import { PROGRAMMATIC_OBD_MATRIX } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Collapse } from '../common/OdometerPrimitives';
+import BrandLogo from '../common/BrandLogo';
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import { getPresetById } from '../../data/vehiclePresets';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
@@ -240,16 +241,8 @@ export default function Footer({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
             {/* Brand Col */}
             <div className="lg:col-span-2 flex flex-col gap-3">
-              <div className="flex items-center gap-2.5 text-ink dark:text-zinc-50 cursor-pointer" onClick={() => onSelectTab && onSelectTab('overview')}>
-                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
-                  <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path d="M4 15a8 8 0 1 1 16 0" />
-                    <path d="m12 14 3-3" />
-                  </svg>
-                </span>
-                <span className="font-sans text-h3 tracking-tight font-bold text-ink dark:text-zinc-50">
-                  {MONETIZATION_CONFIG.brandName}
-                </span>
+              <div className="inline-flex items-center cursor-pointer w-fit" onClick={() => onSelectTab && onSelectTab('overview')}>
+                <BrandLogo size="md" />
               </div>
               <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-sm">
                 Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.

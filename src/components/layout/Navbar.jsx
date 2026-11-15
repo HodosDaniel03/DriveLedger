@@ -4,6 +4,7 @@ import { useUnits } from '../../context/UnitContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useGarage } from '../../context/GarageContext';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
+import BrandLogo from '../common/BrandLogo';
 
 export const PRIMARY_WORKSPACE_TABS = [
   { id: 'overview', label: 'Overview', fullLabel: 'Overview · DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database', path: '/' },
@@ -180,15 +181,14 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             e.preventDefault();
             onSelectTab('overview');
           }}
-          className="min-h-[44px] flex items-center gap-2 sm:gap-2.5 text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
+          className="min-h-[44px] flex items-center text-ink dark:text-zinc-50 group shrink-0 focus:outline-none"
           aria-label="DriveLedger home"
         >
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white transition-transform duration-200 group-hover:scale-105 shadow-xs shrink-0">
-            <Gauge className="w-4 h-4 text-white" />
-          </span>
-          <span className="hidden min-[360px]:inline font-sans font-bold text-base sm:text-lg tracking-tight text-ink dark:text-zinc-50 truncate">
-            DriveLedger
-          </span>
+          <BrandLogo
+            size="md"
+            wordmarkClassName="hidden min-[360px]:inline-flex"
+            className="transition-transform duration-200 group-hover:scale-[1.02]"
+          />
         </a>
 
         {/* Center (Desktop & Laptop >= 1024px): Priority Plus (5 Primary Tools + "More ▾" Dropdown) */}
@@ -584,18 +584,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             <div className="space-y-5">
               {/* Drawer Top Bar */}
               <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#183D22] text-white shrink-0">
-                    <Gauge className="w-4 h-4 text-white" />
+                <div className="min-w-0">
+                  <BrandLogo size="sm" />
+                  <span className="font-sans text-[11px] text-muted dark:text-zinc-400 block truncate mt-0.5">
+                    Navigation &amp; Preferences
                   </span>
-                  <div className="min-w-0">
-                    <span className="font-sans font-bold text-base text-ink dark:text-zinc-50 block truncate">
-                      DriveLedger
-                    </span>
-                    <span className="font-sans text-[11px] text-muted dark:text-zinc-400 block truncate">
-                      Navigation &amp; Preferences
-                    </span>
-                  </div>
                 </div>
                 <button
                   type="button"
