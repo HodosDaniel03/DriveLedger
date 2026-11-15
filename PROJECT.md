@@ -27,6 +27,10 @@ DriveLedger is a Vite + React automotive total cost of ownership (TCO) and maint
 | 14 | Strategic Product Report | Create `PRODUCT_STRATEGY_AND_ROADMAP.md` covering audit, retention loops, CRO, and SEO | Sub-Agent 5 (R6) | DONE | ORIGINAL_REQUEST §R6 |
 | 15 | Zero-Hungarian Final Purge (Data & Vehicles) | Clean remaining 154 Hungarian characters in `src/data/vehicles/*.js` and service | Sub-Agent 1B | DONE | ORIGINAL_REQUEST §R1 |
 | 16 | Zero-Hungarian Final Purge (Components) | Clean remaining Hungarian characters in Comparator, Dossier, SEO Head, Primitives | Sub-Agent 2B | DONE | ORIGINAL_REQUEST §R1 |
+| 17 | Buyer Negotiation Script in TcoCalculator | 1-click collapsible Negotiation Battlecard & Seller Script with data-backed target offer & clipboard copy | Worker (Phase 5 R1) | DONE | ORIGINAL_REQUEST §R1 |
+| 18 | Shareable Garage URL | ?garage= query parameter parsing, preset merging, getShareableGarageUrl & Navbar copy button | Worker (Phase 5 R2) | DONE | ORIGINAL_REQUEST §R2 |
+| 19 | Functional Contact Dispatch | 1-click formatted inquiry copy & pre-filled mailto button on ContactPage confirmation card | Worker (Phase 5 R3) | DONE | ORIGINAL_REQUEST §R3 |
+| 20 | Phase 5 QA, Build & Git Push | Clean npm test (Node + Vitest), npm run build, commit, and git push to origin main | Worker (Phase 5 R4) | IN_PROGRESS | ORIGINAL_REQUEST §R4 |
 
 ## Workstreams & File Ownership Boundaries
 | Workstream | Sub-Agent Role | Exclusive File Boundaries |
@@ -38,6 +42,7 @@ DriveLedger is a Vite + React automotive total cost of ownership (TCO) and maint
 | Sub-Agent 5 | QA, Build & Product Strategy | `tests/**`, `PRODUCT_STRATEGY_AND_ROADMAP.md` |
 | Sub-Agent 1B | Zero-Hungarian Final Purge (Data & Vehicles) | `src/data/vehicles/*.js`, `src/services/vehicleDataService.js` |
 | Sub-Agent 2B | Zero-Hungarian Final Purge (Components & App) | `src/components/calculators/VehicleComparator.jsx`, `src/components/common/KnownIssuesDossier.jsx`, `src/components/home/PreInspectionChecklist.jsx`, `src/components/seo/DynamicSeoHead.jsx`, `src/components/common/OdometerPrimitives.jsx`, `src/App.jsx` |
+| Phase 5 Worker | Phase 5 Full Implementation | `src/data/fixOrSellEngine.js`, `src/components/calculators/TcoCalculator.jsx`, `src/context/GarageContext.jsx`, `src/components/layout/Navbar.jsx`, `src/pages/ContactPage.jsx`, `tests/nextPhaseProductFeatures.test.js` |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -47,3 +52,6 @@ DriveLedger is a Vite + React automotive total cost of ownership (TCO) and maint
 | M1B | Zero-Hungarian Final Purge | Sub-Agents 1B and 2B clean vehicle dossiers and remaining UI components | M1 | DONE |
 | M2 | Final QA & Build Verification | Full Vitest suite, npm test, npm run build, regex scan | M1B | DONE |
 | M3 | Verification Squad & Gate | Reviewers, Challengers, and Forensic Auditor evaluate full overhaul | M2 | DONE (Gate PASS) |
+| M4 | Phase 5 Survey | 3 Explorers map R1, R2, R3, R4 in codebase | none | DONE |
+| M5 | Phase 5 Implementation | Worker implements R1, R2, R3, and test suite additions | M4 | DONE |
+| M6 | Phase 5 Verification & Gate | 2 Reviewers, 2 Challengers, Forensic Auditor verify, then git push | M5 | IN_PROGRESS |

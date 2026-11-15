@@ -8,6 +8,7 @@ import {
   evaluateComponentHealth,
   resolvePowertrainType,
   isPureElectric,
+  getMilestonesForPowertrain,
 } from './maintenanceData.js';
 
 /**
@@ -254,5 +255,85 @@ export function evaluateFixOrSellDecision({
       `High probability of secondary subsystem repairs within 15k miles`,
       `Disclose fault and liquidate as-is rather than sinking capital`,
     ],
+  };
+}
+
+/**
+ * Generates a buyer negotiation battlecard and seller outreach script.
+ * Combines market deal evaluation, upcoming scheduled milestone services,
+ * first-year maintenance leverage, and depreciation telemetry.
+ */
+export function generateNegotiationBattlecard({
+  vehicle,
+  purchasePriceUsd,
+  odometerMiles,
+  tco,
+  formatCurrency = (n) => `$${Math.round(n || 0).toLocaleString('en-US')}`,
+  formatDistance = (m) => `${Math.round(m || 0).toLocaleString('en-US')} mi`,
+} = {}) {
+  const safePrice = Math.max(0, Number(purchasePriceUsd) || 0);
+  const safeOdo = Math.max(0, Number(odometerMiles ?? vehicle?.defaultOdometerMiles) || 0);
+  const dealEvaluation = evaluateMarketPriceDeal(vehicle, safePrice, safeOdo);
+  const fairValueUsd = dealEvaluation.fairValueUsd;
+
+  const milestones = getMilestonesForPowertrain(vehicle);
+  const nextMilestone =
+    milestones.find((m) => m.miles > safeOdo) || milestones[milestones.length - 1];
+  const upcomingServiceItems = nextMilestone ? nextMilestone.items.map((i) => i.name) : [];
+
+  const upcomingMaintenanceUsd = Math.round(
+    tco?.yearlySchedule?.[0]?.yearMaintenanceUsd ||
+      vehicle?.baseAnnualMaintenanceUsd ||
+      850
+  );
+
+  const year1DepreciationUsd = Math.round(
+    tco?.yearlySchedule?.[0]?.yearDepreciationUsd ||
+      safePrice * 0.15
+  );
+
+  const rawTargetOffer =
+    safePrice > fairValueUsd
+      ? fairValueUsd - upcomingMaintenanceUsd * 0.5
+      : Math.min(safePrice, fairValueUsd) - upcomingMaintenanceUsd * 0.3;
+
+  const minFloor =
+    safePrice > 2000 ? Math.round(safePrice * 0.75) : Math.round(safePrice * 0.9);
+  const roundedTarget = Math.round(rawTargetOffer / 50) * 50;
+  const clampedTarget =
+    safePrice > 1000
+      ? Math.max(1000, Math.max(minFloor, roundedTarget))
+      : Math.max(0, roundedTarget);
+  const targetOfferPriceUsd = Math.min(safePrice, clampedTarget);
+  const potentialSavingsUsd = Math.max(0, safePrice - targetOfferPriceUsd);
+
+  const serviceSummary =
+    upcomingServiceItems.slice(0, 3).join(', ') || 'fluid changes & safety inspections';
+  const nextMilestoneLabel = nextMilestone
+    ? `${formatDistance(nextMilestone.miles)} service`
+    : 'upcoming scheduled service';
+
+  const sellerScript = [
+    `Hi, thank you for listing the ${vehicle?.name || 'vehicle'}.`,
+    '',
+    `I am very interested in this car. Based on current market telemetry for this model at ${formatDistance(safeOdo)}, the fair market benchmark is approximately ${formatCurrency(fairValueUsd)}.`,
+    '',
+    `Looking at the maintenance roadmap for this mileage, the car is approaching its ${nextMilestoneLabel} (${serviceSummary}), with projected first-year scheduled maintenance of ~${formatCurrency(upcomingMaintenanceUsd)} alongside estimated first-year depreciation of ~${formatCurrency(year1DepreciationUsd)}.`,
+    '',
+    `Factoring in these immediate ownership investments, would you consider an offer of ${formatCurrency(targetOfferPriceUsd)}? I am a serious, verified buyer and prepared to finalize promptly with zero hassle.`,
+    '',
+    `Thank you for your time and consideration!`,
+  ].join('\n');
+
+  return {
+    dealEvaluation,
+    fairValueUsd,
+    targetOfferPriceUsd,
+    potentialSavingsUsd,
+    upcomingMaintenanceUsd,
+    year1DepreciationUsd,
+    nextMilestone,
+    upcomingServiceItems,
+    sellerScript,
   };
 }

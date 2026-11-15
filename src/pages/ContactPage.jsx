@@ -11,6 +11,7 @@ import {
   FileText,
   RotateCcw,
   Sparkles,
+  Copy,
 } from 'lucide-react';
 
 const TOPIC_OPTIONS = [
@@ -35,6 +36,7 @@ export default function ContactPage({ onNavigateTab }) {
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
+  const [copiedInquiry, setCopiedInquiry] = useState(false);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -116,6 +118,66 @@ export default function ContactPage({ onNavigateTab }) {
     setErrors({});
     setTouched({});
     setSubmissionSuccess(null);
+    setCopiedInquiry(false);
+  };
+
+  // Formatted inquiry for submission confirmation card (R3)
+  const topicLabel =
+    TOPIC_OPTIONS.find((t) => t.value === submissionSuccess?.summary?.topic)?.label ||
+    submissionSuccess?.summary?.topic ||
+    'General Inquiry';
+
+  const formattedInquiryText = submissionSuccess
+    ? [
+        'To: contact@mydriveledger.com',
+        `Subject: [DriveLedger Ticket: ${submissionSuccess.refId}] ${topicLabel} from ${submissionSuccess.summary.name}`,
+        `Ticket Reference: ${submissionSuccess.refId}`,
+        `Submitted: ${submissionSuccess.submittedAt}`,
+        `Sender Name: ${submissionSuccess.summary.name}`,
+        `Sender Email: ${submissionSuccess.summary.email}`,
+        `Topic: ${topicLabel}`,
+        submissionSuccess.summary.vehicleDetails
+          ? `Vehicle: ${submissionSuccess.summary.vehicleDetails}`
+          : null,
+        '',
+        'Message Body:',
+        submissionSuccess.summary.message,
+      ]
+        .filter((line) => line !== null)
+        .join('\n')
+    : '';
+
+  const submissionMailtoSubject = submissionSuccess
+    ? encodeURIComponent(
+        `[DriveLedger Ticket: ${submissionSuccess.refId}] ${topicLabel} from ${submissionSuccess.summary.name}`
+      )
+    : '';
+  const submissionMailtoBody = submissionSuccess
+    ? encodeURIComponent(formattedInquiryText)
+    : '';
+  const submissionMailtoUrl = `mailto:contact@mydriveledger.com?subject=${submissionMailtoSubject}&body=${submissionMailtoBody}`;
+
+  const handleCopyInquiry = async () => {
+    if (!formattedInquiryText) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(formattedInquiryText);
+      } else if (typeof document !== 'undefined') {
+        const input = document.createElement('textarea');
+        input.value = formattedInquiryText;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+    } catch {
+      // Graceful fallback for restricted environments
+    }
+    setCopiedInquiry(true);
+    setTimeout(() => setCopiedInquiry(false), 2500);
   };
 
   // Generate mailto link as direct fallback
@@ -186,10 +248,47 @@ export default function ContactPage({ onNavigateTab }) {
                   </div>
                 </div>
 
+                {/* 1-Click Dispatch & Copy Actions (R3) */}
+                <div className="space-y-2 pt-2 border-t border-border dark:border-zinc-800">
+                  <div className="text-xs font-semibold text-ink dark:text-zinc-200">
+                    Dispatch Options &amp; Records:
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a
+                      href={submissionMailtoUrl}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-canvas dark:bg-zinc-800 hover:bg-surface-subtle dark:hover:bg-zinc-700/80 border border-border dark:border-zinc-700 text-ink dark:text-zinc-200 text-xs font-semibold transition-all shadow-sm"
+                    >
+                      <Mail className="w-4 h-4 text-primary-600 dark:text-emerald-400" />
+                      Send via Email App
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyInquiry}
+                      className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border text-xs font-semibold transition-all shadow-sm ${
+                        copiedInquiry
+                          ? 'bg-emerald-600 dark:bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-primary-600 hover:bg-primary-700 text-white border-transparent'
+                      }`}
+                    >
+                      {copiedInquiry ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Inquiry Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy Formatted Inquiry</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm transition-all shadow-sm"
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-surface-subtle dark:bg-zinc-800/60 hover:bg-canvas dark:hover:bg-zinc-800 border border-border dark:border-zinc-700 text-body dark:text-zinc-300 font-medium text-xs transition-all shadow-sm"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Send Another Inquiry

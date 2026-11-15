@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, ChevronDown, Calculator, ShieldAlert, Cpu, Gauge, Sun, Moon, Car, GitCompare, CheckCircle2, BookOpen, MessageSquare, FileText, Search } from 'lucide-react';
+import { X, ChevronDown, Calculator, ShieldAlert, Cpu, Gauge, Sun, Moon, Car, GitCompare, CheckCircle2, BookOpen, MessageSquare, FileText, Search, Share2 } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useGarage } from '../../context/GarageContext';
@@ -44,9 +44,54 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
   const [garageDropdownOpen, setGarageDropdownOpen] = useState(false);
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
   const [drawerVehicleExpanded, setDrawerVehicleExpanded] = useState(false);
+  const [garageLinkCopied, setGarageLinkCopied] = useState(false);
+  const garageCopiedTimeoutRef = useRef(null);
 
   const drawerRef = useRef(null);
   const mobileTabRefs = useRef({});
+
+  useEffect(() => {
+    return () => {
+      if (garageCopiedTimeoutRef.current) {
+        clearTimeout(garageCopiedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopyShareableGarageLink = async () => {
+    try {
+      const url =
+        typeof garage?.getShareableGarageUrl === 'function'
+          ? garage.getShareableGarageUrl()
+          : typeof window !== 'undefined'
+            ? window.location.href
+            : 'https://mydriveledger.com/';
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(url);
+      } else if (typeof document !== 'undefined') {
+        const input = document.createElement('textarea');
+        input.value = url;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+    } catch {
+      // Ignore clipboard errors in mock DOM
+    }
+
+    setGarageLinkCopied(true);
+    if (garageCopiedTimeoutRef.current) {
+      clearTimeout(garageCopiedTimeoutRef.current);
+    }
+    garageCopiedTimeoutRef.current = setTimeout(() => {
+      setGarageLinkCopied(false);
+    }, 2000);
+  };
 
   const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
   const filteredNavbarPresets = useMemo(() => {
@@ -376,8 +421,8 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   )}
                 </div>
 
-                {/* Compare Quick CTA */}
-                <div className="py-2.5">
+                {/* Compare & Share Quick CTAs */}
+                <div className="py-2.5 space-y-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -388,6 +433,25 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   >
                     <GitCompare className="w-3.5 h-3.5" />
                     <span>Open Side-by-Side Comparator</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="copy-shareable-garage-link-button"
+                    onClick={handleCopyShareableGarageLink}
+                    className="w-full min-h-[38px] flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/80 dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 font-sans text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    {garageLinkCopied ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                        <span>Copy Shareable Garage Link</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -827,6 +891,24 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                   >
                     <GitCompare className="w-3.5 h-3.5" />
                     <span>Open Side-by-Side Comparator</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="copy-shareable-garage-link-button-mobile"
+                    onClick={handleCopyShareableGarageLink}
+                    className="w-full min-h-[38px] flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100/70 dark:bg-zinc-800 text-ink dark:text-zinc-100 text-xs font-sans font-semibold"
+                  >
+                    {garageLinkCopied ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                        <span>Copy Shareable Garage Link</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

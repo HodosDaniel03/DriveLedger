@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { VEHICLE_PRESETS } from '../data/vehiclePresets.js';
 
 export const GARAGE_STORAGE_KEY = 'shiftmetric_garage_v1';
 
@@ -55,6 +56,147 @@ export const COMPONENT_MILESTONE_TRIGGERS = {
   'ev-regen-brake-corrosion': ['15k-ev-brakes', '30k-ev-brake-fluid', '60k-ev-rotor-rust', '90k-ev-rotors', 'ev-mile-15k', 'ev-mile-30k', 'ev-mile-60k', 'ev-mile-90k', 'ev-mile-120k', 'ev-mile-150k'],
 };
 
+/**
+ * Parses ?garage= query parameter into structured saved vehicle entries.
+ * Skips unrecognized or invalid preset IDs.
+ */
+export function parseGarageParam(rawParam) {
+  if (!rawParam || typeof rawParam !== 'string') return [];
+  const entries = rawParam.split(',');
+  const parsed = [];
+  const seenPresetIds = new Set();
+
+  for (const entry of entries) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(':');
+    const presetId = parts[0]?.trim().toLowerCase();
+    if (!presetId || seenPresetIds.has(presetId)) continue;
+
+    const preset = VEHICLE_PRESETS.find((p) => p.id.toLowerCase() === presetId);
+    if (!preset) continue;
+
+    seenPresetIds.add(presetId);
+
+    let purchasePriceUsd = preset.purchasePriceUsd;
+    if (parts.length > 1) {
+      const parsedPrice = Number(parts[1]);
+      if (Number.isFinite(parsedPrice) && parsedPrice > 0) {
+        purchasePriceUsd = Math.round(parsedPrice);
+      }
+    }
+
+    let odometerMiles = preset.defaultOdometerMiles;
+    if (parts.length > 2) {
+      const parsedMiles = Number(parts[2]);
+      if (Number.isFinite(parsedMiles) && parsedMiles >= 0) {
+        odometerMiles = Math.round(parsedMiles);
+      }
+    }
+
+    parsed.push({
+      presetId: preset.id,
+      name: preset.name,
+      odometerMiles,
+      purchasePriceUsd,
+      scheduleMode: 'preventative',
+      completedCount: 0,
+      savedAt: new Date().toISOString(),
+    });
+  }
+
+  return parsed;
+}
+
+/**
+ * Merges newly parsed garage vehicles into existing savedVehicles with deduplication.
+ */
+export function mergeGarageVehicles(existingVehicles = [], incomingVehicles = []) {
+  if (!Array.isArray(incomingVehicles) || incomingVehicles.length === 0) {
+    return Array.isArray(existingVehicles) ? [...existingVehicles] : [];
+  }
+  const merged = Array.isArray(existingVehicles) ? [...existingVehicles] : [];
+  for (const inc of incomingVehicles) {
+    const existingIndex = merged.findIndex((v) => v.presetId === inc.presetId);
+    if (existingIndex >= 0) {
+      merged[existingIndex] = {
+        ...merged[existingIndex],
+        purchasePriceUsd: inc.purchasePriceUsd || merged[existingIndex].purchasePriceUsd,
+        odometerMiles: inc.odometerMiles || merged[existingIndex].odometerMiles,
+      };
+    } else {
+      merged.push(inc);
+    }
+  }
+  return merged;
+}
+
+/**
+ * Extracts garage parameter string from window.location or arbitrary URL safely.
+ */
+export function extractGarageParamFromUrl(customUrl) {
+  try {
+    if (customUrl) {
+      const search = customUrl.includes('?') ? customUrl.split('?')[1]?.split('#')[0] : customUrl;
+      const params = new URLSearchParams(search);
+      return params.get('garage');
+    }
+    if (typeof window !== 'undefined' && window.location) {
+      if (window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const val = params.get('garage');
+        if (val) return val;
+      }
+      if (window.location.hash && window.location.hash.includes('?')) {
+        const hashQuery = window.location.hash.split('?')[1];
+        const params = new URLSearchParams(hashQuery);
+        const val = params.get('garage');
+        if (val) return val;
+      }
+    }
+  } catch {
+    // Ignore in SSR / restricted environments
+  }
+  return null;
+}
+
+/**
+ * Generates full shareable URL containing ?garage=...
+ */
+export function getShareableGarageUrl(savedVehicles = [], baseUrl) {
+  let origin = 'https://mydriveledger.com';
+  let pathname = '/';
+  if (baseUrl) {
+    try {
+      const u = new URL(baseUrl, 'https://mydriveledger.com');
+      origin = u.origin;
+      pathname = u.pathname;
+    } catch {}
+  } else if (typeof window !== 'undefined' && window.location) {
+    origin = window.location.origin || 'https://mydriveledger.com';
+    pathname = window.location.pathname || '/';
+  }
+
+  if (!Array.isArray(savedVehicles) || savedVehicles.length === 0) {
+    return `${origin}${pathname}`;
+  }
+
+  const tokens = savedVehicles
+    .filter((v) => v && (v.presetId || v.id))
+    .map((v) => {
+      const id = (v.presetId || v.id).trim().toLowerCase();
+      const price = Math.round(Number(v.purchasePriceUsd) || 0);
+      const miles = Math.round(Number(v.odometerMiles) || 0);
+      return `${id}:${price}:${miles}`;
+    });
+
+  if (tokens.length === 0) {
+    return `${origin}${pathname}`;
+  }
+
+  return `${origin}${pathname}?garage=${tokens.join(',')}`;
+}
+
 const DEFAULT_GARAGE_STATE = {
   selectedPresetId: null,
   completedMilestonesByPreset: {},
@@ -63,13 +205,14 @@ const DEFAULT_GARAGE_STATE = {
 };
 
 function loadGarageState() {
+  let state = DEFAULT_GARAGE_STATE;
   try {
     if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
       const raw = localStorage.getItem(GARAGE_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
-          return {
+          state = {
             selectedPresetId:
               typeof parsed.selectedPresetId === 'string' ? parsed.selectedPresetId : null,
             completedMilestonesByPreset:
@@ -88,7 +231,20 @@ function loadGarageState() {
   } catch {
     // Ignore storage read errors in SSR / restricted test environments
   }
-  return DEFAULT_GARAGE_STATE;
+
+  // Check URL parameter on initial load
+  const garageParam = extractGarageParamFromUrl();
+  if (garageParam) {
+    const incoming = parseGarageParam(garageParam);
+    if (incoming.length > 0) {
+      state.savedVehicles = mergeGarageVehicles(state.savedVehicles, incoming);
+      if (!state.selectedPresetId) {
+        state.selectedPresetId = incoming[0].presetId;
+      }
+    }
+  }
+
+  return state;
 }
 
 const GarageContext = createContext({
@@ -105,6 +261,7 @@ const GarageContext = createContext({
   removeVehicleFromGarage: () => {},
   getCompletedMilestones: () => ({}),
   getServicedComponents: () => ({}),
+  getShareableGarageUrl: () => 'https://mydriveledger.com/',
 });
 
 export function GarageProvider({ children }) {
@@ -119,6 +276,23 @@ export function GarageProvider({ children }) {
       // Ignore storage write errors in SSR / restricted test environments
     }
   }, [garageState]);
+
+  useEffect(() => {
+    const garageParam = extractGarageParamFromUrl();
+    if (garageParam) {
+      const incoming = parseGarageParam(garageParam);
+      if (incoming.length > 0) {
+        setGarageState((prev) => {
+          const merged = mergeGarageVehicles(prev.savedVehicles, incoming);
+          return {
+            ...prev,
+            savedVehicles: merged,
+            selectedPresetId: prev.selectedPresetId || incoming[0].presetId,
+          };
+        });
+      }
+    }
+  }, []);
 
   const toggleMilestoneItem = useCallback((presetId, itemId) => {
     if (!presetId || !itemId) return;
@@ -240,6 +414,14 @@ export function GarageProvider({ children }) {
     [garageState.servicedComponentsByPreset]
   );
 
+  const getShareableUrl = useCallback(
+    (customVehicles, baseUrl) => {
+      const list = Array.isArray(customVehicles) ? customVehicles : garageState.savedVehicles;
+      return getShareableGarageUrl(list, baseUrl);
+    },
+    [garageState.savedVehicles]
+  );
+
   const value = useMemo(
     () => ({
       isProviderActive: true,
@@ -255,6 +437,7 @@ export function GarageProvider({ children }) {
       removeVehicleFromGarage,
       getCompletedMilestones,
       getServicedComponents,
+      getShareableGarageUrl: getShareableUrl,
     }),
     [
       garageState,
@@ -266,6 +449,7 @@ export function GarageProvider({ children }) {
       removeVehicleFromGarage,
       getCompletedMilestones,
       getServicedComponents,
+      getShareableUrl,
     ]
   );
 

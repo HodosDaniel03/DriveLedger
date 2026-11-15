@@ -1,5 +1,40 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { registerHooks } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { transpileJsx } from '../scripts/jsx-loader.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..');
+
+// Register JSX transpilation hook for Node v24 test runner
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith('.') && context.parentURL?.startsWith('file:')) {
+      const parentDir = path.dirname(fileURLToPath(context.parentURL));
+      const candidateBase = path.resolve(parentDir, specifier);
+      for (const ext of ['', '.js', '.jsx', '/index.js', '/index.jsx']) {
+        const full = candidateBase + ext;
+        if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+          return { url: pathToFileURL(full).href, shortCircuit: true };
+        }
+      }
+    }
+    return nextResolve(specifier, context);
+  },
+  load(url, context, nextLoad) {
+    if (url.endsWith('.jsx')) {
+      const filePath = fileURLToPath(url);
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const transpiled = transpileJsx(raw);
+      return { format: 'module', source: transpiled, shortCircuit: true };
+    }
+    return nextLoad(url, context);
+  },
+});
 
 import {
   REGIONAL_PARTNER_URLS,
@@ -9,7 +44,15 @@ import {
   estimateMileageAdjustedMarketValue,
   evaluateMarketPriceDeal,
   evaluateFixOrSellDecision,
+  generateNegotiationBattlecard,
 } from '../src/data/fixOrSellEngine.js';
+
+const {
+  parseGarageParam,
+  mergeGarageVehicles,
+  extractGarageParamFromUrl,
+  getShareableGarageUrl,
+} = await import('../src/context/GarageContext.jsx');
 import {
   isObdCompatibleWithVehicle,
   generateFullVehicleObdMatrix,
@@ -229,4 +272,201 @@ test('6. generateSitemapXml: Scales Cleanly Beyond 4,500 Unique Programmatic URL
   assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix/ford-focus-ecoblue/100k-miles</loc>'));
   assert.ok(!xml.includes('/obd/tesla-model-3-lr/p2002</loc>'), 'Sitemap must never emit EV + DPF P2002 URL');
   assert.ok(xml.includes('/obd/tesla-model-3-lr/p0a80</loc>'), 'Sitemap must emit EV + HV Battery P0A80 URL');
+});
+
+// ============================================================================
+// PHASE 5 FEATURES: BUYER NEGOTIATION BATTLECARD, SHAREABLE GARAGE & CONTACT DISPATCH
+// ============================================================================
+
+test('7. generateNegotiationBattlecard: Computes Target Offer, Deducts Maint Leverage, & Builds Persuasive Seller Script', () => {
+  const golf = getPresetById('vw-golf-20-tdi');
+  assert.ok(golf, 'Golf preset must exist');
+
+  // Case A: Overpriced listing ($31,000 asking vs ~24,800 fair value)
+  const overpricedCard = generateNegotiationBattlecard({
+    vehicle: golf,
+    purchasePriceUsd: 31000,
+    odometerMiles: golf.defaultOdometerMiles,
+    tco: {
+      yearlySchedule: [
+        { yearMaintenanceUsd: 1200, yearDepreciationUsd: 3800 },
+      ],
+    },
+  });
+
+  assert.equal(overpricedCard.dealEvaluation.tier, 'overpriced');
+  assert.equal(overpricedCard.fairValueUsd, golf.purchasePriceUsd);
+  // Deduction: 50% of upcoming maintenance ($600) subtracted from fair value ($24,800) -> $24,200
+  assert.ok(overpricedCard.targetOfferPriceUsd <= overpricedCard.fairValueUsd);
+  assert.ok(overpricedCard.targetOfferPriceUsd >= Math.round(31000 * 0.75));
+  assert.equal(overpricedCard.targetOfferPriceUsd % 50, 0, 'Target offer rounded to nearest $50');
+  assert.ok(overpricedCard.potentialSavingsUsd > 0);
+  assert.equal(overpricedCard.upcomingMaintenanceUsd, 1200);
+  assert.equal(overpricedCard.year1DepreciationUsd, 3800);
+
+  // Script contents check
+  const scriptA = overpricedCard.sellerScript;
+  assert.ok(scriptA.includes('VW Golf 2.0 TDI') || scriptA.includes('Volkswagen Golf') || scriptA.includes(golf.name));
+  assert.ok(scriptA.includes('fair market benchmark'));
+  assert.ok(scriptA.includes('approaching its'));
+  assert.ok(scriptA.includes('first-year scheduled maintenance'));
+  assert.ok(scriptA.includes('serious, verified buyer'));
+
+  // Case B: Fair / Good deal listing ($20,000 asking on $24,800 fair value)
+  const fairCard = generateNegotiationBattlecard({
+    vehicle: golf,
+    purchasePriceUsd: 20000,
+    odometerMiles: golf.defaultOdometerMiles,
+    tco: {
+      yearlySchedule: [
+        { yearMaintenanceUsd: 1000, yearDepreciationUsd: 2500 },
+      ],
+    },
+  });
+
+  assert.equal(fairCard.dealEvaluation.tier, 'good-deal');
+  // Deduction: 30% of upcoming maintenance ($300) subtracted from asking price ($20,000) -> $19,700
+  assert.ok(fairCard.targetOfferPriceUsd <= 20000);
+  assert.ok(fairCard.targetOfferPriceUsd >= 15000);
+  assert.equal(fairCard.targetOfferPriceUsd % 50, 0);
+  assert.ok(fairCard.potentialSavingsUsd > 0);
+});
+
+test('8. generateNegotiationBattlecard EV Isolation: Guarantees 0 ICE Contamination for Electric Vehicles', () => {
+  const teslaM3 = getPresetById('tesla-model-3-lr');
+  assert.ok(teslaM3.isEv, 'Tesla Model 3 must be recognized as EV');
+
+  const evBattlecard = generateNegotiationBattlecard({
+    vehicle: teslaM3,
+    purchasePriceUsd: 38000,
+    odometerMiles: 48000,
+  });
+
+  assert.ok(evBattlecard.upcomingServiceItems.length > 0, 'EV must have scheduled service milestones');
+  const iceKeywords = [
+    'spark plug',
+    'engine oil',
+    'oil filter',
+    'timing belt',
+    'water pump',
+    'dpf',
+    'exhaust',
+    'fuel filter',
+    'pcv',
+    'transmission fluid',
+    'alternator',
+  ];
+
+  for (const item of evBattlecard.upcomingServiceItems) {
+    const lower = item.toLowerCase();
+    for (const kw of iceKeywords) {
+      assert.ok(
+        !lower.includes(kw),
+        `EV scheduled service leaked ICE item "${item}" matching keyword "${kw}"`
+      );
+    }
+  }
+
+  // Also verify sellerScript has 0 ICE contamination
+  const scriptLower = evBattlecard.sellerScript.toLowerCase();
+  for (const kw of ['timing belt', 'engine oil & filter', 'dpf ash', 'spark plugs']) {
+    assert.ok(
+      !scriptLower.includes(kw),
+      `EV sellerScript leaked combustion maintenance term: ${kw}`
+    );
+  }
+});
+
+test('9. R2: Garage URL Parameter Parsing, Merging & Shareable URL Generation (?garage=...)', () => {
+  // Test 9.1: parseGarageParam
+  const rawQuery = 'vw-golf-20-tdi:24800:48000,bmw-320d-b47:27500:55000,unknown-car-fake:99999:99999';
+  const parsed = parseGarageParam(rawQuery);
+
+  assert.equal(parsed.length, 2, 'Must extract exactly 2 valid preset vehicles and discard invalid preset');
+  assert.equal(parsed[0].presetId, 'vw-golf-20-tdi');
+  assert.equal(parsed[0].purchasePriceUsd, 24800);
+  assert.equal(parsed[0].odometerMiles, 48000);
+  assert.equal(parsed[1].presetId, 'bmw-320d-b47');
+  assert.equal(parsed[1].purchasePriceUsd, 27500);
+  assert.equal(parsed[1].odometerMiles, 55000);
+
+  // Test 9.2: Default price & odometer fallback when omitted
+  const minimalQuery = 'toyota-corolla-18-hybrid';
+  const parsedMinimal = parseGarageParam(minimalQuery);
+  assert.equal(parsedMinimal.length, 1);
+  const corollaPreset = getPresetById('toyota-corolla-18-hybrid');
+  assert.equal(parsedMinimal[0].purchasePriceUsd, corollaPreset.purchasePriceUsd);
+  assert.equal(parsedMinimal[0].odometerMiles, corollaPreset.defaultOdometerMiles);
+
+  // Test 9.3: Deduplication in incoming query
+  const dupQuery = 'vw-golf-20-tdi:24000:40000,vw-golf-20-tdi:25000:50000';
+  const parsedDup = parseGarageParam(dupQuery);
+  assert.equal(parsedDup.length, 1, 'Duplicate preset in URL must be deduplicated to first instance');
+  assert.equal(parsedDup[0].purchasePriceUsd, 24000);
+
+  // Test 9.4: mergeGarageVehicles
+  const existing = [
+    { presetId: 'vw-golf-20-tdi', name: 'Golf TDI', purchasePriceUsd: 22000, odometerMiles: 60000, completedCount: 3 },
+  ];
+  const incoming = [
+    { presetId: 'vw-golf-20-tdi', purchasePriceUsd: 24800, odometerMiles: 48000 },
+    { presetId: 'bmw-320d-b47', name: 'BMW 320d', purchasePriceUsd: 27500, odometerMiles: 55000, completedCount: 0 },
+  ];
+  const merged = mergeGarageVehicles(existing, incoming);
+  assert.equal(merged.length, 2);
+  assert.equal(merged[0].presetId, 'vw-golf-20-tdi');
+  assert.equal(merged[0].purchasePriceUsd, 24800, 'Price updated from URL');
+  assert.equal(merged[0].odometerMiles, 48000, 'Odometer updated from URL');
+  assert.equal(merged[0].completedCount, 3, 'Completed count preserved on merge');
+  assert.equal(merged[1].presetId, 'bmw-320d-b47');
+
+  // Test 9.5: extractGarageParamFromUrl
+  const urlWithParam = 'https://mydriveledger.com/compare?garage=vw-golf-20-tdi:24800:48000,bmw-320d-b47:27500:55000#section';
+  assert.equal(
+    extractGarageParamFromUrl(urlWithParam),
+    'vw-golf-20-tdi:24800:48000,bmw-320d-b47:27500:55000'
+  );
+  assert.equal(extractGarageParamFromUrl('https://mydriveledger.com/'), null);
+
+  // Test 9.6: getShareableGarageUrl
+  const shareableUrl = getShareableGarageUrl(merged, 'https://mydriveledger.com/');
+  assert.ok(shareableUrl.startsWith('https://mydriveledger.com/?garage='));
+  assert.ok(shareableUrl.includes('vw-golf-20-tdi:24800:48000'));
+  assert.ok(shareableUrl.includes('bmw-320d-b47:27500:55000'));
+
+  const emptyShareableUrl = getShareableGarageUrl([], 'https://mydriveledger.com/');
+  assert.equal(emptyShareableUrl, 'https://mydriveledger.com/');
+});
+
+test('10. R1/R2/R3 UI & Component Source Invariants Verification', () => {
+  // Verify ContactPage (R3)
+  const contactPath = path.resolve(ROOT_DIR, 'src', 'pages', 'ContactPage.jsx');
+  const contactSrc = fs.readFileSync(contactPath, 'utf8');
+
+  assert.ok(contactSrc.includes('Copy Formatted Inquiry'), 'ContactPage must render "Copy Formatted Inquiry" button');
+  assert.ok(contactSrc.includes('Send via Email App'), 'ContactPage must render "Send via Email App" button');
+  assert.ok(contactSrc.includes('Inquiry Copied!'), 'ContactPage must support copied confirmation state');
+  assert.ok(contactSrc.includes('contact@mydriveledger.com'), 'ContactPage must target contact@mydriveledger.com');
+  assert.ok(contactSrc.includes('copiedInquiry'), 'ContactPage must manage copied state');
+
+  // Verify TcoCalculator (R1)
+  const tcoPath = path.resolve(ROOT_DIR, 'src', 'components', 'calculators', 'TcoCalculator.jsx');
+  const tcoSrc = fs.readFileSync(tcoPath, 'utf8');
+
+  assert.ok(tcoSrc.includes('data-testid="negotiation-battlecard-toggle"'), 'TcoCalculator must render battlecard toggle button');
+  assert.ok(tcoSrc.includes('data-testid="negotiation-battlecard-section"'), 'TcoCalculator must render battlecard section');
+  assert.ok(tcoSrc.includes('data-testid="target-offer-price"'), 'TcoCalculator must render target offer price');
+  assert.ok(tcoSrc.includes('data-testid="copy-seller-script-btn"'), 'TcoCalculator must render copy script button');
+  assert.ok(tcoSrc.includes('data-testid="seller-script-preview"'), 'TcoCalculator must render script preview');
+  assert.ok(tcoSrc.includes('Message Copied!'), 'TcoCalculator must display "Message Copied!" confirmation');
+  assert.ok(tcoSrc.includes('generateNegotiationBattlecard'), 'TcoCalculator must use generateNegotiationBattlecard');
+
+  // Verify Navbar (R2)
+  const navbarPath = path.resolve(ROOT_DIR, 'src', 'components', 'layout', 'Navbar.jsx');
+  const navbarSrc = fs.readFileSync(navbarPath, 'utf8');
+
+  assert.ok(navbarSrc.includes('data-testid="copy-shareable-garage-link-button"'), 'Navbar must render copy shareable garage link button');
+  assert.ok(navbarSrc.includes('Copy Shareable Garage Link'), 'Navbar must have "Copy Shareable Garage Link" label');
+  assert.ok(navbarSrc.includes('Link Copied!'), 'Navbar must display "Link Copied!" state');
+  assert.ok(navbarSrc.includes('getShareableGarageUrl'), 'Navbar must invoke getShareableGarageUrl');
 });
