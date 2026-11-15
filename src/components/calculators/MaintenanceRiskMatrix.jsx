@@ -35,6 +35,7 @@ const BAR_COLOR = {
 
 export default function MaintenanceRiskMatrix({
   selectedPresetId,
+  hasSelectedVehicle = true,
   onSelectPreset,
   onNavigateToObd,
   onNavigateToCompare,
@@ -649,7 +650,7 @@ export default function MaintenanceRiskMatrix({
                   <Car className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
                   <div className="min-w-0">
                     <span className="block font-sans text-[10px] font-bold uppercase tracking-wider text-muted dark:text-zinc-400">
-                      Active Vehicle
+                      {hasSelectedVehicle ? 'Active Vehicle' : 'Example Benchmark'}
                     </span>
                     <span className="block font-sans text-xs font-bold text-ink dark:text-zinc-100 truncate">
                       {activePreset.name} · {activePreset.engineCode}
@@ -663,7 +664,7 @@ export default function MaintenanceRiskMatrix({
                   onClick={() => setShowVehicleCatalog((prev) => !prev)}
                   className="inline-flex items-center gap-1 rounded-lg bg-surface dark:bg-zinc-800 px-2.5 py-1.5 font-sans text-xs font-semibold text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shrink-0"
                 >
-                  <span>{showVehicleCatalog ? 'Hide Catalog' : 'Switch Model'}</span>
+                  <span>{showVehicleCatalog ? 'Hide Catalog' : hasSelectedVehicle ? 'Switch Model' : 'Select Model'}</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform duration-150 ${showVehicleCatalog ? 'rotate-180' : ''}`} />
                 </button>
               </div>

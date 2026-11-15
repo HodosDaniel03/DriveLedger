@@ -869,17 +869,17 @@ assert.equal(
   'Browser popstate must sync selectedPresetId to toyota-camry-hybrid'
 );
 
-// Verify browser Back/Forward (popstate) to bare root URL (/) falls back to default tab and preset
+// Verify browser Back/Forward (popstate) to bare root URL (/) falls back to default tab and regional sample preset
 globalThis.window.history.pushState({}, '', '/');
 globalThis.window.dispatchEvent({ type: 'popstate' });
 assert.ok(
   rootContainer.toHtml().includes('TELEMETRY PRESET BENCHMARKS'),
-  'Browser popstate to / must fall back to TCO tab'
+  'Browser popstate to / must fall back to overview with TCO benchmark DOM'
 );
 assert.equal(
   rootContainer.getElementById('preset-select-dropdown').value,
-  'ford-focus-ecoblue',
-  'Browser popstate to / must fall back to default ford-focus-ecoblue preset'
+  'toyota-camry-hybrid',
+  'Browser popstate to / in US region must fall back to regional sample toyota-camry-hybrid preset'
 );
 
 console.log('✓ 6E. Consecutive Preset Clicks, Consecutive Tab Clicks, OBD Code Clicks & PopState Sync verified');

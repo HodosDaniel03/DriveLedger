@@ -26,6 +26,7 @@ import { RiskBadge, InfoTooltip } from '../components/common/OdometerPrimitives'
 
 export default function HomePage({
   selectedPresetId,
+  hasSelectedVehicle = true,
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -104,6 +105,7 @@ export default function HomePage({
       {/* 1. Hero with Vehicle Finder */}
       <HeroVehicleFinder
         selectedPresetId={selectedPresetId}
+        hasSelectedVehicle={hasSelectedVehicle}
         onSelectPreset={onSelectPreset}
         onNavigateToTco={onNavigateToTco}
         onNavigateToRisk={onNavigateToRisk}
@@ -190,7 +192,7 @@ export default function HomePage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: TCO Calculator */}
           <div
-            onClick={() => onNavigateToTco(selectedPresetId)}
+            onClick={() => onNavigateToTco()}
             className="group p-7 rounded-2xl bg-surface dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 shadow-sm hover:-translate-y-1 hover:shadow-card-hover dark:hover:border-zinc-700 transition-[transform,box-shadow] duration-200 ease-out cursor-pointer flex flex-col justify-between"
           >
             <div>
@@ -362,7 +364,7 @@ export default function HomePage({
         {/* Responsive Vehicle Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedVehicles.map((car) => {
-            const isSelected = car.id === selectedPresetId;
+            const isSelected = hasSelectedVehicle && car.id === selectedPresetId;
             return (
               <div
                 key={car.id}

@@ -27,6 +27,7 @@ export {
 
 export default function TcoCalculator({
   selectedPresetId,
+  hasSelectedVehicle = true,
   onSelectPreset,
   onNavigateToRiskMatrix,
   onNavigateToObd,
@@ -337,12 +338,56 @@ export default function TcoCalculator({
                   Adjust vehicle price and ownership assumptions.
                 </p>
               </div>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
-                {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
-              </span>
+              <div className="flex items-center gap-2">
+                {!hasSelectedVehicle && (
+                  <span
+                    data-testid="tco-sample-badge"
+                    className="rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 text-xs font-sans font-semibold"
+                  >
+                    Sample Benchmark
+                  </span>
+                )}
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
+                  {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
+                </span>
+              </div>
             </div>
 
-            {/* Active Vehicle Hero Card with Prominent Switch Car Action */}
+            {!hasSelectedVehicle && (
+              <div
+                data-testid="tco-unselected-callout"
+                className="mb-5 rounded-xl border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/60 dark:bg-amber-950/20 p-3.5 sm:p-4 space-y-2.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-sans text-xs sm:text-sm text-amber-950 dark:text-amber-100 font-medium">
+                    No car selected yet — showing an example benchmark. Pick your vehicle for an exact 5-year forecast:
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-sans font-semibold text-amber-800 dark:text-amber-300 mr-1">
+                    Quick pick:
+                  </span>
+                  {[
+                    { id: 'vw-golf-20-tdi', label: 'VW Golf TDI' },
+                    { id: 'toyota-corolla-18-hybrid', label: 'Corolla Hybrid' },
+                    { id: 'toyota-camry-hybrid', label: 'Camry Hybrid' },
+                    { id: 'tesla-model-3-lr', label: 'Model 3' },
+                    { id: 'bmw-320d-b47', label: 'BMW 320d' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onSelectPreset(item.id)}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/60 text-xs font-sans font-medium text-ink dark:text-zinc-100 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Vehicle Hero Card with Prominent Switch / Select Car Action */}
             <div className="mb-6">
               <VehicleVisualCard
                 vehicle={activePreset}
@@ -356,8 +401,8 @@ export default function TcoCalculator({
                       onClick={() => setShowSwitchCarModal(true)}
                       className="min-h-[44px] sm:min-h-0 bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Switch Car</span>
+                      {hasSelectedVehicle ? <RotateCcw className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
+                      <span>{hasSelectedVehicle ? 'Switch Car' : 'Select Your Car'}</span>
                     </button>
                     <button
                       type="button"
@@ -888,7 +933,7 @@ export default function TcoCalculator({
             {/* Eyebrow */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span id="summary-heading" className="font-sans text-xs font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider scroll-mt-28 lg:scroll-mt-32">
-                ESTIMATED COST TO OWN
+                {hasSelectedVehicle ? 'ESTIMATED COST TO OWN' : 'SAMPLE COST ESTIMATE'}
               </span>
               <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium shrink-0">
                 {horizonYears}-Year Forecast

@@ -1223,3 +1223,65 @@ test('Tier 4 / User Flow 3: Adversarial Keyboard, Mobile Viewport & Rapid Tab Cy
     'Final location must match the overview route'
   );
 });
+
+test('Tier 4 / User Flow 4: Unselected Vehicle State - Clean URL, Sample Benchmark Badge & Quick Pick Transition', async () => {
+  // Unmount any prior mounted App instance from earlier tests to simulate a fresh page load
+  createRoot(rootContainer).render(null);
+  await sleep(20);
+  const { rootContainer: container } = await renderApp('/');
+
+  // Navigate to TCO via Navbar without picking a vehicle on Overview
+  const tcoTab = container.getElementById('tab-tco');
+  assert.ok(tcoTab, 'TCO tab must exist');
+  tcoTab.dispatchEvent({ type: 'click' });
+  await sleep(35);
+
+  // URL must remain clean (/tco without preset=ford-focus-ecoblue or code=P2002)
+  assert.strictEqual(globalThis.window.location.pathname, '/tco', 'Route must be /tco');
+  assert.strictEqual(
+    globalThis.window.location.search,
+    '',
+    'URL search must stay empty when no vehicle or OBD code has been explicitly chosen'
+  );
+
+  // Sample Benchmark badge, unselected callout, and "Select Your Car" CTA must be visible
+  const sampleBadge = findByTestId(container, 'tco-sample-badge');
+  assert.ok(sampleBadge, 'Sample Benchmark badge must render when no vehicle has been selected');
+  const callout = findByTestId(container, 'tco-unselected-callout');
+  assert.ok(callout, 'Unselected vehicle callout with quick-pick options must render');
+  const selectBtn = findByTestId(container, 'tco-switch-car-button');
+  assert.ok(selectBtn && selectBtn.textContent.includes('Select Your Car'), 'CTA must read "Select Your Car" before vehicle selection');
+
+  // Default US sample vehicle must not be Ford Focus EcoBlue
+  assert.ok(
+    container.toHtml().includes('Toyota Camry Hybrid'),
+    'Default US sample vehicle must be Toyota Camry Hybrid'
+  );
+
+  // Switching region to EU before choosing a car must update the sample vehicle to VW Golf TDI
+  const regionGroup = container.querySelectorAll((el) => el.getAttribute('role') === 'radiogroup')[0];
+  const euRadio = regionGroup.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('EU'))[0];
+  euRadio.dispatchEvent({ type: 'click' });
+  await sleep(35);
+  assert.ok(
+    container.toHtml().includes('Volkswagen Golf'),
+    'Switching to EU region before selecting a car must switch the sample vehicle to Volkswagen Golf'
+  );
+
+  // Clicking a quick-pick chip selects the vehicle explicitly, switches CTA to "Switch Car", and sets ?tab=tco&preset=... without code=P2002
+  const quickPickBtn = findButtonByText(callout, 'Model 3');
+  assert.ok(quickPickBtn, 'Quick pick button for Model 3 must exist inside callout');
+  quickPickBtn.dispatchEvent({ type: 'click' });
+  await sleep(35);
+
+  assert.strictEqual(findByTestId(container, 'tco-sample-badge'), null, 'Sample badge must clear once a vehicle is chosen');
+  assert.ok(
+    findByTestId(container, 'tco-switch-car-button').textContent.includes('Switch Car'),
+    'CTA must change to "Switch Car" after selecting a vehicle'
+  );
+  assert.ok(
+    globalThis.window.location.search.includes('preset=tesla-model-3-lr') &&
+      !globalThis.window.location.search.includes('code='),
+    `URL must record selected preset without bogus OBD code (got ${globalThis.window.location.search})`
+  );
+});

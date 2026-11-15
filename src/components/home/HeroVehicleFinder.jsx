@@ -6,6 +6,7 @@ import { useUnits } from '../../context/UnitContext';
 
 export default function HeroVehicleFinder({
   selectedPresetId,
+  hasSelectedVehicle = true,
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -44,7 +45,7 @@ export default function HeroVehicleFinder({
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      onNavigateToTco(selectedPresetId);
+      onNavigateToTco(hasSelectedVehicle ? selectedPresetId : undefined);
       return;
     }
 
@@ -74,7 +75,7 @@ export default function HeroVehicleFinder({
       return;
     }
 
-    onNavigateToTco(selectedPresetId);
+    onNavigateToTco(hasSelectedVehicle ? selectedPresetId : undefined);
   };
 
   return (
@@ -234,7 +235,7 @@ export default function HeroVehicleFinder({
         <div className="flex flex-wrap items-center justify-center gap-2.5 my-2">
           <button
             type="button"
-            onClick={() => onNavigateToTco(selectedPresetId)}
+            onClick={() => onNavigateToTco(hasSelectedVehicle ? selectedPresetId : undefined)}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 shadow-2xs transition-colors cursor-pointer"
           >
             <Calculator className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 shrink-0" />
@@ -243,7 +244,7 @@ export default function HeroVehicleFinder({
 
           <button
             type="button"
-            onClick={() => onNavigateToRisk(selectedPresetId)}
+            onClick={() => onNavigateToRisk(hasSelectedVehicle ? selectedPresetId : undefined)}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 shadow-2xs transition-colors cursor-pointer"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
