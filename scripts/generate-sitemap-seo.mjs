@@ -1,13 +1,14 @@
 /**
  * DriveLedger | Programmatic SEO & Dynamic XML Sitemap Generator
  *
- * Generates public/sitemap.xml at build-time containing 4,800+ powertrain-validated URLs:
- * 1. Core workspace & editorial routes (/overview, /tco, /risk-matrix, /obd-estimator, /compare, /checklist, /methodology, /reviews, /blog)
- * 2. Programmatic Vehicle Preset routes (TCO, Risk Matrix, Checklist, Compare)
- * 3. Mileage-Bracket Buyer & Reliability Guides (/risk-matrix/:presetId/60k-miles | 100k-miles | 150k-miles)
- * 4. Head-to-Head Vehicle Comparison Matchups (/compare/:carA-vs-:carB)
- * 5. Modular Vehicle Model & Engine Variant PPI Checklist routes
- * 6. Powertrain-Validated Vehicle × OBD-II Diagnostic routes (/obd/:preset/:code | strictly 0 ICE/DPF codes on EVs)
+ * Generates public/sitemap.xml at build-time containing 2,526 indexable canonical URLs:
+ * 1. Core workspace & legal routes (17 canonical URLs)
+ * 2. In-Depth Technical Buyer Guides (/guides/:slug, 6 canonical URLs)
+ * 3. Programmatic Vehicle Preset routes (TCO, Risk Matrix, Checklist: 179 × 3 = 537 canonical URLs)
+ * 4. Mileage-Bracket Buyer & Reliability Guides (/risk-matrix/:presetId/60k-miles | 100k-miles | 150k-miles: 179 × 3 = 537 canonical URLs)
+ * 5. Head-to-Head Vehicle Comparison Matchups (/compare/:carA-vs-:carB: 800 canonical URLs)
+ * 6. Powertrain-Validated Known Weak-Point OBD-II Diagnostic routes (/obd/:preset/:code: 629 canonical URLs)
+ * Total: 2,526 canonical URLs matching 1:1 with prerendered static HTML files.
  */
 
 import fs from 'node:fs';
@@ -15,7 +16,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { VEHICLE_PRESETS } from '../src/data/vehiclePresets.js';
-import { MODULAR_BRANDS } from '../src/data/vehicles/index.js';
 import { GUIDES_DATA } from '../src/data/guidesData.js';
 import {
   generateFullVehicleObdMatrix,
@@ -68,7 +68,6 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/contact`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/methodology`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/reviews`, '0.8', 'weekly');
-  addUrl(`${SITE_ORIGIN}/blog`, '0.8', 'weekly');
   addUrl(`${SITE_ORIGIN}/privacy`, '0.7', 'monthly');
   addUrl(`${SITE_ORIGIN}/terms`, '0.7', 'monthly');
   addUrl(`${SITE_ORIGIN}/cookies`, '0.7', 'monthly');
@@ -87,7 +86,6 @@ export function generateSitemapXml() {
     addUrl(`${SITE_ORIGIN}/tco/${preset.id}`, '0.85', 'weekly');
     addUrl(`${SITE_ORIGIN}/risk-matrix/${preset.id}`, '0.85', 'weekly');
     addUrl(`${SITE_ORIGIN}/checklist/${preset.id}`, '0.85', 'weekly');
-    addUrl(`${SITE_ORIGIN}/compare?presetA=${preset.id}`, '0.75', 'weekly');
 
     for (const bracketSlug of bracketKeys) {
       addUrl(`${SITE_ORIGIN}/risk-matrix/${preset.id}/${bracketSlug}`, '0.80', 'weekly');
@@ -99,25 +97,11 @@ export function generateSitemapXml() {
     addUrl(`${SITE_ORIGIN}${matchup.path}`, '0.82', 'weekly');
   }
 
-  // 4. Programmatic Modular Brand & Engine Variant Checklist Routes
-  for (const brand of MODULAR_BRANDS) {
-    for (const model of brand.models) {
-      for (const gen of model.generations) {
-        for (const eng of gen.engines) {
-          addUrl(
-            `${SITE_ORIGIN}/checklist?make=${brand.id}&model=${model.id}&gen=${gen.id}&engine=${eng.id}`,
-            '0.75',
-            'weekly'
-          );
-        }
-      }
-    }
-  }
-
-  // 5. Powertrain-Validated Vehicle × OBD-II Diagnostic Routes (/obd/:preset/:code)
+  // 4. Powertrain-Validated Vehicle × OBD-II Diagnostic Routes (/obd/:preset/:code - Known Weak Points only)
   const fullObdMatrix = generateFullVehicleObdMatrix();
-  for (const item of fullObdMatrix) {
-    addUrl(`${SITE_ORIGIN}${item.path}`, item.isKnownWeakPoint ? '0.82' : '0.70', 'weekly');
+  const targetObdEntries = fullObdMatrix.filter((item) => item.isKnownWeakPoint);
+  for (const item of targetObdEntries) {
+    addUrl(`${SITE_ORIGIN}${item.path}`, '0.82', 'weekly');
   }
 
   const xml = [

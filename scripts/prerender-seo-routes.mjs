@@ -153,6 +153,8 @@ export function injectRouteMetadata(templateHtml, { title, description, canonica
   const hasCanonical = canonicalRegex.test(html);
   if (hasCanonical) {
     html = html.replace(canonicalRegex, newCanonicalTag);
+  } else {
+    html = html.replace(/<\/head>/i, `  ${newCanonicalTag}\n</head>`);
   }
 
   // 4. Upsert OpenGraph & Twitter tags
@@ -182,11 +184,7 @@ export function injectRouteMetadata(templateHtml, { title, description, canonica
 
   if (tagsToAppend.length > 0) {
     const insertionBlock = tagsToAppend.join('\n  ');
-    if (hasCanonical) {
-      html = html.replace(newCanonicalTag, `${newCanonicalTag}\n  ${insertionBlock}`);
-    } else {
-      html = html.replace(/<\/head>/i, `  ${insertionBlock}\n</head>`);
-    }
+    html = html.replace(newCanonicalTag, `${newCanonicalTag}\n  ${insertionBlock}`);
   }
 
   return html;
@@ -480,10 +478,6 @@ export async function prerenderSeoRoutes(options = {}) {
     canonicalUrl: `${SITE_ORIGIN}/`,
   });
   fs.writeFileSync(templatePath, rootHtml, 'utf8');
-
-  const overviewHtmlPath = routePathToDistFile(distDir, '/overview');
-  fs.mkdirSync(path.dirname(overviewHtmlPath), { recursive: true });
-  fs.writeFileSync(overviewHtmlPath, rootHtml, 'utf8');
 
   // 4. Prerender each static route into dist/<route>/index.html
   let writtenCount = 0;

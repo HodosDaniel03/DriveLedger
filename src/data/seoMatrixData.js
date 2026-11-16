@@ -269,7 +269,7 @@ export const PROGRAMMATIC_COMPARE_PAIRS = generateProgrammaticComparePairs(800);
  */
 export function parseCompareMatchupPath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
-  const match = pathname.match(/^\/compare\/([^/]+)$/i);
+  const match = pathname.match(/^\/compare\/([^/]+)\/?$/i);
   if (!match) return null;
   const slug = decodeURIComponent(match[1]).toLowerCase();
   const separator = '-vs-';
@@ -295,7 +295,7 @@ export function parseCompareMatchupPath(pathname) {
  */
 export function parseRiskMileagePath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
-  const match = pathname.match(/^\/risk-matrix\/([^/]+)\/([^/]+)$/i);
+  const match = pathname.match(/^\/risk-matrix\/([^/]+)\/([^/]+)\/?$/i);
   if (!match) return null;
   const rawPreset = decodeURIComponent(match[1]).toLowerCase();
   const rawBracket = decodeURIComponent(match[2]).toLowerCase();

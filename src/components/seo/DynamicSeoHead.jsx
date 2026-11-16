@@ -279,9 +279,26 @@ export default function DynamicSeoHead({
     const maxLabor = obdDossier.laborHoursRange?.[1] ?? 4.0;
 
     if (activeTab === 'obd') {
-      const canonicalPath = `/obd/${preset.id}/${codeLower}`;
-      const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
-      const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
+      const isExplicitObdLanding =
+        hasSelectedObdCode ||
+        (typeof window !== 'undefined' && /^\/obd\//i.test(window.location.pathname));
+
+      if (isExplicitObdLanding) {
+        const canonicalPath = `/obd/${preset.id}/${codeLower}`;
+        const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
+        const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
+        return withImage({
+          title,
+          description,
+          canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+          canonicalPath,
+        });
+      }
+
+      const canonicalPath = '/obd-estimator';
+      const title = 'OBD-II Diagnostic Trouble Code Repair Cost Estimator | DriveLedger';
+      const description =
+        'Lookup diagnostic trouble codes (DTC), compare DIY vs Independent vs Dealership repair prices, and run first-principles live PID tests.';
       return withImage({
         title,
         description,
@@ -342,9 +359,13 @@ export default function DynamicSeoHead({
           canonicalPath,
         });
       }
-      const canonicalPath = isVehicleSelected ? `/compare?presetA=${preset.id}` : '/compare';
-      const title = `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | DriveLedger`;
-      const description = `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
+      const canonicalPath = '/compare';
+      const title = isVehicleSelected
+        ? `Side-by-Side Comparison: ${preset.name} TCO & Break-Even Trajectory | DriveLedger`
+        : 'Head-to-Head Vehicle Cost & Reliability Comparator | DriveLedger';
+      const description = isVehicleSelected
+        ? `Compare the ${preset.name} (${preset.engineCode}) against alternatives: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`
+        : 'Compare any two vehicles side-by-side: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.';
       return withImage({
         title,
         description,

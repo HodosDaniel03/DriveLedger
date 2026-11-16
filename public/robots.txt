@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Allow: /overview
 Allow: /tco
 Allow: /risk-matrix
 Allow: /obd-estimator
@@ -12,7 +11,6 @@ Allow: /about
 Allow: /contact
 Allow: /methodology
 Allow: /reviews
-Allow: /blog
 
 # Programmatic SEO query parameters allowed for vehicle presets and OBD-II fault codes
 Sitemap: https://mydriveledger.com/sitemap.xml

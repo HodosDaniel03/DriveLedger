@@ -156,7 +156,10 @@ test('6. generateSitemapXml: Generates Valid XML with Core, Preset and Diagnosti
   assert.ok(xml.includes('<loc>https://mydriveledger.com/tco/ford-focus-ecoblue</loc>'));
   assert.ok(xml.includes('<loc>https://mydriveledger.com/risk-matrix/ford-focus-ecoblue</loc>'));
   assert.ok(xml.includes('<loc>https://mydriveledger.com/checklist/ford-focus-ecoblue</loc>'));
-  assert.ok(xml.includes('<loc>https://mydriveledger.com/compare?presetA=tesla-model-3-lr</loc>'));
+  assert.ok(xml.includes('<loc>https://mydriveledger.com/compare/bmw-330i-g20-vs-tesla-model-3-lr</loc>'));
+  const locs = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+  assert.ok(!locs.some((loc) => loc.includes('?')), 'Sitemap must contain zero query parameter URLs');
+  assert.ok(!xml.includes('/blog</loc>'), 'Sitemap must not contain redirecting /blog URL');
 
   // Verify Hybrid OBD-II Routes
   assert.ok(xml.includes('/obd/ford-focus-ecoblue/p2002</loc>'));

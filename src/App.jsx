@@ -49,7 +49,7 @@ const PATH_TO_TAB = {
 };
 
 const TAB_TO_PATH = {
-  overview: '/overview',
+  overview: '/',
   tco: '/tco',
   risk: '/risk-matrix',
   obd: '/obd-estimator',
@@ -78,7 +78,7 @@ const VALID_TABS = [
   'contact',
 ];
 
-const HYBRID_OBD_REGEX = /^\/obd\/([^/]+)\/([^/]+)$/i;
+const HYBRID_OBD_REGEX = /^\/obd\/([^/]+)\/([^/]+)\/?$/i;
 const GUIDE_PATH_REGEX = /^\/guides(?:\/([a-z0-9-]+))?\/?$/i;
 
 function parseGuidePath(pathname) {
@@ -184,7 +184,11 @@ function DriveLedgerWorkspace() {
     if (riskMileage) return 'risk';
     const cleanVehicle = parseCleanVehiclePath(location.pathname);
     if (cleanVehicle) return cleanVehicle.tab;
-    return PATH_TO_TAB[location.pathname] || 'overview';
+    const cleanPath =
+      location.pathname && location.pathname.length > 1 && location.pathname.endsWith('/')
+        ? location.pathname.slice(0, -1)
+        : location.pathname;
+    return PATH_TO_TAB[cleanPath] || PATH_TO_TAB[location.pathname] || 'overview';
   };
 
   const initialExplicitPreset = findExplicitPresetFromLocation(searchParams, location.pathname);
@@ -439,7 +443,11 @@ function DriveLedgerWorkspace() {
               ? 'risk'
               : cleanVehicle
                 ? cleanVehicle.tab
-                : PATH_TO_TAB[location.pathname]);
+                : PATH_TO_TAB[
+                    location.pathname && location.pathname.length > 1 && location.pathname.endsWith('/')
+                      ? location.pathname.slice(0, -1)
+                      : location.pathname
+                  ] || PATH_TO_TAB[location.pathname]);
     if (qTab && VALID_TABS.includes(qTab)) {
       const resolved = qTab === 'blog' ? 'guides' : qTab;
       setActiveTabState((prev) => (prev !== resolved ? resolved : prev));
@@ -519,7 +527,13 @@ function DriveLedgerWorkspace() {
                   ? 'risk'
                   : cleanVehicle
                     ? cleanVehicle.tab
-                    : PATH_TO_TAB[window.location.pathname]) ||
+                    : PATH_TO_TAB[
+                        window.location.pathname &&
+                        window.location.pathname.length > 1 &&
+                        window.location.pathname.endsWith('/')
+                          ? window.location.pathname.slice(0, -1)
+                          : window.location.pathname
+                      ] || PATH_TO_TAB[window.location.pathname]) ||
           'overview';
         const resolved = qTab === 'blog' ? 'guides' : qTab;
         setActiveTabState(

@@ -21,7 +21,10 @@ import {
   PROGRAMMATIC_COMPARE_PAIRS,
   MILEAGE_BRACKET_SLUGS,
   generateFullVehicleObdMatrix,
+  parseCompareMatchupPath,
+  parseRiskMileagePath,
 } from '../src/data/seoMatrixData.js';
+import { generateSitemapXml } from '../scripts/generate-sitemap-seo.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -406,4 +409,100 @@ test('7. Built Static Artifacts: Verifies dist static files and canonical metada
     assert.ok(content.includes('property="og:description"'), `Missing og:description in ${item.file}`);
     assert.ok(content.includes('property="og:url"'), `Missing og:url in ${item.file}`);
   }
+});
+
+// ============================================================================
+// 8. FALLBACK CANONICAL INJECTION TEST
+// ============================================================================
+
+test('8. injectRouteMetadata: Injects fallback canonical link when template lacks canonical tag', () => {
+  const templateWithoutCanonical = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Base Title</title>
+  <meta name="description" content="Base description." />
+</head>
+<body><div id="root"></div></body>
+</html>`;
+
+  const injected = injectRouteMetadata(templateWithoutCanonical, {
+    title: 'Custom Title',
+    description: 'Custom Description',
+    canonicalUrl: 'https://mydriveledger.com/obd-estimator',
+  });
+
+  assert.ok(
+    injected.includes('<link rel="canonical" href="https://mydriveledger.com/obd-estimator" />'),
+    'Fallback canonical link must be injected before </head>'
+  );
+  assert.ok(injected.includes('</head>'), '</head> tag must remain intact');
+  assert.ok(
+    injected.includes('<meta property="og:url" content="https://mydriveledger.com/obd-estimator" />'),
+    'Social meta tags must be upserted'
+  );
+});
+
+// ============================================================================
+// 9. SITEMAP AND PRERENDER 1:1 PARITY TEST
+// ============================================================================
+
+test('9. Sitemap vs Prerender Parity: 100% 1-to-1 exact match with zero query params or unprerendered URLs', () => {
+  const { xml, count } = generateSitemapXml();
+  const prerenderRoutes = collectAllSeoRoutes();
+
+  // Prerender has 2,525 programmatic sub-routes + 1 root = 2,526
+  assert.equal(prerenderRoutes.length, 2525, 'Expected 2,525 programmatic prerender routes');
+  assert.equal(count, 2526, 'Expected exactly 2,526 sitemap URLs');
+
+  // Extract all sitemap URLs
+  const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+  assert.equal(sitemapUrls.length, 2526, 'Extracted sitemap URLs count must equal 2,526');
+
+  // Zero query parameter URLs
+  const queryUrls = sitemapUrls.filter((u) => u.includes('?'));
+  assert.equal(queryUrls.length, 0, `Sitemap must contain 0 query URLs, found: ${queryUrls.join(', ')}`);
+
+  // Zero redirecting URLs
+  assert.ok(!sitemapUrls.includes('https://mydriveledger.com/blog'), 'Sitemap must not contain /blog');
+  assert.ok(!sitemapUrls.includes('https://mydriveledger.com/overview'), 'Sitemap must not contain /overview');
+
+  // Set of expected URLs
+  const expectedUrls = new Set(prerenderRoutes.map((r) => `https://mydriveledger.com${r.path}`));
+  expectedUrls.add('https://mydriveledger.com/');
+
+  for (const url of sitemapUrls) {
+    assert.ok(expectedUrls.has(url), `Sitemap URL missing from prerender inventory: ${url}`);
+  }
+  for (const url of expectedUrls) {
+    assert.ok(sitemapUrls.includes(url), `Prerender URL missing from sitemap inventory: ${url}`);
+  }
+
+  // Ensure dist/overview does not exist as a duplicate static file
+  assert.ok(
+    !fs.existsSync(path.join(DIST_DIR, 'overview')),
+    'dist/overview directory must not exist (duplicate of root /)'
+  );
+});
+
+// ============================================================================
+// 10. TRAILING SLASH ROUTING TEST
+// ============================================================================
+
+test('10. Trailing Slash Handling: Route matchers parse paths with and without trailing slash', () => {
+  // Compare matchup with trailing slash
+  const compareClean = parseCompareMatchupPath('/compare/bmw-330i-g20-vs-tesla-model-3-lr');
+  const compareSlash = parseCompareMatchupPath('/compare/bmw-330i-g20-vs-tesla-model-3-lr/');
+  assert.ok(compareClean, 'Clean compare path must match');
+  assert.ok(compareSlash, 'Compare path with trailing slash must match');
+  assert.equal(compareClean.presetA, compareSlash.presetA);
+  assert.equal(compareClean.presetB, compareSlash.presetB);
+
+  // Risk mileage with trailing slash
+  const riskClean = parseRiskMileagePath('/risk-matrix/ford-focus-ecoblue/100k-miles');
+  const riskSlash = parseRiskMileagePath('/risk-matrix/ford-focus-ecoblue/100k-miles/');
+  assert.ok(riskClean, 'Clean risk mileage path must match');
+  assert.ok(riskSlash, 'Risk mileage path with trailing slash must match');
+  assert.equal(riskClean.preset, riskSlash.preset);
+  assert.equal(riskClean.odometerMiles, riskSlash.odometerMiles);
 });
