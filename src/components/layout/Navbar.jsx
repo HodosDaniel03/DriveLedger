@@ -7,7 +7,7 @@ import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import BrandLogo from '../common/BrandLogo';
 
 export const PRIMARY_WORKSPACE_TABS = [
-  { id: 'overview', label: 'Overview', fullLabel: 'Overview · DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 120+ models & benchmark database', path: '/' },
+  { id: 'overview', label: 'Overview', fullLabel: 'Overview · DriveLedger Independent Platform', icon: Gauge, desc: 'Vehicle finder, 179+ models & benchmark database', path: '/' },
   { id: 'tco', label: 'Cost Calculator', fullLabel: '5-Yr True Cost to Own · Cost Calculator', icon: Calculator, desc: 'Depreciation, fuel, insurance & financing curves', path: '/tco' },
   { id: 'risk', label: 'Maintenance', fullLabel: 'Powertrain Risk Matrix · Maintenance Check', icon: ShieldAlert, desc: 'Component wear & thermodynamic failure risk', path: '/risk-matrix' },
   { id: 'obd', label: 'OBD-II Lookup', fullLabel: 'OBD-II Workshop Estimator · OBD2 Repair Estimator · OBD-II Lookup', icon: Cpu, desc: 'Fair workshop labor & parts pricing for DTCs', path: '/obd-estimator' },
@@ -15,9 +15,10 @@ export const PRIMARY_WORKSPACE_TABS = [
 ];
 
 export const SECONDARY_WORKSPACE_TABS = [
+  { id: 'vehicles', label: 'Vehicle Catalog', fullLabel: 'All 35 Brands & 179 Benchmarked Models', icon: Car, desc: 'Browse all 35 brands & 179 vehicle models', path: '/vehicles' },
   { id: 'compare', label: 'Compare', fullLabel: 'Vehicle Comparator', icon: GitCompare, desc: '5-year TCO break-even graph and defect comparison', path: '/compare' },
   { id: 'checklist', label: 'PPI Checklist', fullLabel: 'Pre-Purchase Inspection Checklist', icon: CheckCircle2, desc: 'On-site inspection checklist & printable report', path: '/checklist' },
-  { id: 'about', label: 'About Us', fullLabel: 'About Us & Company Overview', icon: FileText, desc: 'Mission, engineering team & Impresszum', path: '/about' },
+  { id: 'about', label: 'About Us', fullLabel: 'About Us & Engineering Mission', icon: FileText, desc: 'Mission, engineering team & Imprint / Legal Disclosure', path: '/about' },
   { id: 'contact', label: 'Contact', fullLabel: 'Contact Engineering Team', icon: MessageSquare, desc: 'Direct support & inquiries', path: '/contact' },
   { id: 'methodology', label: 'Methodology', fullLabel: 'Methodology & Data Sources', icon: BookOpen, desc: 'Mathematical models & data sources', path: '/methodology' },
   { id: 'reviews', label: 'Reviews', fullLabel: 'Driver Reviews', icon: MessageSquare, desc: 'Owner feedback & repair quote comparisons', path: '/reviews' },
@@ -221,7 +222,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-14 lg:h-16 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
         {/* Left: Brand Logo & Wordmark (wordmark hidden below 350px to guarantee room on 320px screens) */}
         <a
-          href="#top"
+          href="/"
           onClick={(e) => {
             e.preventDefault();
             onSelectTab('overview');
@@ -249,15 +250,16 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
             {PRIMARY_WORKSPACE_TABS.map((t) => {
               const active = t.id === activeTab;
               return (
-                <button
+                <a
                   key={t.id}
                   id={`tab-${t.id}`}
                   role="tab"
-                  type="button"
+                  href={t.path || `/${t.id}`}
                   data-path={t.path || `/${t.id}`}
                   aria-selected={active}
                   aria-controls={`panel-${t.id}`}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     onSelectTab(t.id);
                     setMoreDropdownOpen(false);
                   }}
@@ -269,7 +271,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                 >
                   <span>{t.label}</span>
                   <span className="sr-only"> ({t.fullLabel})</span>
-                </button>
+                </a>
               );
             })}
           </div>

@@ -22,8 +22,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-test('R2: Exactly 6 in-depth buyer guides exist with required technical depth', () => {
-  assert.equal(GUIDES_DATA.length, 6, 'Must export exactly 6 editorial guides');
+test('R2: Exactly 10 in-depth buyer guides exist with required technical depth', () => {
+  assert.equal(GUIDES_DATA.length, 10, 'Must export exactly 10 editorial guides');
 
   const requiredSlugs = [
     'how-to-spot-odometer-rollback',
@@ -32,6 +32,10 @@ test('R2: Exactly 6 in-depth buyer guides exist with required technical depth', 
     'common-obd2-fault-codes-repair-costs',
     'diesel-vs-petrol-vs-hybrid-maintenance-costs',
     'buying-imported-used-car-vin-check',
+    'used-bmw-3-series-buying-checklist',
+    'dsg-transmission-service-cost-guide',
+    'high-mileage-german-estate-red-flags',
+    'decoding-p0420-catalyst-efficiency-guide',
   ];
 
   for (const slug of requiredSlugs) {

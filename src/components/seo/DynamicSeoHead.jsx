@@ -1,14 +1,24 @@
 import React, { useEffect, useMemo } from 'react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { OBD_CODES } from '../../data/obdCodes';
-import { MAINTENANCE_COMPONENTS, evaluateComponentHealth } from '../../data/maintenanceData';
-import { calculateTcoProjection } from '../calculators/TcoCalculator';
-import { FAQ_ITEMS } from './TechnicalMethodologyGuide';
+import {
+  MAINTENANCE_COMPONENTS,
+  evaluateComponentHealth,
+  calculateTcoProjection,
+  filterComponentsForPowertrain,
+  isPureElectric,
+} from '../../data/maintenanceData';
+import { FAQ_ITEMS } from '../../data/faqItems';
 import { MILEAGE_BRACKET_SLUGS } from '../../data/seoMatrixData';
 import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 import { GUIDES_DATA } from '../../data/guidesData';
 import { LEGAL_POLICIES, resolveLegalPolicyKey } from '../../data/legalPolicies';
 import { resolveVehiclePhotoUrl } from '../common/vehicle/VehicleImageResolver';
+import {
+  BRAND_DIRECTORY,
+  getBrandBySlug,
+  computeBrandTelemetrySummary,
+} from '../../data/brandDirectory';
 
 const SITE_ORIGIN = `https://${MONETIZATION_CONFIG.domain}`;
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image.png`;
@@ -21,6 +31,7 @@ const CANONICAL_TAB_PATHS = {
   obd: '/obd-estimator',
   compare: '/compare',
   checklist: '/checklist',
+  vehicles: '/vehicles',
   methodology: '/methodology',
   reviews: '/reviews',
   blog: '/guides',
@@ -42,6 +53,8 @@ export function computePresetSeoTelemetry(preset) {
     annualDistanceMiles: safePreset.annualDistanceMiles,
     mpgUs: safePreset.mpgUs,
     isEv: safePreset.isEv,
+    powertrainType: safePreset.powertrainType || safePreset.powertrain,
+    vehicle: safePreset,
     fuelPriceUsdGal: safePreset.defaultFuelPriceUsdGal,
     annualInsuranceUsd: safePreset.annualInsuranceUsd,
     baseAnnualMaintenanceUsd: safePreset.baseAnnualMaintenanceUsd,
@@ -54,9 +67,7 @@ export function computePresetSeoTelemetry(preset) {
   });
 
   const physicalOdometerMiles = Math.max(38000, safePreset.defaultOdometerMiles || 58000);
-  const relevantComponents = MAINTENANCE_COMPONENTS.filter((comp) =>
-    comp.applicablePowertrains.includes(safePreset.powertrain || 'diesel')
-  );
+  const relevantComponents = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, safePreset);
 
   const evaluated = relevantComponents.map((comp) =>
     evaluateComponentHealth({
@@ -66,6 +77,7 @@ export function computePresetSeoTelemetry(preset) {
       oilIntervalId: 'standard',
       serviceHistoryId: 'verified',
       transmissionId: safePreset.transmission || 'dct-dsg',
+      maintenanceWearFactor: safePreset.maintenanceWearFactor,
     })
   );
 
@@ -142,6 +154,7 @@ function upsertCanonicalLink(href) {
 export default function DynamicSeoHead({
   activeTab = 'overview',
   activeGuideSlug = null,
+  activeBrandSlug = null,
   selectedPresetId,
   secondaryPresetId,
   mileageBracketSlug,
@@ -149,6 +162,8 @@ export default function DynamicSeoHead({
   activeLegalPolicy = null,
   hasSelectedVehicle = false,
   hasSelectedObdCode = false,
+  isNotFound = false,
+  currentPath = null,
 }) {
   const resolvedLegalKey = useMemo(() => {
     if (activeLegalPolicy) {
@@ -197,13 +212,21 @@ export default function DynamicSeoHead({
       const pathname = String(window.location.pathname || '');
       const cleanMatch = pathname.match(/^\/(?:tco|risk-matrix|checklist)\/([^/]+)(?:\/[^/]+)?\/?$/i);
       if (cleanMatch) {
-        const seg = decodeURIComponent(cleanMatch[1]).toLowerCase();
-        if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+        try {
+          const seg = decodeURIComponent(cleanMatch[1]).toLowerCase();
+          if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+        } catch {
+          // Malformed URI segment safely treated as unselected
+        }
       }
       const obdMatch = pathname.match(/^\/obd\/([^/]+)\/[^/]+\/?$/i);
       if (obdMatch) {
-        const seg = decodeURIComponent(obdMatch[1]).toLowerCase();
-        if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+        try {
+          const seg = decodeURIComponent(obdMatch[1]).toLowerCase();
+          if (VEHICLE_PRESETS.some((p) => p.id.toLowerCase() === seg)) return true;
+        } catch {
+          // Malformed URI segment safely treated as unselected
+        }
       }
       const params = new URLSearchParams(window.location.search || '');
       const qPreset = params.get('preset') || params.get('presetA');
@@ -211,6 +234,16 @@ export default function DynamicSeoHead({
     }
     return false;
   }, [hasSelectedVehicle, activeMileageBracket, activeTab, selectedPresetId]);
+
+  const activeBrand = useMemo(
+    () => (activeTab === 'vehicles' && activeBrandSlug ? getBrandBySlug(activeBrandSlug) : null),
+    [activeTab, activeBrandSlug]
+  );
+
+  const activeBrandTelemetry = useMemo(
+    () => (activeBrand ? computeBrandTelemetrySummary(activeBrand) : null),
+    [activeBrand]
+  );
 
   const vehicleImageUrl = useMemo(() => {
     if (!isVehicleSelected) return DEFAULT_OG_IMAGE;
@@ -220,9 +253,27 @@ export default function DynamicSeoHead({
   const seoMetadata = useMemo(() => {
     const resolvedImageUrl = isVehicleSelected ? vehicleImageUrl : DEFAULT_OG_IMAGE;
     const withImage = (meta) => ({
+      robots: 'index, follow',
       ...meta,
       imageUrl: meta.imageUrl || resolvedImageUrl,
     });
+
+    if (isNotFound) {
+      const badPath =
+        currentPath ||
+        (typeof window !== 'undefined' && window.location?.pathname
+          ? window.location.pathname
+          : '/404');
+      return withImage({
+        title: '404 Page Not Found | DriveLedger',
+        description:
+          'The requested automotive telemetry page could not be found. Browse 179+ vehicle TCO calculators, powertrain risk matrices, and OBD-II repair estimators.',
+        canonicalUrl: `${SITE_ORIGIN}${badPath}`,
+        canonicalPath: badPath,
+        imageUrl: DEFAULT_OG_IMAGE,
+        robots: 'noindex, nofollow',
+      });
+    }
 
     if (resolvedLegalKey && LEGAL_POLICIES[resolvedLegalKey]) {
       const policy = LEGAL_POLICIES[resolvedLegalKey];
@@ -261,11 +312,11 @@ export default function DynamicSeoHead({
       });
     }
 
-    if (activeTab === 'overview' && !isVehicleSelected) {
+    if (activeTab === 'overview') {
       return withImage({
         title: 'DriveLedger | Independent Car Ownership Cost, Reliability & OBD-II Platform',
         description:
-          'Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 120+ models.',
+          'Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 179+ models.',
         canonicalUrl: `${SITE_ORIGIN}/`,
         canonicalPath: '/',
         imageUrl: DEFAULT_OG_IMAGE,
@@ -273,8 +324,9 @@ export default function DynamicSeoHead({
     }
 
     const codeLower = obdDossier.code.toLowerCase();
-    const minParts = obdDossier.partsCostRangeUsd?.[0] ?? 95;
-    const maxParts = obdDossier.partsCostRangeUsd?.[1] ?? 1650;
+    const wearScale = Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0;
+    const minParts = Math.round((obdDossier.partsCostRangeUsd?.[0] ?? 95) * wearScale);
+    const maxParts = Math.round((obdDossier.partsCostRangeUsd?.[1] ?? 1650) * wearScale);
     const minLabor = obdDossier.laborHoursRange?.[0] ?? 1.0;
     const maxLabor = obdDossier.laborHoursRange?.[1] ?? 4.0;
 
@@ -308,7 +360,17 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'tco') {
-      const canonicalPath = isVehicleSelected ? `/tco/${preset.id}` : '/tco';
+      if (!isVehicleSelected) {
+        return withImage({
+          title: '5-Year True Cost to Own (TCO) Calculator | DriveLedger',
+          description:
+            'Calculate 5-year ownership costs, non-linear depreciation curves, financing interest, fuel, insurance, and scheduled maintenance for any vehicle.',
+          canonicalUrl: `${SITE_ORIGIN}/tco`,
+          canonicalPath: '/tco',
+          imageUrl: DEFAULT_OG_IMAGE,
+        });
+      }
+      const canonicalPath = `/tco/${preset.id}`;
       const title = `${preset.name} 5-Year True Cost to Own & Depreciation | DriveLedger`;
       const description = `${preset.name} (${preset.engineCode}) 5-year True Cost to Own is projected at $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/mo or $${telemetry.costPerMileUsd}/mi), including $${telemetry.depreciation5YrUsd.toLocaleString()} non-linear depreciation and maintenance reserves.`;
       return withImage({
@@ -322,8 +384,11 @@ export default function DynamicSeoHead({
     if (activeTab === 'risk') {
       if (activeMileageBracket) {
         const canonicalPath = `/risk-matrix/${preset.id}/${activeMileageBracket.slug}`;
+        const isPureEv = isPureElectric(preset);
         const title = `${preset.name} at ${activeMileageBracket.label}: Reliability Risk & Maintenance Costs | DriveLedger`;
-        const description = `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect imminent timing, transmission, DPF, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
+        const description = isPureEv
+          ? `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect HV battery State of Health (SoH %), OBC/ICCU electronics, heat pump thermal valves, reduction gear wear, and 12-month repair reserves.`
+          : `Buying or owning a ${preset.name} (${preset.engineCode}) at ${activeMileageBracket.label}? Inspect imminent timing, transmission, DPF/emissions, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
         return withImage({
           title,
           description,
@@ -331,7 +396,17 @@ export default function DynamicSeoHead({
           canonicalPath,
         });
       }
-      const canonicalPath = isVehicleSelected ? `/risk-matrix/${preset.id}` : '/risk-matrix';
+      if (!isVehicleSelected) {
+        return withImage({
+          title: 'Powertrain Maintenance Risk Matrix & Reliability Score | DriveLedger',
+          description:
+            'Inspect upcoming maintenance horizons, thermodynamic urban wear penalties, and known powertrain defects across 179 vehicle configurations.',
+          canonicalUrl: `${SITE_ORIGIN}/risk-matrix`,
+          canonicalPath: '/risk-matrix',
+          imageUrl: DEFAULT_OG_IMAGE,
+        });
+      }
+      const canonicalPath = `/risk-matrix/${preset.id}`;
       const title = `${preset.name} Reliability Score & Maintenance Risk Matrix | DriveLedger`;
       const description = `${preset.name} achieves a ${telemetry.reliabilityScore}/100 Engineering Reliability Score at ${telemetry.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
       return withImage({
@@ -375,7 +450,17 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'checklist') {
-      const canonicalPath = isVehicleSelected ? `/checklist/${preset.id}` : '/checklist';
+      if (!isVehicleSelected) {
+        return withImage({
+          title: 'Pre-Purchase Inspection (PPI) Checklist & Defect Flagging | DriveLedger',
+          description:
+            'Master the used car pre-purchase inspection: cold-start protocols, fluid condition tests, diagnostic scans, and printable PDF inspection reports.',
+          canonicalUrl: `${SITE_ORIGIN}/checklist`,
+          canonicalPath: '/checklist',
+          imageUrl: DEFAULT_OG_IMAGE,
+        });
+      }
+      const canonicalPath = `/checklist/${preset.id}`;
       const title = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | DriveLedger`;
       const description = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
       return withImage({
@@ -383,6 +468,34 @@ export default function DynamicSeoHead({
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
+      });
+    }
+
+    if (activeTab === 'methodology') {
+      const canonicalPath = '/methodology';
+      const title = 'Automotive Engineering & Cost Methodology | DriveLedger';
+      const description =
+        'Mathematical models, logarithmic depreciation formulas, Bayesian OBD-II probability, and actuarial data sources powering the DriveLedger platform.';
+      return withImage({
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
+    }
+
+    if (activeTab === 'reviews') {
+      const canonicalPath = '/reviews';
+      const title = 'Owner Reviews & Repair Cost Benchmarks | DriveLedger';
+      const description =
+        'Compare real-world repair shop quotes against independent parts and labor benchmarks, and read verified owner maintenance notes.';
+      return withImage({
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+        imageUrl: DEFAULT_OG_IMAGE,
       });
     }
 
@@ -403,6 +516,35 @@ export default function DynamicSeoHead({
       const canonicalPath = '/contact';
       const title = 'Contact DriveLedger | Editorial, Engineering & Legal Desk';
       const description = 'Contact the DriveLedger automotive engineering team for calculation inquiries, catalog corrections, or data protection assistance.';
+      return withImage({
+        title,
+        description,
+        canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+        canonicalPath,
+        imageUrl: DEFAULT_OG_IMAGE,
+      });
+    }
+
+    if (activeTab === 'vehicles') {
+      if (activeBrand && activeBrandTelemetry) {
+        const canonicalPath = `/vehicles/${activeBrand.slug}`;
+        const modelWord = activeBrand.modelCount === 1 ? 'Model' : 'Models';
+        const title = `${activeBrand.name} Maintenance Cost, 5-Year TCO & Reliability (${activeBrand.modelCount} ${modelWord}) | DriveLedger`;
+        const description = `Compare ${activeBrand.name} 5-year True Cost to Own (avg $${activeBrandTelemetry.avg5YrTcoUsd.toLocaleString()}, $${activeBrandTelemetry.avgMonthlyTcoUsd}/mo), powertrain wear risks, and pre-purchase inspection checklists across ${activeBrand.modelCount} benchmarked ${activeBrand.name} models.`;
+        const brandHeroImage =
+          resolveVehiclePhotoUrl({ vehicle: activeBrand.models[0] }) || DEFAULT_OG_IMAGE;
+        return withImage({
+          title,
+          description,
+          canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+          canonicalPath,
+          imageUrl: brandHeroImage,
+        });
+      }
+      const canonicalPath = '/vehicles';
+      const title = `All ${BRAND_DIRECTORY.length} Brands & ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models | DriveLedger Directory`;
+      const description =
+        `Browse all ${BRAND_DIRECTORY.length} automotive manufacturers and ${VEHICLE_PRESETS.length} vehicle configurations. Direct links to dedicated brand hubs, 5-Year True Cost to Own calculators, Powertrain Risk Matrices, and Pre-Purchase Inspection checklists.`;
       return withImage({
         title,
         description,
@@ -447,12 +589,13 @@ export default function DynamicSeoHead({
       canonicalUrl: `${SITE_ORIGIN}${baseTabPath}`,
       canonicalPath: baseTabPath,
     });
-  }, [resolvedLegalKey, activeTab, activeGuideSlug, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode, vehicleImageUrl]);
+  }, [isNotFound, currentPath, resolvedLegalKey, activeTab, activeGuideSlug, activeBrand, activeBrandTelemetry, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode, vehicleImageUrl]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = seoMetadata.title;
       upsertMetaTag('name', 'description', seoMetadata.description);
+      upsertMetaTag('name', 'robots', seoMetadata.robots || 'index, follow');
       upsertMetaTag('property', 'og:title', seoMetadata.title);
       upsertMetaTag('property', 'og:description', seoMetadata.description);
       upsertMetaTag('property', 'og:url', seoMetadata.canonicalUrl);
@@ -462,6 +605,18 @@ export default function DynamicSeoHead({
       upsertMetaTag('name', 'twitter:description', seoMetadata.description);
       upsertMetaTag('name', 'twitter:image', seoMetadata.imageUrl || DEFAULT_OG_IMAGE);
       upsertCanonicalLink(seoMetadata.canonicalUrl);
+
+      // Remove build-time static JSON-LD once React takes over structured data
+      // so hydrated pages never emit duplicate FAQPage / Vehicle / HowTo schemas.
+      const prerenderJsonLd =
+        typeof document.getElementById === 'function'
+          ? document.getElementById('prerender-jsonld')
+          : document.head?.querySelector?.('#prerender-jsonld');
+      if (prerenderJsonLd && typeof prerenderJsonLd.remove === 'function') {
+        prerenderJsonLd.remove();
+      } else if (prerenderJsonLd?.parentNode) {
+        prerenderJsonLd.parentNode.removeChild(prerenderJsonLd);
+      }
     }
   }, [seoMetadata]);
 
@@ -610,8 +765,8 @@ export default function DynamicSeoHead({
           estimatedCost: {
             '@type': 'MonetaryAmount',
             currency: 'USD',
-            minValue: obdDossier.partsCostRangeUsd?.[0] ?? 95,
-            maxValue: obdDossier.partsCostRangeUsd?.[1] ?? 1650,
+            minValue: Math.round((obdDossier.partsCostRangeUsd?.[0] ?? 95) * (Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0)),
+            maxValue: Math.round((obdDossier.partsCostRangeUsd?.[1] ?? 1650) * (Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0)),
           },
           step: [...pidSteps, protocolStep],
         },
@@ -619,19 +774,43 @@ export default function DynamicSeoHead({
     };
   }, [preset, obdDossier, seoMetadata.description]);
 
-  // 3. FAQPage Schema combining dynamic vehicle/OBD Q&As with core methodology FAQs
+  // 3. Route-Specific FAQPage Schema (strictly one FAQPage per relevant page, never duplicated)
   const faqSchema = useMemo(() => {
-    const dynamicFaqs = [
-      {
+    if ((activeTab === 'guides' || activeTab === 'blog') && activeGuideSlug) {
+      const guide = GUIDES_DATA.find((g) => g.slug === activeGuideSlug);
+      if (guide?.faqs?.length) {
+        return {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: guide.faqs.map((item) => ({
+            '@type': 'Question',
+            name: item.question || item.q,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer || item.a,
+            },
+          })),
+        };
+      }
+    }
+
+    const dynamicFaqs = [];
+    if (isVehicleSelected && ['tco', 'risk', 'checklist', 'compare'].includes(activeTab)) {
+      dynamicFaqs.push({
         question: `What is the 5-year True Cost to Own (TCO) and Reliability Score for the ${preset.name}?`,
         answer: `Based on DriveLedger telemetry modeling, the ${preset.name} (${preset.engineCode}) carries an estimated 5-year True Cost to Own of $${telemetry.total5YrTcoUsd.toLocaleString()} ($${telemetry.monthlyTcoUsd}/month or $${telemetry.costPerMileUsd}/mile) and an Engineering Reliability Score of ${telemetry.reliabilityScore}/100 at ${telemetry.odometerMiles.toLocaleString()} miles.`,
-      },
-      {
+      });
+    }
+    if (activeTab === 'obd' && (hasSelectedObdCode || isVehicleSelected)) {
+      const wearScale = Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0;
+      const faqMinParts = Math.round((obdDossier.partsCostRangeUsd?.[0] ?? 95) * wearScale);
+      const faqMaxParts = Math.round((obdDossier.partsCostRangeUsd?.[1] ?? 1650) * wearScale);
+      dynamicFaqs.push({
         question: `How much does it cost to fix OBD-II code ${obdDossier.code} (${obdDossier.title}) on a ${preset.name}?`,
-        answer: `For code ${obdDossier.code} on the ${preset.name}, component parts typically range from $${obdDossier.partsCostRangeUsd?.[0] ?? 95} to $${obdDossier.partsCostRangeUsd?.[1] ?? 1650} with ${obdDossier.laborHoursRange?.[0] ?? 1.0} to ${obdDossier.laborHoursRange?.[1] ?? 4.0} hours of workshop labor. ${obdDossier.liveTelemetryCheck?.costTrapWarning || ''}`,
-      },
-      ...FAQ_ITEMS.slice(0, 3),
-    ];
+        answer: `For code ${obdDossier.code} on the ${preset.name}, component parts typically range from $${faqMinParts} to $${faqMaxParts} with ${obdDossier.laborHoursRange?.[0] ?? 1.0} to ${obdDossier.laborHoursRange?.[1] ?? 4.0} hours of workshop labor. ${obdDossier.liveTelemetryCheck?.costTrapWarning || ''}`,
+      });
+    }
+    dynamicFaqs.push(...FAQ_ITEMS.slice(0, 3));
 
     return {
       '@context': 'https://schema.org',
@@ -645,40 +824,64 @@ export default function DynamicSeoHead({
         },
       })),
     };
-  }, [preset, obdDossier, telemetry]);
+  }, [activeTab, activeGuideSlug, isVehicleSelected, hasSelectedObdCode, preset, obdDossier, telemetry]);
 
-  // 4. Pre-Purchase Inspection (PPI) HowTo Schema
+  // 4. Pre-Purchase Inspection (PPI) HowTo Schema (EV-aware)
   const ppiChecklistSchema = useMemo(() => {
-    if (activeTab !== 'checklist') return null;
+    if (activeTab !== 'checklist' || !isVehicleSelected) return null;
+    const isPureEv = isPureElectric(preset);
     return {
       '@context': 'https://schema.org',
       '@type': 'HowTo',
       name: `Pre-Purchase Vehicle Inspection Checklist: ${preset.name}`,
       description: `Step-by-step on-site inspection protocol for ${preset.name} (${preset.engineCode}) condition assessment and known vulnerability detection.`,
-      step: [
-        {
-          '@type': 'HowToStep',
-          name: 'OBD-II DTC & Freeze Frame Diagnostic Scan',
-          text: 'Scan active and pending trouble codes and verify distance traveled since DTCs were cleared.',
-        },
-        {
-          '@type': 'HowToStep',
-          name: 'Engine Bay & Vulnerability Inspection',
-          text: 'Check timing belt/chain wear, high-pressure fuel pump condition (e.g. CP4), and fluid leaks.',
-        },
-        {
-          '@type': 'HowToStep',
-          name: 'Paint Depth & Structural Alignment Inspection',
-          text: 'Measure coating thickness across outer panels and pillars to detect hidden collision repairs.',
-        },
-        {
-          '@type': 'HowToStep',
-          name: 'Transmission & Clutch Load Dynamic Road Test',
-          text: 'Evaluate clutch slip, dual-mass flywheel shudder, and mechatronic shift quality under acceleration.',
-        },
-      ],
+      step: isPureEv
+        ? [
+            {
+              '@type': 'HowToStep',
+              name: 'OBD-II BMS & Isolation Fault Scan',
+              text: 'Scan active and pending battery management system (BMS), thermal chiller, and HV isolation fault codes.',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'HV Battery State of Health (SoH %) & Cell Delta-V Load Test',
+              text: 'Verify BMS State of Health (SoH %), total DC fast-charge ratio, and cell voltage imbalance (<30 mV under acceleration load).',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'Paint Depth & Structural Chassis Alignment Inspection',
+              text: 'Measure coating thickness across outer panels, rockers, and battery pack undercarriage shield for impact damage.',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'AC/DC Charging, OBC/ICCU, Heat Pump & Reduction Gear Test',
+              text: 'Confirm Level 2 AC and CCS/NACS DC fast-charging handshakes, heat pump thermal output, and quiet reduction gear regen.',
+            },
+          ]
+        : [
+            {
+              '@type': 'HowToStep',
+              name: 'OBD-II DTC & Freeze Frame Diagnostic Scan',
+              text: 'Scan active and pending trouble codes and verify distance traveled since DTCs were cleared.',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'Engine Bay & Vulnerability Inspection',
+              text: 'Check timing belt/chain wear, high-pressure fuel pump condition, cold-start acoustics, and fluid leaks.',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'Paint Depth & Structural Alignment Inspection',
+              text: 'Measure coating thickness across outer panels and pillars to detect hidden collision repairs.',
+            },
+            {
+              '@type': 'HowToStep',
+              name: 'Transmission & Clutch Load Dynamic Road Test',
+              text: 'Evaluate clutch slip, dual-mass flywheel shudder, and mechatronic shift quality under acceleration.',
+            },
+          ],
     };
-  }, [activeTab, preset]);
+  }, [activeTab, isVehicleSelected, preset]);
 
   // 5. Head-to-Head Vehicle Comparison ItemList Schema
   const compareItemListSchema = useMemo(() => {
@@ -788,6 +991,66 @@ export default function DynamicSeoHead({
     };
   }, [activeTab]);
 
+  // 8b. Vehicles Directory & Brand Hub CollectionPage Schema
+  const vehiclesDirectorySchema = useMemo(() => {
+    if (activeTab !== 'vehicles') return null;
+    if (activeBrand && activeBrandTelemetry) {
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: `${activeBrand.name} Maintenance Cost, 5-Year TCO & Reliability Profiles`,
+        description: `Benchmarked ownership cost and powertrain reliability catalog for ${activeBrand.modelCount} ${activeBrand.name} models (average 5-year TCO: $${activeBrandTelemetry.avg5YrTcoUsd.toLocaleString()}).`,
+        url: `${SITE_ORIGIN}/vehicles/${activeBrand.slug}`,
+        numberOfItems: activeBrand.modelCount,
+        about: {
+          '@type': 'Brand',
+          name: activeBrand.name,
+        },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: activeBrand.modelCount,
+          itemListElement: activeBrandTelemetry.modelSummaries.map((item, idx) => ({
+            '@type': 'ListItem',
+            position: idx + 1,
+            url: `${SITE_ORIGIN}/tco/${item.preset.id}`,
+            name: item.preset.name,
+          })),
+        },
+      };
+    }
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'DriveLedger Complete Brand & Model Telemetry Directory',
+      description: `Complete catalog of ${VEHICLE_PRESETS.length} benchmarked vehicle configurations across ${BRAND_DIRECTORY.length} global automotive manufacturers.`,
+      url: `${SITE_ORIGIN}/vehicles`,
+      numberOfItems: VEHICLE_PRESETS.length,
+    };
+  }, [activeTab, activeBrand, activeBrandTelemetry]);
+
+  // 8c. SoftwareApplication Schema for primary interactive calculator & platform tabs
+  const softwareApplicationSchema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'DriveLedger Automotive Ownership Cost & Diagnostic Platform',
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web',
+      url: SITE_ORIGIN,
+      description:
+        'Independent automotive True Cost to Own (TCO) calculator, powertrain maintenance risk matrix, and SAE J1979 OBD-II workshop repair estimator covering 179+ vehicle models.',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      publisher: {
+        '@id': `${SITE_ORIGIN}/#organization`,
+      },
+    }),
+    []
+  );
+
   // 9. Legal Policy WebPage Schema
   const legalPageSchema = useMemo(() => {
     if (!resolvedLegalKey || !LEGAL_POLICIES[resolvedLegalKey]) return null;
@@ -834,6 +1097,28 @@ export default function DynamicSeoHead({
     };
   }, [resolvedLegalKey, seoMetadata]);
 
+  const showVehicleTelemetrySchema =
+    !isNotFound &&
+    !resolvedLegalKey &&
+    isVehicleSelected &&
+    ['tco', 'risk', 'obd', 'compare', 'checklist'].includes(activeTab);
+
+  const showObdHowToSchema =
+    !isNotFound &&
+    !resolvedLegalKey &&
+    activeTab === 'obd' &&
+    (hasSelectedObdCode || isVehicleSelected);
+
+  const showFaqSchema =
+    !isNotFound &&
+    !resolvedLegalKey &&
+    ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'guides', 'blog', 'methodology'].includes(activeTab);
+
+  const showSoftwareAppSchema =
+    !isNotFound &&
+    !resolvedLegalKey &&
+    ['overview', 'tco', 'risk', 'obd', 'compare', 'checklist', 'methodology'].includes(activeTab);
+
   return (
     <>
       <script
@@ -841,6 +1126,13 @@ export default function DynamicSeoHead({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationAndWebsiteSchema) }}
       />
+      {showSoftwareAppSchema && (
+        <script
+          id="schema-software-application"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
+        />
+      )}
       {legalPageSchema && (
         <script
           id="schema-legal-page"
@@ -848,54 +1140,67 @@ export default function DynamicSeoHead({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(legalPageSchema) }}
         />
       )}
-      <script
-        id="schema-vehicle-telemetry"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleSchema) }}
-      />
-      <script
-        id="schema-obd-howto"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(obdDiagnosticSchema) }}
-      />
-      <script
-        id="schema-dynamic-faq"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      {ppiChecklistSchema && (
+      {showVehicleTelemetrySchema && (
+        <script
+          id="schema-vehicle-telemetry"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleSchema) }}
+        />
+      )}
+      {showObdHowToSchema && (
+        <script
+          id="schema-obd-howto"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(obdDiagnosticSchema) }}
+        />
+      )}
+      {showFaqSchema && (
+        <script
+          id="schema-dynamic-faq"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+      {!isNotFound && !resolvedLegalKey && ppiChecklistSchema && (
         <script
           id="schema-ppi-checklist"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ppiChecklistSchema) }}
         />
       )}
-      {compareItemListSchema && (
+      {!isNotFound && !resolvedLegalKey && compareItemListSchema && (
         <script
           id="schema-compare-itemlist"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(compareItemListSchema) }}
         />
       )}
-      {guideArticleSchema && (
+      {!isNotFound && !resolvedLegalKey && guideArticleSchema && (
         <script
           id="schema-guide-article"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(guideArticleSchema) }}
         />
       )}
-      {aboutPageSchema && (
+      {!isNotFound && !resolvedLegalKey && aboutPageSchema && (
         <script
           id="schema-about-page"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
         />
       )}
-      {contactPageSchema && (
+      {!isNotFound && !resolvedLegalKey && contactPageSchema && (
         <script
           id="schema-contact-page"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageSchema) }}
+        />
+      )}
+      {!isNotFound && !resolvedLegalKey && vehiclesDirectorySchema && (
+        <script
+          id="schema-vehicles-directory"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(vehiclesDirectorySchema) }}
         />
       )}
     </>

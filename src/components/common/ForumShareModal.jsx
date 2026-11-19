@@ -17,8 +17,20 @@ import {
   MAINTENANCE_COMPONENTS,
   evaluateComponentHealth,
   calculateOemRiskMultiplier,
+  calculateTcoProjection,
+  filterComponentsForPowertrain,
+  isPureElectric,
 } from '../../data/maintenanceData';
 import { Pill } from './OdometerPrimitives';
+
+export function formatShieldsSegment(value) {
+  return encodeURIComponent(
+    String(value || '')
+      .replace(/_/g, '__')
+      .replace(/-/g, '--')
+      .replace(/\s+/g, '_')
+  );
+}
 
 const FORMAT_TABS = [
   {
@@ -39,6 +51,12 @@ const FORMAT_TABS = [
     subtitle: 'VWVortex · Bimmerpost · PistonHeads',
     icon: FileText,
   },
+  {
+    id: 'badge',
+    label: 'Embed Badge',
+    subtitle: 'HTML / SVG / Markdown',
+    icon: ShieldAlert,
+  },
 ];
 
 /**
@@ -46,56 +64,25 @@ const FORMAT_TABS = [
  * Maintenance Risk Matrix without an active tcoSummary object.
  */
 function computeFallbackTco(vehicle, odometerMiles) {
-  const price = Math.max(1000, Number(vehicle?.purchasePriceUsd) || 28000);
-  const annualMi = Math.max(500, Number(vehicle?.annualDistanceMiles) || 12000);
-  const eff = Math.max(1, Number(vehicle?.mpgUs) || 32);
-  const isEv = Boolean(vehicle?.isEv);
-  const fuelPrice = Math.max(0.01, Number(vehicle?.defaultFuelPriceUsdGal) || 3.85);
-  const insuranceYr = Math.max(0, Number(vehicle?.annualInsuranceUsd) || 1350);
-  const baseMaint = Number(vehicle?.baseAnnualMaintenanceUsd) || 850;
-  const wearFactor = Number(vehicle?.maintenanceWearFactor) || 1.1;
-  const startOdo = Math.max(0, Number(odometerMiles ?? vehicle?.defaultOdometerMiles) || 45000);
-  const curve = vehicle?.residualCurve10Yr || [0.82, 0.71, 0.61, 0.52, 0.45];
-
-  const retention5Yr = curve[4] ?? 0.45;
-  const residualValueUsd = Math.round(price * retention5Yr);
-  const totalDepreciationUsd = Math.max(0, price - residualValueUsd);
-
-  const annualFuelUsd = isEv
-    ? (annualMi / 100) * eff * fuelPrice
-    : (annualMi / eff) * fuelPrice;
-  const totalFuelUsd = Math.round(annualFuelUsd * 5);
-  const totalInsuranceUsd = Math.round(insuranceYr * 4.85);
-
-  const midOdo = startOdo + annualMi * 2.5;
-  const odoEscalation = 1 + Math.max(0, (midOdo - 30000) / 85000) * 0.55;
-  const totalMaintenanceUsd = Math.round(baseMaint * odoEscalation * wearFactor * 5);
-
-  // Standard 20% down, 6.2% APR 60-mo financing interest estimate
-  const principal = price * 0.8;
-  const monthlyRate = 0.062 / 12;
-  const factor = Math.pow(1 + monthlyRate, 60);
-  const monthlyPayment = (principal * (monthlyRate * factor)) / (factor - 1);
-  const totalInterestUsd = Math.max(0, Math.round(monthlyPayment * 60 - principal));
-
-  const totalEconomicCostUsd = Math.round(
-    totalDepreciationUsd +
-      totalFuelUsd +
-      totalInsuranceUsd +
-      totalMaintenanceUsd +
-      totalInterestUsd
-  );
-  const monthlyEconomicCostUsd = Math.round(totalEconomicCostUsd / 60);
-  const totalDistanceMiles = annualMi * 5;
-  const costPerMileUsd =
-    totalDistanceMiles > 0 ? +(totalEconomicCostUsd / totalDistanceMiles).toFixed(3) : 0.48;
-
-  return {
-    totalEconomicCostUsd,
-    monthlyEconomicCostUsd,
-    costPerMileUsd,
-    totalDistanceMiles,
-  };
+  const isEv = isPureElectric(vehicle);
+  return calculateTcoProjection({
+    purchasePriceUsd: Math.max(1000, Number(vehicle?.purchasePriceUsd) || 28000),
+    odometerMiles: Math.max(0, Number(odometerMiles ?? vehicle?.defaultOdometerMiles) || 45000),
+    annualDistanceMiles: Math.max(500, Number(vehicle?.annualDistanceMiles) || 12000),
+    mpgUs: Number(vehicle?.mpgUs) || (isEv ? 28 : 32),
+    isEv,
+    powertrainType: vehicle?.powertrainType || vehicle?.powertrain,
+    vehicle,
+    fuelPriceUsdGal: Number(vehicle?.defaultFuelPriceUsdGal) || (isEv ? 0.16 : 3.85),
+    annualInsuranceUsd: Math.max(0, Number(vehicle?.annualInsuranceUsd) || 1350),
+    baseAnnualMaintenanceUsd: Number(vehicle?.baseAnnualMaintenanceUsd) || 850,
+    maintenanceWearFactor: Number(vehicle?.maintenanceWearFactor) || 1.1,
+    downPaymentPct: 20,
+    aprPct: 6.2,
+    loanTermMonths: 60,
+    horizonYears: 5,
+    residualCurve10Yr: vehicle?.residualCurve10Yr,
+  });
 }
 
 export default function ForumShareModal({
@@ -158,11 +145,7 @@ export default function ForumShareModal({
     const components =
       Array.isArray(providedComponents) && providedComponents.length > 0
         ? providedComponents
-        : MAINTENANCE_COMPONENTS.filter((comp) =>
-            comp.applicablePowertrains.includes(
-              resolvedVehicle?.powertrain || 'diesel'
-            )
-          ).map((comp) => ({
+        : filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, resolvedVehicle).map((comp) => ({
             ...comp,
             health: evaluateComponentHealth({
               component: comp,
@@ -171,6 +154,7 @@ export default function ForumShareModal({
               oilIntervalId: scheduleMode === 'oem' ? 'extended' : 'standard',
               serviceHistoryId: 'verified',
               transmissionId: resolvedVehicle?.transmission || 'dct-dsg',
+              vehicle: resolvedVehicle,
             }),
           }));
 
@@ -213,7 +197,7 @@ export default function ForumShareModal({
     if (typeof reserveUsd !== 'number' || Number.isNaN(reserveUsd)) {
       let rawReserve = 0;
       for (const item of components) {
-        const range = item.costsUsd?.independent || [700, 1300];
+        const range = item.health?.scaledCostsUsd?.independent || item.costsUsd?.independent || [700, 1300];
         const avgCost = (range[0] + range[1]) / 2;
         if (item.health?.status === 'CRITICAL') {
           rawReserve += avgCost * 0.75;
@@ -282,23 +266,29 @@ export default function ForumShareModal({
   const costPerUnitFormatted = formatCurrency(
     totalDistMiles > 0
       ? resolvedTco.totalEconomicCostUsd / (totalDistMiles * distFactor)
-      : resolvedTco.costPerMileUsd || 0.48
+      : resolvedTco.costPerMileUsd || 0.48,
+    2
   );
   const score = resolvedRisk.score;
   const topRiskLabel = resolvedRisk.topRiskLabel;
   const criticalDefectTag = resolvedRisk.criticalDefectTag;
+  const horizonYears = resolvedTco.yearlySchedule?.length || 5;
+  const isLeaseSummary = resolvedTco.financeType === 'lease' && Boolean(resolvedTco.leaseDetails);
+  const leaseSummaryNote = isLeaseSummary
+    ? `Lease (${resolvedTco.leaseDetails.leaseTermMonths}m): ${formatCurrency(resolvedTco.leaseDetails.monthlyLeasePaymentUsd)}/mo · Residual ${resolvedTco.leaseDetails.residualPct}% · MF ${resolvedTco.leaseDetails.moneyFactor.toFixed(5)}`
+    : null;
 
-  // Generate the 3 copyable formats
+  // Generate the 4 copyable formats
   const snippets = useMemo(() => {
-    const quick = `Vehicle: ${resolvedVehicle.name} | 5-Yr TCO: ${tcoFormatted} (${monthlyFormatted}/mo) | Reliability Score: ${score}/100 | Top Risk: ${topRiskLabel} (${reserveFormatted}) | Source: ${shareUrl}`;
+    const quick = `Vehicle: ${resolvedVehicle.name} | ${horizonYears}-Yr TCO: ${tcoFormatted} (${monthlyFormatted}/mo · ${costPerUnitFormatted}/${distanceUnit}${leaseSummaryNote ? ` · ${leaseSummaryNote}` : ''}) | Reliability Score: ${score}/100 | Top Risk: ${topRiskLabel} (${reserveFormatted}) | Source: ${shareUrl}`;
 
     const reddit = [
       `### DriveLedger Telemetry Report: ${resolvedVehicle.name}`,
       '',
       '| Metric | Telemetry Value | Notes |',
       '| :- | :- | :- |',
-      `| **5-Yr TCO** | **${tcoFormatted}** | ${distanceFormatted} odometer · ${costPerUnitFormatted}/${distanceUnit} carrying cost |`,
-      `| **Monthly Cost** | **${monthlyFormatted}/mo** | Depreciation, fuel/energy, insurance, maintenance & financing |`,
+      `| **${horizonYears}-Yr TCO** | **${tcoFormatted}** | ${distanceFormatted} odometer · ${costPerUnitFormatted}/${distanceUnit} carrying cost |`,
+      `| **Monthly Cost** | **${monthlyFormatted}/mo** | ${leaseSummaryNote || 'Depreciation, fuel/energy, insurance, maintenance & financing'} |`,
       `| **Reliability Score** | **${score}/100** | ${
         scheduleMode === 'oem'
           ? 'OEM Marketing Schedule (Risk Multiplier Active)'
@@ -322,8 +312,8 @@ export default function ForumShareModal({
       '',
       '[table]',
       '[tr][th]Metric[/th][th]Telemetry Value[/th][th]Notes[/th][/tr]',
-      `[tr][td][b]5-Yr TCO[/b][/td][td]${tcoFormatted}[/td][td]${costPerUnitFormatted}/${distanceUnit} total carrying cost[/td][/tr]`,
-      `[tr][td][b]Monthly Cost[/b][/td][td]${monthlyFormatted}/mo[/td][td]All-in depreciation, energy, insurance & upkeep[/td][/tr]`,
+      `[tr][td][b]${horizonYears}-Yr TCO[/b][/td][td]${tcoFormatted}[/td][td]${costPerUnitFormatted}/${distanceUnit} total carrying cost[/td][/tr]`,
+      `[tr][td][b]Monthly Cost[/b][/td][td]${monthlyFormatted}/mo[/td][td]${leaseSummaryNote || 'All-in depreciation, energy, insurance & upkeep'}[/td][/tr]`,
       `[tr][td][b]Reliability Score[/b][/td][td]${score}/100[/td][td]Component wear matrix evaluation[/td][/tr]`,
       `[tr][td][b]12-Mo Repair Risk Reserve[/b][/td][td]${reserveFormatted}[/td][td]Top Risk: ${topRiskLabel}[/td][/tr]`,
       `[tr][td][b]Critical Defect Tag[/b][/td][td]${criticalDefectTag}[/td][td]${
@@ -334,10 +324,42 @@ export default function ForumShareModal({
       `[b]Source & Interactive Telemetry:[/b] [url=${shareUrl}]${shareUrl}[/url]`,
     ].join('\n');
 
+    const escXml = (s) =>
+      String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const safeBadgeLabel = formatShieldsSegment(
+      `DriveLedger ${resolvedVehicle.shortName || resolvedVehicle.name}`
+    );
+    const safeBadgeValue = formatShieldsSegment(
+      `${score}/100 Reliability | ${monthlyFormatted}/mo`
+    );
+    const svgTitle = escXml(`${resolvedVehicle.name} · ${score}/100 · ${tcoFormatted} 5-Yr TCO`);
+    const safeHtmlUrl = escXml(shareUrl);
+    const safeVehicleName = escXml(resolvedVehicle.name);
+    const safeShortName = escXml(resolvedVehicle.shortName || resolvedVehicle.name);
+
+    const badge = [
+      `<!-- 1. DriveLedger Reliability & TCO Embed Badge (HTML) -->`,
+      `<a href="${safeHtmlUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:#121215;color:#F7F7F4;border:1px solid #27272A;font-family:system-ui,-apple-system,sans-serif;font-size:12px;text-decoration:none;line-height:1.4;">`,
+      `  <strong style="color:#4ADE80;">DriveLedger ${score}/100</strong>`,
+      `  <span>${safeVehicleName} · 5-Yr TCO: <strong>${escXml(tcoFormatted)}</strong> (${escXml(monthlyFormatted)}/mo · ${escXml(costPerUnitFormatted)}/${escXml(distanceUnit)}) · 12-Mo Reserve: ${escXml(reserveFormatted)}</span>`,
+      `</a>`,
+      '',
+      `<!-- 2. Self-Contained Inline SVG Badge (Zero External Dependencies) -->`,
+      `<a href="${safeHtmlUrl}" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" width="460" height="36" role="img" aria-label="${svgTitle}"><rect width="460" height="36" rx="8" fill="#121215"/><rect x="1" y="1" width="138" height="34" rx="7" fill="#183D22"/><text x="70" y="22" fill="#FFFFFF" font-family="system-ui,sans-serif" font-size="12" font-weight="700" text-anchor="middle">DriveLedger ${score}/100</text><text x="152" y="22" fill="#F7F7F4" font-family="system-ui,sans-serif" font-size="11.5">${safeShortName} · ${escXml(tcoFormatted)} ${horizonYears}-Yr (${escXml(monthlyFormatted)}/mo)</text></svg></a>`,
+      '',
+      `<!-- 3. Markdown Badge for Listings / Blogs / GitHub / Forums -->`,
+      `[![DriveLedger ${resolvedVehicle.name} Reliability ${score}/100 | ${horizonYears}-Yr TCO ${tcoFormatted}](https://img.shields.io/badge/${safeBadgeLabel}-${safeBadgeValue}-183D22?style=for-the-badge)](${shareUrl})`,
+    ].join('\n');
+
     return {
       quick,
       reddit,
       bbcode,
+      badge,
     };
   }, [
     resolvedVehicle,
@@ -352,6 +374,8 @@ export default function ForumShareModal({
     distanceUnit,
     scheduleMode,
     criticalDefectTag,
+    horizonYears,
+    leaseSummaryNote,
   ]);
 
   if (!isOpen) return null;
@@ -464,7 +488,7 @@ export default function ForumShareModal({
           <div
             role="tablist"
             aria-label="Share Format Tabs"
-            className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"
           >
             {FORMAT_TABS.map((tab) => {
               const Icon = tab.icon;
@@ -536,6 +560,26 @@ export default function ForumShareModal({
               )}
             </button>
           </div>
+
+          {activeFormat === 'badge' && (
+            <div
+              data-testid="embed-badge-visual-preview"
+              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-canvas dark:bg-zinc-900/70 p-3 flex flex-wrap items-center justify-between gap-2"
+            >
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-[#121215] text-[#F7F7F4] border border-zinc-800 text-xs font-sans shadow-xs">
+                <strong className="text-emerald-400 font-mono tabular-nums">
+                  DriveLedger {score}/100
+                </strong>
+                <span className="text-zinc-200">
+                  {resolvedVehicle.shortName || resolvedVehicle.name} · 5-Yr TCO:{' '}
+                  <strong className="font-mono tabular-nums">{tcoFormatted}</strong> ({monthlyFormatted}/mo · {costPerUnitFormatted}/{distanceUnit})
+                </span>
+              </div>
+              <span className="text-[10px] font-sans text-muted dark:text-zinc-400">
+                Includes HTML, Inline SVG &amp; Markdown formats
+              </span>
+            </div>
+          )}
 
           <pre
             data-testid="forum-share-preview"

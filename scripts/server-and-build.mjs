@@ -44,6 +44,31 @@ function getCurrentInstance() {
 export const React = {
   Fragment: Symbol.for('react.fragment'),
   StrictMode: Symbol.for('react.strict_mode'),
+  Suspense({ children }) {
+    return {
+      type: React.Fragment,
+      props: {},
+      children: Array.isArray(children) ? children : [children],
+    };
+  },
+  lazy(loader) {
+    let resolvedComp = null;
+    let loadingPromise = null;
+    return function LazyWrapper(props) {
+      if (resolvedComp) {
+        return React.createElement(resolvedComp, props);
+      }
+      if (!loadingPromise) {
+        loadingPromise = Promise.resolve(loader())
+          .then((mod) => {
+            resolvedComp = mod?.default || mod;
+            scheduleRerender();
+          })
+          .catch(() => {});
+      }
+      return null;
+    };
+  },
   createElement(type, props, ...children) {
     return {
       type,
@@ -213,6 +238,8 @@ export default React;
 export const {
   Fragment,
   StrictMode,
+  Suspense,
+  lazy,
   createElement,
   createContext,
   useContext,

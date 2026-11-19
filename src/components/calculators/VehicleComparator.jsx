@@ -23,8 +23,9 @@ import {
   evaluateComponentHealth,
   calculateOemRiskMultiplier,
   calculateMaintenanceReserve,
+  calculateTcoProjection,
+  filterComponentsForPowertrain,
 } from '../../data/maintenanceData';
-import { calculateTcoProjection } from './TcoCalculator';
 import { findEngineVariant, getKnownIssuesForVehicle } from '../../data/vehicles/index.js';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage } from '../../context/GarageContext';
@@ -51,9 +52,7 @@ export function computeReliabilityAndRisk(
   const physicalOdometerMiles = Math.max(0, Number(odoMiles) >= 0 ? Number(odoMiles) : (safePreset.defaultOdometerMiles || 62000));
   const oilIntervalId = schedMode === 'oem' ? 'extended' : 'standard';
 
-  const relevant = MAINTENANCE_COMPONENTS.filter((comp) =>
-    comp.applicablePowertrains.includes(safePreset.powertrain || 'diesel')
-  );
+  const relevant = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, safePreset);
 
   const evaluatedComponents = relevant.map((comp) => {
     const health = evaluateComponentHealth({
@@ -63,6 +62,7 @@ export function computeReliabilityAndRisk(
       oilIntervalId,
       serviceHistoryId: 'verified',
       transmissionId: safePreset.transmission || 'dct-dsg',
+      vehicle: safePreset,
     });
     return {
       ...comp,
@@ -74,6 +74,7 @@ export function computeReliabilityAndRisk(
     evaluatedComponents,
     workshopTier: tier,
     annualDistanceMiles,
+    vehicle: safePreset,
   });
   const oemRiskMultiplier = calculateOemRiskMultiplier(physicalOdometerMiles);
   const serviceReserveUsd = schedMode === 'oem' ? Math.round(baseReserveUsd * oemRiskMultiplier) : baseReserveUsd;
@@ -125,12 +126,17 @@ export default function VehicleComparator({
   downPaymentPct = 20,
   aprPct = 6.4,
   loanTermMonths = 60,
+  financeType = 'loan',
   scheduleMode = 'preventative',
   urbanTripSharePct = 35,
   workshopTier = 'independent',
   onClose,
   onApplyPreset,
   onSelectSecondaryPreset,
+  onNavigateToTco,
+  onNavigateToRisk,
+  onNavigateToChecklist,
+  onNavigateToVehicles,
   standalone = false,
 }) {
   const {
@@ -238,6 +244,7 @@ export default function VehicleComparator({
       customPriceAUsd === null &&
       customOdoAMiles === null &&
       primaryTco.yearlySchedule?.length === horizonYears &&
+      (!primaryTco.financeType || primaryTco.financeType === financeType) &&
       activePresetAId === primaryPresetId
     ) {
       return primaryTco;
@@ -254,6 +261,7 @@ export default function VehicleComparator({
       annualInsuranceUsd: insuranceA,
       baseAnnualMaintenanceUsd: vehicleA.baseAnnualMaintenanceUsd,
       maintenanceWearFactor: vehicleA.maintenanceWearFactor,
+      financeType,
       downPaymentPct,
       aprPct: aprPct,
       loanTermMonths,
@@ -273,6 +281,7 @@ export default function VehicleComparator({
     vehicleA,
     fuelPriceA,
     insuranceA,
+    financeType,
     downPaymentPct,
     aprPct,
     loanTermMonths,
@@ -292,13 +301,14 @@ export default function VehicleComparator({
       annualInsuranceUsd: vehicleB.annualInsuranceUsd,
       baseAnnualMaintenanceUsd: vehicleB.baseAnnualMaintenanceUsd,
       maintenanceWearFactor: vehicleB.maintenanceWearFactor,
+      financeType,
       downPaymentPct,
       aprPct: aprPct,
       loanTermMonths,
       horizonYears,
       residualCurve10Yr: vehicleB.residualCurve10Yr,
     });
-  }, [vehicleB, priceB, odoB, resolvedAnnualMiles, horizonYears, downPaymentPct, aprPct, loanTermMonths]);
+  }, [vehicleB, priceB, odoB, resolvedAnnualMiles, horizonYears, financeType, downPaymentPct, aprPct, loanTermMonths]);
 
   // Compute Break-even Trajectory across mileage using live custom prices & odometers
   const breakEvenTrajectory = useMemo(() => {
@@ -469,9 +479,15 @@ export default function VehicleComparator({
             <GitCompare className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <h2 id="comparator-heading" className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
-              Dual-Vehicle Side-by-Side Comparison
-            </h2>
+            {standalone ? (
+              <h1 id="comparator-heading" className="text-lg sm:text-2xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
+                {vehicleA.shortName || vehicleA.name} vs {vehicleB.shortName || vehicleB.name} · Dual-Vehicle Side-by-Side Comparison
+              </h1>
+            ) : (
+              <h2 id="comparator-heading" className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
+                Dual-Vehicle Side-by-Side Comparison
+              </h2>
+            )}
             <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
               5-year TCO comparison, dynamic break-even crossover trajectory, and odometer-calibrated known flaws.
             </p>
@@ -995,14 +1011,25 @@ export default function VehicleComparator({
                         )}
                       </div>
                       <span className="font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0 text-[11px]">
-                        {issue.criticalMileage?.display}
+                        {region === 'EU'
+                          ? issue.criticalMileage?.display
+                          : `${formatDistance(Math.round((issue.criticalMileage?.minKm || 0) / 1.609344 / 1000) * 1000, false)} – ${formatDistance(Math.round((issue.criticalMileage?.maxKm || 0) / 1.609344 / 1000) * 1000)}`}
                       </span>
                     </div>
                     <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
                       {issue.symptoms}
                     </p>
                     <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
-                      <span>Repair: <strong className="font-mono tabular-nums">{issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</strong></span>
+                      <span>
+                        Repair:{' '}
+                        <strong className="font-mono tabular-nums">
+                          {region === 'EU'
+                            ? issue.repairCost?.formattedEur
+                            : region === 'UK' && issue.repairCost?.parts
+                              ? `£${Math.round((issue.repairCost.parts.min + issue.repairCost.labor.min) * 0.85).toLocaleString()} – £${Math.round((issue.repairCost.parts.max + issue.repairCost.labor.max) * 0.85).toLocaleString()}`
+                              : issue.repairCost?.formattedUsd || issue.repairCost?.formattedEur}
+                        </strong>
+                      </span>
                       <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
                     </div>
                   </div>
@@ -1046,14 +1073,25 @@ export default function VehicleComparator({
                         )}
                       </div>
                       <span className="font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0 text-[11px]">
-                        {issue.criticalMileage?.display}
+                        {region === 'EU'
+                          ? issue.criticalMileage?.display
+                          : `${formatDistance(Math.round((issue.criticalMileage?.minKm || 0) / 1.609344 / 1000) * 1000, false)} – ${formatDistance(Math.round((issue.criticalMileage?.maxKm || 0) / 1.609344 / 1000) * 1000)}`}
                       </span>
                     </div>
                     <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
                       {issue.symptoms}
                     </p>
                     <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
-                      <span>Repair: <strong className="font-mono tabular-nums">{issue.repairCost?.formattedEur || issue.repairCost?.formattedUsd}</strong></span>
+                      <span>
+                        Repair:{' '}
+                        <strong className="font-mono tabular-nums">
+                          {region === 'EU'
+                            ? issue.repairCost?.formattedEur
+                            : region === 'UK' && issue.repairCost?.parts
+                              ? `£${Math.round((issue.repairCost.parts.min + issue.repairCost.labor.min) * 0.85).toLocaleString()} – £${Math.round((issue.repairCost.parts.max + issue.repairCost.labor.max) * 0.85).toLocaleString()}`
+                              : issue.repairCost?.formattedUsd || issue.repairCost?.formattedEur}
+                        </strong>
+                      </span>
                       <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
                     </div>
                   </div>
@@ -1200,6 +1238,70 @@ export default function VehicleComparator({
               purchasePriceUsd={winPrice}
               odometerMiles={winOdo}
             />
+            {standalone && (
+              <nav aria-label="Compared Vehicle Telemetry Dossiers" className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-2 text-xs font-sans">
+                <a
+                  href={`/tco/${vehicleA.id}`}
+                  onClick={(e) => {
+                    if (onNavigateToTco) {
+                      e.preventDefault();
+                      onNavigateToTco(vehicleA.id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  {vehicleA.shortName || vehicleA.name} 5-Yr TCO
+                </a>
+                <a
+                  href={`/risk-matrix/${vehicleA.id}`}
+                  onClick={(e) => {
+                    if (onNavigateToRisk) {
+                      e.preventDefault();
+                      onNavigateToRisk(vehicleA.id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  {vehicleA.shortName || vehicleA.name} Risk Matrix
+                </a>
+                <a
+                  href={`/tco/${vehicleB.id}`}
+                  onClick={(e) => {
+                    if (onNavigateToTco) {
+                      e.preventDefault();
+                      onNavigateToTco(vehicleB.id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  {vehicleB.shortName || vehicleB.name} 5-Yr TCO
+                </a>
+                <a
+                  href={`/risk-matrix/${vehicleB.id}`}
+                  onClick={(e) => {
+                    if (onNavigateToRisk) {
+                      e.preventDefault();
+                      onNavigateToRisk(vehicleB.id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  {vehicleB.shortName || vehicleB.name} Risk Matrix
+                </a>
+                <a
+                  href="/vehicles"
+                  onClick={(e) => {
+                    if (onNavigateToVehicles) {
+                      e.preventDefault();
+                      onNavigateToVehicles();
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-semibold text-primary-600 dark:text-emerald-400 hover:border-primary-500 transition-colors"
+                >
+                  All 35 Brands &amp; 179 Vehicles
+                </a>
+              </nav>
+            )}
           </div>
         );
       })()}

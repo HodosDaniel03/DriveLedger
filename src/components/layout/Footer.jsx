@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Settings2 } from 'lucide-react';
 import { OBD_CODES } from '../../data/obdCodes';
-import { PROGRAMMATIC_OBD_MATRIX } from '../../data/seoMatrixData';
+import { PROGRAMMATIC_OBD_MATRIX, isObdCompatibleWithVehicle } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Collapse } from '../common/OdometerPrimitives';
 import BrandLogo from '../common/BrandLogo';
@@ -14,6 +14,7 @@ import {
   AMAZON_ASSOCIATES_CLAUSE,
 } from '../../data/legalPolicies';
 import { openPrivacySettings } from '../legal/CookieConsentBanner';
+import { BrandQuickJumpIndex } from '../seo/VehicleInternalLinks';
 
 const FAQS = [
   {
@@ -43,6 +44,7 @@ export default function Footer({
   onSelectPreset,
   onSelectObdCode,
   onSelectHybridObd,
+  onNavigateToVehicles,
   onOpenLegalModal,
   onOpenCookiePreferences,
   hideFaq = false,
@@ -141,7 +143,7 @@ export default function Footer({
           </h3>
           <ul className="space-y-2">
             {benchmarkPresets.map((v) => (
-              <li key={v.id}>
+              <li key={v.id} className="flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -154,11 +156,21 @@ export default function Footer({
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className="flex items-center justify-between w-full hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors duration-150 py-0.5"
+                  className="flex items-center justify-between w-full hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors duration-150 py-0.5 text-left"
                 >
                   <span className="font-sans font-medium text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400">{v.name}</span>
                   <span className="font-mono tabular-nums text-muted dark:text-zinc-400">{formatCurrency(v.price)}</span>
                 </button>
+                <a
+                  href={`/tco/${v.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onSelectPreset) onSelectPreset(v.id);
+                  }}
+                  className="sr-only"
+                >
+                  {v.name} TCO Report
+                </a>
               </li>
             ))}
           </ul>
@@ -169,8 +181,16 @@ export default function Footer({
             High-Frequency OBD-II Fault Dossiers
           </h3>
           <ul className="space-y-2">
-            {OBD_CODES.slice(0, 5).map((item) => (
-              <li key={item.code}>
+            {OBD_CODES.slice(0, 5).map((item) => {
+              const fallbackPresetId = ['P2002', 'P2463', 'P20EE'].includes(item.code)
+                ? 'vw-golf-20-tdi'
+                : 'toyota-camry-hybrid';
+              const targetPresetId =
+                activePreset && isObdCompatibleWithVehicle(activePreset, item.code)
+                  ? activePreset.id
+                  : fallbackPresetId;
+              return (
+              <li key={item.code} className="flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -188,8 +208,23 @@ export default function Footer({
                   <span className="font-mono tabular-nums font-bold text-primary-600 dark:text-primary-400">{item.code}</span>
                   <span className="truncate font-sans text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline">{item.title}</span>
                 </button>
+                <a
+                  href={`/obd/${targetPresetId}/${item.code.toLowerCase()}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onSelectHybridObd) {
+                      onSelectHybridObd(targetPresetId, item.code);
+                    } else if (onSelectObdCode) {
+                      onSelectObdCode(item.code);
+                    }
+                  }}
+                  className="sr-only"
+                >
+                  {item.code} {item.title}
+                </a>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 
@@ -235,15 +270,32 @@ export default function Footer({
         </div>
       </div>
 
+      {/* 3B. Crawlable 35-Brand Directory Quick-Jump Strip */}
+      <div className="max-w-[1380px] mx-auto w-full">
+        <BrandQuickJumpIndex
+          onNavigateToVehicles={
+            onNavigateToVehicles || (() => onSelectTab && onSelectTab('vehicles'))
+          }
+        />
+      </div>
+
       {/* 4. Stitch Master Footer */}
       <footer className="w-full max-w-full bg-surface dark:bg-[#121215] border-t border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 sm:px-6 lg:px-12 pt-10 sm:pt-14 pb-10 safe-area-x safe-area-bottom">
         <div className="max-w-[1380px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
             {/* Brand Col */}
             <div className="lg:col-span-2 flex flex-col gap-3">
-              <div className="inline-flex items-center cursor-pointer w-fit" onClick={() => onSelectTab && onSelectTab('overview')}>
+              <a
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTab && onSelectTab('overview');
+                }}
+                className="inline-flex items-center cursor-pointer w-fit"
+                aria-label="DriveLedger home"
+              >
                 <BrandLogo size="md" />
-              </div>
+              </a>
               <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-sm">
                 Independent automotive cost analytics platform. Providing transparent depreciation models, real-world ownership expenditure, and precision vehicle cost reports.
               </p>
@@ -264,6 +316,11 @@ export default function Footer({
                 <li>
                   <a href="/" onClick={(e) => { e.preventDefault(); onSelectTab && onSelectTab('overview'); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
                     Platform Overview
+                  </a>
+                </li>
+                <li>
+                  <a href="/vehicles" onClick={(e) => { e.preventDefault(); (onNavigateToVehicles ? onNavigateToVehicles() : onSelectTab && onSelectTab('vehicles')); }} className="hover:text-ink dark:hover:text-zinc-50 transition-colors duration-150">
+                    All 35 Brands &amp; 179 Vehicles
                   </a>
                 </li>
                 <li>

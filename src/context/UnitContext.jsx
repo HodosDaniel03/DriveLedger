@@ -86,11 +86,13 @@ export function convertMpgUsToRegion(mpgUs, regionId = 'US', isEv = false) {
   const raw = Number(mpgUs);
   const val = Number.isFinite(raw) && raw > 0 ? raw : 30;
   if (isEv) {
-    // For EV, canonical value stored is kWh/100mi (e.g. 26 kWh/100mi)
+    // For EV, canonical value stored is kWh/100mi (e.g. 26 kWh/100mi).
+    // Defensive guard: values > 60 represent MPGe (EPA 33.705 kWh/gal -> 3370.5 / MPGe).
+    const kwhPer100Mi = val > 60 ? 3370.5 / val : val;
     if (regKey === 'EU') {
-      return +(val / 1.609344).toFixed(1); // kWh/100km
+      return +(kwhPer100Mi / 1.609344).toFixed(1); // kWh/100km
     }
-    return +val.toFixed(1); // kWh/100mi
+    return +kwhPer100Mi.toFixed(1); // kWh/100mi
   }
   if (regKey === 'UK') {
     return +(val * 1.20095).toFixed(1);

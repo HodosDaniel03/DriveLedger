@@ -462,7 +462,8 @@ export default function VehicleImageResolver({
         <img
           src={activeSrc}
           alt={vehicle?.name || 'Vehicle'}
-          loading="lazy"
+          loading={variant === 'hero' || variant === 'showcase' ? 'eager' : 'lazy'}
+          fetchPriority={variant === 'hero' || variant === 'showcase' ? 'high' : 'auto'}
           onError={() => {
             if (activeSrc !== fallbackSegmentUrl) {
               setActiveSrc(fallbackSegmentUrl);

@@ -128,32 +128,12 @@ export default function ToolEditorialSection({
   const [openMethodology, setOpenMethodology] = useState(false);
   const data = EDITORIAL_CONTENT[tool] || EDITORIAL_CONTENT.tco;
 
-  // Generate Schema.org FAQPage structured data
-  const faqSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: data.faqs.map((faq) => ({
-      '@type': 'Question',
-      name: faq.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.a,
-      },
-    })),
-  };
-
   return (
     <section
       id="tool-editorial-section"
       aria-label="Editorial Methodology and Technical Context"
       className={`mt-12 bg-surface dark:bg-zinc-900 rounded-3xl p-6 sm:p-10 border border-border dark:border-zinc-800 shadow-sm space-y-8 editorial ${className}`}
     >
-      {/* Schema.org FAQPage JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-
       {/* Header */}
       <div className="space-y-2 border-b border-border dark:border-zinc-800 pb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-primary-50 dark:bg-emerald-950/60 text-primary-700 dark:text-emerald-300 border border-primary-100 dark:border-emerald-800">

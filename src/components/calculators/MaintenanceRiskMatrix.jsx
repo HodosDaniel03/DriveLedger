@@ -26,6 +26,7 @@ import ForumShareModal from '../common/ForumShareModal';
 import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
 import KnownIssuesDossier from '../common/KnownIssuesDossier';
 import FixOrSellCalculator from './FixOrSellCalculator';
+import VehicleInternalLinks from '../seo/VehicleInternalLinks';
 
 const BAR_COLOR = {
   OPTIMAL: '#12A150',
@@ -37,8 +38,14 @@ export default function MaintenanceRiskMatrix({
   selectedPresetId,
   hasSelectedVehicle = true,
   onSelectPreset,
+  onNavigateToTco,
+  onNavigateToRisk,
+  onNavigateToRiskBracket,
+  onNavigateToChecklist,
   onNavigateToObd,
+  onNavigateToHybridObd,
   onNavigateToCompare,
+  onNavigateToVehicles,
   initialOdometerMiles,
 }) {
   const {
@@ -236,7 +243,8 @@ export default function MaintenanceRiskMatrix({
       if (item.health.effectiveWearMiles > maxEff) {
         maxEff = item.health.effectiveWearMiles;
       }
-      const costRange = workshopTier === 'dealership' ? item.costsUsd.dealership : item.costsUsd.independent;
+      const resolvedCosts = item.health?.scaledCostsUsd || item.costsUsd;
+      const costRange = workshopTier === 'dealership' ? resolvedCosts.dealership : resolvedCosts.independent;
       const avgCost = (costRange[0] + costRange[1]) / 2;
 
       let itemReserve = 0;
@@ -279,6 +287,7 @@ export default function MaintenanceRiskMatrix({
       evaluatedComponents,
       workshopTier,
       annualDistanceMiles,
+      vehicle: activePreset,
     });
     const unadjustedScaled = scheduleMode === 'oem' ? Math.round(base * oemRiskMultiplier) : base;
     const creditRounded = Math.min(Math.max(0, unadjustedScaled - 120), Math.round(rawServiceCredit));
@@ -808,8 +817,9 @@ export default function MaintenanceRiskMatrix({
                 const isTipOpen = !!openTips[item.id];
                 const isServiced = item.isRecentlyServiced;
 
-                const indieCostAvg = Math.round((item.costsUsd.independent[0] + item.costsUsd.independent[1]) / 2);
-                const dealerCostAvg = Math.round((item.costsUsd.dealership[0] + item.costsUsd.dealership[1]) / 2);
+                const resolvedCosts = item.health?.scaledCostsUsd || item.costsUsd;
+                const indieCostAvg = Math.round((resolvedCosts.independent[0] + resolvedCosts.independent[1]) / 2);
+                const dealerCostAvg = Math.round((resolvedCosts.dealership[0] + resolvedCosts.dealership[1]) / 2);
                 const primaryCost = workshopTier === 'dealership' ? dealerCostAvg : indieCostAvg;
 
                 const tone = isServiced ? 'good' : status === 'CRITICAL' ? 'risk' : status === 'WARNING' ? 'warn' : 'good';
@@ -853,7 +863,7 @@ export default function MaintenanceRiskMatrix({
                           </span>
                           <span>·</span>
                           <span className="font-medium text-primary-600 dark:text-primary-400">
-                            Estimated repair: Indie <strong className="font-mono tabular-nums">{formatCurrency(item.costsUsd.independent[0])}–{formatCurrency(item.costsUsd.independent[1])}</strong> · Dealer <strong className="font-mono tabular-nums">{formatCurrency(item.costsUsd.dealership[0])}–{formatCurrency(item.costsUsd.dealership[1])}</strong>
+                            Estimated repair: Indie <strong className="font-mono tabular-nums">{formatCurrency(resolvedCosts.independent[0])}–{formatCurrency(resolvedCosts.independent[1])}</strong> · Dealer <strong className="font-mono tabular-nums">{formatCurrency(resolvedCosts.dealership[0])}–{formatCurrency(resolvedCosts.dealership[1])}</strong>
                           </span>
                         </div>
                       </div>
@@ -986,17 +996,44 @@ export default function MaintenanceRiskMatrix({
                       )}
                     </div>
 
-                    {/* Preventative advice dropdown */}
-                    <button
-                      type="button"
-                      aria-expanded={isTipOpen}
-                      aria-controls={`tip-${item.id}`}
-                      onClick={() => toggleTip(item.id)}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700"
-                    >
-                      <Lightbulb aria-hidden="true" className={`w-3.5 h-3.5 ${isTipOpen ? 'fill-primary-600' : ''}`} />
-                      <span>Quick preventative tip</span>
-                    </button>
+                    {/* Preventative advice dropdown & Related OBD-II Fault Links */}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        aria-expanded={isTipOpen}
+                        aria-controls={`tip-${item.id}`}
+                        onClick={() => toggleTip(item.id)}
+                        className="inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700"
+                      >
+                        <Lightbulb aria-hidden="true" className={`w-3.5 h-3.5 ${isTipOpen ? 'fill-primary-600' : ''}`} />
+                        <span>Quick preventative tip</span>
+                      </button>
+
+                      {Array.isArray(item.relatedObdCodes) && item.relatedObdCodes.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-sans">
+                          <span className="text-muted dark:text-zinc-400 font-medium">Related DTCs:</span>
+                          {item.relatedObdCodes.map((code) => (
+                            <a
+                              key={code}
+                              href={`/obd/${activePreset.id}/${String(code).toLowerCase()}`}
+                              onClick={(e) => {
+                                if (onNavigateToHybridObd) {
+                                  e.preventDefault();
+                                  onNavigateToHybridObd(activePreset.id, code);
+                                } else if (onNavigateToObd) {
+                                  e.preventDefault();
+                                  onNavigateToObd(code);
+                                }
+                              }}
+                              className="px-2 py-0.5 rounded-md font-mono tabular-nums font-bold bg-zinc-100 hover:bg-primary-50 dark:bg-zinc-800 dark:hover:bg-primary-950/60 text-primary-700 dark:text-primary-400 border border-zinc-200 dark:border-zinc-700 transition-colors"
+                              title={`Inspect ${code} repair cost for ${activePreset.name}`}
+                            >
+                              {code}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <Collapse open={isTipOpen} id={`tip-${item.id}`}>
                       <p className="rounded-xl bg-surface-subtle dark:bg-zinc-800/80 border border-border/60 dark:border-zinc-700 px-3.5 py-2.5 text-xs text-body dark:text-zinc-300 leading-relaxed mt-1">
                         {item.preventativeAdvice}
@@ -1030,7 +1067,7 @@ export default function MaintenanceRiskMatrix({
                   Switch Vehicle
                 </h3>
                 <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
-                  Choose a quick preset or search our 120+ model database.
+                  Choose a quick preset or search our 179+ model database.
                 </p>
               </div>
               <button
@@ -1207,6 +1244,21 @@ export default function MaintenanceRiskMatrix({
         vehicleName={activePreset.name}
         odometerMiles={physicalOdometerMiles}
         serviceReserveUsd={serviceReserveUsd}
+      />
+
+      {/* Crawlable Internal Links for Active Vehicle */}
+      <VehicleInternalLinks
+        vehicle={activePreset}
+        onSelectPreset={onSelectPreset}
+        onNavigateToTco={onNavigateToTco}
+        onNavigateToRisk={onNavigateToRisk}
+        onNavigateToRiskBracket={onNavigateToRiskBracket}
+        onNavigateToChecklist={onNavigateToChecklist}
+        onNavigateToCompare={onNavigateToCompare}
+        onNavigateToHybridObd={
+          onNavigateToHybridObd || ((_presetId, code) => onNavigateToObd && onNavigateToObd(code))
+        }
+        onNavigateToVehicles={onNavigateToVehicles}
       />
 
       {/* 7. Mobile Sticky Summary Bar for real-time odometer & schedule feedback on small screens */}

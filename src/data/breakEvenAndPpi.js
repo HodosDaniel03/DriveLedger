@@ -174,6 +174,14 @@ export function generatePpiChecklist(preset, odometerKm = 120000) {
   }
 
   // 2. Comprehensive Standard Mechanical & Telemetry Inspection Points
+  const isPureEv = Boolean(
+    safePreset?.isEv ||
+      safePreset?.powertrain === 'electric' ||
+      safePreset?.powertrain === 'ev' ||
+      String(safePreset?.fuelType || '').toLowerCase() === 'electric' ||
+      engineVariant?.engine?.fuelType === 'Electric'
+  );
+
   const standardBaseline = [
     {
       id: 'step-obd-scan',
@@ -187,18 +195,31 @@ export function generatePpiChecklist(preset, odometerKm = 120000) {
       inspectionMethod: 'Connect an OBD-II scanner: if distance since DTC clear is under 50 km (30 mi), the seller may have cleared warning codes right before the inspection!',
       keyPids: 'Mode 03 (DTC), Mode 07 (Pending), PID 0x31 (Distance since clear)',
     },
-    {
-      id: 'step-cold-start',
-      isModelSpecific: false,
-      title: 'Cold Start, Blow-By & Oil Filler Cap Pressure Test',
-      timeEst: '~15 min',
-      riskLevel: 'moderate',
-      riskLabel: 'Moderate / Important',
-      estSaving: '$350 – $1,200',
-      focus: 'Start only when engine is dead cold. Observe exhaust smoke (white/blue/black) and idle acoustic vibrations.',
-      inspectionMethod: 'Touch engine block upon arrival to verify cold state. With engine idling, loosen oil cap carefully: slight vacuum is normal; excessive positive pressure or smoke puffs indicate cylinder blow-by.',
-      keyPids: 'Coolant Temp PID 0x05, Oil Pressure PID',
-    },
+    isPureEv
+      ? {
+          id: 'step-ev-hv-battery',
+          isModelSpecific: false,
+          title: 'HV Traction Battery State of Health (SoH %) & Cell Delta-V Load Test',
+          timeEst: '~15 min',
+          riskLevel: 'critical',
+          riskLabel: 'Critical / HV Battery',
+          estSaving: '$2,500 – $9,500',
+          focus: 'Read BMS State of Health (SoH %), cell voltage delta (mV) under load, and DC fast-charge vs AC charge counter ratio.',
+          inspectionMethod: 'Query BMS via OBD-II (PID SoH, Cell Min/Max mV). At <30% SoC under acceleration, cell delta-V must remain below 30 mV. Excessive delta (>60 mV) indicates weak module cells.',
+          keyPids: 'BMS SoH %, Cell Voltage Delta (mV), Total DC Fast Charge kWh',
+        }
+      : {
+          id: 'step-cold-start',
+          isModelSpecific: false,
+          title: 'Cold Start, Blow-By & Oil Filler Cap Pressure Test',
+          timeEst: '~15 min',
+          riskLevel: 'moderate',
+          riskLabel: 'Moderate / Important',
+          estSaving: '$350 – $1,200',
+          focus: 'Start only when engine is dead cold. Observe exhaust smoke (white/blue/black) and idle acoustic vibrations.',
+          inspectionMethod: 'Touch engine block upon arrival to verify cold state. With engine idling, loosen oil cap carefully: slight vacuum is normal; excessive positive pressure or smoke puffs indicate cylinder blow-by.',
+          keyPids: 'Coolant Temp PID 0x05, Oil Pressure PID',
+        },
     {
       id: 'step-body-chassis',
       isModelSpecific: false,
@@ -211,18 +232,31 @@ export function generatePpiChecklist(preset, odometerKm = 120000) {
       inspectionMethod: 'Gauge A-pillars and inner sills (>200 µm denotes respray, >450 µm body filler and structural repair). Verify matching glass and headlamp DOT manufacturer date codes.',
       keyPids: 'Magnetic / Digital paint depth gauge, Glass DOT date stamps',
     },
-    {
-      id: 'step-transmission-driveline',
-      isModelSpecific: false,
-      title: 'Transmission Road Test, Clutch Slip & Dual-Mass Flywheel Stress Test',
-      timeEst: '~25 min',
-      riskLevel: 'critical',
-      riskLabel: 'Critical / High Repair Cost',
-      estSaving: '$1,200 – $3,400',
-      focus: 'Smooth gear engagement, creep behavior (automatics/DCT), and absence of metallic clunk upon engine shutdown.',
-      inspectionMethod: 'On test drive in 4th gear, apply full throttle from 1,500 RPM: rising RPM without vehicle acceleration indicates clutch slip. Listen for dual-mass flywheel rattle when turning engine off with clutch pedal released vs depressed.',
-      keyPids: 'TCU Clutch Slip PID, Mechatronics Line Pressure Target',
-    },
+    isPureEv
+      ? {
+          id: 'step-ev-charging-driveline',
+          isModelSpecific: false,
+          title: 'On-Board Charger (OBC / ICCU), Heat Pump & Reduction Gear Load Test',
+          timeEst: '~20 min',
+          riskLevel: 'critical',
+          riskLabel: 'Critical / EV Powertrain',
+          estSaving: '$1,200 – $3,400',
+          focus: 'Test both Level 2 AC (11 kW) and CCS/NACS DC fast charging handshakes, heat pump cabin cooling/heating, and single-speed reduction gear whine.',
+          inspectionMethod: 'Plug into an AC charger to confirm all 3 phases draw current without OBC/ICCU fault trips. Perform a 0-60 mph pull and coast-down in high regen to check for reduction gear bearing whine or halfshaft click.',
+          keyPids: 'OBC AC Phase Current, 12V Auxiliary DC-DC Voltage, Coolant Chiller Valve Temp',
+        }
+      : {
+          id: 'step-transmission-driveline',
+          isModelSpecific: false,
+          title: 'Transmission Road Test, Clutch Slip & Dual-Mass Flywheel Stress Test',
+          timeEst: '~25 min',
+          riskLevel: 'critical',
+          riskLabel: 'Critical / High Repair Cost',
+          estSaving: '$1,200 – $3,400',
+          focus: 'Smooth gear engagement, creep behavior (automatics/DCT), and absence of metallic clunk upon engine shutdown.',
+          inspectionMethod: 'On test drive in 4th gear, apply full throttle from 1,500 RPM: rising RPM without vehicle acceleration indicates clutch slip. Listen for dual-mass flywheel rattle when turning engine off with clutch pedal released vs depressed.',
+          keyPids: 'TCU Clutch Slip PID, Mechatronics Line Pressure Target',
+        },
     {
       id: 'step-undercarriage-brakes',
       isModelSpecific: false,

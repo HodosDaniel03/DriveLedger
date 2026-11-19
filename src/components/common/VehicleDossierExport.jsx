@@ -16,7 +16,48 @@ import BrandLogo from './BrandLogo';
 import {
   MAINTENANCE_COMPONENTS,
   evaluateComponentHealth,
+  calculateTcoProjection,
+  filterComponentsForPowertrain,
+  isPureElectric,
 } from '../../data/maintenanceData';
+
+const EV_INSPECTION_CHECKLIST = [
+  {
+    id: 'ev-hv-soh',
+    label: 'HV Battery State of Health (SoH %) & cell delta-V load check',
+    detail:
+      'Query BMS State of Health (SoH %) and min/max cell voltage delta (<30 mV under acceleration load at <30% SoC).',
+    tag: 'HV BATTERY',
+  },
+  {
+    id: 'ev-charging-iccu',
+    label: 'Level 2 AC, DC fast-charging & heat pump thermal check',
+    detail:
+      'Confirm full-rate 3-phase AC and CCS/NACS DC charging handshakes, OBC/ICCU 12V charging (>13.8V), and quiet reduction gear regen.',
+    tag: 'POWERTRAIN',
+  },
+  {
+    id: 'obd-mode-scan',
+    label: 'OBD2 BMS & HV isolation fault memory scan',
+    detail:
+      'Scan stored and pending BMS, chiller valve, and HV isolation resistance faults; confirm zero recent DTC clear tamper.',
+    tag: 'TELEMETRY',
+  },
+  {
+    id: 'ecu-cluster-mileage',
+    label: 'BMS / ABS vs. Instrument Cluster mileage & DC fast-charge ratio',
+    detail:
+      'Cross-verify odometer against BMS cumulative kWh throughput, DC vs AC charging ratio, and chassis paint thickness.',
+    tag: 'AUTHENTICITY',
+  },
+  {
+    id: 'service-invoice-audit',
+    label: 'Brake fluid, reduction gear oil & undercarriage battery shield audit',
+    detail:
+      'Inspect brake rotors for regenerative rust pitting, verify battery shield has zero impact dents, and review coolant/brake receipts.',
+    tag: 'DOCUMENTATION',
+  },
+];
 
 const DEFAULT_INSPECTION_CHECKLIST = [
   {
@@ -67,17 +108,13 @@ export default function VehicleDossierExport({
   scheduleMode = 'preventative',
   initialMode = 'negotiation',
 }) {
-  const { formatCurrency, formatDistance, distanceUnit } = useUnits();
+  const { region, currencySymbol, formatCurrency, formatDistance, distanceUnit } = useUnits();
   const [activeMode, setActiveMode] = useState(
     initialMode === 'dossier' ? 'dossier' : 'negotiation'
   );
-  const [checkedItems, setCheckedItems] = useState({
-    'cold-start-timing': false,
-    'trans-hot-shift': false,
-    'obd-mode-scan': false,
-    'ecu-cluster-mileage': false,
-    'service-invoice-audit': false,
-  });
+  const isPureEv = isPureElectric(vehicle);
+  const activeChecklist = isPureEv ? EV_INSPECTION_CHECKLIST : DEFAULT_INSPECTION_CHECKLIST;
+  const [checkedItems, setCheckedItems] = useState({});
 
   const handlePrint = () => {
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
@@ -97,15 +134,46 @@ export default function VehicleDossierExport({
     [odometerMiles, vehicle]
   );
 
+  const resolvedTco = useMemo(() => {
+    if (
+      tco &&
+      typeof tco.totalEconomicCostUsd === 'number' &&
+      typeof tco.monthlyEconomicCostUsd === 'number'
+    ) {
+      return tco;
+    }
+    const price = Math.max(1000, Number(vehicle?.purchasePriceUsd) || 28000);
+    const computed = calculateTcoProjection({
+      purchasePriceUsd: price,
+      odometerMiles: physicalOdometerMiles,
+      annualDistanceMiles: Math.max(500, Number(vehicle?.annualDistanceMiles) || 12000),
+      mpgUs: Number(vehicle?.mpgUs) || (isPureEv ? 28 : 32),
+      isEv: isPureEv,
+      powertrainType: vehicle?.powertrainType || vehicle?.powertrain,
+      vehicle,
+      fuelPriceUsdGal: Number(vehicle?.defaultFuelPriceUsdGal) || (isPureEv ? 0.16 : 3.85),
+      annualInsuranceUsd: Math.max(0, Number(vehicle?.annualInsuranceUsd) || 1350),
+      baseAnnualMaintenanceUsd: Number(vehicle?.baseAnnualMaintenanceUsd) || 850,
+      maintenanceWearFactor: Number(vehicle?.maintenanceWearFactor) || 1.1,
+      downPaymentPct: 20,
+      aprPct: 6.2,
+      loanTermMonths: 60,
+      horizonYears: 5,
+      residualCurve10Yr: vehicle?.residualCurve10Yr,
+    });
+
+    return {
+      ...computed,
+      purchasePriceUsd: price,
+    };
+  }, [tco, vehicle, physicalOdometerMiles, isPureEv]);
+
   // Automatically compute evaluatedComponents if not provided by parent (e.g. when opened from TCO tab)
   const resolvedComponents = useMemo(() => {
     if (Array.isArray(evaluatedComponents) && evaluatedComponents.length > 0) {
       return evaluatedComponents;
     }
-    const powertrain = vehicle?.powertrain || 'diesel';
-    const relevant = MAINTENANCE_COMPONENTS.filter((comp) =>
-      comp.applicablePowertrains.includes(powertrain)
-    );
+    const relevant = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, vehicle);
     const oilIntervalId = scheduleMode === 'oem' ? 'extended' : 'standard';
 
     return relevant.map((comp) => {
@@ -116,6 +184,7 @@ export default function VehicleDossierExport({
         oilIntervalId,
         serviceHistoryId: 'verified',
         transmissionId: vehicle?.transmission || 'dct-dsg',
+        vehicle,
       });
       return {
         ...comp,
@@ -166,7 +235,7 @@ export default function VehicleDossierExport({
             .slice(0, 2);
 
     const rows = targetList.map((item) => {
-      const range = item.costsUsd?.independent || [750, 1450];
+      const range = item.health?.scaledCostsUsd?.independent || item.costsUsd?.independent || [750, 1450];
       const midpoint = Math.round((range[0] + range[1]) / 2);
       const status = item.health?.status || 'OPTIMAL';
       const weight =
@@ -438,7 +507,7 @@ export default function VehicleDossierExport({
                   </div>
                   <div className="rounded-lg border border-rose-500/30 dark:border-rose-500/40 print:border-black/40 bg-rose-500/5 dark:bg-rose-950/30 print:bg-white p-2.5">
                     <p className="text-[10px] font-sans uppercase text-rose-700 dark:text-rose-300 print:text-black font-semibold">
-                      Recommended Price Negotiation Deduction ($)
+                      Recommended Price Negotiation Deduction ({currencySymbol})
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 print:text-black mt-0.5">
                       -{formatCurrency(negotiationAnalysis.recommendedDeductionUsd)}
@@ -446,7 +515,7 @@ export default function VehicleDossierExport({
                   </div>
                   <div className="rounded-lg border border-emerald-500/40 dark:border-emerald-500/40 print:border-black bg-emerald-500/10 dark:bg-emerald-950/30 print:bg-white p-2.5">
                     <p className="text-[10px] font-sans uppercase text-emerald-800 dark:text-emerald-300 print:text-black font-semibold">
-                      Target Walk-Away / Fair Offer Price ($)
+                      Target Walk-Away / Fair Offer Price ({currencySymbol})
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300 print:text-black mt-0.5">
                       {formatCurrency(negotiationAnalysis.targetFairOfferUsd)}
@@ -464,12 +533,12 @@ export default function VehicleDossierExport({
                   <span>On-Site Physical &amp; OBD2 Pre-Purchase Inspection Checklist</span>
                 </h2>
                 <span className="text-[11px] font-sans font-semibold text-primary-600 dark:text-primary-400 print:text-black">
-                  <span className="font-mono tabular-nums">{checkedCount}/{DEFAULT_INSPECTION_CHECKLIST.length}</span> Verified
+                  <span className="font-mono tabular-nums">{checkedCount}/{activeChecklist.length}</span> Verified
                 </span>
               </div>
 
               <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/40 divide-y divide-border dark:divide-zinc-800 print:divide-black/20 bg-surface dark:bg-[#121215] print:bg-white">
-                {DEFAULT_INSPECTION_CHECKLIST.map((item) => {
+                {activeChecklist.map((item) => {
                   const isChecked = !!checkedItems[item.id];
                   return (
                     <label
@@ -523,7 +592,7 @@ export default function VehicleDossierExport({
             {/* Section 1: Financial Ownership Summary */}
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
-                1. 5-Year True Cost of Ownership Projections (5-Year TCO Projections)
+                1. {resolvedTco.yearlySchedule?.length || 5}-Year True Cost of Ownership Projections ({resolvedTco.yearlySchedule?.length || 5}-Year TCO Projections)
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-sans">
                 <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
@@ -531,7 +600,7 @@ export default function VehicleDossierExport({
                     Monthly Cost
                   </p>
                   <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
-                    {formatCurrency(tco?.monthlyEconomicCostUsd || 540)}/mo
+                    {formatCurrency(resolvedTco.monthlyEconomicCostUsd)}/mo
                   </p>
                 </div>
                 <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
@@ -539,26 +608,45 @@ export default function VehicleDossierExport({
                     Cost per {distanceUnit}
                   </p>
                   <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
-                    {formatCurrency(tco?.costPerMileUsd || 0.45)}/{distanceUnit}
+                    {formatCurrency(
+                      (resolvedTco.costPerMileUsd || 0.45) / (region === 'EU' ? 1.60934 : 1.0),
+                      2
+                    )}/{distanceUnit}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
                   <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
-                    5-Year Total Cost
+                    {resolvedTco.yearlySchedule?.length || 5}-Year Total Cost
                   </p>
                   <p className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
-                    {formatCurrency(tco?.totalEconomicCostUsd || 32400)}
+                    {formatCurrency(resolvedTco.totalEconomicCostUsd)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white p-3 text-center">
                   <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
-                    Residual Retention
+                    {resolvedTco.financeType === 'lease' && resolvedTco.leaseDetails ? 'Lease Residual' : 'Residual Retention'}
                   </p>
                   <p className="text-lg font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400 print:text-black mt-0.5">
-                    {tco?.finalRetentionPct || 48}%
+                    {resolvedTco.financeType === 'lease' && resolvedTco.leaseDetails
+                      ? `${resolvedTco.leaseDetails.residualPct}%`
+                      : `${resolvedTco.finalRetentionPct || 48}%`}
                   </p>
                 </div>
               </div>
+              {resolvedTco.financeType === 'lease' && resolvedTco.leaseDetails && (
+                <div
+                  data-testid="dossier-lease-terms"
+                  className="mt-3 rounded-xl border border-emerald-500/30 dark:border-emerald-800/50 print:border-black/40 bg-emerald-50/70 dark:bg-emerald-950/30 print:bg-white px-3.5 py-2.5 text-xs font-sans text-emerald-900 dark:text-emerald-200 print:text-black flex flex-wrap items-center justify-between gap-2"
+                >
+                  <span className="font-semibold">
+                    Active Lease Structure ({resolvedTco.leaseDetails.leaseTermMonths} mos):{' '}
+                    <span className="font-mono tabular-nums">{formatCurrency(resolvedTco.leaseDetails.monthlyLeasePaymentUsd)}/mo</span>
+                  </span>
+                  <span className="font-mono tabular-nums text-[11px]">
+                    Residual {formatCurrency(resolvedTco.leaseDetails.residualValueUsd)} ({resolvedTco.leaseDetails.residualPct}%) · MF {resolvedTco.leaseDetails.moneyFactor.toFixed(5)} · Acq. Fee {formatCurrency(resolvedTco.leaseDetails.acquisitionFeeUsd)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Section 2: Mechanical Wear & Maintenance Reserve */}
@@ -615,7 +703,9 @@ export default function VehicleDossierExport({
                     Live Sensor PIDs to Monitor:
                   </span>
                   <span className="font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
-                    MAF, Boost Pressure, DPF Delta-P, Fuel Rail Pressure, STFT/LTFT
+                    {isPureEv
+                      ? 'BMS SoH %, Cell Voltage Delta (mV), HV Isolation Resistance, Chiller Valve, OBC Current'
+                      : 'MAF, Boost Pressure, DPF Delta-P, Fuel Rail Pressure, STFT/LTFT'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">
@@ -623,7 +713,9 @@ export default function VehicleDossierExport({
                     Odometer Rollback Inspection:
                   </span>
                   <span className="font-sans text-success-text dark:text-emerald-400 print:text-black font-semibold">
-                    Cross-verify ECU hours vs transmission control module log
+                    {isPureEv
+                      ? 'Cross-verify BMS cumulative kWh throughput & ABS logs vs cluster odometer'
+                      : 'Cross-verify ECU hours vs transmission control module log'}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Plus, Wrench, Shield, Fuel, Landmark, ArrowRight, GitCompare, Zap, Printer, Info, CheckCircle2, RotateCcw, BookOpen, Car, FileText, Share2, ChevronDown, AlertTriangle, X, Copy } from 'lucide-react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
@@ -10,6 +10,8 @@ import VinCheckBanner from '../monetization/VinCheckBanner';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
+import VehicleInternalLinks from '../seo/VehicleInternalLinks';
+import { EV_MILESTONE_IMPACT_MAP } from './MaintenanceMilestones';
 import VehicleComparator from './VehicleComparator';
 import EvBreakEvenCalculator from './EvBreakEvenCalculator';
 import VehicleDossierExport from '../common/VehicleDossierExport';
@@ -36,14 +38,23 @@ const ALLOCATION_COLOR_MAP = {
 export default function TcoCalculator({
   selectedPresetId,
   hasSelectedVehicle = true,
+  isHidden = false,
+  initialOdometerMiles,
   onSelectPreset,
+  onNavigateToTco,
   onNavigateToRiskMatrix,
+  onNavigateToRiskBracket,
+  onNavigateToChecklist,
   onNavigateToObd,
+  onNavigateToHybridObd,
+  onNavigateToCompare,
+  onNavigateToVehicles,
 }) {
   const {
     currencySymbol,
     distanceUnit,
     efficiencyUnit,
+    evEfficiencyUnit,
     region,
     formatCurrency,
     formatDistance,
@@ -64,10 +75,13 @@ export default function TcoCalculator({
 
   // Core state synced with vehicle preset
   const [purchasePriceUsd, setPurchasePriceUsd] = useState(activePreset.purchasePriceUsd);
-  const [odometerMiles, setOdometerMiles] = useState(activePreset.defaultOdometerMiles);
+  const [odometerMiles, setOdometerMiles] = useState(
+    () => (Number(initialOdometerMiles) > 0 ? Math.round(Number(initialOdometerMiles)) : activePreset.defaultOdometerMiles)
+  );
   const [annualDistanceMiles, setAnnualDistanceMiles] = useState(activePreset.annualDistanceMiles);
   const [horizonYears, setHorizonYears] = useState(5);
   const [financeType, setFinanceType] = useState('loan'); // 'cash' | 'loan' | 'lease'
+  const prevPresetIdRef = useRef(activePreset.id);
 
   // Advanced inputs state
   const [customOpen, setCustomOpen] = useState(false);
@@ -77,6 +91,7 @@ export default function TcoCalculator({
   const [downPaymentPct, setDownPaymentPct] = useState(20);
   const [aprPct, setAprPct] = useState(activePreset.isEv ? 5.2 : 6.4);
   const [loanTermMonths, setLoanTermMonths] = useState(60);
+  const [leaseTermMonths, setLeaseTermMonths] = useState(36);
   const [drivingStyle, setDrivingStyle] = useState('mixed'); // 'city' | 'mixed' | 'highway'
 
   // Advanced modals state
@@ -125,30 +140,42 @@ export default function TcoCalculator({
     setJustSavedGarage(true);
   };
 
-  // Sync state whenever activePreset changes
+  // Sync state whenever activePreset or initialOdometerMiles changes (preserving ?odo= on initial mount)
   useEffect(() => {
-    setPurchasePriceUsd(activePreset.purchasePriceUsd);
-    setOdometerMiles(activePreset.defaultOdometerMiles);
-    setAnnualDistanceMiles(activePreset.annualDistanceMiles);
-    setMpgUs(activePreset.mpgUs);
-    setFuelPriceUsdGal(activePreset.defaultFuelPriceUsdGal);
-    setAnnualInsuranceUsd(activePreset.annualInsuranceUsd);
-    setJustSavedGarage(false);
-  }, [activePreset]);
+    const presetChanged = prevPresetIdRef.current !== activePreset.id;
+    prevPresetIdRef.current = activePreset.id;
+    if (presetChanged) {
+      setPurchasePriceUsd(activePreset.purchasePriceUsd);
+      setOdometerMiles(
+        Number(initialOdometerMiles) > 0
+          ? Math.round(Number(initialOdometerMiles))
+          : activePreset.defaultOdometerMiles
+      );
+      setAnnualDistanceMiles(activePreset.annualDistanceMiles);
+      setMpgUs(activePreset.mpgUs);
+      setFuelPriceUsdGal(activePreset.defaultFuelPriceUsdGal);
+      setAnnualInsuranceUsd(activePreset.annualInsuranceUsd);
+      setJustSavedGarage(false);
+    } else if (Number(initialOdometerMiles) > 0) {
+      setOdometerMiles(Math.round(Number(initialOdometerMiles)));
+    }
+  }, [activePreset, initialOdometerMiles]);
 
-  // Adjust APR and downpayment if cash is selected
+  // Adjust APR, downpayment, and term by financing structure (Loan defaults 60m, Lease defaults 36m)
   const activeDownPaymentPct = financeType === 'cash' ? 100 : downPaymentPct;
   const activeAprPct = financeType === 'cash' ? 0 : aprPct;
-  const activeLoanTermMonths = financeType === 'cash' ? 0 : loanTermMonths;
+  const activeLoanTermMonths =
+    financeType === 'cash' ? 0 : financeType === 'lease' ? leaseTermMonths : loanTermMonths;
 
-  // Live Garage Service Credit Sync: reward checked preventative milestones & serviced assemblies
+  // Live Garage Service Credit Sync: reward checked preventative milestones & serviced assemblies (ICE + EV)
   const verifiedGarageCreditUsd = useMemo(() => {
     const completed = garage?.getCompletedMilestones ? garage.getCompletedMilestones(activePreset.id) : {};
     const serviced = garage?.getServicedComponents ? garage.getServicedComponents(activePreset.id) : {};
     let credit = 0;
     for (const [mId, checked] of Object.entries(completed || {})) {
-      if (checked && MILESTONE_IMPACT_MAP[mId]) {
-        credit += MILESTONE_IMPACT_MAP[mId].creditUsd;
+      const impact = MILESTONE_IMPACT_MAP[mId] || EV_MILESTONE_IMPACT_MAP[mId];
+      if (checked && impact) {
+        credit += impact.creditUsd;
       }
     }
     const servicedCount = Object.values(serviced || {}).filter(Boolean).length;
@@ -187,6 +214,7 @@ export default function TcoCalculator({
         annualInsuranceUsd,
         baseAnnualMaintenanceUsd: effectiveBaseAnnualMaintenanceUsd,
         maintenanceWearFactor: effectiveMaintenanceWearFactor,
+        financeType,
         downPaymentPct: activeDownPaymentPct,
         aprPct: activeAprPct,
         loanTermMonths: activeLoanTermMonths,
@@ -204,6 +232,7 @@ export default function TcoCalculator({
       effectiveBaseAnnualMaintenanceUsd,
       effectiveMaintenanceWearFactor,
       drivingStyle,
+      financeType,
       activeDownPaymentPct,
       activeAprPct,
       activeLoanTermMonths,
@@ -310,6 +339,7 @@ export default function TcoCalculator({
         annualInsuranceUsd,
         baseAnnualMaintenanceUsd: effectiveBaseAnnualMaintenanceUsd,
         maintenanceWearFactor: effectiveMaintenanceWearFactor,
+        financeType,
         downPaymentPct: activeDownPaymentPct,
         aprPct: activeAprPct,
         loanTermMonths: activeLoanTermMonths,
@@ -327,6 +357,7 @@ export default function TcoCalculator({
       effectiveBaseAnnualMaintenanceUsd,
       effectiveMaintenanceWearFactor,
       drivingStyle,
+      financeType,
       activeDownPaymentPct,
       activeAprPct,
       activeLoanTermMonths,
@@ -384,7 +415,13 @@ export default function TcoCalculator({
       {
         label: 'Risk Level & Assessment',
         value: `${ownershipValueScore}/100 pts`,
-        subtext: '11% below segment median operating cost.',
+        subtext: (() => {
+          const segMedianMonthly = Math.max(320, Math.round((Number(activePreset?.purchasePriceUsd) || 30000) * 0.0195));
+          const deltaPct = Math.round(((segMedianMonthly - tco.monthlyEconomicCostUsd) / segMedianMonthly) * 100);
+          if (deltaPct > 0) return `${deltaPct}% below segment median operating cost.`;
+          if (deltaPct < 0) return `${Math.abs(deltaPct)}% above segment median operating cost.`;
+          return 'Aligned with segment median operating cost.';
+        })(),
         badge: (
           <RiskBadge
             level={ownershipValueScore >= 70 ? 'low' : ownershipValueScore >= 45 ? 'moderate' : 'critical'}
@@ -393,11 +430,12 @@ export default function TcoCalculator({
         ),
       },
     ];
-  }, [hasSelectedVehicle, currencySymbol, tco, horizonYears, formatCurrency, distanceUnit, primaryExpense, ownershipValueScore, costPerLocalUnit]);
+  }, [hasSelectedVehicle, currencySymbol, tco, horizonYears, formatCurrency, distanceUnit, primaryExpense, ownershipValueScore, costPerLocalUnit, activePreset]);
 
   return (
     <div className="space-y-6">
       <PageHeader
+        as={isHidden ? 'h2' : 'h1'}
         title="What your car really costs"
         subtitle="Depreciation, fuel, insurance, maintenance, and financing in one transparent forecast."
         className="!mb-0 max-w-none"
@@ -417,7 +455,7 @@ export default function TcoCalculator({
                 <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-1">
                   {hasSelectedVehicle
                     ? 'Adjust vehicle price and ownership assumptions.'
-                    : 'Search 120+ models or filter by Make, Model & Engine to unlock exact costs.'}
+                    : 'Search 179+ models or filter by Make, Model & Engine to unlock exact costs.'}
                 </p>
               </div>
               {hasSelectedVehicle ? (
@@ -426,7 +464,7 @@ export default function TcoCalculator({
                 </span>
               ) : (
                 <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-1 text-xs font-sans font-medium">
-                  120+ Models
+                  179+ Models
                 </span>
               )}
             </div>
@@ -881,21 +919,58 @@ export default function TcoCalculator({
                         </div>
                       </div>
 
-                      {/* Lease Disclaimer */}
-                      {financeType === 'lease' && (
+                      {/* Computed Lease Terms Summary (Residual Value + Money Factor Model) */}
+                      {financeType === 'lease' && tco.leaseDetails && (
                         <div
                           data-testid="lease-disclaimer"
-                          className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-sans"
+                          className="space-y-2.5 p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-xs font-sans"
                         >
-                          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold">Lease Estimation:</span> Lease payments are currently estimated based on a standard loan amortization model. Residual values, money factors, and lease-specific fees will be integrated in a future update.
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>Residual &amp; Money-Factor Lease Model</span>
+                            </span>
+                            <span
+                              data-testid="lease-monthly-payment-badge"
+                              className="font-mono font-bold tabular-nums px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                            >
+                              {formatCurrency(tco.leaseDetails.monthlyLeasePaymentUsd)}/mo lease
+                            </span>
                           </div>
+                          <div data-testid="lease-terms-summary" className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                            <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-emerald-200/70 dark:border-zinc-800">
+                              <span className="block text-muted dark:text-zinc-400">Residual ({tco.leaseDetails.leaseTermMonths}m)</span>
+                              <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
+                                {tco.leaseDetails.residualPct}% · {formatCurrency(tco.leaseDetails.residualValueUsd)}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-emerald-200/70 dark:border-zinc-800">
+                              <span className="block text-muted dark:text-zinc-400">Money Factor</span>
+                              <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
+                                {tco.leaseDetails.moneyFactor.toFixed(5)}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-emerald-200/70 dark:border-zinc-800">
+                              <span className="block text-muted dark:text-zinc-400">Depr. / Rent</span>
+                              <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
+                                {formatCurrency(tco.leaseDetails.monthlyDepreciationUsd)} + {formatCurrency(tco.leaseDetails.monthlyRentChargeUsd)}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-emerald-200/70 dark:border-zinc-800">
+                              <span className="block text-muted dark:text-zinc-400">Acq. Fee</span>
+                              <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
+                                {formatCurrency(tco.leaseDetails.acquisitionFeeUsd)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/80 leading-relaxed">
+                            Adjusted cap cost {formatCurrency(tco.leaseDetails.adjustedCapCostUsd)} · Due at signing {formatCurrency(tco.leaseDetails.dueAtSigningUsd)} · Zero negative equity at lease turn-in (subject to mileage allowance).
+                          </p>
                         </div>
                       )}
 
-                      {/* Negative Equity Warning */}
-                      {tco.hasUnderwaterEquity && financeType !== 'cash' && (
+                      {/* Negative Equity Warning (Loan only — leases do not carry loan negative equity at turn-in) */}
+                      {tco.hasUnderwaterEquity && financeType === 'loan' && (
                         <div
                           data-testid="underwater-equity-alert"
                           className="flex items-start gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-sans"
@@ -916,79 +991,107 @@ export default function TcoCalculator({
 
                       {financeType !== 'cash' && (
                         <>
-                          {/* Down payment */}
-                          <div>
-                            <div className="mb-2 flex items-baseline justify-between gap-4">
-                              <label htmlFor="slider-down-payment" className="font-sans text-xs font-medium text-body dark:text-zinc-300">
-                                Down payment (<span className="font-mono tabular-nums">{downPaymentPct}%</span>)
-                              </label>
-                              <span className="font-mono text-xs font-semibold bg-surface dark:bg-zinc-950 text-ink dark:text-zinc-50 px-2 py-0.5 rounded-md tabular-nums border border-zinc-200 dark:border-zinc-800">
-                                {formatCurrency(Math.round(purchasePriceUsd * (downPaymentPct / 100)))}
-                              </span>
-                            </div>
-                            <input
-                              id="slider-down-payment"
-                              type="range"
-                              min={0}
-                              max={60}
-                              step={5}
-                              value={downPaymentPct}
-                              onChange={(e) => setDownPaymentPct(Number(e.target.value))}
-                              className="odo-range telemetry-slider"
-                              style={{
-                                '--fill': `${(downPaymentPct / 60) * 100}%`,
-                              }}
-                            />
-                            <div className="mt-1 flex justify-between text-[11px] tabular-nums text-faint dark:text-zinc-500 font-mono">
-                              <span>0%</span>
-                              <span>60%</span>
-                            </div>
-                          </div>
+                          {/* Down payment / Cap cost reduction */}
+                          {(() => {
+                            const requestedDownUsd = Math.round(purchasePriceUsd * (downPaymentPct / 100));
+                            const effectiveCapUsd =
+                              financeType === 'lease' && tco.leaseDetails
+                                ? tco.leaseDetails.capCostReductionUsd
+                                : requestedDownUsd;
+                            const isCapReductionCapped =
+                              financeType === 'lease' &&
+                              tco.leaseDetails &&
+                              requestedDownUsd > tco.leaseDetails.capCostReductionUsd + 5;
+                            const effectiveCapPct =
+                              purchasePriceUsd > 0 ? Math.round((effectiveCapUsd / purchasePriceUsd) * 100) : downPaymentPct;
+                            const displayedTermMonths = financeType === 'lease' ? leaseTermMonths : loanTermMonths;
 
-                          {/* Loan Term & APR */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                            <div>
-                              <label htmlFor="slider-loan-term" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
-                                Loan term (<span className="font-mono tabular-nums">{loanTermMonths}</span> mos)
-                              </label>
-                              <input
-                                id="slider-loan-term"
-                                type="range"
-                                min={24}
-                                max={72}
-                                step={12}
-                                value={loanTermMonths}
-                                onChange={(e) => setLoanTermMonths(Number(e.target.value))}
-                                className="odo-range telemetry-slider"
-                                style={{
-                                  '--fill': `${((loanTermMonths - 24) / (72 - 24)) * 100}%`,
-                                }}
-                              />
-                              <div className="mt-1 flex justify-between text-[11px] tabular-nums text-faint dark:text-zinc-500 font-mono">
-                                <span>24 mos</span>
-                                <span>72 mos</span>
-                              </div>
-                            </div>
+                            return (
+                              <>
+                                <div>
+                                  <div className="mb-2 flex items-baseline justify-between gap-4">
+                                    <label htmlFor="slider-down-payment" className="font-sans text-xs font-medium text-body dark:text-zinc-300">
+                                      {financeType === 'lease' ? 'Cap cost reduction' : 'Down payment'} (
+                                      <span className="font-mono tabular-nums">{downPaymentPct}%</span>
+                                      {isCapReductionCapped && (
+                                        <span className="text-amber-700 dark:text-amber-400"> · capped at {effectiveCapPct}% max</span>
+                                      )}
+                                      )
+                                    </label>
+                                    <span className="font-mono text-xs font-semibold bg-surface dark:bg-zinc-950 text-ink dark:text-zinc-50 px-2 py-0.5 rounded-md tabular-nums border border-zinc-200 dark:border-zinc-800">
+                                      {formatCurrency(effectiveCapUsd)}
+                                    </span>
+                                  </div>
+                                  <input
+                                    id="slider-down-payment"
+                                    type="range"
+                                    min={0}
+                                    max={60}
+                                    step={5}
+                                    value={downPaymentPct}
+                                    onChange={(e) => setDownPaymentPct(Number(e.target.value))}
+                                    className="odo-range telemetry-slider"
+                                    style={{
+                                      '--fill': `${(downPaymentPct / 60) * 100}%`,
+                                    }}
+                                  />
+                                  <div className="mt-1 flex justify-between text-[11px] tabular-nums text-faint dark:text-zinc-500 font-mono">
+                                    <span>0%</span>
+                                    <span>60%</span>
+                                  </div>
+                                </div>
 
-                            <div>
-                              <label htmlFor="input-apr" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
-                                Loan APR %
-                              </label>
-                              <div className="flex h-11 sm:h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
-                                <input
-                                  id="input-apr"
-                                  type="number"
-                                  step="0.1"
-                                  min="0"
-                                  max="40"
-                                  value={aprPct}
-                                  onChange={(e) => setAprPct(Math.min(40, Math.max(0, Number(e.target.value) || 0)))}
-                                  className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
-                                />
-                                <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-mono">%</span>
-                              </div>
-                            </div>
-                          </div>
+                                {/* Loan / Lease Term & APR */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                  <div>
+                                    <label htmlFor="slider-loan-term" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
+                                      {financeType === 'lease' ? 'Lease term' : 'Loan term'} (<span className="font-mono tabular-nums">{displayedTermMonths}</span> mos)
+                                    </label>
+                                    <input
+                                      id="slider-loan-term"
+                                      type="range"
+                                      min={24}
+                                      max={72}
+                                      step={12}
+                                      value={displayedTermMonths}
+                                      onChange={(e) => {
+                                        const nextTerm = Number(e.target.value);
+                                        if (financeType === 'lease') setLeaseTermMonths(nextTerm);
+                                        else setLoanTermMonths(nextTerm);
+                                      }}
+                                      className="odo-range telemetry-slider"
+                                      style={{
+                                        '--fill': `${((displayedTermMonths - 24) / (72 - 24)) * 100}%`,
+                                      }}
+                                    />
+                                    <div className="mt-1 flex justify-between text-[11px] tabular-nums text-faint dark:text-zinc-500 font-mono">
+                                      <span>24 mos</span>
+                                      <span>72 mos</span>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-apr" className="font-sans text-xs font-medium text-muted dark:text-zinc-400 mb-1 block">
+                                      {financeType === 'lease' ? 'Money Factor (APR % equiv.)' : 'Loan APR %'}
+                                    </label>
+                                    <div className="flex h-11 sm:h-10 items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-950 px-3 focus-within:border-[#183D22] dark:focus-within:border-emerald-500 shadow-xs">
+                                      <input
+                                        id="input-apr"
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        max="40"
+                                        value={aprPct}
+                                        onChange={(e) => setAprPct(Math.min(40, Math.max(0, Number(e.target.value) || 0)))}
+                                        className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
+                                      />
+                                      <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-mono">%</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </>
                       )}
                     </div>
@@ -1039,7 +1142,7 @@ export default function TcoCalculator({
                                   {activePreset.isEv ? 'Energy consumption' : 'Fuel efficiency'}
                                 </label>
                                 <span className="font-mono tabular-nums text-ink dark:text-zinc-50">
-                                  {displayEfficiency} {efficiencyUnit}
+                                  {displayEfficiency} {activePreset.isEv ? evEfficiencyUnit : efficiencyUnit}
                                 </span>
                               </div>
                               <input
@@ -1084,7 +1187,7 @@ export default function TcoCalculator({
                               className="w-full bg-transparent text-base sm:text-xs font-medium tabular-nums font-mono text-ink dark:text-zinc-50 outline-none"
                             />
                             <span className="ml-1 text-xs text-muted dark:text-zinc-400 font-sans">
-                              {currencySymbol}/{region === 'EU' ? (activePreset.isEv ? 'kWh' : 'L') : activePreset.isEv ? 'kWh' : 'gal'}
+                              {currencySymbol}/{activePreset.isEv ? 'kWh' : region === 'US' ? 'gal' : 'L'}
                             </span>
                           </div>
                         </div>
@@ -1169,7 +1272,7 @@ export default function TcoCalculator({
                   <span className="truncate">Verified Garage Service Credit: -<span className="font-mono tabular-nums">{formatCurrency(verifiedGarageCreditUsd)}</span> applied</span>
                 </div>
               )}
-              {hasSelectedVehicle && tco.hasUnderwaterEquity && financeType !== 'cash' && (
+              {hasSelectedVehicle && tco.hasUnderwaterEquity && financeType === 'loan' && (
                 <div
                   data-testid="summary-underwater-alert"
                   className="mt-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 text-[11px] font-sans font-medium max-w-full"
@@ -1328,9 +1431,15 @@ export default function TcoCalculator({
                 <button
                   type="button"
                   data-testid="toggle-tco-export-menu"
+                  disabled={!hasSelectedVehicle}
                   aria-expanded={showExportMenu}
-                  onClick={() => setShowExportMenu((prev) => !prev)}
-                  className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold text-primary-600 dark:text-emerald-400 hover:underline shrink-0"
+                  onClick={() => hasSelectedVehicle && setShowExportMenu((prev) => !prev)}
+                  title={!hasSelectedVehicle ? 'Select a vehicle first to export or share' : undefined}
+                  className={`inline-flex items-center gap-1 font-sans text-[11px] font-semibold shrink-0 ${
+                    !hasSelectedVehicle
+                      ? 'text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
+                      : 'text-primary-600 dark:text-emerald-400 hover:underline'
+                  }`}
                 >
                   <Printer className="w-3 h-3 shrink-0" />
                   <span>{showExportMenu ? 'Hide Export & Share' : 'Export & Share (PDF / Reddit)'}</span>
@@ -1471,7 +1580,7 @@ export default function TcoCalculator({
                   Switch Vehicle
                 </h3>
                 <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
-                  Choose a quick preset or search our 120+ model database.
+                  Choose a quick preset or search our 179+ model database.
                 </p>
               </div>
               <button
@@ -1577,6 +1686,7 @@ export default function TcoCalculator({
           primaryTco={tco}
           horizonYears={horizonYears}
           annualDistanceMiles={annualDistanceMiles}
+          financeType={financeType}
           downPaymentPct={activeDownPaymentPct}
           aprPct={activeAprPct}
           loanTermMonths={activeLoanTermMonths}
@@ -1623,7 +1733,12 @@ export default function TcoCalculator({
       )}
 
       {/* 2. Cost Timeline Chart */}
-      <div className="mt-8">
+      <div className="mt-8 space-y-2">
+        {!hasSelectedVehicle && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/70 dark:bg-amber-950/30 px-4 py-2.5 text-xs font-sans text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+            <span>Showing illustrative baseline trajectory. Select a vehicle above to unlock model-specific 10-year depreciation and maintenance curves.</span>
+          </div>
+        )}
         <CostTimeline
           calculateYearCost={calculateYearCost}
           currentYears={horizonYears}
@@ -1657,6 +1772,20 @@ export default function TcoCalculator({
               insuranceSharePct={combinedSharePct}
             />
             <ToolEditorialSection tool="tco" vehicleName={hasSelectedVehicle ? activePreset.name : 'your vehicle'} />
+            {hasSelectedVehicle && (
+              <VehicleInternalLinks
+                vehicle={activePreset}
+                onSelectPreset={onSelectPreset}
+                onNavigateToTco={onNavigateToTco}
+                onNavigateToRisk={onNavigateToRiskMatrix}
+                onNavigateToRiskBracket={onNavigateToRiskBracket}
+                onNavigateToChecklist={onNavigateToChecklist}
+                onNavigateToHybridObd={onNavigateToHybridObd}
+                onNavigateToObd={onNavigateToObd}
+                onNavigateToCompare={onNavigateToCompare}
+                onNavigateToVehicles={onNavigateToVehicles}
+              />
+            )}
           </div>
         );
       })()}
@@ -1665,7 +1794,7 @@ export default function TcoCalculator({
       <MobileStickySummaryBar
         label={hasSelectedVehicle ? `${activePreset.name} · ${horizonYears}-Yr TCO` : `Select a vehicle · ${horizonYears}-Yr TCO`}
         primaryValue={hasSelectedVehicle ? `${formatCurrency(tco.monthlyEconomicCostUsd)}/mo` : 'Pick a car'}
-        secondaryValue={hasSelectedVehicle ? `${formatCurrency(tco.totalEconomicCostUsd)} total` : '120+ models'}
+        secondaryValue={hasSelectedVehicle ? `${formatCurrency(tco.totalEconomicCostUsd)} total` : '179+ models'}
         badgeText={hasSelectedVehicle ? `Score ${ownershipValueScore}/100` : 'Ready'}
         actionLabel="View Breakdown"
         onAction={() => {

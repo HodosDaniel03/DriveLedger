@@ -15,6 +15,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
+import { useUnits } from '../../context/UnitContext';
 
 export const COMMUNITY_INVOICES_STORAGE_KEY = 'shiftmetric_community_invoices_v1';
 
@@ -185,6 +186,14 @@ export function calculateInvoiceAuditStats({
 }
 
 export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmitted }) {
+  const {
+    currencySymbol,
+    distanceUnit,
+    formatCurrency,
+    formatDistance,
+    convertRegionToUsd,
+    convertRegionToMiles,
+  } = useUnits();
   const [selectedPresetId, setSelectedPresetId] = useState(VEHICLE_PRESETS[0]?.id || 'ford-focus-ecoblue');
   const [customVehicleName, setCustomVehicleName] = useState('');
   const [assemblyLabel, setAssemblyLabel] = useState(REPAIRED_ASSEMBLIES[0].label);
@@ -204,17 +213,19 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
     return calculateInvoiceAuditStats({
       assemblyLabel,
       workshopTier,
-      amountPaid: Number(invoiceAmount) || 0,
+      amountPaid: Math.round(convertRegionToUsd(Number(invoiceAmount) || 0)),
       wearFactor: selectedPreset?.maintenanceWearFactor || 1.2,
     });
-  }, [assemblyLabel, workshopTier, invoiceAmount, selectedPreset]);
+  }, [assemblyLabel, workshopTier, invoiceAmount, selectedPreset, convertRegionToUsd]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const numericAmount = Math.max(25, Number(invoiceAmount) || 1200);
-    const numericOdo = Math.max(100, Number(odometerMiles) || 60000);
+    const numericAmountLocal = Math.max(25, Number(invoiceAmount) || 1200);
+    const numericAmountUsd = Math.max(25, Math.round(convertRegionToUsd(numericAmountLocal)));
+    const numericOdoLocal = Math.max(100, Number(odometerMiles) || 60000);
+    const numericOdoMiles = Math.max(100, Math.round(convertRegionToMiles(numericOdoLocal)));
     const vehicleDisplayName =
       selectedPresetId === 'custom' && customVehicleName.trim()
         ? customVehicleName.trim()
@@ -223,17 +234,17 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
     const stats = calculateInvoiceAuditStats({
       assemblyLabel,
       workshopTier,
-      amountPaid: numericAmount,
+      amountPaid: numericAmountUsd,
       wearFactor: selectedPreset?.maintenanceWearFactor || 1.2,
     });
 
     const savingsOrDeltaText = stats.isBelowAvg
-      ? `$${Math.abs(stats.diffFromAvg).toLocaleString()} Below ${workshopTier === 'dealership' ? 'Dealer' : 'Specialist'} Avg (${stats.ordinalPercentile} Pct)`
-      : `$${Math.abs(stats.diffFromAvg).toLocaleString()} Above Avg · ${stats.ordinalPercentile} Percentile`;
+      ? `${formatCurrency(Math.abs(stats.diffFromAvg))} Below ${workshopTier === 'dealership' ? 'Dealer' : 'Specialist'} Avg (${stats.ordinalPercentile} Pct)`
+      : `${formatCurrency(Math.abs(stats.diffFromAvg))} Above Avg · ${stats.ordinalPercentile} Percentile`;
 
     const defaultNote = stats.isBelowAvg
-      ? `Completed ${assemblyLabel} at an ${workshopTier === 'dealership' ? 'authorized dealership' : 'independent specialist'} for $${numericAmount.toLocaleString()} (${stats.pctDiff}% under the $${stats.avg.toLocaleString()} powertrain median).`
-      : `Logged $${numericAmount.toLocaleString()} invoice for ${assemblyLabel} (${workshopTier === 'dealership' ? 'Franchise Dealership' : 'Independent Specialist'}). Benchmark median was $${stats.avg.toLocaleString()}.`;
+      ? `Completed ${assemblyLabel} at an ${workshopTier === 'dealership' ? 'authorized dealership' : 'independent specialist'} for ${formatCurrency(numericAmountUsd)} (${stats.pctDiff}% under the ${formatCurrency(stats.avg)} powertrain median).`
+      : `Logged ${formatCurrency(numericAmountUsd)} invoice for ${assemblyLabel} (${workshopTier === 'dealership' ? 'Franchise Dealership' : 'Independent Specialist'}). Benchmark median was ${formatCurrency(stats.avg)}.`;
 
     const newEntry = {
       id: `inv-${Date.now()}`,
@@ -246,9 +257,9 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
       presetId: selectedPresetId,
       assembly: assemblyLabel,
       workshopTier,
-      amountPaid: numericAmount,
-      verifiedOdometer: `${numericOdo.toLocaleString()} mi`,
-      odometerMiles: numericOdo,
+      amountPaid: numericAmountUsd,
+      verifiedOdometer: formatDistance(numericOdoMiles),
+      odometerMiles: numericOdoMiles,
       rating: stats.percentile <= 75 ? 5 : 4,
       savingsText: savingsOrDeltaText,
       review: ownerNote.trim() || defaultNote,
@@ -345,8 +356,8 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   <p className="text-[11px] text-muted dark:text-zinc-400 font-sans">
                     Compared against our regional cost estimates for {submittedAudit.vehicle} ·{' '}
                     {submittedAudit.workshopTier === 'dealership'
-                      ? `Independent Specialist median estimate is $${activeStats.oppositeAvg.toLocaleString()}`
-                      : `Franchise Dealership median estimate is $${activeStats.oppositeAvg.toLocaleString()}`}
+                      ? `Independent Specialist median estimate is ${formatCurrency(activeStats.oppositeAvg)}`
+                      : `Franchise Dealership median estimate is ${formatCurrency(activeStats.oppositeAvg)}`}
                   </p>
                 </div>
               </div>
@@ -356,7 +367,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 <div className="flex items-center justify-between text-[11px] font-sans text-muted dark:text-zinc-400 mb-2">
                   <span>Statistical Price Spread ({submittedAudit.assembly})</span>
                   <span className="font-bold text-ink dark:text-zinc-200">
-                    Your Invoice: <span className="font-mono tabular-nums">${activeStats.paid.toLocaleString()}</span>
+                    Your Invoice: <span className="font-mono tabular-nums">{formatCurrency(activeStats.paid)}</span>
                   </span>
                 </div>
 
@@ -367,19 +378,19 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     <div
                       className="absolute top-0 bottom-0 w-0.5 bg-zinc-400 dark:bg-zinc-500"
                       style={{ left: '12%' }}
-                      title={`P10 Low: $${activeStats.p10}`}
+                      title={`P10 Low: ${formatCurrency(activeStats.p10)}`}
                     />
                     {/* P50 Median Marker */}
                     <div
                       className="absolute -top-1 -bottom-1 w-0.5 bg-ink dark:bg-zinc-200"
                       style={{ left: '50%' }}
-                      title={`P50 Median: $${activeStats.avg}`}
+                      title={`P50 Median: ${formatCurrency(activeStats.avg)}`}
                     />
                     {/* P90 Marker */}
                     <div
                       className="absolute top-0 bottom-0 w-0.5 bg-zinc-400 dark:bg-zinc-500"
                       style={{ left: '88%' }}
-                      title={`P90 High: $${activeStats.p90}`}
+                      title={`P90 High: ${formatCurrency(activeStats.p90)}`}
                     />
 
                     {/* User Invoice Pin */}
@@ -392,7 +403,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                           activeStats.isBelowAvg ? 'bg-emerald-600' : 'bg-amber-600'
                         }`}
                       >
-                        ${activeStats.paid.toLocaleString()}
+                        {formatCurrency(activeStats.paid)}
                       </div>
                       <div
                         className={`w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900 shadow ${
@@ -408,19 +419,19 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   <div>
                     <span className="text-muted dark:text-zinc-400 block">P10 (Low)</span>
                     <span className="font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                      ${activeStats.p10.toLocaleString()}
+                      {formatCurrency(activeStats.p10)}
                     </span>
                   </div>
                   <div className="text-center">
                     <span className="text-muted dark:text-zinc-400 block">P50 (Median)</span>
                     <span className="font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
-                      ${activeStats.avg.toLocaleString()}
+                      {formatCurrency(activeStats.avg)}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-muted dark:text-zinc-400 block">P90 (High)</span>
                     <span className="font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
-                      ${activeStats.p90.toLocaleString()}
+                      {formatCurrency(activeStats.p90)}
                     </span>
                   </div>
                 </div>
@@ -566,7 +577,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   htmlFor="invoice-amount-input"
                   className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
                 >
-                  Invoice Amount Paid ($)
+                  Invoice Amount Paid ({currencySymbol})
                 </label>
                 <div className="relative">
                   <DollarSign className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -590,7 +601,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   htmlFor="invoice-odometer-input"
                   className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
                 >
-                  Odometer Reading (mi)
+                  Odometer Reading ({distanceUnit})
                 </label>
                 <div className="relative">
                   <Gauge className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -656,11 +667,11 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   </span>
                 </div>
                 <div className="grid grid-cols-3 text-[11px] font-sans text-muted dark:text-zinc-400">
-                  <span>P10 Low: <span className="font-mono tabular-nums">${liveAuditPreview.p10.toLocaleString()}</span></span>
+                  <span>P10 Low: <span className="font-mono tabular-nums">{formatCurrency(liveAuditPreview.p10)}</span></span>
                   <span className="text-center font-semibold text-ink dark:text-zinc-200">
-                    P50 Avg: <span className="font-mono tabular-nums">${liveAuditPreview.avg.toLocaleString()}</span>
+                    P50 Avg: <span className="font-mono tabular-nums">{formatCurrency(liveAuditPreview.avg)}</span>
                   </span>
-                  <span className="text-right">P90 High: <span className="font-mono tabular-nums">${liveAuditPreview.p90.toLocaleString()}</span></span>
+                  <span className="text-right">P90 High: <span className="font-mono tabular-nums">{formatCurrency(liveAuditPreview.p90)}</span></span>
                 </div>
               </div>
             )}

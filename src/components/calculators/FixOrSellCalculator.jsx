@@ -210,9 +210,11 @@ export default function FixOrSellCalculator({
                   max={500000}
                   step={2500}
                   value={displayOdo}
-                  onChange={(e) =>
-                    setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
-                  }
+                  onChange={(e) => {
+                    const nextMiles = convertRegionToMiles(Math.max(0, Number(e.target.value) || 0));
+                    setOdometerMiles(nextMiles);
+                    setMarketValueUsd(estimateMileageAdjustedMarketValue(vehicle, nextMiles));
+                  }}
                   className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
                 />
                 <span className="font-sans text-xs text-muted">{distanceUnit}</span>
@@ -225,7 +227,11 @@ export default function FixOrSellCalculator({
               max={maxOdoSlider}
               step={2500}
               value={Math.min(maxOdoSlider, Math.max(10000, displayOdo))}
-              onChange={(e) => setOdometerMiles(convertRegionToMiles(Number(e.target.value)))}
+              onChange={(e) => {
+                const nextMiles = convertRegionToMiles(Number(e.target.value));
+                setOdometerMiles(nextMiles);
+                setMarketValueUsd(estimateMileageAdjustedMarketValue(vehicle, nextMiles));
+              }}
               className="odo-range telemetry-slider"
               style={{
                 '--fill': `${((Math.min(maxOdoSlider, Math.max(10000, displayOdo)) - 10000) / (maxOdoSlider - 10000)) * 100}%`,
@@ -346,7 +352,7 @@ export default function FixOrSellCalculator({
               </span>
             </div>
             <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-              <span className="block text-xs font-sans font-medium text-muted truncate">+15k Wear Risk</span>
+              <span className="block text-xs font-sans font-medium text-muted truncate">+{distanceUnit === 'km' ? '24k km' : '15k mi'} Wear Risk</span>
               <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
                 {formatCurrency(decision.cascadingExposureUsd)}
               </span>
@@ -374,7 +380,7 @@ export default function FixOrSellCalculator({
               </span>
               <button
                 type="button"
-                onClick={onNavigateToCompare}
+                onClick={() => onNavigateToCompare(vehicle?.id)}
                 className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline"
               >
                 <span>Compare Replacement Cars</span>

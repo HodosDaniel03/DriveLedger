@@ -1127,18 +1127,69 @@ export const OBD_CODES = [
 ];
 
 /**
- * Pure helper to calculate workshop cost estimates for a given OBD-II code and labor rate tier.
+ * Builds a code-specific technical description and subsystem label for an OBD-II fault dossier.
  */
-export function calculateObdWorkshopEstimate(obdCodeObj, tierId = 'independent') {
+export function buildObdCodeSummary(obdCodeObj, vehicle = null) {
+  if (!obdCodeObj) {
+    return {
+      systemCategory: 'Powertrain Telemetry',
+      subsystem: 'OBD-II Powertrain Control Module',
+      description: 'Diagnostic trouble code stored in the powertrain control module.',
+    };
+  }
+  const systemCategory = obdCodeObj.systemCategory || obdCodeObj.category || 'Powertrain Diagnostics';
+  const topCause = obdCodeObj.rootCauses?.[0];
+  const secondCause = obdCodeObj.rootCauses?.[1];
+  const subsystem = obdCodeObj.subsystem || `${systemCategory} (${obdCodeObj.code})`;
+
+  if (obdCodeObj.description) {
+    return {
+      systemCategory,
+      subsystem,
+      description: obdCodeObj.description,
+    };
+  }
+
+  const vehicleLabel = vehicle?.name ? ` on ${vehicle.name}` : '';
+  const topCauseClause = topCause
+    ? ` Most frequently triggered by ${topCause.cause.toLowerCase()} (${topCause.probabilityPct}% probability)${
+        secondCause ? ` or ${secondCause.cause.toLowerCase()} (${secondCause.probabilityPct}%)` : ''
+      }.`
+    : '';
+  const baselineClause = obdCodeObj.liveTelemetryCheck?.baselineValues
+    ? ` ${obdCodeObj.liveTelemetryCheck.baselineValues}`
+    : '';
+
+  return {
+    systemCategory,
+    subsystem,
+    description: `${obdCodeObj.code} (${obdCodeObj.title}) is a ${systemCategory.toLowerCase()} diagnostic fault${vehicleLabel}.${topCauseClause}${baselineClause}`,
+  };
+}
+
+/**
+ * Pure helper to calculate workshop cost estimates for a given OBD-II code and labor rate tier.
+ * Supports optional vehicle / maintenanceWearFactor scaling for brand-accurate workshop pricing.
+ */
+export function calculateObdWorkshopEstimate(obdCodeObj, tierId = 'independent', options = undefined) {
   const tier = LABOR_RATE_TIERS.find((t) => t.id === tierId) || LABOR_RATE_TIERS[1];
   const [minHours, maxHours] = obdCodeObj.laborHoursRange;
   const [minPartsBase, maxPartsBase] = obdCodeObj.partsCostRangeUsd;
 
-  const minPartsUsd = Math.round(minPartsBase * tier.partsMarkupFactor);
-  const maxPartsUsd = Math.round(maxPartsBase * tier.partsMarkupFactor);
+  const rawWearFactor =
+    typeof options === 'number'
+      ? options
+      : options?.maintenanceWearFactor ?? options?.vehicle?.maintenanceWearFactor;
+  const wearScale =
+    Number.isFinite(Number(rawWearFactor)) && Number(rawWearFactor) > 0
+      ? Number(rawWearFactor)
+      : 1.0;
 
-  const minLaborUsd = Math.round(minHours * tier.rateUsdPerHr);
-  const maxLaborUsd = Math.round(maxHours * tier.rateUsdPerHr);
+  const minPartsUsd = Math.round(minPartsBase * tier.partsMarkupFactor * wearScale);
+  const maxPartsUsd = Math.round(maxPartsBase * tier.partsMarkupFactor * wearScale);
+
+  const minLaborUsd = Math.round(minHours * tier.rateUsdPerHr * wearScale);
+  const maxLaborUsd = Math.round(maxHours * tier.rateUsdPerHr * wearScale);
 
   const minTotalUsd = minPartsUsd + minLaborUsd;
   const maxTotalUsd = maxPartsUsd + maxLaborUsd;
@@ -1150,8 +1201,8 @@ export function calculateObdWorkshopEstimate(obdCodeObj, tierId = 'independent')
 
   for (const rc of obdCodeObj.rootCauses) {
     const prob = (rc.probabilityPct || 0) / 100;
-    const avgParts = ((rc.partsCostUsd[0] + rc.partsCostUsd[1]) / 2) * tier.partsMarkupFactor;
-    const avgLabor = ((rc.laborHours[0] + rc.laborHours[1]) / 2) * tier.rateUsdPerHr;
+    const avgParts = ((rc.partsCostUsd[0] + rc.partsCostUsd[1]) / 2) * tier.partsMarkupFactor * wearScale;
+    const avgLabor = ((rc.laborHours[0] + rc.laborHours[1]) / 2) * tier.rateUsdPerHr * wearScale;
     weightedPartsUsd += prob * avgParts;
     weightedLaborUsd += prob * avgLabor;
     weightedExpectedUsd += prob * (avgParts + avgLabor);
@@ -1161,6 +1212,7 @@ export function calculateObdWorkshopEstimate(obdCodeObj, tierId = 'independent')
     tierId: tier.id,
     tierLabel: tier.label,
     rateUsdPerHr: tier.rateUsdPerHr,
+    wearScale: +wearScale.toFixed(2),
     minPartsUsd,
     maxPartsUsd,
     minLaborUsd,

@@ -5,6 +5,7 @@ import {
   buildAffiliateUrl,
   FTC_PROXIMATE_DISCLOSURE,
 } from '../../config/monetizationConfig';
+import { useUnits } from '../../context/UnitContext';
 
 function resolveAdSenseSlotId(slotId, variant) {
   const slots = MONETIZATION_CONFIG.slots || {};
@@ -38,10 +39,16 @@ export function AdUnit({
   const [isUnfilled, setIsUnfilled] = useState(false);
   const insRef = useRef(null);
 
+  const units = useUnits();
   const adsenseEnabled = Boolean(MONETIZATION_CONFIG.adsenseEnabled);
   const publisherId = MONETIZATION_CONFIG.publisherId;
   const resolvedSlotId = resolveAdSenseSlotId(slotId, variant);
-  const fallbackPartnerLink = buildAffiliateUrl(partnerKey, { contextLabel, variant });
+  const fallbackPartnerLink = buildAffiliateUrl(partnerKey, {
+    contextLabel,
+    variant,
+    region: units?.region || 'US',
+    skipPlaceholder: true,
+  });
 
   useEffect(() => {
     if (isActivated) return undefined;

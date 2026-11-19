@@ -24,6 +24,7 @@ import { estimateMileageAdjustedMarketValue } from '../../data/fixOrSellEngine.j
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
+import VehicleInternalLinks from '../seo/VehicleInternalLinks';
 
 export { generatePpiChecklist };
 
@@ -44,6 +45,14 @@ const STANDARD_STEP_TRANSLATIONS = {
     timeEst: '~15 mins',
     keyPids: 'Coolant Temp PID 0x05, Oil Pressure PID',
   },
+  'step-ev-hv-battery': {
+    title: 'HV Battery State of Health (SoH %) & Cell Delta-V Load Test',
+    focus: 'Read BMS State of Health (SoH %), total DC fast-charge vs AC charge counter, and cell voltage imbalance (mV delta) under load.',
+    inspectionMethod: 'Query BMS via OBD2 at <30% SoC under acceleration: cell delta-V must remain <25 mV with zero HV isolation fault history.',
+    riskLabel: 'Critical / HV Battery',
+    timeEst: '~20 mins',
+    keyPids: 'BMS SoH %, Min/Max Cell Voltage Delta (mV), HV Isolation Resistance (kOhm)',
+  },
   'step-body-chassis': {
     title: 'Body Paint Thickness & Structural Damage Screening',
     focus: 'Measure paint depth across panels (factory: 80–140 µm). Inspect A/B/C pillar spot welds and trunk floor.',
@@ -59,6 +68,14 @@ const STANDARD_STEP_TRANSLATIONS = {
     riskLabel: 'Critical / High Repair Cost',
     timeEst: '~25 mins',
     keyPids: 'TCU Clutch Slip PID, Mechatronics Line Pressure Target',
+  },
+  'step-ev-charging-driveline': {
+    title: 'On-Board Charger (OBC / ICCU), DC Fast-Charge & Reduction Gear Check',
+    focus: 'Test both Level 2 AC charging phases and CCS/NACS DC fast-charging handshake. Listen for drive unit bearing whine under regen.',
+    inspectionMethod: 'Verify AC charging reaches full rated kW across all phases, test heat pump cabin heating & battery chiller valve actuation, and check reduction gear backlash.',
+    riskLabel: 'Critical / Charging & Drive Unit',
+    timeEst: '~25 mins',
+    keyPids: 'OBC Phase Current, DC-DC 12V Charging Voltage (>13.8V), Inverter & Chiller Temp',
   },
   'step-undercarriage-brakes': {
     title: 'Suspension Bushings, Damper Seepage & Rotor Edge Lip',
@@ -156,11 +173,19 @@ function sanitizeStep(step) {
 export default function PreInspectionChecklist({
   presetId,
   currentOdometerMiles = 75000,
+  standalone = false,
   onNavigateToObd,
+  onNavigateToHybridObd,
   onNavigateToTco,
+  onNavigateToRisk,
+  onNavigateToRiskBracket,
+  onNavigateToChecklist,
+  onNavigateToCompare,
+  onNavigateToVehicles,
   onSelectPreset,
 }) {
   const {
+    region,
     currencySymbol,
     distanceUnit,
     formatDistance,
@@ -175,21 +200,53 @@ export default function PreInspectionChecklist({
     return getPresetById(presetId) || VEHICLE_PRESETS[0];
   });
 
-  const [odometerMiles, setOdometerMiles] = useState(() =>
-    Math.max(0, Number(currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000))
-  );
+  const [odometerMiles, setOdometerMiles] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlOdo = Number(params.get('odo'));
+      if (urlOdo > 0) return Math.round(urlOdo);
+    }
+    return Math.max(0, Number(currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000));
+  });
 
-  const [askingPriceUsd, setAskingPriceUsd] = useState(() =>
-    estimateMileageAdjustedMarketValue(
+  const [askingPriceUsd, setAskingPriceUsd] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlPrice = Number(params.get('price'));
+      if (urlPrice > 0) return Math.round(urlPrice);
+    }
+    return estimateMileageAdjustedMarketValue(
       selectedPreset,
-      currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000
-    )
-  );
+      odometerMiles || currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000
+    );
+  });
+
+  // Verified OK state vs Flagged Defect state
+  const [checkedIds, setCheckedIds] = useState({});
+  const [flaggedDefectIds, setFlaggedDefectIds] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const flaggedParam = params.get('flagged');
+      if (flaggedParam) {
+        const map = {};
+        flaggedParam
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .forEach((id) => {
+            map[id] = true;
+          });
+        return map;
+      }
+    }
+    return {};
+  });
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   useEffect(() => {
     if (presetId) {
       const p = getPresetById(presetId);
-      if (p) {
+      if (p && p.id !== selectedPreset.id) {
         setSelectedPreset(p);
         const defaultOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
         setOdometerMiles(defaultOdo);
@@ -199,11 +256,6 @@ export default function PreInspectionChecklist({
       }
     }
   }, [presetId]);
-
-  // Verified OK state vs Flagged Defect state
-  const [checkedIds, setCheckedIds] = useState({});
-  const [flaggedDefectIds, setFlaggedDefectIds] = useState({});
-  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const odometerKm = Math.round(odometerMiles * 1.609344);
 
@@ -260,9 +312,8 @@ export default function PreInspectionChecklist({
         vehicle: selectedPreset,
       });
       if (!health) continue;
-      const indieMid = Math.round(
-        ((comp.costsUsd?.independent?.[0] || 500) + (comp.costsUsd?.independent?.[1] || 1100)) / 2
-      );
+      const indieRange = health.scaledCostsUsd?.independent || comp.costsUsd?.independent || [500, 1100];
+      const indieMid = Math.round(((indieRange[0] || 500) + (indieRange[1] || 1100)) / 2);
       if (health.status === 'CRITICAL') {
         scheduledWearDeductionUsd += Math.round(indieMid * 0.5);
         serviceReserve12MoUsd += Math.round(indieMid * 0.75);
@@ -317,7 +368,9 @@ export default function PreInspectionChecklist({
   const handleShareLink = () => {
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mydriveledger.com';
-      const shareUrl = `${origin}/checklist?preset=${encodeURIComponent(selectedPreset.id)}&odo=${Math.round(odometerMiles)}&price=${Math.round(askingPriceUsd)}`;
+      const activeFlagged = Object.keys(flaggedDefectIds).filter((k) => flaggedDefectIds[k]);
+      const flaggedQuery = activeFlagged.length > 0 ? `&flagged=${encodeURIComponent(activeFlagged.join(','))}` : '';
+      const shareUrl = `${origin}/checklist/${encodeURIComponent(selectedPreset.id)}?odo=${Math.round(odometerMiles)}&price=${Math.round(askingPriceUsd)}&reg=${encodeURIComponent(region || 'US')}${flaggedQuery}`;
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl);
         setCopyFeedback(true);
@@ -355,9 +408,15 @@ export default function PreInspectionChecklist({
               Live Offer Calculator
             </span>
           </div>
-          <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-            {selectedPreset.name} | Field Inspection Checklist
-          </h2>
+          {standalone ? (
+            <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
+              {selectedPreset.name} | Field Inspection Checklist
+            </h1>
+          ) : (
+            <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
+              {selectedPreset.name} | Field Inspection Checklist
+            </h2>
+          )}
           <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700 break-words">
             {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
           </p>
@@ -527,9 +586,9 @@ export default function PreInspectionChecklist({
       <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
+            <p className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
               DriveLedger | Pre-Purchase Inspection &amp; Negotiation Battlecard
-            </h1>
+            </p>
             <p className="font-sans text-sm text-gray-700 mt-1">
               Vehicle: <strong>{selectedPreset.name}</strong> · Engine: <strong>{selectedPreset.engineCode}</strong> · Powertrain: <strong>{selectedPreset.fuelType}</strong>
             </p>
@@ -758,6 +817,23 @@ export default function PreInspectionChecklist({
         tool="checklist"
         vehicleName={selectedPreset.name}
         className="print:hidden"
+      />
+
+      <VehicleInternalLinks
+        vehicle={selectedPreset}
+        onSelectPreset={(id) => {
+          const p = getPresetById(id);
+          if (p) setSelectedPreset(p);
+          if (onSelectPreset) onSelectPreset(id);
+        }}
+        onNavigateToTco={onNavigateToTco}
+        onNavigateToRisk={onNavigateToRisk}
+        onNavigateToRiskBracket={onNavigateToRiskBracket}
+        onNavigateToChecklist={onNavigateToChecklist}
+        onNavigateToHybridObd={onNavigateToHybridObd}
+        onNavigateToObd={onNavigateToObd}
+        onNavigateToCompare={onNavigateToCompare}
+        onNavigateToVehicles={onNavigateToVehicles}
       />
     </section>
   );

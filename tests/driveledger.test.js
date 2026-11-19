@@ -575,8 +575,10 @@ assert.equal(cashProj.yearlySchedule.length, 1, '1-year horizon must produce 1 s
 console.log('✓ 5. TcoCalculator financial engine & edge cases verified');
 
 // 6. Real Browser VDOM & In-Place Reconciler Interactive Verification
+const waitForLazy = () => new Promise((r) => setTimeout(r, 80));
 const root = createRoot(rootContainer);
 root.render(React.createElement(App));
+await waitForLazy();
 
 const initialHtml = rootContainer.toHtml();
 assert.ok(initialHtml.includes('DriveLedger'), 'App HTML must render brand header');
@@ -588,15 +590,31 @@ assert.ok(initialHtml.includes('lg:sticky lg:top-24'), 'App HTML must use sticky
 assert.ok(initialHtml.includes('carVertical') || initialHtml.includes('ADVERTISEMENT'), 'App HTML must render carVertical affiliate card');
 assert.ok(initialHtml.includes('affiliate-cta-vin-check') || initialHtml.includes('min-h-[90px]'), 'App HTML must render affiliate CTA vin check container');
 assert.ok(initialHtml.includes('Partner link'), 'AffiliateCTA must render Partner link badge');
-assert.ok(initialHtml.includes('application/ld+json'), 'TechnicalMethodologyGuide must inject Schema.org JSON-LD');
+assert.ok(initialHtml.includes('application/ld+json'), 'DynamicSeoHead must inject Schema.org JSON-LD');
+assert.ok(initialHtml.includes('SoftwareApplication'), 'DynamicSeoHead must emit SoftwareApplication JSON-LD');
 assert.ok(initialHtml.includes('Lifecycle trajectory'), 'CostTimeline must render Lifecycle trajectory heading');
 assert.ok(initialHtml.includes('Financing Interest'), 'CostTimeline must render Financing Interest legend category');
 
-// Check TechnicalMethodologyGuide prose word count (>= 1,000 words)
+// Verify no hidden TechnicalMethodologyGuide DOM clone is mounted on /tco
+assert.equal(
+  rootContainer.getElementById('methodology-guide'),
+  null,
+  'Hidden TechnicalMethodologyGuide DOM clone must NOT be mounted on /tco'
+);
+
+// Navigate to /methodology to verify TechnicalMethodologyGuide prose word count (>= 1,000 words), then return to /tco
+globalThis.window.history.pushState({}, '', '/methodology');
+globalThis.window.dispatchEvent({ type: 'popstate' });
+await waitForLazy();
 const guideEl = rootContainer.getElementById('methodology-guide');
-assert.ok(guideEl, 'Methodology guide section must be mounted');
+assert.ok(guideEl, 'Methodology guide section must mount on /methodology');
 const guideWords = guideEl.textContent.replace(/\s+/g, ' ').trim().split(' ').length;
 assert.ok(guideWords >= 1000, `TechnicalMethodologyGuide must contain >= 1,000 words (got ${guideWords})`);
+
+// Return cleanly to /tco with initial Ford Focus preset for slider & interaction tests
+globalThis.window.history.pushState({}, '', '/tco?tab=tco&preset=ford-focus-ecoblue&code=P2002');
+globalThis.window.dispatchEvent({ type: 'popstate' });
+await waitForLazy();
 
 // 6A. Test In-Place Range Slider Dragging (DOM node identity preserved across continuous drag events)
 const priceSliderBefore = rootContainer.getElementById('slider-purchase-price');
@@ -704,7 +722,7 @@ console.log('✓ 6C. Global Unit Switcher (US/UK/EU), EU L/100km slider bounds &
 
 // 6D. Test Opening and Closing Legal Modals
 const privacyFooterBtn = rootContainer.querySelectorAll(
-  (el) => el.tagName === 'BUTTON' && el.textContent.includes('Privacy Policy')
+  (el) => (el.tagName === 'BUTTON' || el.tagName === 'A') && el.textContent.includes('Privacy Policy')
 )[0];
 privacyFooterBtn.dispatchEvent({ type: 'click' });
 assert.ok(
@@ -908,17 +926,35 @@ assert.ok(
   'Browser popstate to /checklist/tesla-model-3-lr must activate checklist tab with Tesla Model 3 preset'
 );
 
-// Verify browser Back/Forward (popstate) to bare root URL (/) falls back to default tab and regional sample preset
+// Verify browser Back/Forward (popstate) to bare root URL (/) renders clean Overview without hidden TCO clone
 globalThis.window.history.pushState({}, '', '/');
 globalThis.window.dispatchEvent({ type: 'popstate' });
-assert.ok(
-  rootContainer.toHtml().includes('TELEMETRY PRESET BENCHMARKS'),
-  'Browser popstate to / must fall back to overview with TCO benchmark DOM'
+assert.equal(
+  rootContainer.getElementById('slider-purchase-price'),
+  null,
+  'Homepage (/) must NOT mount hidden TcoCalculator DOM clone'
 );
+assert.equal(
+  rootContainer.getElementById('methodology-guide'),
+  null,
+  'Homepage (/) must NOT mount hidden TechnicalMethodologyGuide DOM clone'
+);
+assert.ok(
+  rootContainer.toHtml().includes('Why drivers choose DriveLedger'),
+  'Browser popstate to / must render clean HomePage overview'
+);
+
+// Navigate to TCO workspace tab before verifying localized TCO sliders in 6F
+const tcoNavFor6F = rootContainer.querySelectorAll(
+  (el) => (el.tagName === 'BUTTON' || el.tagName === 'A') && el.textContent.includes('5-Yr True Cost to Own')
+)[0];
+assert.ok(tcoNavFor6F, 'Must find 5-Yr True Cost to Own nav link');
+tcoNavFor6F.dispatchEvent({ type: 'click' });
+await waitForLazy();
 assert.equal(
   rootContainer.getElementById('preset-select-dropdown').value,
   'toyota-camry-hybrid',
-  'Browser popstate to / in US region must fall back to regional sample toyota-camry-hybrid preset'
+  'Navigating to /tco from / in US region must default to regional sample toyota-camry-hybrid preset'
 );
 
 console.log('✓ 6E. Consecutive Preset Clicks, Consecutive Tab Clicks, OBD Code Clicks & PopState Sync verified');
@@ -1444,6 +1480,7 @@ const methodologyNavBtn = rootContainer.querySelectorAll(
 )[0];
 assert.ok(methodologyNavBtn, 'Must find Methodology navigation link');
 methodologyNavBtn.dispatchEvent({ type: 'click' });
+await waitForLazy();
 
 // On Methodology tab: Footer FAQ must be hidden, native Schema FAQ must be present
 assert.strictEqual(

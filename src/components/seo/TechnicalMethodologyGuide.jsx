@@ -15,45 +15,8 @@ import {
   Check,
 } from 'lucide-react';
 import { Collapse } from '../common/OdometerPrimitives';
-
-export const FAQ_ITEMS = [
-  {
-    question:
-      'How does DriveLedger calculate non-linear 5-year and 10-year vehicle depreciation?',
-    answer:
-      'Unlike simplistic linear calculators that subtract a flat percentage per year, DriveLedger uses a segment-specific logarithmic residual retention curve calibrated against wholesale auction data and mileage intensity. Vehicle value at year t is modeled as V(t) = P₀ × R(t) × (1 - α · ΔM)^t, where P₀ is initial acquisition cost, R(t) is the baseline segment retention factor at year t, ΔM is the annual mileage variance relative to the 12,500-mile baseline, and α = 0.045 is the empirical odometer elasticity coefficient.',
-  },
-  {
-    question:
-      'Why do short urban trips apply a 1.35x to 1.55x wear penalty to modern powertrains?',
-    answer:
-      'Cold starts and sub-15-minute urban driving cycles prevent engine oil from reaching its 90°C–105°C water/fuel vaporization threshold and prevent exhaust gas temperatures (EGT) from reaching the 580°C required for active Diesel Particulate Filter (DPF) regeneration. Unburned fuel condenses on cold cylinder walls and scrapes into the sump, diluting oil viscosity and chemically attacking Belt-in-Oil (wet belt) elastomers and timing chain pins. Simultaneously, urban stop-and-go traffic multiplies Dual-Mass Flywheel (DMF) and dual-clutch (DSG/PDK) micro-slip thermal cycles by over 400% per mile compared to steady highway cruising.',
-  },
-  {
-    question:
-      'What is a "First-Principles Live Telemetry Check" before approving an OBD-II workshop quote?',
-    answer:
-      'A Diagnostic Trouble Code (DTC) such as P2002, P0171, or P0420 does not condemn a specific part; it only reports that a sensor signal crossed an engineering threshold. First-principles diagnostics uses SAE J1979 Mode $01 and Mode $06 live Parameter IDs (PIDs) to test the physical system before buying parts. For example, checking DPF Differential Pressure at Key-ON Engine-OFF isolates a drifted $110 pressure sensor from an $1,800 DPF monolith, and comparing Short-Term + Long-Term Fuel Trims (STFT/LTFT) at 750 RPM idle versus 2,500 RPM immediately distinguishes an intake vacuum leak from a failing fuel pump or MAF sensor.',
-  },
-  {
-    question:
-      'How do US MPG, UK Imperial MPG, and European L/100km conversions work in DriveLedger?',
-    answer:
-      'DriveLedger stores canonical telemetry in USD, statute miles (1 mi = 1.609344 km), and US Gallons (3.78541178 Litres). Because a UK Imperial Gallon equals 4.54609 Litres, 1 MPG (US) equals exactly 1.20095 MPG (UK). For European metric consumption, L/100km is inversely proportional to fuel economy and is computed via the exact physical constant 235.21458 / MPG (US). Switching the top navigation unit pill updates every currency figure, odometer reading, and fuel consumption metric at 60fps without rounding drift.',
-  },
-  {
-    question:
-      'Why does DriveLedger recommend servicing "lifetime" automatic transmission fluids at 40k–60k miles?',
-    answer:
-      'Automakers often define "lifetime fill" as the duration of the factory powertrain warranty (typically 5 years or 60,000 miles). In practice, automatic transmission fluid (ATF) and dual-clutch wet fluid accumulate clutch friction material and experience shear viscosity loss from thermal cycling above 110°C. Replacing fluid and sump filters every 38,000–40,000 miles on DSG/PDK/S-Tronic gearboxes and every 55,000–60,000 miles on ZF 8HP / 9G-Tronic / 10R80 torque converter transmissions prevents $2,400+ mechatronic valve body failures.',
-  },
-  {
-    question:
-      'What is the difference between Total Cash Outflow and Net Economic True Cost to Own (TCO)?',
-    answer:
-      'Total Cash Outflow measures every dollar, pound, or euro that leaves your bank account during the ownership horizon: Down Payment + Monthly Principal & Interest Loan Payments + Fuel/Electricity + Insurance + Maintenance & Repairs. Net Economic TCO replaces principal loan repayments with actual Depreciation Loss (Purchase Price minus Resale Residual Value at year N) plus Financing Interest and operating expenses, representing your true net wealth reduction per mile or kilometer driven.',
-  },
-];
+import { FAQ_ITEMS } from '../../data/faqItems';
+export { FAQ_ITEMS };
 
 export const LEGAL_MODAL_CONTENT = {
   privacy: {
@@ -130,6 +93,7 @@ export default function TechnicalMethodologyGuide({
   activeLegalModal,
   onCloseLegalModal,
   onOpenLegalModal,
+  isHidden = false,
 }) {
   const [openFaqIdx, setOpenFaqIdx] = useState(-1);
   const [openWhitePaper, setOpenWhitePaper] = useState(true);
@@ -138,38 +102,8 @@ export default function TechnicalMethodologyGuide({
     contextualAds: true,
   });
 
-  // Construct JSON-LD Schema.org structured data for FAQPage & SoftwareApplication
-  const jsonLdSchema = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'SoftwareApplication',
-        name: 'DriveLedger Automotive TCO, Powertrain Risk & OBD-II Estimator',
-        applicationCategory: 'FinanceApplication',
-        operatingSystem: 'Web',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'USD',
-        },
-        description:
-          'Commercial-grade vehicle True Cost to Own (TCO) simulator, thermodynamic powertrain wear risk matrix, and live PID OBD-II fault code workshop repair estimator.',
-      },
-      {
-        '@type': 'FAQPage',
-        mainEntity: FAQ_ITEMS.map((item) => ({
-          '@type': 'Question',
-          name: item.question,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: item.answer,
-          },
-        })),
-      },
-    ],
-  };
-
   const activeModalData = activeLegalModal ? LEGAL_MODAL_CONTENT[activeLegalModal] : null;
+  const HeadingTag = isHidden ? 'h2' : 'h1';
 
   return (
     <section
@@ -177,21 +111,15 @@ export default function TechnicalMethodologyGuide({
       aria-label="Technical Engineering and Financial Methodology Guide"
       className="mt-12 scroll-mt-28 lg:scroll-mt-32 space-y-10 border-t border-border pt-10"
     >
-      {/* Inject Schema.org JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
-      />
-
       {/* Section Header */}
       <div className="max-w-4xl space-y-3">
         <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 text-[11px] font-sans font-medium">
           <BookOpen className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
           <span>TECHNICAL WHITE PAPER &amp; MATHEMATICAL METHODOLOGY</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-zinc-100">
+        <HeadingTag className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-zinc-100">
           First-Principles Automotive Financial Modeling, Thermodynamic Powertrain Wear &amp; Live OBD-II Telemetry
-        </h2>
+        </HeadingTag>
         <p className="text-sm text-body dark:text-zinc-300 leading-relaxed">
           Engineering documentation governing our non-linear depreciation, thermodynamic wear, and OBD-II repair diagnostic engines.
         </p>

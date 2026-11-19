@@ -16,6 +16,7 @@ import {
 } from '../scripts/prerender-seo-routes.mjs';
 
 import { VEHICLE_PRESETS, getPresetById } from '../src/data/vehiclePresets.js';
+import { BRAND_DIRECTORY } from '../src/data/brandDirectory.js';
 import { GUIDES_DATA } from '../src/data/guidesData.js';
 import {
   PROGRAMMATIC_COMPARE_PAIRS,
@@ -279,19 +280,20 @@ test('4. injectRouteMetadata: Idempotency check — running multiple times does 
 // 5. ROUTE COLLECTION & ENUMERATION INTEGRITY
 // ============================================================================
 
-test('5. collectAllSeoRoutes: Generates complete inventory of 2,525 programmatic SEO routes', () => {
+test('5. collectAllSeoRoutes: Generates complete inventory of 2,565 programmatic SEO routes (including 35 brand hubs)', () => {
   const routes = collectAllSeoRoutes();
-  assert.equal(routes.length, 2525, 'Total route count must match 2,525 programmatic SEO routes');
+  assert.equal(routes.length, 2565, 'Total route count must match 2,565 programmatic SEO routes');
 
   const pathSet = new Set(routes.map((r) => r.path));
 
-  // 16 Core & Legal Routes
+  // 17 Core, Directory & Legal Routes
   const requiredCoreRoutes = [
     '/tco',
     '/risk-matrix',
     '/obd-estimator',
     '/compare',
     '/checklist',
+    '/vehicles',
     '/guides',
     '/about',
     '/contact',
@@ -306,6 +308,15 @@ test('5. collectAllSeoRoutes: Generates complete inventory of 2,525 programmatic
   ];
   for (const corePath of requiredCoreRoutes) {
     assert.ok(pathSet.has(corePath), `Core route ${corePath} must be present`);
+  }
+
+  // All 35 Dedicated Brand Hub Pages (/vehicles/:brand)
+  assert.equal(BRAND_DIRECTORY.length, 35, 'Expected 35 automotive brands');
+  for (const brand of BRAND_DIRECTORY) {
+    assert.ok(
+      pathSet.has(`/vehicles/${brand.slug}`),
+      `Brand hub route /vehicles/${brand.slug} must be present`
+    );
   }
 
   // All 6 Editorial Guides
@@ -398,6 +409,16 @@ test('7. Built Static Artifacts: Verifies dist static files and canonical metada
       canonical: 'https://mydriveledger.com/tco/vw-golf-20-tdi',
       title: 'Volkswagen Golf',
     },
+    {
+      file: path.join(DIST_DIR, 'vehicles', 'toyota', 'index.html'),
+      canonical: 'https://mydriveledger.com/vehicles/toyota',
+      title: 'Toyota Maintenance Cost',
+    },
+    {
+      file: path.join(DIST_DIR, 'vehicles', 'bmw', 'index.html'),
+      canonical: 'https://mydriveledger.com/vehicles/bmw',
+      title: 'BMW Maintenance Cost',
+    },
   ];
 
   for (const item of testFiles) {
@@ -451,13 +472,13 @@ test('9. Sitemap vs Prerender Parity: 100% 1-to-1 exact match with zero query pa
   const { xml, count } = generateSitemapXml();
   const prerenderRoutes = collectAllSeoRoutes();
 
-  // Prerender has 2,525 programmatic sub-routes + 1 root = 2,526
-  assert.equal(prerenderRoutes.length, 2525, 'Expected 2,525 programmatic prerender routes');
-  assert.equal(count, 2526, 'Expected exactly 2,526 sitemap URLs');
+  // Prerender has 2,565 programmatic sub-routes + 1 root = 2,566
+  assert.equal(prerenderRoutes.length, 2565, 'Expected 2,565 programmatic prerender routes');
+  assert.equal(count, 2566, 'Expected exactly 2,566 sitemap URLs');
 
   // Extract all sitemap URLs
   const sitemapUrls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
-  assert.equal(sitemapUrls.length, 2526, 'Extracted sitemap URLs count must equal 2,526');
+  assert.equal(sitemapUrls.length, 2566, 'Extracted sitemap URLs count must equal 2,566');
 
   // Zero query parameter URLs
   const queryUrls = sitemapUrls.filter((u) => u.includes('?'));

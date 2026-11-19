@@ -1,14 +1,15 @@
 /**
  * DriveLedger | Programmatic SEO & Dynamic XML Sitemap Generator
  *
- * Generates public/sitemap.xml at build-time containing 2,526 indexable canonical URLs:
- * 1. Core workspace & legal routes (17 canonical URLs)
- * 2. In-Depth Technical Buyer Guides (/guides/:slug, 6 canonical URLs)
- * 3. Programmatic Vehicle Preset routes (TCO, Risk Matrix, Checklist: 179 × 3 = 537 canonical URLs)
- * 4. Mileage-Bracket Buyer & Reliability Guides (/risk-matrix/:presetId/60k-miles | 100k-miles | 150k-miles: 179 × 3 = 537 canonical URLs)
- * 5. Head-to-Head Vehicle Comparison Matchups (/compare/:carA-vs-:carB: 800 canonical URLs)
- * 6. Powertrain-Validated Known Weak-Point OBD-II Diagnostic routes (/obd/:preset/:code: 629 canonical URLs)
- * Total: 2,526 canonical URLs matching 1:1 with prerendered static HTML files.
+ * Generates public/sitemap.xml at build-time containing 2,566 indexable canonical URLs:
+ * 1. Core workspace, HTML vehicle directory & legal routes (18 canonical URLs)
+ * 2. Dedicated Brand Hub SEO pages (/vehicles/:brand, 35 canonical URLs)
+ * 3. In-Depth Technical Buyer Guides (/guides/:slug, 10 canonical URLs)
+ * 4. Programmatic Vehicle Preset routes (TCO, Risk Matrix, Checklist: 179 × 3 = 537 canonical URLs)
+ * 5. Mileage-Bracket Buyer & Reliability Guides (/risk-matrix/:presetId/60k-miles | 100k-miles | 150k-miles: 179 × 3 = 537 canonical URLs)
+ * 6. Head-to-Head Vehicle Comparison Matchups (/compare/:carA-vs-:carB: 800 canonical URLs)
+ * 7. Powertrain-Validated Known Weak-Point OBD-II Diagnostic routes (/obd/:preset/:code: 629 canonical URLs)
+ * Total: 2,566 canonical URLs matching 1:1 with prerendered static HTML files.
  */
 
 import fs from 'node:fs';
@@ -16,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { VEHICLE_PRESETS } from '../src/data/vehiclePresets.js';
+import { BRAND_DIRECTORY } from '../src/data/brandDirectory.js';
 import { GUIDES_DATA } from '../src/data/guidesData.js';
 import {
   generateFullVehicleObdMatrix,
@@ -63,6 +65,7 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/obd-estimator`, '0.9', 'weekly');
   addUrl(`${SITE_ORIGIN}/compare`, '0.9', 'weekly');
   addUrl(`${SITE_ORIGIN}/checklist`, '0.9', 'weekly');
+  addUrl(`${SITE_ORIGIN}/vehicles`, '0.9', 'weekly');
   addUrl(`${SITE_ORIGIN}/guides`, '0.85', 'weekly');
   addUrl(`${SITE_ORIGIN}/about`, '0.8', 'monthly');
   addUrl(`${SITE_ORIGIN}/contact`, '0.8', 'monthly');
@@ -75,7 +78,12 @@ export function generateSitemapXml() {
   addUrl(`${SITE_ORIGIN}/affiliate-disclosure`, '0.7', 'monthly');
   addUrl(`${SITE_ORIGIN}/do-not-sell`, '0.7', 'monthly');
 
-  // 1b. In-Depth Technical Buyer Guides (/guides/:slug)
+  // 1b. Dedicated Brand Hub Pages (/vehicles/:brand, 35 canonical URLs)
+  for (const brand of BRAND_DIRECTORY) {
+    addUrl(`${SITE_ORIGIN}/vehicles/${brand.slug}`, '0.88', 'weekly');
+  }
+
+  // 1c. In-Depth Technical Buyer Guides (/guides/:slug)
   for (const guide of GUIDES_DATA) {
     addUrl(`${SITE_ORIGIN}/guides/${guide.slug}`, '0.80', 'weekly');
   }

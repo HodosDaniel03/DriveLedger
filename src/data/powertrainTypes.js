@@ -374,6 +374,17 @@ export function calculateNonLinearDepreciation(arg1, arg2, arg3, arg4, arg5) {
  *   dcFastCostUsd: number,
  * }}
  */
+/**
+ * Normalizes EV efficiency input to kWh/100mi.
+ * Guards against EPA MPGe figures (typically 80-140 MPGe) being mistakenly
+ * multiplied as kWh/100mi (1 gal gasoline equivalent = 33.705 kWh -> 3370.5 / MPGe).
+ */
+export function normalizeEvKwhPer100Mi(rawVal, fallback = 28.0) {
+  const num = Number(rawVal);
+  if (!Number.isFinite(num) || num <= 0) return fallback;
+  return num > 60 ? +(3370.5 / num).toFixed(2) : num;
+}
+
 export function calculateEvEnergyCost({
   annualDistanceMiles = 12000,
   efficiencyKwh100Mi = 28.0,
@@ -382,7 +393,8 @@ export function calculateEvEnergyCost({
   dcFastTariffUsdPerKwh = 0.48,
 } = {}) {
   const miles = parseSanitizedNumber(annualDistanceMiles, 12000, 0);
-  const eff = parseSanitizedNumber(efficiencyKwh100Mi, 28.0, 1);
+  const rawEff = parseSanitizedNumber(efficiencyKwh100Mi, 28.0, 1);
+  const eff = normalizeEvKwhPer100Mi(rawEff, 28.0);
   const homeFrac = parseSanitizedNumber(homeChargePct, 80, 0, 100) / 100;
   const dcFrac = 1 - homeFrac;
 

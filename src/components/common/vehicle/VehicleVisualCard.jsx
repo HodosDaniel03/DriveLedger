@@ -7,7 +7,7 @@ import { useUnits } from '../../../context/UnitContext.jsx';
 const NEUTRAL_TAG_CLASS =
   'rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium whitespace-nowrap';
 
-function buildSingleRowMicroTags(vehicle, bodyArchetype) {
+function buildSingleRowMicroTags(vehicle, bodyArchetype, formatEfficiency) {
   const { transmissionTag } = derivePowertrainMicroBadge(vehicle);
   const transDisplay = transmissionTag || 'Automatic';
 
@@ -18,9 +18,11 @@ function buildSingleRowMicroTags(vehicle, bodyArchetype) {
   const bodyTag = (vehicle.bodyType || bodyArchetype || 'Sedan')
     .replace(/^\w/, (c) => c.toUpperCase());
 
-  const effTag = vehicle.isEv
-    ? `${vehicle.mpgUs || 28} kWh/100mi`
-    : `${vehicle.mpgUs || 38} MPG`;
+  const effTag = typeof formatEfficiency === 'function'
+    ? formatEfficiency(vehicle.mpgUs || (vehicle.isEv ? 28 : 38), Boolean(vehicle.isEv))
+    : vehicle.isEv
+      ? `${vehicle.mpgUs || 28} kWh/100mi`
+      : `${vehicle.mpgUs || 38} MPG`;
 
   return [fuelLabel, transDisplay, bodyTag, effTag].slice(0, 4);
 }
@@ -43,9 +45,9 @@ export default function VehicleVisualCard({
   className = '',
   id,
 }) {
-  const { formatCurrency, formatDistance } = useUnits();
+  const { formatCurrency, formatDistance, formatEfficiency } = useUnits();
   const bodyArchetype = resolveBodyArchetype(vehicle);
-  const singleRowTags = buildSingleRowMicroTags(vehicle, bodyArchetype);
+  const singleRowTags = buildSingleRowMicroTags(vehicle, bodyArchetype, formatEfficiency);
 
   // =========================================================================
   // VARIANT: COMPACT (Vehicle Comparator & Mini Drawers)
@@ -119,7 +121,7 @@ export default function VehicleVisualCard({
             <div className="min-w-0">
               <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Efficiency</span>
               <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-base font-bold">
-                {vehicle.isEv ? `${vehicle.mpgUs} kWh` : `${vehicle.mpgUs} MPG`}
+                {formatEfficiency(vehicle.mpgUs || (vehicle.isEv ? 28 : 38), Boolean(vehicle.isEv))}
               </strong>
             </div>
             <div className="min-w-0">

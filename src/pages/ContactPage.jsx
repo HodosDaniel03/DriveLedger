@@ -223,7 +223,7 @@ export default function ContactPage({ onNavigateTab }) {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-ink dark:text-zinc-50">
-                      Message Received
+                      Inquiry Received — Ticket Prepared &amp; Ready to Dispatch
                     </h2>
                     <p className="text-xs text-muted dark:text-zinc-400">
                       Reference ID: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{submissionSuccess.refId}</span>
@@ -244,7 +244,7 @@ export default function ContactPage({ onNavigateTab }) {
                     )}
                   </div>
                   <div className="pt-2 border-t border-border dark:border-zinc-800 text-muted dark:text-zinc-400">
-                    A copy of your inquiry has been queued for engineering review. General inquiries receive responses within 24 to 48 hours.
+                    DriveLedger operates with a privacy-first, zero-tracking client architecture. Click <strong>Send via Email App</strong> below (or copy the formatted ticket to send from your webmail) to deliver your message directly to <span className="font-mono">contact@mydriveledger.com</span>. Responses arrive within 24 to 48 hours.
                   </div>
                 </div>
 
@@ -515,7 +515,7 @@ export default function ContactPage({ onNavigateTab }) {
               <p className="leading-relaxed">
                 Information submitted through this form is processed solely to address your communication. We do not sell contact information or subscribe submitters to marketing lists. For complete details regarding our data minimization practices, inspect our{' '}
                 <a
-                  href="#privacy"
+                  href="/privacy"
                   onClick={(e) => {
                     e.preventDefault();
                     if (typeof window !== 'undefined') {

@@ -172,10 +172,32 @@ function appendTrackingParam(rawBaseUrl, affiliateParam, { skipPlaceholder = fal
 export function buildAffiliateUrl(partnerKey = 'vinCheck', vehicleContext = null) {
   const canonicalKey = resolvePartnerKey(partnerKey);
   const partner = affiliatePartners[canonicalKey] || affiliatePartners.vinCheck;
+  const regKey =
+    vehicleContext?.region && ['US', 'UK', 'EU'].includes(String(vehicleContext.region).toUpperCase())
+      ? String(vehicleContext.region).toUpperCase()
+      : null;
+  const shouldSkipPlaceholder = Boolean(vehicleContext?.skipPlaceholder || regKey);
+
+  const regionalBucketKey =
+    canonicalKey === 'vinCheck'
+      ? 'vin-check'
+      : canonicalKey === 'partsLookup'
+        ? 'warranty'
+        : canonicalKey === 'autoInsurance'
+          ? 'insurance-finance'
+          : 'obd-scanner';
+
+  const regionalBaseUrl =
+    regKey && REGIONAL_PARTNER_URLS[regionalBucketKey]?.[regKey]?.href
+      ? REGIONAL_PARTNER_URLS[regionalBucketKey][regKey].href
+      : partner.baseUrl;
+
   const href =
     canonicalKey === 'vinCheck'
       ? getCarVerticalUrl(vehicleContext?.vin || '', vehicleContext?.placement || 'partner-slot')
-      : appendTrackingParam(partner.baseUrl, partner.affiliateParam);
+      : appendTrackingParam(regionalBaseUrl, partner.affiliateParam, {
+          skipPlaceholder: shouldSkipPlaceholder,
+        });
 
   const linkProps = {
     href,

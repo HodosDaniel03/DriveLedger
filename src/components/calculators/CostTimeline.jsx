@@ -67,27 +67,27 @@ export default function CostTimeline({
       : DEFAULT_CATEGORIES;
 
   return (
-    <Card className={`rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 overflow-hidden ${className}`} aria-labelledby="timeline-heading">
+    <Card className={`rounded-2xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-[#121215] shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 overflow-hidden ${className}`} aria-labelledby="timeline-heading">
       <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 min-w-0">
         <div className="min-w-0">
-          <span className="font-micro text-micro uppercase tracking-widest text-[#183D22] font-semibold block">
+          <span className="font-micro text-micro uppercase tracking-widest text-[#183D22] dark:text-emerald-400 font-semibold block">
             Lifecycle trajectory
           </span>
-          <h2 id="timeline-heading" className="text-lg sm:text-xl font-bold tracking-tight text-ink mt-0.5 scroll-mt-28 lg:scroll-mt-32">
+          <h2 id="timeline-heading" className="text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50 mt-0.5 scroll-mt-28 lg:scroll-mt-32">
             Cost over time
           </h2>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted">Cumulative cost of ownership, year by year.</p>
+          <p className="mt-0.5 text-xs sm:text-sm text-muted dark:text-zinc-400">Cumulative cost of ownership, year by year.</p>
         </div>
         <dl className="flex gap-6 text-left sm:text-right" aria-live="polite">
           <div>
-            <dt className="text-xs text-muted">After year {active.year}</dt>
-            <dd className="text-xl font-bold tabular-nums tracking-tight text-ink font-code">
+            <dt className="text-xs text-muted dark:text-zinc-400">After year {active.year}</dt>
+            <dd className="text-xl font-bold tabular-nums tracking-tight text-ink dark:text-zinc-50 font-code">
               {formatCurrency(active.total)}
             </dd>
           </div>
           <div className="hidden sm:block">
-            <dt className="text-xs text-muted">Depreciation share</dt>
-            <dd className="text-xl font-bold tabular-nums tracking-tight text-[#183D22] font-code">
+            <dt className="text-xs text-muted dark:text-zinc-400">Depreciation share</dt>
+            <dd className="text-xl font-bold tabular-nums tracking-tight text-[#183D22] dark:text-emerald-400 font-code">
               {depSharePct}%
             </dd>
           </div>
@@ -150,20 +150,20 @@ export default function CostTimeline({
                 {/* Rich Floating Tooltip Card */}
                 {isActive && showTooltip && (
                   <div
-                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-52 sm:w-64 max-w-[calc(100vw-3rem)] rounded-xl border border-border/80 bg-surface/98 backdrop-blur-md p-2.5 sm:p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
+                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-52 sm:w-64 max-w-[calc(100vw-3rem)] rounded-xl border border-border/80 dark:border-zinc-700/80 bg-surface/98 dark:bg-zinc-900/95 backdrop-blur-md p-2.5 sm:p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
                     role="tooltip"
                     aria-hidden="false"
                   >
-                    <div className="flex items-center justify-between pb-1.5 border-b border-border/60">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-border/60 dark:border-zinc-800">
                       <div>
-                        <span className="font-micro text-[10px] uppercase font-semibold tracking-wider text-muted block">
+                        <span className="font-micro text-[10px] uppercase font-semibold tracking-wider text-muted dark:text-zinc-400 block">
                           Year {p.year} Lifecycle
                         </span>
-                        <span className="font-h3 text-xs sm:text-sm font-bold text-ink">
+                        <span className="font-h3 text-xs sm:text-sm font-bold text-ink dark:text-zinc-50">
                           Cumulative Total
                         </span>
                       </div>
-                      <span className="font-code text-xs sm:text-sm font-bold text-ink tabular-nums">
+                      <span className="font-code text-xs sm:text-sm font-bold text-ink dark:text-zinc-50 tabular-nums">
                         {formatCurrency(p.total)}
                       </span>
                     </div>
@@ -177,7 +177,7 @@ export default function CostTimeline({
                             key={b.id}
                             className={`flex items-center justify-between py-0.5 px-1 rounded transition-opacity duration-150 min-w-0 ${
                               isDimmed ? 'opacity-35' : 'opacity-100'
-                            } ${isCatHighlighted ? 'bg-primary-50/70 font-semibold' : ''}`}
+                            } ${isCatHighlighted ? 'bg-primary-50/70 dark:bg-emerald-950/60 font-semibold' : ''}`}
                           >
                             <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
                               <span
@@ -185,15 +185,15 @@ export default function CostTimeline({
                                 style={{ backgroundColor: b.color }}
                                 aria-hidden="true"
                               />
-                              <span className="truncate text-ink text-[11px] sm:text-xs">
+                              <span className="truncate text-ink dark:text-zinc-200 text-[11px] sm:text-xs">
                                 {b.label}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0 font-code tabular-nums text-[11px] sm:text-xs">
-                              <span className="font-medium text-ink">
+                              <span className="font-medium text-ink dark:text-zinc-100">
                                 {formatCurrency(b.amountUsd)}
                               </span>
-                              <span className="text-muted text-[10px] w-8 text-right">
+                              <span className="text-muted dark:text-zinc-400 text-[10px] w-8 text-right">
                                 {Math.round(b.sharePct)}%
                               </span>
                             </div>
@@ -243,10 +243,10 @@ export default function CostTimeline({
               <span
                 className={`text-[10px] sm:text-xs tabular-nums font-code transition-colors ${
                   isCurrentSelected
-                    ? 'font-bold text-ink underline decoration-primary-600 decoration-2'
+                    ? 'font-bold text-ink dark:text-zinc-50 underline decoration-primary-600 dark:decoration-emerald-400 decoration-2'
                     : isPinned
-                    ? 'font-bold text-primary-600'
-                    : 'text-faint'
+                    ? 'font-bold text-primary-600 dark:text-emerald-400'
+                    : 'text-faint dark:text-zinc-400'
                 }`}
               >
                 Y{p.year}
@@ -257,7 +257,7 @@ export default function CostTimeline({
       </div>
 
       {/* 5-Category Synchronized Interactive Legend */}
-      <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-x-5 gap-y-1.5 text-xs text-body pt-3 border-t border-border min-w-0">
+      <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-x-5 gap-y-1.5 text-xs text-body dark:text-zinc-300 pt-3 border-t border-border dark:border-zinc-800 min-w-0">
         {categories.map((cat) => {
           const isCategoryDimmed = activeHighlight !== null && activeHighlight !== cat.id;
           const isCategoryHighlighted = activeHighlight === cat.id;
@@ -272,7 +272,7 @@ export default function CostTimeline({
               title={cat.label}
               className={`flex items-center gap-2 min-w-0 max-w-full font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-1 -mx-1.5 ${
                 isCategoryDimmed ? 'opacity-25' : 'opacity-100'
-              } ${isCategoryHighlighted ? 'bg-surface-subtle font-semibold scale-105' : 'text-body hover:text-ink'}`}
+              } ${isCategoryHighlighted ? 'bg-surface-subtle dark:bg-zinc-800 font-semibold scale-105' : 'text-body dark:text-zinc-300 hover:text-ink dark:hover:text-zinc-50'}`}
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform duration-200"

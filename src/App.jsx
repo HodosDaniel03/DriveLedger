@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { UnitProvider, useUnits } from './context/UnitContext';
@@ -7,30 +7,36 @@ import Navbar, { WORKSPACE_TABS } from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ScrollToTop from './components/common/ScrollToTop';
 import HomePage from './pages/HomePage';
-import BlogPage from './pages/BlogPage';
-import TcoCalculator from './components/calculators/TcoCalculator';
 import MaintenanceRiskMatrix from './components/calculators/MaintenanceRiskMatrix';
 import ObdEstimator from './components/calculators/ObdEstimator';
-import VehicleComparator from './components/calculators/VehicleComparator';
-import PreInspectionChecklist from './components/home/PreInspectionChecklist';
-import TechnicalMethodologyGuide from './components/seo/TechnicalMethodologyGuide';
 import DynamicSeoHead from './components/seo/DynamicSeoHead';
-import ReviewsPage from './pages/ReviewsPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import GuidesPage from './pages/GuidesPage';
 import LegalModal from './components/legal/LegalModal';
 import CookieConsentBanner, { openPrivacySettings } from './components/legal/CookieConsentBanner';
 import {
   resolveLegalPolicyKey,
   WORKSPACE_LEGAL_NOTICE_LINE,
 } from './data/legalPolicies';
-import { VEHICLE_PRESETS } from './data/vehiclePresets';
+import { VEHICLE_PRESETS, getPresetById } from './data/vehiclePresets';
 import { OBD_CODES } from './data/obdCodes';
+import { GUIDES_DATA } from './data/guidesData';
 import {
   parseCompareMatchupPath,
   parseRiskMileagePath,
+  isObdCompatibleWithVehicle,
 } from './data/seoMatrixData';
+import { parseBrandHubPath, getBrandBySlug } from './data/brandDirectory';
+
+// Code-split calculators & editorial/catalog pages to keep initial homepage bundle lean
+const TcoCalculator = lazy(() => import('./components/calculators/TcoCalculator'));
+const TechnicalMethodologyGuide = lazy(() => import('./components/seo/TechnicalMethodologyGuide'));
+const VehicleComparator = lazy(() => import('./components/calculators/VehicleComparator'));
+const PreInspectionChecklist = lazy(() => import('./components/home/PreInspectionChecklist'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const VehiclesCatalogPage = lazy(() => import('./pages/VehiclesCatalogPage'));
 
 const PATH_TO_TAB = {
   '/': 'overview',
@@ -40,6 +46,7 @@ const PATH_TO_TAB = {
   '/obd-estimator': 'obd',
   '/compare': 'compare',
   '/checklist': 'checklist',
+  '/vehicles': 'vehicles',
   '/methodology': 'methodology',
   '/reviews': 'reviews',
   '/blog': 'guides',
@@ -55,6 +62,7 @@ const TAB_TO_PATH = {
   obd: '/obd-estimator',
   compare: '/compare',
   checklist: '/checklist',
+  vehicles: '/vehicles',
   methodology: '/methodology',
   reviews: '/reviews',
   blog: '/guides',
@@ -70,6 +78,7 @@ const VALID_TABS = [
   'obd',
   'compare',
   'checklist',
+  'vehicles',
   'methodology',
   'reviews',
   'blog',
@@ -91,12 +100,22 @@ function parseGuidePath(pathname) {
   };
 }
 
+function safeDecodeUriComponent(str) {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return null;
+  }
+}
+
 function parseHybridObdPath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
   const match = pathname.match(HYBRID_OBD_REGEX);
   if (!match) return null;
-  const rawPreset = decodeURIComponent(match[1]);
-  const rawCode = decodeURIComponent(match[2]).toUpperCase();
+  const rawPreset = safeDecodeUriComponent(match[1]);
+  const rawCodeDecoded = safeDecodeUriComponent(match[2]);
+  if (!rawPreset || !rawCodeDecoded) return null;
+  const rawCode = rawCodeDecoded.toUpperCase();
   return {
     tab: 'obd',
     preset: VEHICLE_PRESETS.some((p) => p.id === rawPreset) ? rawPreset : null,
@@ -112,7 +131,9 @@ function parseCleanVehiclePath(pathname) {
   const match = pathname.match(CLEAN_VEHICLE_PATH_REGEX);
   if (!match) return null;
   const prefix = match[1].toLowerCase();
-  const rawPreset = decodeURIComponent(match[2]).toLowerCase();
+  const decodedPreset = safeDecodeUriComponent(match[2]);
+  if (!decodedPreset) return null;
+  const rawPreset = decodedPreset.toLowerCase();
   const matchedPreset = VEHICLE_PRESETS.find((p) => p.id.toLowerCase() === rawPreset);
   if (!matchedPreset) return null;
   const tabMap = {
@@ -129,6 +150,45 @@ function parseCleanVehiclePath(pathname) {
 function getSamplePresetIdForRegion(region) {
   const targetId = region === 'US' ? 'toyota-camry-hybrid' : 'vw-golf-20-tdi';
   return VEHICLE_PRESETS.some((p) => p.id === targetId) ? targetId : VEHICLE_PRESETS[0].id;
+}
+
+function resolveCompatibleObdCode(presetId, candidateCode) {
+  const preset = getPresetById(presetId) || VEHICLE_PRESETS[0];
+  const candidateObj = candidateCode
+    ? OBD_CODES.find((c) => c.code === String(candidateCode).toUpperCase())
+    : null;
+  if (candidateObj && isObdCompatibleWithVehicle(preset, candidateObj)) {
+    return candidateObj.code;
+  }
+  const preferred = (preset.commonObdCodes || []).find((code) => {
+    const obj = OBD_CODES.find((c) => c.code === code);
+    return obj && isObdCompatibleWithVehicle(preset, obj);
+  });
+  if (preferred) return preferred;
+  const firstCompat = OBD_CODES.find((c) => isObdCompatibleWithVehicle(preset, c));
+  return firstCompat ? firstCompat.code : 'P0420';
+}
+
+function isKnownApplicationPath(pathname, searchParams) {
+  if (!pathname || pathname === '/') return true;
+  const qTab = searchParams?.get?.('tab');
+  if (qTab && VALID_TABS.includes(qTab)) return true;
+  const cleanPath =
+    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  if (PATH_TO_TAB[cleanPath] || PATH_TO_TAB[pathname]) return true;
+  if (resolveLegalPolicyKey(pathname)) return true;
+  const hybrid = parseHybridObdPath(pathname);
+  if (hybrid && hybrid.preset && hybrid.code) return true;
+  if (parseCompareMatchupPath(pathname)) return true;
+  if (parseRiskMileagePath(pathname)) return true;
+  if (parseCleanVehiclePath(pathname)) return true;
+  if (parseBrandHubPath(pathname)) return true;
+  const guideMatch = parseGuidePath(pathname);
+  if (guideMatch) {
+    if (!guideMatch.slug) return true;
+    return GUIDES_DATA.some((g) => g.slug === guideMatch.slug);
+  }
+  return false;
 }
 
 function findExplicitPresetFromLocation(params, pathname) {
@@ -164,7 +224,7 @@ function DriveLedgerWorkspace() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { region } = useUnits();
+  const { region, setRegion } = useUnits();
   const regionRef = useRef(region);
   regionRef.current = region;
 
@@ -184,6 +244,8 @@ function DriveLedgerWorkspace() {
     if (riskMileage) return 'risk';
     const cleanVehicle = parseCleanVehiclePath(location.pathname);
     if (cleanVehicle) return cleanVehicle.tab;
+    const brandMatch = parseBrandHubPath(location.pathname);
+    if (brandMatch) return 'vehicles';
     const cleanPath =
       location.pathname && location.pathname.length > 1 && location.pathname.endsWith('/')
         ? location.pathname.slice(0, -1)
@@ -221,6 +283,9 @@ function DriveLedgerWorkspace() {
   };
 
   const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+  const [isNotFoundRoute, setIsNotFoundRoute] = useState(
+    () => !isKnownApplicationPath(location.pathname, searchParams)
+  );
   const [hasSelectedVehicle, setHasSelectedVehicle] = useState(Boolean(initialExplicitPreset));
   const [hasSelectedObdCode, setHasSelectedObdCode] = useState(Boolean(initialExplicitCode));
   const [selectedPresetId, setSelectedPresetIdState] = useState(
@@ -228,20 +293,33 @@ function DriveLedgerWorkspace() {
   );
   const [secondaryPresetId, setSecondaryPresetIdState] = useState(resolveInitialSecondaryPreset);
   const [riskOdometerOverride, setRiskOdometerOverride] = useState(resolveInitialRiskOdometer);
-  const [selectedObdCode, setSelectedObdCodeState] = useState(
-    () => initialExplicitCode || 'P2002'
+  const [selectedObdCode, setSelectedObdCodeState] = useState(() =>
+    initialExplicitCode ||
+    resolveCompatibleObdCode(initialExplicitPreset || getSamplePresetIdForRegion(region), null)
   );
   const [activeGuideSlug, setActiveGuideSlug] = useState(() => parseGuidePath(location.pathname)?.slug || null);
+  const [activeBrandSlug, setActiveBrandSlug] = useState(() => parseBrandHubPath(location.pathname)?.brandSlug || null);
   const [activeLegalModal, setActiveLegalModal] = useState(resolveInitialLegalModal);
   const [showCookieBannerOverride, setShowCookieBannerOverride] = useState(false);
+
+  // Restore ?reg=US|UK|EU query parameter from shared links
+  useEffect(() => {
+    const regParam = searchParams.get('reg')?.toUpperCase();
+    if (regParam && ['US', 'UK', 'EU'].includes(regParam) && regParam !== regionRef.current) {
+      setRegion(regParam);
+    }
+  }, [searchParams, setRegion]);
 
   // Keep the unselected sample vehicle aligned with the active region (US vs UK/EU)
   useEffect(() => {
     if (!hasSelectedVehicle) {
       const sampleId = getSamplePresetIdForRegion(region);
       setSelectedPresetIdState((prev) => (prev !== sampleId ? sampleId : prev));
+      if (!hasSelectedObdCode) {
+        setSelectedObdCodeState((prev) => resolveCompatibleObdCode(sampleId, prev));
+      }
     }
-  }, [region, hasSelectedVehicle]);
+  }, [region, hasSelectedVehicle, hasSelectedObdCode]);
 
   // Keep URL query parameters synchronized for programmatic SEO & deep-link sharing
   // without polluting URLs with unselected sample defaults.
@@ -255,15 +333,15 @@ function DriveLedgerWorkspace() {
       explicitCode = hasSelectedObdCode
     ) => {
       if (nextTab === 'compare' && nextSecondaryPreset && nextSecondaryPreset !== nextPreset) {
-        const params = new URLSearchParams();
-        params.set('tab', 'compare');
-        params.set('presetA', nextPreset);
-        params.set('presetB', nextSecondaryPreset);
-        navigate(`/compare/${nextPreset}-vs-${nextSecondaryPreset}?${params.toString()}`, { replace: true });
+        navigate(`/compare/${nextPreset}-vs-${nextSecondaryPreset}`, { replace: true });
         return;
       }
       if (['about', 'contact', 'methodology', 'reviews'].includes(nextTab)) {
         navigate(TAB_TO_PATH[nextTab] || `/${nextTab}`, { replace: true });
+        return;
+      }
+      if (nextTab === 'vehicles') {
+        navigate('/vehicles', { replace: true });
         return;
       }
       if (nextTab === 'guides') {
@@ -272,6 +350,18 @@ function DriveLedgerWorkspace() {
       }
       if (nextTab === 'overview' && !explicitPreset && !explicitCode) {
         navigate('/', { replace: true });
+        return;
+      }
+      if (
+        nextTab === 'obd' &&
+        explicitPreset &&
+        explicitCode &&
+        nextPreset &&
+        nextCode &&
+        typeof window !== 'undefined' &&
+        /^\/obd\//i.test(window.location?.pathname || '')
+      ) {
+        navigate(`/obd/${nextPreset}/${String(nextCode).toLowerCase()}`, { replace: true });
         return;
       }
       const targetPath = TAB_TO_PATH[nextTab] || '/tco';
@@ -301,6 +391,8 @@ function DriveLedgerWorkspace() {
   );
 
   const handleSelectGuide = (slug) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     setActiveGuideSlug(slug);
     setActiveTabState('guides');
     if (slug) {
@@ -312,8 +404,13 @@ function DriveLedgerWorkspace() {
   };
 
   const handleSelectTab = (tabId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     if (tabId === 'guides') {
       setActiveGuideSlug(null);
+    }
+    if (tabId === 'vehicles') {
+      setActiveBrandSlug(null);
     }
     syncUrlParams(tabId, selectedPresetId, selectedObdCode);
     setActiveTabState(tabId);
@@ -324,13 +421,21 @@ function DriveLedgerWorkspace() {
   };
 
   const handleSelectPreset = (presetId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
+    const compatCode = resolveCompatibleObdCode(presetId, selectedObdCode);
     setHasSelectedVehicle(true);
-    syncUrlParams(activeTab, presetId, selectedObdCode, secondaryPresetId, true, hasSelectedObdCode);
+    syncUrlParams(activeTab, presetId, compatCode, secondaryPresetId, true, hasSelectedObdCode);
     setSelectedPresetIdState(presetId);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
     setRiskOdometerOverride({ miles: null, slug: null });
   };
 
   const handleSelectSecondaryPreset = (presetBId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     setSecondaryPresetIdState(presetBId);
     if (activeTab === 'compare' && presetBId && presetBId !== selectedPresetId) {
       setHasSelectedVehicle(true);
@@ -339,27 +444,37 @@ function DriveLedgerWorkspace() {
   };
 
   const handleSelectObdCode = (code) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     setHasSelectedObdCode(true);
     syncUrlParams(activeTab, selectedPresetId, code, secondaryPresetId, hasSelectedVehicle, true);
     setSelectedObdCodeState(code);
   };
 
   const handleNavigateToPresetTco = (presetId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     const explicit = Boolean(presetId);
     const targetPreset = presetId || selectedPresetId;
+    const compatCode = resolveCompatibleObdCode(targetPreset, selectedObdCode);
     const nextExplicitPreset = explicit || hasSelectedVehicle;
     if (explicit) {
       setHasSelectedVehicle(true);
     }
-    syncUrlParams('tco', targetPreset, selectedObdCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+    syncUrlParams('tco', targetPreset, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
     setSelectedPresetIdState(targetPreset);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
     setActiveTabState('tco');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNavigateToObd = (code) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     const explicit = Boolean(code);
-    const targetCode = code || selectedObdCode;
+    const targetCode = code || resolveCompatibleObdCode(selectedPresetId, selectedObdCode);
     const nextExplicitCode = explicit || hasSelectedObdCode;
     if (explicit) {
       setHasSelectedObdCode(true);
@@ -371,17 +486,15 @@ function DriveLedgerWorkspace() {
   };
 
   const handleNavigateToHybridObd = (presetId, code) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     const targetPreset =
       presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : selectedPresetId;
     const normalizedCode = code ? String(code).toUpperCase() : selectedObdCode;
     const targetCode = OBD_CODES.some((c) => c.code === normalizedCode)
       ? normalizedCode
-      : selectedObdCode;
-    const params = new URLSearchParams();
-    params.set('tab', 'obd');
-    params.set('preset', targetPreset);
-    params.set('code', targetCode);
-    navigate(`/obd/${targetPreset}/${targetCode.toLowerCase()}?${params.toString()}`, {
+      : resolveCompatibleObdCode(targetPreset, selectedObdCode);
+    navigate(`/obd/${targetPreset}/${targetCode.toLowerCase()}`, {
       replace: true,
     });
     setHasSelectedVehicle(true);
@@ -393,21 +506,111 @@ function DriveLedgerWorkspace() {
   };
 
   const handleNavigateToRiskMatrix = (preset) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
     const explicitId = typeof preset === 'string' ? preset : preset?.id;
     const pId = explicitId || selectedPresetId;
+    const compatCode = resolveCompatibleObdCode(pId, selectedObdCode);
     const nextExplicitPreset = Boolean(explicitId) || hasSelectedVehicle;
     if (explicitId) {
       setHasSelectedVehicle(true);
     }
-    syncUrlParams('risk', pId, selectedObdCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+    const mileageSlug = typeof preset === 'object' ? preset?.mileageSlug : null;
+    const odoMiles = typeof preset === 'object' ? preset?.defaultOdometerMiles : null;
+    if (mileageSlug && odoMiles) {
+      navigate(`/risk-matrix/${pId}/${mileageSlug}`, { replace: false });
+      setRiskOdometerOverride({ miles: odoMiles, slug: mileageSlug });
+    } else {
+      syncUrlParams('risk', pId, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+      setRiskOdometerOverride({ miles: null, slug: null });
+    }
     setSelectedPresetIdState(pId);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
     setActiveTabState('risk');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleNavigateToRiskBracket = (presetId, bracketSlug, miles) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
+    const pId = presetId || selectedPresetId;
+    const compatCode = resolveCompatibleObdCode(pId, selectedObdCode);
+    setHasSelectedVehicle(true);
+    setSelectedPresetIdState(pId);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
+    setRiskOdometerOverride({ miles: miles || null, slug: bracketSlug || null });
+    navigate(`/risk-matrix/${pId}/${bracketSlug}`, { replace: false });
+    setActiveTabState('risk');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToChecklist = (presetId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
+    const explicit = Boolean(presetId);
+    const targetPreset = presetId || selectedPresetId;
+    const compatCode = resolveCompatibleObdCode(targetPreset, selectedObdCode);
+    const nextExplicitPreset = explicit || hasSelectedVehicle;
+    if (explicit) {
+      setHasSelectedVehicle(true);
+    }
+    syncUrlParams('checklist', targetPreset, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+    setSelectedPresetIdState(targetPreset);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
+    setActiveTabState('checklist');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToCompare = (presetAId, presetBId) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
+    const pA = presetAId && VEHICLE_PRESETS.some((p) => p.id === presetAId) ? presetAId : selectedPresetId;
+    const pB = presetBId && VEHICLE_PRESETS.some((p) => p.id === presetBId) ? presetBId : secondaryPresetId;
+    const compatCode = resolveCompatibleObdCode(pA, selectedObdCode);
+    setHasSelectedVehicle(true);
+    setSelectedPresetIdState(pA);
+    if (compatCode !== selectedObdCode) {
+      setSelectedObdCodeState(compatCode);
+    }
+    if (pB && pB !== pA) {
+      setSecondaryPresetIdState(pB);
+      navigate(`/compare/${pA}-vs-${pB}`, { replace: false });
+    } else {
+      navigate('/compare', { replace: false });
+    }
+    setActiveTabState('compare');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToVehicles = (brandSlug = null) => {
+    setIsNotFoundRoute(false);
+    setActiveLegalModal(null);
+    const resolvedBrand = brandSlug ? getBrandBySlug(brandSlug) : null;
+    if (resolvedBrand) {
+      setActiveBrandSlug(resolvedBrand.slug);
+      navigate(`/vehicles/${resolvedBrand.slug}`, { replace: false });
+    } else {
+      setActiveBrandSlug(null);
+      navigate('/vehicles', { replace: false });
+    }
+    setActiveTabState('vehicles');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const prevNonLegalUrlRef = useRef(null);
+
   const handleOpenLegalModal = useCallback((policyKey) => {
     if (!policyKey) return;
     if (typeof window !== 'undefined' && window.history?.pushState) {
+      if (!resolveLegalPolicyKey(window.location.pathname)) {
+        prevNonLegalUrlRef.current = `${window.location.pathname}${window.location.search}`;
+      }
       window.history.pushState(
         null,
         '',
@@ -419,16 +622,24 @@ function DriveLedgerWorkspace() {
 
   // Synchronize state when location or search parameters change via router
   useEffect(() => {
+    setIsNotFoundRoute(!isKnownApplicationPath(location.pathname, searchParams));
     const guideMatch = parseGuidePath(location.pathname);
     const hybrid = parseHybridObdPath(location.pathname);
     const matchup = parseCompareMatchupPath(location.pathname);
     const riskMileage = parseRiskMileagePath(location.pathname);
     const cleanVehicle = parseCleanVehiclePath(location.pathname);
+    const brandMatch = parseBrandHubPath(location.pathname);
 
     if (guideMatch) {
       setActiveGuideSlug(guideMatch.slug);
     } else {
       setActiveGuideSlug(null);
+    }
+
+    if (brandMatch) {
+      setActiveBrandSlug(brandMatch.brandSlug);
+    } else {
+      setActiveBrandSlug(null);
     }
 
     const qTab =
@@ -443,11 +654,13 @@ function DriveLedgerWorkspace() {
               ? 'risk'
               : cleanVehicle
                 ? cleanVehicle.tab
-                : PATH_TO_TAB[
-                    location.pathname && location.pathname.length > 1 && location.pathname.endsWith('/')
-                      ? location.pathname.slice(0, -1)
-                      : location.pathname
-                  ] || PATH_TO_TAB[location.pathname]);
+                : brandMatch
+                  ? 'vehicles'
+                  : PATH_TO_TAB[
+                      location.pathname && location.pathname.length > 1 && location.pathname.endsWith('/')
+                        ? location.pathname.slice(0, -1)
+                        : location.pathname
+                    ] || PATH_TO_TAB[location.pathname]);
     if (qTab && VALID_TABS.includes(qTab)) {
       const resolved = qTab === 'blog' ? 'guides' : qTab;
       setActiveTabState((prev) => (prev !== resolved ? resolved : prev));
@@ -485,9 +698,7 @@ function DriveLedgerWorkspace() {
       const hashPolicy = resolveLegalPolicyKey(
         location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
       );
-      if (hashPolicy) {
-        setActiveLegalModal(hashPolicy);
-      }
+      setActiveLegalModal(hashPolicy || null);
     }
   }, [location.pathname, location.hash, searchParams]);
 
@@ -505,15 +716,26 @@ function DriveLedgerWorkspace() {
     const handlePopState = () => {
       const applyPopState = () => {
         const params = new URLSearchParams(window.location.search || '');
+        setIsNotFoundRoute(!isKnownApplicationPath(window.location.pathname, params));
+        const regParam = params.get('reg')?.toUpperCase();
+        if (regParam && ['US', 'UK', 'EU'].includes(regParam) && regParam !== regionRef.current) {
+          setRegion(regParam);
+        }
         const guideMatch = parseGuidePath(window.location.pathname);
         const hybrid = parseHybridObdPath(window.location.pathname);
         const matchup = parseCompareMatchupPath(window.location.pathname);
         const riskMileage = parseRiskMileagePath(window.location.pathname);
         const cleanVehicle = parseCleanVehiclePath(window.location.pathname);
+        const brandMatch = parseBrandHubPath(window.location.pathname);
         if (guideMatch) {
           setActiveGuideSlug(guideMatch.slug);
         } else {
           setActiveGuideSlug(null);
+        }
+        if (brandMatch) {
+          setActiveBrandSlug(brandMatch.brandSlug);
+        } else {
+          setActiveBrandSlug(null);
         }
         const qTab =
           params.get('tab') ||
@@ -527,13 +749,15 @@ function DriveLedgerWorkspace() {
                   ? 'risk'
                   : cleanVehicle
                     ? cleanVehicle.tab
-                    : PATH_TO_TAB[
-                        window.location.pathname &&
-                        window.location.pathname.length > 1 &&
-                        window.location.pathname.endsWith('/')
-                          ? window.location.pathname.slice(0, -1)
-                          : window.location.pathname
-                      ] || PATH_TO_TAB[window.location.pathname]) ||
+                    : brandMatch
+                      ? 'vehicles'
+                      : PATH_TO_TAB[
+                          window.location.pathname &&
+                          window.location.pathname.length > 1 &&
+                          window.location.pathname.endsWith('/')
+                            ? window.location.pathname.slice(0, -1)
+                            : window.location.pathname
+                        ] || PATH_TO_TAB[window.location.pathname]) ||
           'overview';
         const resolved = qTab === 'blog' ? 'guides' : qTab;
         setActiveTabState(
@@ -561,7 +785,8 @@ function DriveLedgerWorkspace() {
 
         const explicitCode = findExplicitObdCodeFromLocation(params, window.location.pathname);
         setHasSelectedObdCode(Boolean(explicitCode));
-        setSelectedObdCodeState(explicitCode || 'P2002');
+        const resolvedPreset = explicitPreset || getSamplePresetIdForRegion(regionRef.current);
+        setSelectedObdCodeState(explicitCode || resolveCompatibleObdCode(resolvedPreset, null));
 
         const policyKey =
           resolveLegalPolicyKey(window.location.pathname) ||
@@ -599,6 +824,7 @@ function DriveLedgerWorkspace() {
       <DynamicSeoHead
         activeTab={activeTab}
         activeGuideSlug={activeGuideSlug}
+        activeBrandSlug={activeBrandSlug}
         selectedPresetId={selectedPresetId}
         secondaryPresetId={secondaryPresetId}
         mileageBracketSlug={riskOdometerOverride?.slug}
@@ -606,6 +832,8 @@ function DriveLedgerWorkspace() {
         activeLegalPolicy={activeLegalModal}
         hasSelectedVehicle={hasSelectedVehicle}
         hasSelectedObdCode={hasSelectedObdCode}
+        isNotFound={isNotFoundRoute}
+        currentPath={location.pathname}
       />
 
       {/* Sticky Global Navigation Bar */}
@@ -618,7 +846,75 @@ function DriveLedgerWorkspace() {
 
       {/* Main Content Container */}
       <main className="w-full max-w-[1440px] mx-auto min-h-[85vh] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-28 lg:pb-16 space-y-10 sm:space-y-12">
-        {/* Dynamic Calculator Workspace */}
+        {isNotFoundRoute ? (
+          <section
+            data-testid="not-found-view"
+            className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-5 shadow-sm"
+          >
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 text-xs font-mono font-bold">
+              HTTP 404 · ROUTE NOT FOUND
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
+              404 — Telemetry Route Not Found
+            </h1>
+            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
+              The vehicle configuration or diagnostic URL you requested could not be found in the DriveLedger catalog. Select one of our primary calculators below to continue.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <a
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('overview');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-sans text-xs font-semibold shadow-xs transition-colors"
+              >
+                Return to Overview
+              </a>
+              <a
+                href="/tco"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('tco');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+              >
+                5-Year TCO Calculator
+              </a>
+              <a
+                href="/risk-matrix"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('risk');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+              >
+                Maintenance Risk Matrix
+              </a>
+              <a
+                href="/obd-estimator"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelectTab('obd');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+              >
+                OBD-II Repair Estimator
+              </a>
+              <a
+                href="/vehicles"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigateToVehicles();
+                }}
+                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+              >
+                All 179+ Vehicles
+              </a>
+            </div>
+          </section>
+        ) : (
+        /* Dynamic Calculator Workspace */
         <div
           key={activeTab}
           id={`panel-${activeTab}`}
@@ -626,124 +922,174 @@ function DriveLedgerWorkspace() {
           aria-labelledby={`tab-${activeTab}`}
           className="min-h-[640px] animate-fade-in"
         >
-          {/* TAB 0: INDEPENDENT CAR COST PLATFORM OVERVIEW */}
-          {activeTab === 'overview' && (
-            <HomePage
-              selectedPresetId={selectedPresetId}
-              hasSelectedVehicle={hasSelectedVehicle}
-              onSelectPreset={handleSelectPreset}
-              onNavigateToTco={handleNavigateToPresetTco}
-              onNavigateToRisk={handleNavigateToRiskMatrix}
-              onNavigateToObd={handleNavigateToObd}
-              onNavigateToChecklist={() => handleSelectTab('checklist')}
-              onNavigateToMethodology={() => handleSelectTab('methodology')}
-              onNavigateToBlog={() => handleSelectTab('guides')}
-              onNavigateToGuides={() => handleSelectTab('guides')}
-              onSelectGuide={handleSelectGuide}
-            />
-          )}
+          <Suspense
+            fallback={
+              <div className="min-h-[360px] flex items-center justify-center text-xs font-sans text-muted dark:text-zinc-400">
+                Loading DriveLedger module…
+              </div>
+            }
+          >
+            {/* TAB 0: INDEPENDENT CAR COST PLATFORM OVERVIEW */}
+            {activeTab === 'overview' && (
+              <HomePage
+                selectedPresetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
+                onSelectPreset={handleSelectPreset}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToObd={handleNavigateToObd}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToMethodology={() => handleSelectTab('methodology')}
+                onNavigateToBlog={() => handleSelectTab('guides')}
+                onNavigateToGuides={() => handleSelectTab('guides')}
+                onNavigateToVehicles={handleNavigateToVehicles}
+                onSelectGuide={handleSelectGuide}
+              />
+            )}
 
-          {/* TAB 1: 5-YEAR TRUE COST TO OWN */}
-          {activeTab === 'tco' && (
-            <TcoCalculator
-              selectedPresetId={selectedPresetId}
-              hasSelectedVehicle={hasSelectedVehicle}
-              onSelectPreset={handleSelectPreset}
-              onNavigateToRiskMatrix={() => handleSelectTab('risk')}
-              onNavigateToObd={handleNavigateToObd}
-            />
-          )}
+            {/* TAB 1: 5-YEAR TRUE COST TO OWN */}
+            {activeTab === 'tco' && (
+              <TcoCalculator
+                selectedPresetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
+                initialOdometerMiles={riskOdometerOverride?.miles}
+                onSelectPreset={handleSelectPreset}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRiskMatrix={handleNavigateToRiskMatrix}
+                onNavigateToRiskBracket={handleNavigateToRiskBracket}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToObd={handleNavigateToObd}
+                onNavigateToHybridObd={handleNavigateToHybridObd}
+                onNavigateToCompare={handleNavigateToCompare}
+                onNavigateToVehicles={handleNavigateToVehicles}
+              />
+            )}
 
-          {/* TAB 2: MAINTENANCE CHECK & POWERTRAIN WEAR RISK */}
-          {activeTab === 'risk' && (
-            <MaintenanceRiskMatrix
-              selectedPresetId={selectedPresetId}
-              hasSelectedVehicle={hasSelectedVehicle}
-              onSelectPreset={handleSelectPreset}
-              onNavigateToObd={handleNavigateToObd}
-              onNavigateToCompare={() => handleSelectTab('compare')}
-              initialOdometerMiles={riskOdometerOverride?.miles}
-            />
-          )}
+            {/* TAB 2: MAINTENANCE CHECK & POWERTRAIN WEAR RISK */}
+            {activeTab === 'risk' && (
+              <MaintenanceRiskMatrix
+                selectedPresetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
+                onSelectPreset={handleSelectPreset}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToRiskBracket={handleNavigateToRiskBracket}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToObd={handleNavigateToObd}
+                onNavigateToHybridObd={handleNavigateToHybridObd}
+                onNavigateToCompare={handleNavigateToCompare}
+                onNavigateToVehicles={handleNavigateToVehicles}
+                initialOdometerMiles={riskOdometerOverride?.miles}
+              />
+            )}
 
-          {/* TAB 3: OBD2 WORKSHOP REPAIR ESTIMATOR */}
-          {activeTab === 'obd' && (
-            <ObdEstimator
-              selectedPresetId={selectedPresetId}
-              onSelectPreset={handleSelectPreset}
-              selectedObdCode={selectedObdCode}
-              selectedCode={selectedObdCode}
-              onSelectObdCode={handleSelectObdCode}
-              onSelectCode={handleSelectObdCode}
-              onNavigateToRisk={() => handleSelectTab('risk')}
-              onNavigateToCompare={() => handleSelectTab('compare')}
-            />
-          )}
+            {/* TAB 3: OBD2 WORKSHOP REPAIR ESTIMATOR */}
+            {activeTab === 'obd' && (
+              <ObdEstimator
+                selectedPresetId={selectedPresetId}
+                onSelectPreset={handleSelectPreset}
+                selectedObdCode={selectedObdCode}
+                selectedCode={selectedObdCode}
+                onSelectObdCode={handleSelectObdCode}
+                onSelectCode={handleSelectObdCode}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToRiskBracket={handleNavigateToRiskBracket}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToHybridObd={handleNavigateToHybridObd}
+                onNavigateToCompare={handleNavigateToCompare}
+                onNavigateToVehicles={handleNavigateToVehicles}
+              />
+            )}
 
-          {/* TAB 4: VEHICLE COMPARATOR / SIDE-BY-SIDE COMPARISON */}
-          {activeTab === 'compare' && (
-            <VehicleComparator
-              primaryPresetId={selectedPresetId}
-              secondaryPresetId={secondaryPresetId}
-              onApplyPreset={handleSelectPreset}
-              onSelectSecondaryPreset={handleSelectSecondaryPreset}
-              onClose={() => handleSelectTab('overview')}
-              standalone
-            />
-          )}
+            {/* TAB 4: VEHICLE COMPARATOR / SIDE-BY-SIDE COMPARISON */}
+            {activeTab === 'compare' && (
+              <VehicleComparator
+                primaryPresetId={selectedPresetId}
+                secondaryPresetId={secondaryPresetId}
+                onApplyPreset={handleSelectPreset}
+                onSelectSecondaryPreset={handleSelectSecondaryPreset}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToVehicles={handleNavigateToVehicles}
+                onClose={() => handleSelectTab('overview')}
+                standalone
+              />
+            )}
 
-          {/* TAB 5: PRE-PURCHASE INSPECTION CHECKLIST (PPI) */}
-          {activeTab === 'checklist' && (
-            <PreInspectionChecklist
-              presetId={selectedPresetId}
-              onSelectPreset={handleSelectPreset}
-              onNavigateToObd={handleNavigateToObd}
-              onNavigateToTco={handleNavigateToPresetTco}
-              standalone
-            />
-          )}
+            {/* TAB 5: PRE-PURCHASE INSPECTION CHECKLIST (PPI) */}
+            {activeTab === 'checklist' && (
+              <PreInspectionChecklist
+                presetId={selectedPresetId}
+                onSelectPreset={handleSelectPreset}
+                onNavigateToObd={handleNavigateToObd}
+                onNavigateToHybridObd={handleNavigateToHybridObd}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToRiskBracket={handleNavigateToRiskBracket}
+                onNavigateToChecklist={handleNavigateToChecklist}
+                onNavigateToCompare={handleNavigateToCompare}
+                onNavigateToVehicles={handleNavigateToVehicles}
+                standalone
+              />
+            )}
 
-          {/* SUBPAGE: BLOG & AUTOMOTIVE FIELD NOTES */}
-          {activeTab === 'blog' && (
-            <BlogPage
-              onNavigateToTco={() => handleSelectTab('tco')}
-              onNavigateToRisk={() => handleSelectTab('risk')}
-              onNavigateToObd={() => handleSelectTab('obd')}
-            />
-          )}
+            {/* SUBPAGE: COMPLETE BRAND & MODEL HTML VEHICLE DIRECTORY & BRAND HUBS */}
+            {activeTab === 'vehicles' && (
+              <VehiclesCatalogPage
+                activeBrandSlug={activeBrandSlug}
+                onNavigateToBrand={handleNavigateToVehicles}
+                onSelectPreset={handleSelectPreset}
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+                onNavigateToChecklist={handleNavigateToChecklist}
+              />
+            )}
 
-          {/* SUBPAGE: METHODOLOGY & WHITE PAPER */}
-          {activeTab === 'methodology' && (
-            <TechnicalMethodologyGuide onOpenLegalModal={setActiveLegalModal} />
-          )}
+            {/* SUBPAGE: BLOG & AUTOMOTIVE FIELD NOTES */}
+            {activeTab === 'blog' && (
+              <BlogPage
+                onNavigateToTco={() => handleSelectTab('tco')}
+                onNavigateToRisk={() => handleSelectTab('risk')}
+                onNavigateToObd={() => handleSelectTab('obd')}
+              />
+            )}
 
-          {/* SUBPAGE: DRIVER REVIEWS */}
-          {activeTab === 'reviews' && (
-            <ReviewsPage
-              onNavigateToTco={handleNavigateToPresetTco}
-              onNavigateToRisk={handleNavigateToRiskMatrix}
-            />
-          )}
+            {/* SUBPAGE: METHODOLOGY & WHITE PAPER */}
+            {activeTab === 'methodology' && (
+              <TechnicalMethodologyGuide onOpenLegalModal={setActiveLegalModal} />
+            )}
 
-          {/* TAB 6: BUYER GUIDES & EDITORIAL INSIGHTS */}
-          {activeTab === 'guides' && (
-            <GuidesPage
-              activeSlug={activeGuideSlug}
-              onSelectGuide={handleSelectGuide}
-              onNavigateTab={handleSelectTab}
-            />
-          )}
+            {/* SUBPAGE: DRIVER REVIEWS */}
+            {activeTab === 'reviews' && (
+              <ReviewsPage
+                onNavigateToTco={handleNavigateToPresetTco}
+                onNavigateToRisk={handleNavigateToRiskMatrix}
+              />
+            )}
 
-          {/* TAB 7: STANDALONE ABOUT US & METHODOLOGY PAGE */}
-          {activeTab === 'about' && (
-            <AboutPage onNavigateTab={handleSelectTab} />
-          )}
+            {/* TAB 6: BUYER GUIDES & EDITORIAL INSIGHTS */}
+            {activeTab === 'guides' && (
+              <GuidesPage
+                activeSlug={activeGuideSlug}
+                onSelectGuide={handleSelectGuide}
+                onNavigateTab={handleSelectTab}
+              />
+            )}
 
-          {/* TAB 8: STANDALONE CONTACT US PAGE */}
-          {activeTab === 'contact' && (
-            <ContactPage onNavigateTab={handleSelectTab} />
-          )}
+            {/* TAB 7: STANDALONE ABOUT US & METHODOLOGY PAGE */}
+            {activeTab === 'about' && (
+              <AboutPage onNavigateTab={handleSelectTab} />
+            )}
+
+            {/* TAB 8: STANDALONE CONTACT US PAGE */}
+            {activeTab === 'contact' && (
+              <ContactPage onNavigateTab={handleSelectTab} />
+            )}
+          </Suspense>
         </div>
+        )}
 
         {/* Subtle 1-Line Legal Notice Directly Below Main Calculator Workspace */}
         <p
@@ -753,31 +1099,13 @@ function DriveLedgerWorkspace() {
           {WORKSPACE_LEGAL_NOTICE_LINE}
         </p>
 
-        {/* Inactive TcoCalculator accessible in DOM during overview for automated slider tests */}
-        {activeTab === 'overview' && (
-          <div className="hidden" aria-hidden="true">
-            <TcoCalculator
-              selectedPresetId={selectedPresetId}
-              onSelectPreset={handleSelectPreset}
-              onNavigateToRiskMatrix={() => handleSelectTab('risk')}
-              onNavigateToObd={handleNavigateToObd}
-            />
-          </div>
-        )}
-
-        {/* TechnicalMethodologyGuide in DOM for Schema.org JSON-LD and compliance tests when not on methodology tab */}
-        {activeTab !== 'methodology' && (
-          <div className="hidden" aria-hidden="true">
-            <TechnicalMethodologyGuide onOpenLegalModal={setActiveLegalModal} />
-          </div>
-        )}
-
         {/* Global Bottom Section (Ad Container, FAQ Accordion, Minimalist Footer, Modals) */}
         <Footer
           onSelectTab={handleSelectTab}
           onSelectPreset={handleNavigateToPresetTco}
           onSelectObdCode={handleNavigateToObd}
           onSelectHybridObd={handleNavigateToHybridObd}
+          onNavigateToVehicles={handleNavigateToVehicles}
           onOpenLegalModal={handleOpenLegalModal}
           onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
           hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
@@ -817,11 +1145,11 @@ function DriveLedgerWorkspace() {
             if (typeof window !== 'undefined' && window.history?.replaceState) {
               const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
               if (currentPathPolicy) {
-                window.history.replaceState(
-                  null,
-                  '',
-                  window.location.search ? `/${window.location.search}` : '/'
-                );
+                const restoreUrl =
+                  prevNonLegalUrlRef.current ||
+                  (window.location.search ? `/${window.location.search}` : '/');
+                prevNonLegalUrlRef.current = null;
+                window.history.replaceState(null, '', restoreUrl);
               } else if (window.location.hash) {
                 window.history.replaceState(
                   null,

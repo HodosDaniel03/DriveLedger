@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Zap, Fuel, ArrowRight, X, Gauge, TrendingUp, AlertTriangle, Plus } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { Card, Pill, TldrVerdictBox, RiskBadge, Collapse } from '../common/OdometerPrimitives';
@@ -26,6 +26,21 @@ export default function EvBreakEvenCalculator({
     convertRegionToUsd,
   } = useUnits();
 
+  const resolveRegionalIceConsumption = (reg, preset) => {
+    const baseMpg = !preset?.isEv && Number(preset?.mpgUs) > 0 ? Number(preset.mpgUs) : 30.0;
+    if (reg === 'EU') return +(235.214583 / baseMpg).toFixed(1);
+    if (reg === 'UK') return +(baseMpg * 1.20095).toFixed(1);
+    return +baseMpg.toFixed(1);
+  };
+
+  const resolveRegionalEvConsumption = (reg, preset) => {
+    const raw = preset?.isEv && Number(preset?.mpgUs) > 0 ? Number(preset.mpgUs) : 28.0;
+    // Some EV catalog entries store MPGe (e.g. 104-120 MPGe) instead of kWh/100mi; normalize to kWh/100mi
+    const baseKwh100Mi = raw > 60 ? 3370.5 / raw : raw;
+    if (reg === 'EU') return +(baseKwh100Mi / 1.609344).toFixed(1);
+    return +baseKwh100Mi.toFixed(1);
+  };
+
   // Localized initial defaults
   const localIcePriceDefault = Math.round(convertUsdToRegion(initialIcePrice));
   const localEvPriceDefault = Math.round(convertUsdToRegion(initialEvPrice));
@@ -35,16 +50,13 @@ export default function EvBreakEvenCalculator({
   const [customOpen, setCustomOpen] = useState(false);
 
   // Region-aware consumption and energy rates
-  const [iceConsumption, setIceConsumption] = useState(() => {
-    if (region === 'EU') return 6.5; // L/100km
-    if (region === 'UK') return 38.0; // MPG UK
-    return 30.0; // MPG US
-  });
+  const [iceConsumption, setIceConsumption] = useState(() =>
+    resolveRegionalIceConsumption(region, activePreset)
+  );
 
-  const [evConsumption, setEvConsumption] = useState(() => {
-    if (region === 'EU') return 18.0; // kWh/100km
-    return 28.0; // kWh/100mi
-  });
+  const [evConsumption, setEvConsumption] = useState(() =>
+    resolveRegionalEvConsumption(region, activePreset)
+  );
 
   const [fuelPriceLocal, setFuelPriceLocal] = useState(() => {
     if (region === 'EU') return 1.85; // €/L
@@ -57,6 +69,15 @@ export default function EvBreakEvenCalculator({
     if (region === 'UK') return 0.26; // £/kWh
     return 0.16; // $/kWh
   });
+
+  useEffect(() => {
+    setIcePurchasePrice(Math.round(convertUsdToRegion(initialIcePrice)));
+    setEvPurchasePrice(Math.round(convertUsdToRegion(initialEvPrice)));
+    setIceConsumption(resolveRegionalIceConsumption(region, activePreset));
+    setEvConsumption(resolveRegionalEvConsumption(region, activePreset));
+    setFuelPriceLocal(region === 'EU' ? 1.85 : region === 'UK' ? 1.45 : 3.65);
+    setElectricityPriceLocal(region === 'EU' ? 0.28 : region === 'UK' ? 0.26 : 0.16);
+  }, [region, initialIcePrice, initialEvPrice, activePreset?.id]);
 
   // Annual distance in local units (miles or km)
   const annualDistLocal = Math.round(convertMilesToRegion(annualDistanceMiles));
@@ -96,6 +117,7 @@ export default function EvBreakEvenCalculator({
   const isCheaperUpfront = evPurchasePrice <= icePurchasePrice;
   const isNegativeSavings = energySavingsPerUnit <= 0;
 
+  const targetHorizonYears = Math.max(1, Number(horizonYears) || 5);
   let breakEvenDistanceLocal = 0;
   let breakEvenYears = 0;
   let requiredAnnualDist5Yr = 0;
@@ -104,7 +126,7 @@ export default function EvBreakEvenCalculator({
   if (!isCheaperUpfront && !isNegativeSavings) {
     breakEvenDistanceLocal = Math.round(pricePremiumLocal / energySavingsPerUnit);
     breakEvenYears = annualSavingsLocal > 0 ? +(pricePremiumLocal / annualSavingsLocal).toFixed(1) : 0;
-    requiredAnnualDist5Yr = Math.round(breakEvenDistanceLocal / 5);
+    requiredAnnualDist5Yr = Math.round(breakEvenDistanceLocal / targetHorizonYears);
     requiredAnnualDist3Yr = Math.round(breakEvenDistanceLocal / 3);
   }
 
@@ -137,23 +159,23 @@ export default function EvBreakEvenCalculator({
     {
       label: 'Required Annual Mileage',
       value: isCheaperUpfront ? 'Any mileage' : `${requiredAnnualDist5Yr.toLocaleString()} ${distanceUnit} / yr`,
-      subtext: 'Minimum annual driving for 5-year break-even.',
-      badge: <RiskBadge level="moderate" label="5-Yr Threshold" />,
+      subtext: `Minimum annual driving for ${targetHorizonYears}-year break-even.`,
+      badge: <RiskBadge level="moderate" label={`${targetHorizonYears}-Yr Threshold`} />,
     },
-  ], [isCheaperUpfront, isNegativeSavings, breakEvenYears, breakEvenDistanceLocal, distanceUnit, currencySymbol, annualSavingsLocal, pctCheaper, requiredAnnualDist5Yr]);
+  ], [isCheaperUpfront, isNegativeSavings, breakEvenYears, breakEvenDistanceLocal, distanceUnit, currencySymbol, annualSavingsLocal, pctCheaper, requiredAnnualDist5Yr, targetHorizonYears]);
 
   return (
-    <Card className="rounded-2xl border border-[#E6E6E1] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 space-y-6" aria-labelledby="breakeven-heading">
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E6E6E1]">
+    <Card className="rounded-2xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-[#121215] shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 space-y-6" aria-labelledby="breakeven-heading">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E6E6E1] dark:border-zinc-800">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="rounded-xl bg-[#E8F5E9] p-2 text-[#183D22] shrink-0">
+          <div className="rounded-xl bg-[#E8F5E9] dark:bg-emerald-950/60 p-2 text-[#183D22] dark:text-emerald-400 shrink-0">
             <Zap className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <h2 id="breakeven-heading" className="text-base sm:text-lg font-bold tracking-tight text-ink scroll-mt-28 lg:scroll-mt-32">
+            <h2 id="breakeven-heading" className="text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
               Real-World Fuel vs. EV Break-Even Calculator
             </h2>
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted dark:text-zinc-400">
               Determine how many {distanceUnit}/year are needed for electricity savings to pay off an EV purchase premium
             </p>
           </div>
@@ -162,7 +184,7 @@ export default function EvBreakEvenCalculator({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted hover:bg-surface-subtle hover:text-ink transition-colors"
+            className="rounded-lg p-1.5 text-muted dark:text-zinc-400 hover:bg-surface-subtle dark:hover:bg-zinc-800 hover:text-ink dark:hover:text-zinc-100 transition-colors"
             aria-label="Close break-even calculator"
           >
             <X className="w-5 h-5" />
@@ -238,7 +260,7 @@ export default function EvBreakEvenCalculator({
           </p>
           <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="p-3 rounded-lg bg-white dark:bg-[#121215] border border-[#E6E6E1] dark:border-zinc-800 shadow-xs">
-              <span className="text-muted dark:text-zinc-400 block font-sans font-medium text-[11px]">Over 5 Years</span>
+              <span className="text-muted dark:text-zinc-400 block font-sans font-medium text-[11px]">Over {targetHorizonYears} Years</span>
               <span className="text-base font-bold font-mono tabular-nums text-[#183D22] dark:text-emerald-400">
                 {requiredAnnualDist5Yr.toLocaleString()} {distanceUnit}/yr
               </span>
@@ -310,9 +332,9 @@ export default function EvBreakEvenCalculator({
         </button>
 
         <Collapse open={customOpen} id="ev-assumptions-panel">
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 p-3.5 rounded-xl border border-[#E6E6E1] bg-[#F7F7F4]">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 p-3.5 rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-[#F7F7F4] dark:bg-zinc-900/90">
             <div className="min-w-0">
-              <label htmlFor="input-fuel-rate" className="text-xs font-medium text-muted block mb-1.5 truncate">
+              <label htmlFor="input-fuel-rate" className="text-xs font-medium text-muted dark:text-zinc-400 block mb-1.5 truncate">
                 Fuel Price ({currencySymbol} / {region === 'US' ? 'gal' : 'L'})
               </label>
               <input
@@ -326,7 +348,7 @@ export default function EvBreakEvenCalculator({
             </div>
 
             <div className="min-w-0">
-              <label htmlFor="input-electricity-rate" className="text-xs font-medium text-muted block mb-1.5 truncate">
+              <label htmlFor="input-electricity-rate" className="text-xs font-medium text-muted dark:text-zinc-400 block mb-1.5 truncate">
                 Electricity Rate ({currencySymbol} / kWh)
               </label>
               <input
@@ -336,6 +358,48 @@ export default function EvBreakEvenCalculator({
                 value={electricityPriceLocal}
                 onChange={(e) => setElectricityPriceLocal(Math.max(0.01, Number(e.target.value) || 0))}
                 className="w-full min-h-[44px] rounded-xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] shadow-xs"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="input-ice-consumption" className="text-xs font-medium text-muted dark:text-zinc-400 truncate">
+                  ICE Consumption ({efficiencyUnit})
+                </label>
+                <span className="text-xs font-mono font-bold text-ink dark:text-zinc-100 tabular-nums">
+                  {iceConsumption} {efficiencyUnit}
+                </span>
+              </div>
+              <input
+                id="input-ice-consumption"
+                type="range"
+                min={region === 'EU' ? 3.5 : 15}
+                max={region === 'EU' ? 16.0 : 65}
+                step={region === 'EU' ? 0.2 : 1}
+                value={iceConsumption}
+                onChange={(e) => setIceConsumption(Math.max(1, Number(e.target.value) || 1))}
+                className="odo-range telemetry-slider"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="input-ev-consumption" className="text-xs font-medium text-muted dark:text-zinc-400 truncate">
+                  EV Consumption ({evEfficiencyUnit})
+                </label>
+                <span className="text-xs font-mono font-bold text-ink dark:text-zinc-100 tabular-nums">
+                  {evConsumption} {evEfficiencyUnit}
+                </span>
+              </div>
+              <input
+                id="input-ev-consumption"
+                type="range"
+                min={region === 'EU' ? 11.0 : 18.0}
+                max={region === 'EU' ? 30.0 : 48.0}
+                step={0.5}
+                value={evConsumption}
+                onChange={(e) => setEvConsumption(Math.max(5, Number(e.target.value) || 5))}
+                className="odo-range telemetry-slider"
               />
             </div>
           </div>

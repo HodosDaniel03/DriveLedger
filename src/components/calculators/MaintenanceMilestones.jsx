@@ -295,7 +295,7 @@ export default function MaintenanceMilestones({
   drivingStyle = 'mixed',
   workshopTier = 'independent',
 }) {
-  const { formatCurrency, formatDistance } = useUnits();
+  const { formatCurrency, formatDistance, distanceUnit } = useUnits();
   const garage = useGarage();
   const [localCompletedItems, setLocalCompletedItems] = useState({});
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'due' | 'upcoming'
@@ -403,7 +403,11 @@ export default function MaintenanceMilestones({
           {[
             { id: 'all', label: 'All Milestones' },
             { id: 'due', label: 'Due / Overdue' },
-            { id: 'upcoming', label: 'Next 30k' },
+            {
+              id: 'upcoming',
+              label: distanceUnit === 'km' ? 'Next 50k km' : 'Next 30k mi',
+              srHint: 'Next 30k',
+            },
           ].map((f) => (
             <button
               key={f.id}
@@ -415,7 +419,8 @@ export default function MaintenanceMilestones({
                   : 'bg-surface-subtle text-muted border-border hover:border-border-strong hover:text-ink dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:text-zinc-100'
               }`}
             >
-              {f.label}
+              <span>{f.label}</span>
+              {f.srHint && <span className="sr-only"> ({f.srHint})</span>}
             </button>
           ))}
         </div>
@@ -494,12 +499,30 @@ export default function MaintenanceMilestones({
                   <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100">
                     {formatDistance(m.miles)}
                   </span>
-                  <span className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">· {m.title}</span>
+                  <span className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
+                    {distanceUnit === 'km'
+                      ? `· ${m.title.replace(/^\d[\d,]*\s*mi\s*\/\s*/i, '')}`
+                      : `· ${m.title}`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-                    Est: Indie <span className="font-mono tabular-nums">{formatCurrency(m.costRangeUsd[0])}</span> · Dealer <span className="font-mono tabular-nums">{formatCurrency(m.costRangeUsd[1])}</span>
-                  </span>
+                  {(() => {
+                    const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
+                    const indieEst = Math.round(m.costRangeUsd[0] * wearScale);
+                    const dealerEst = Math.round(m.costRangeUsd[1] * wearScale);
+                    return (
+                      <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
+                        Est:{' '}
+                        <span className={workshopTier !== 'dealership' ? 'font-bold text-ink dark:text-zinc-100' : ''}>
+                          Indie <span className="font-mono tabular-nums">{formatCurrency(indieEst)}</span>
+                        </span>{' '}
+                        ·{' '}
+                        <span className={workshopTier === 'dealership' ? 'font-bold text-ink dark:text-zinc-100' : ''}>
+                          Dealer <span className="font-mono tabular-nums">{formatCurrency(dealerEst)}</span>
+                        </span>
+                      </span>
+                    );
+                  })()}
                   <Pill tone={statusTone} className="text-[11px] font-medium">
                     {statusLabel}
                   </Pill>

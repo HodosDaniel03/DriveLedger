@@ -271,7 +271,12 @@ export function parseCompareMatchupPath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
   const match = pathname.match(/^\/compare\/([^/]+)\/?$/i);
   if (!match) return null;
-  const slug = decodeURIComponent(match[1]).toLowerCase();
+  let slug;
+  try {
+    slug = decodeURIComponent(match[1]).toLowerCase();
+  } catch {
+    return null;
+  }
   const separator = '-vs-';
   let idx = slug.indexOf(separator);
   while (idx !== -1) {
@@ -297,8 +302,14 @@ export function parseRiskMileagePath(pathname) {
   if (!pathname || typeof pathname !== 'string') return null;
   const match = pathname.match(/^\/risk-matrix\/([^/]+)\/([^/]+)\/?$/i);
   if (!match) return null;
-  const rawPreset = decodeURIComponent(match[1]).toLowerCase();
-  const rawBracket = decodeURIComponent(match[2]).toLowerCase();
+  let rawPreset;
+  let rawBracket;
+  try {
+    rawPreset = decodeURIComponent(match[1]).toLowerCase();
+    rawBracket = decodeURIComponent(match[2]).toLowerCase();
+  } catch {
+    return null;
+  }
   if (!PRESET_ID_SET.has(rawPreset)) return null;
   const bracket = MILEAGE_BRACKET_SLUGS[rawBracket];
   if (!bracket) return null;

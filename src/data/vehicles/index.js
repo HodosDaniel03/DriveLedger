@@ -11,6 +11,7 @@ import { hyundaiKiaData } from './hyundaiKia.js';
 import { toyotaData } from './toyota.js';
 import { stellantisData } from './stellantis.js';
 import { mercedesData } from './mercedes.js';
+import { VEHICLE_PRESETS } from '../vehiclePresets.js';
 
 export * from './schema.js';
 export { fordData } from './ford.js';
@@ -73,7 +74,6 @@ export const ENGINE_PRESET_ALIASES = {
   // Ford
   'ford-focus-ecoblue': 'ford-focus-mk4-20-ecoblue',
   'ford-focus-10-ecoboost': 'ford-focus-mk4-10-ecoboost',
-  'ford-focus-mk4-10-mhev': 'ford-focus-mk4-10-ecoboost',
   'ford-kuga-20-ecoblue': 'ford-focus-mk4-20-ecoblue',
   'ford-kuga-20-ecoblue-norm': 'ford-focus-mk4-20-ecoblue',
   'ford-mondeo-mk5-20-tdci': 'ford-mondeo-mk5-20-ecoblue',
@@ -192,10 +192,10 @@ export function getGenerationsForModel(brandId, modelId) {
     const mId = m.id.toLowerCase();
     const mName = m.name.toLowerCase();
     if (mId === rawModelId || mName === rawModelId) return true;
-    return tokens.some((t) => mId.includes(t) || mName.includes(t));
+    return tokens.some((t) => t.length >= 2 && (mId.includes(t) || mName.includes(t)));
   });
 
-  return model ? model.generations : models[0]?.generations || [];
+  return model ? model.generations : [];
 }
 
 /**
@@ -213,46 +213,505 @@ export function getEnginesForGeneration(brandId, modelId, generationId) {
   return gen ? gen.engines : gens[0]?.engines || [];
 }
 
+const GENERIC_MODEL_STOPWORDS = new Set([
+  'model',
+  'series',
+  'class',
+  'hybrid',
+  'plug',
+  'phev',
+  'mhev',
+  'electric',
+  'ev',
+  'diesel',
+  'gasoline',
+  'petrol',
+  'turbo',
+  'long',
+  'range',
+  'awd',
+  'rwd',
+  'fwd',
+  'norm',
+  'touring',
+  'wagon',
+  'sedan',
+  'suv',
+  'hatchback',
+  'coupe',
+]);
+
+function normalizeAlphaNum(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function queryMatchesBrand(normQuery, brandName, brandId = '') {
+  const bName = normalizeAlphaNum(brandName);
+  const bId = normalizeAlphaNum(brandId);
+  const padded = `-${normQuery}-`;
+  if (bName && padded.includes(`-${bName}-`)) return true;
+  if (bId && padded.includes(`-${bId}-`)) return true;
+  if ((bName.includes('volkswagen') || bId.includes('volkswagen')) && (padded.includes('-vw-') || padded.includes('-volkswagen-'))) {
+    return true;
+  }
+  if ((bName.includes('mercedes') || bId.includes('mercedes')) && (padded.includes('-mb-') || padded.includes('-mercedes-'))) {
+    return true;
+  }
+  if ((bName.includes('hyundai') || bId.includes('hyundai')) && (padded.includes('-hyundai-') || padded.includes('-kia-'))) {
+    return true;
+  }
+  if ((bName.includes('stellantis') || bId.includes('stellantis')) && (padded.includes('-peugeot-') || padded.includes('-citroen-') || padded.includes('-opel-'))) {
+    return true;
+  }
+  return false;
+}
+
+function queryMatchesModel(normQuery, modelName, modelId = '') {
+  const mName = normalizeAlphaNum(modelName);
+  const mId = normalizeAlphaNum(modelId);
+  const padded = `-${normQuery}-`;
+
+  if (mName && padded.includes(`-${mName}-`)) return true;
+  if (mId && padded.includes(`-${mId}-`)) return true;
+
+  // Special series/class designations in modular brands
+  if (mName === '3-series' || mId === 'bmw-3-series') {
+    return /-(3-series|318d|320i|320d|330i|330d|330e|m340i|m340d|f30|g20)-/.test(padded);
+  }
+  if (mName === '5-series' || mId === 'bmw-5-series') {
+    return /-(5-series|520i|520d|530i|530d|530e|540i|g30|g31|f10)-/.test(padded);
+  }
+  if (mName === 'c-class' || mId === 'mercedes-c-class') {
+    return /-(c-class|c180|c200|c220d|c300|c300de|c43|c63|w205|w206)-/.test(padded);
+  }
+  if (mName === 'e-class' || mId === 'mercedes-e-class') {
+    return /-(e-class|e200|e220d|e300|e300de|e350|e400|w213|w214)-/.test(padded);
+  }
+  if (mName === 'model-3' || mId === 'tesla-model-3') {
+    return padded.includes('-model-3-');
+  }
+  if (mName === 'model-y' || mId === 'tesla-model-y') {
+    return padded.includes('-model-y-');
+  }
+
+  // For multi-token model names (e.g. "RAV4", "IONIQ 5", "EV6", "F-150", "CR-V"), require all non-generic tokens
+  const rawTokens = mName
+    .split('-')
+    .filter((t) => t.length > 0 && !GENERIC_MODEL_STOPWORDS.has(t));
+  if (rawTokens.length === 0) return false;
+
+  // If the model has a short number/letter suffix (like "model-3", "ioniq-5", "id-4", "cx-5"), require the full sequence
+  if (mName.startsWith('model-') || rawTokens.some((t) => t.length <= 2)) {
+    return padded.includes(`-${rawTokens.join('-')}-`);
+  }
+
+  return rawTokens.every((t) => padded.includes(`-${t}-`));
+}
+
+function inferIssueCategoryFromText(text = '', isEv = false) {
+  const t = String(text).toLowerCase();
+  if (isEv || t.includes('battery') || t.includes('soh') || t.includes('hv') || t.includes('cell')) return 'battery_hv';
+  if (t.includes('iccu') || t.includes('inverter') || t.includes('sensor') || t.includes('infotainment') || t.includes('electrical') || t.includes('12v')) return 'electrical';
+  if (t.includes('belt') || t.includes('chain') || t.includes('timing') || t.includes('phaser') || t.includes('vanos')) return 'timing';
+  if (t.includes('dsg') || t.includes('cvt') || t.includes('transmission') || t.includes('gearbox') || t.includes('clutch') || t.includes('mechatronic') || t.includes('10r80') || t.includes('zf') || t.includes('flywheel') || t.includes('dmf')) return 'transmission';
+  if (t.includes('dpf') || t.includes('egr') || t.includes('adblue') || t.includes('scr') || t.includes('catalyst') || t.includes('exhaust') || t.includes('gpf')) return 'exhaust_aftertreatment';
+  if (t.includes('cp4') || t.includes('injector') || t.includes('fuel') || t.includes('hpfp') || t.includes('pump')) return 'fuel_system';
+  if (t.includes('coolant') || t.includes('thermostat') || t.includes('water pump') || t.includes('radiator') || t.includes('heat pump') || t.includes('octovalve')) return 'cooling';
+  if (t.includes('bushing') || t.includes('suspension') || t.includes('control arm') || t.includes('damper') || t.includes('air spring') || t.includes('strut')) return 'suspension';
+  if (t.includes('brake') || t.includes('rotor') || t.includes('caliper') || t.includes('abs')) return 'brakes';
+  if (t.includes('rust') || t.includes('subframe') || t.includes('paint') || t.includes('chassis') || t.includes('door')) return 'body_chassis';
+  return 'engine';
+}
+
+function cleanDefectHeadline(tag = '', fallbackName = 'Powertrain Assembly') {
+  const cleaned = String(tag || '')
+    .replace(/^[^\wA-Za-z0-9]+/, '')
+    .trim();
+  if (!cleaned) return `${fallbackName} Accelerated Component Wear`;
+  // Convert ALL CAPS tag into readable title case while preserving acronyms
+  const ACRONYMS = new Set(['CP4', 'DPF', 'EGR', 'SCR', 'DSG', 'DMF', 'CVT', 'ECVT', 'ICCU', 'BMS', 'HV', 'EV', 'PHEV', 'MHEV', 'GDI', 'TDI', 'TSI', 'TFSI', 'PCV', 'VVT', 'VANOS', 'HPFP', 'OBC', 'ZF', 'PDK', 'DCT', 'AWD', '10R80', 'EA888', 'EA288', 'B47', 'N47', 'B48', 'B58', 'OM654', 'LFP', 'NMC']);
+  return cleaned
+    .split(/\s+/)
+    .map((word) => {
+      const upper = word.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (ACRONYMS.has(upper) || /\d/.test(word)) return word.toUpperCase();
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
 /**
- * Finds an engine across all brands, models and generations
- * Supports exact ID, known aliases, and fuzzy tokens
+ * Synthesizes a schema-valid { brand, model, generation, engine } dossier entry
+ * from a VEHICLE_PRESETS object so all 179 catalog vehicles have 100% model-specific known issues.
  */
-export function findEngineVariant(engineId) {
-  if (!engineId) return null;
-  const targetId = String(engineId).toLowerCase().trim();
+export function synthesizeModularEntryForPreset(preset, donorVariant = null) {
+  if (!preset) return null;
 
-  // 1. Direct alias check
-  const resolvedId = ENGINE_PRESET_ALIASES[targetId] || targetId;
+  const isEv = Boolean(
+    preset.isEv ||
+      preset.powertrain === 'ev' ||
+      preset.powertrain === 'electric' ||
+      String(preset.fuelType || '').toLowerCase() === 'electric'
+  );
+  const wearFactor = Number(preset.maintenanceWearFactor) || 1.15;
+  const baseMaint = Number(preset.baseAnnualMaintenanceUsd) || 800;
+  const obdCodes = Array.isArray(preset.commonObdCodes) ? preset.commonObdCodes : ['P0420'];
 
-  // 2. Exact match against modular brands
+  const rawRiskNotes = String(preset.knownRiskNotes || '').trim();
+  const sentences = rawRiskNotes
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const primaryTitle = cleanDefectHeadline(preset.criticalDefectTag, preset.engineCode || preset.name);
+  const primaryCategory = inferIssueCategoryFromText(`${preset.criticalDefectTag || ''} ${sentences[0] || ''}`, isEv);
+  const primarySeverity = wearFactor >= 1.3 ? 'critical' : wearFactor >= 1.1 ? 'high' : 'medium';
+
+  const odoBaseKm = Math.max(60000, Math.round(((Number(preset.defaultOdometerMiles) || 55000) * 1.609344) / 5000) * 5000);
+  const minKm1 = Math.max(50000, odoBaseKm - 15000);
+  const maxKm1 = minKm1 + 60000;
+
+  const partsMin1 = Math.max(250, Math.round(baseMaint * 0.55 * wearFactor / 10) * 10);
+  const partsMax1 = Math.max(partsMin1 + 250, Math.round(baseMaint * 1.15 * wearFactor / 10) * 10);
+  const laborMin1 = Math.max(150, Math.round(baseMaint * 0.35 * wearFactor / 10) * 10);
+  const laborMax1 = Math.max(laborMin1 + 150, Math.round(baseMaint * 0.75 * wearFactor / 10) * 10);
+  const totalEurMin1 = partsMin1 + laborMin1;
+  const totalEurMax1 = partsMax1 + laborMax1;
+  const totalUsdMin1 = Math.round(totalEurMin1 / 0.92 / 10) * 10;
+  const totalUsdMax1 = Math.round(totalEurMax1 / 0.92 / 10) * 10;
+
+  const primarySymptoms = sentences[0]
+    ? sentences[0].replace(/\n+/g, ' ')
+    : `Elevated wear or fault codes (${obdCodes.slice(0, 2).join(', ')}) on ${preset.engineCode || preset.name} past ${minKm1.toLocaleString('en-US')} km.`;
+
+  const primaryPrevention = sentences[1]
+    ? sentences[1].replace(/\n+/g, ' ')
+    : isEv
+      ? 'Perform live BMS cell delta-V telemetry scan, inspect thermal management coolant valve operation, and verify OBC/DC charging current stability.'
+      : `Follow strict preventative service intervals on ${preset.engineCode || preset.name}, verify live OBD-II telemetry (${obdCodes.join(', ')}), and inspect OEM service history.`;
+
+  const primaryIssue = {
+    id: `${preset.id}-primary-defect`,
+    name: `${primaryTitle} (${preset.engineCode || preset.modelName})`,
+    severity: primarySeverity,
+    category: primaryCategory,
+    criticalMileage: {
+      minKm: minKm1,
+      maxKm: maxKm1,
+      display: `${minKm1.toLocaleString('en-US')} - ${maxKm1.toLocaleString('en-US')} km`,
+    },
+    symptoms: primarySymptoms,
+    prevention: primaryPrevention,
+    repairCost: {
+      parts: { min: partsMin1, max: partsMax1 },
+      labor: { min: laborMin1, max: laborMax1 },
+      currency: 'EUR',
+      formattedUsd: `$${totalUsdMin1.toLocaleString('en-US')} - $${totalUsdMax1.toLocaleString('en-US')}`,
+      formattedEur: `€${totalEurMin1.toLocaleString('en-US')} - €${totalEurMax1.toLocaleString('en-US')}`,
+      formattedHuf: `${(totalEurMin1 * 400).toLocaleString('en-US')} - ${(totalEurMax1 * 400).toLocaleString('en-US')} Ft`,
+    },
+    affectedComponents: [
+      preset.engineCode || preset.powertrainLabel || 'Primary Powertrain',
+      primaryCategory.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    ],
+    obdCodes: obdCodes.slice(0, 3),
+  };
+
+  // Secondary model-specific driveline/chassis/thermal issue
+  const secondaryCategory = isEv
+    ? 'cooling'
+    : primaryCategory === 'transmission'
+      ? 'suspension'
+      : 'transmission';
+  const minKm2 = minKm1 + 20000;
+  const maxKm2 = maxKm1 + 30000;
+  const partsMin2 = Math.max(180, Math.round(partsMin1 * 0.65 / 10) * 10);
+  const partsMax2 = Math.max(partsMin2 + 180, Math.round(partsMax1 * 0.7 / 10) * 10);
+  const laborMin2 = Math.max(120, Math.round(laborMin1 * 0.65 / 10) * 10);
+  const laborMax2 = Math.max(laborMin2 + 120, Math.round(laborMax1 * 0.7 / 10) * 10);
+  const totalEurMin2 = partsMin2 + laborMin2;
+  const totalEurMax2 = partsMax2 + laborMax2;
+  const totalUsdMin2 = Math.round(totalEurMin2 / 0.92 / 10) * 10;
+  const totalUsdMax2 = Math.round(totalEurMax2 / 0.92 / 10) * 10;
+
+  const secondaryIssue = {
+    id: `${preset.id}-driveline-thermal-wear`,
+    name: isEv
+      ? `${preset.modelName} Heat Pump Chiller Valve, 12V Auxiliary & Suspension Bushing Wear`
+      : `${preset.modelName} (${preset.transmission || 'Drivetrain'}) Fluid Shear & Chassis Mount Fatigue`,
+    severity: wearFactor >= 1.25 ? 'high' : 'medium',
+    category: secondaryCategory,
+    criticalMileage: {
+      minKm: minKm2,
+      maxKm: maxKm2,
+      display: `${minKm2.toLocaleString('en-US')} - ${maxKm2.toLocaleString('en-US')} km`,
+    },
+    symptoms: isEv
+      ? `Reduced cabin heating efficiency during DC fast charging, 12V auxiliary battery warning, or front control arm creak over speed bumps.`
+      : `Delayed shift engagement or low-speed driveline vibration under load, accompanied by front lower control arm bushing play past ${minKm2.toLocaleString('en-US')} km.`,
+    prevention: isEv
+      ? `Replace desiccant/coolant at scheduled interval, test 12V auxiliary state of health annually, and inspect lower control arm ball joints.`
+      : `Renew transmission fluid and filter every 60,000 - 80,000 km regardless of OEM lifetime claims, and inspect engine/transmission mounts during alignment.`,
+    repairCost: {
+      parts: { min: partsMin2, max: partsMax2 },
+      labor: { min: laborMin2, max: laborMax2 },
+      currency: 'EUR',
+      formattedUsd: `$${totalUsdMin2.toLocaleString('en-US')} - $${totalUsdMax2.toLocaleString('en-US')}`,
+      formattedEur: `€${totalEurMin2.toLocaleString('en-US')} - €${totalEurMax2.toLocaleString('en-US')}`,
+      formattedHuf: `${(totalEurMin2 * 400).toLocaleString('en-US')} - ${(totalEurMax2 * 400).toLocaleString('en-US')} Ft`,
+    },
+    affectedComponents: isEv
+      ? ['Thermal Management Chiller Valve', '12V Auxiliary DC-DC Circuit', 'Front Control Arm Bushings']
+      : ['Transmission Valve Body & Fluid', 'Drivetrain Mounts', 'Front Control Arm Bushings'],
+    obdCodes: obdCodes.slice(-2),
+  };
+
+  // If a shared-engine donor variant was provided (same engine family), include its unique engine issues after the preset's primary issue
+  const donorEngineIssues = donorVariant?.engine?.knownIssues || [];
+  const mergedIssues = [primaryIssue];
+  for (const dIssue of donorEngineIssues) {
+    if (!mergedIssues.some((m) => m.id === dIssue.id || m.name === dIssue.name)) {
+      mergedIssues.push(dIssue);
+    }
+  }
+  if (mergedIssues.length < 2) {
+    mergedIssues.push(secondaryIssue);
+  }
+
+  let normalizedFuelType = 'Gasoline';
+  const rawFuel = String(preset.fuelType || '').toLowerCase();
+  if (isEv || rawFuel.includes('electric')) normalizedFuelType = 'Electric';
+  else if (rawFuel.includes('plug-in') || rawFuel.includes('phev')) normalizedFuelType = 'Plug-in Hybrid';
+  else if (rawFuel.includes('hybrid')) normalizedFuelType = 'Hybrid';
+  else if (rawFuel.includes('diesel')) normalizedFuelType = 'Diesel';
+
+  const mpg = Math.max(15, Number(preset.mpgUs) || 32);
+  const lPer100 = isEv ? 2.2 : +(235.215 / mpg).toFixed(1);
+
+  const dispMatch = String(preset.engineCode || preset.powertrainLabel || preset.name || '').match(/\b(\d\.\d)\s*L?\b/i);
+  const displacementCc = isEv
+    ? undefined
+    : dispMatch
+      ? Math.round(Number(dispMatch[1]) * 1000)
+      : donorVariant?.engine?.displacementCc || 1998;
+
+  const yearMatch = String(preset.name || '').match(/\b(20\d{2})\b/);
+  const fromYear = yearMatch ? Math.max(2014, Number(yearMatch[1]) - 2) : 2018;
+
+  const synthEngine = {
+    id: preset.id,
+    name: `${preset.name} (${preset.powerHp || 150} HP)`,
+    engineCode: preset.engineCode || donorVariant?.engine?.engineCode || preset.powertrainLabel || 'OEM Powertrain',
+    fuelType: normalizedFuelType,
+    powerHp: Math.max(50, Number(preset.powerHp) || 150),
+    torqueNm: donorVariant?.engine?.torqueNm || Math.round((Number(preset.powerHp) || 150) * 1.7),
+    ...(displacementCc ? { displacementCc } : {}),
+    years: { from: fromYear, to: 2025 },
+    transmission: [preset.transmission || 'Automatic'],
+    criticalDefectTag: preset.criticalDefectTag || donorVariant?.engine?.criticalDefectTag || '⚠️ POWERTRAIN WEAR MONITOR',
+    knownIssues: mergedIssues,
+    epaEfficiency: {
+      combinedMpg: mpg,
+      cityMpg: Math.max(12, Math.round(mpg * 0.88)),
+      highwayMpg: Math.round(mpg * 1.14),
+      lPer100Km: lPer100,
+      ...(isEv
+        ? {
+            kwhPer100Km: +((mpg > 60 ? 3370.5 / mpg : mpg) / 1.609344).toFixed(1),
+          }
+        : {}),
+    },
+    defaultOdometerMiles: preset.defaultOdometerMiles,
+    annualDistanceMiles: preset.annualDistanceMiles,
+  };
+
+  const synthGen = {
+    id: `${preset.id}-gen`,
+    name: `${preset.modelName}`,
+    generationCode: preset.modelName,
+    years: { from: fromYear, to: 2025 },
+    bodyTypes: [preset.bodyType || 'sedan'],
+    modelKnownIssues: [],
+    engines: [synthEngine],
+  };
+
+  const synthModel = {
+    id: normalizeAlphaNum(`${preset.brand}-${preset.modelName}`),
+    name: preset.modelName,
+    brand: preset.brand,
+    segment: preset.segment || 'Passenger Vehicle',
+    generations: [synthGen],
+  };
+
+  const synthBrand = {
+    id: normalizeAlphaNum(preset.brand),
+    name: preset.brand,
+    group: preset.segment || 'Global Automotive',
+    country: 'Global',
+    countryFlag: '🚗',
+    models: [synthModel],
+  };
+
+  return {
+    brand: synthBrand,
+    model: synthModel,
+    generation: synthGen,
+    engine: synthEngine,
+  };
+}
+
+function findModularEngineById(exactEngineId) {
+  if (!exactEngineId) return null;
+  const target = String(exactEngineId).toLowerCase().trim();
   for (const brand of MODULAR_BRANDS) {
     for (const model of brand.models) {
       for (const gen of model.generations) {
         for (const eng of gen.engines) {
-          if (eng.id.toLowerCase() === resolvedId || eng.id.toLowerCase() === targetId) {
-            return {
-              brand,
-              model,
-              generation: gen,
-              engine: eng,
-            };
+          if (eng.id.toLowerCase() === target) {
+            return { brand, model, generation: gen, engine: eng };
           }
         }
       }
     }
   }
+  return null;
+}
 
-  // 3. Fallback fuzzy token matching
-  const tokens = targetId.split(/[-_\s]+/).filter((t) => t.length > 2);
+/**
+ * Finds an engine across all brands, models and generations.
+ * Enforces brand + model fidelity so presets never cross-map to a different model,
+ * and synthesizes model-faithful dossiers for presets outside MODULAR_BRANDS.
+ */
+export function findEngineVariant(engineId) {
+  if (!engineId) return null;
+  const targetId = String(engineId).toLowerCase().trim();
+  const normQuery = normalizeAlphaNum(targetId);
+
+  // 1. Exact modular engine ID match (e.g. 'ford-focus-mk4-20-ecoblue')
+  const directModular = findModularEngineById(targetId);
+  if (directModular) {
+    return directModular;
+  }
+
+  // 2. Check if query matches a VEHICLE_PRESETS entry by ID or exact name
+  const matchedPreset = VEHICLE_PRESETS.find(
+    (p) =>
+      p.id.toLowerCase() === targetId ||
+      p.name.toLowerCase() === targetId ||
+      normalizeAlphaNum(p.name) === normQuery
+  );
+
+  // 3. Check explicit alias table
+  const aliasedEngineId = ENGINE_PRESET_ALIASES[targetId] || (matchedPreset ? ENGINE_PRESET_ALIASES[matchedPreset.id] : null);
+  const aliasedModular = aliasedEngineId ? findModularEngineById(aliasedEngineId) : null;
+
+  if (matchedPreset) {
+    // If the aliased modular entry belongs to the EXACT SAME brand and model, return it directly
+    if (
+      aliasedModular &&
+      queryMatchesBrand(normalizeAlphaNum(matchedPreset.brand), aliasedModular.brand.name, aliasedModular.brand.id) &&
+      queryMatchesModel(normalizeAlphaNum(`${matchedPreset.brand} ${matchedPreset.modelName} ${matchedPreset.id}`), aliasedModular.model.name, aliasedModular.model.id)
+    ) {
+      return aliasedModular;
+    }
+
+    // Check if MODULAR_BRANDS has an entry with the exact same brand, model, fuel category, displacement, and generation
+    const classifyFuel = (fuelStr, isEvFlag = false) => {
+      const f = String(fuelStr || '').toLowerCase();
+      if (isEvFlag || f === 'electric') return 'electric';
+      if (f.includes('diesel')) return 'diesel';
+      if (f.includes('hybrid') || f.includes('phev')) return 'hybrid';
+      return 'gasoline';
+    };
+    const extractDispLiters = (str) => {
+      const m = String(str || '').match(/\b([1-6]\.\d)\s*L?\b/i);
+      return m ? Number(m[1]) : null;
+    };
+    const extractGenTag = (str) => {
+      const m = String(str || '').toLowerCase().match(/\b(e39|e46|e90|f10|f20|f30|g20|g30|g31|w204|w205|w206|w212|w213|w214|mk4|mk5|mk6|mk7|mk8|b7|b8)\b/);
+      return m ? m[1] : null;
+    };
+
+    const presetFuelCat = classifyFuel(matchedPreset.fuelType, matchedPreset.isEv);
+    const presetDisp = extractDispLiters(`${matchedPreset.name} ${matchedPreset.engineCode}`);
+    const presetGenTag = extractGenTag(`${matchedPreset.id} ${matchedPreset.name}`);
+
+    let bestSameModelModular = null;
+    let bestSameModelScore = 0;
+    const presetTokens = normalizeAlphaNum(`${matchedPreset.id} ${matchedPreset.name} ${matchedPreset.engineCode} ${matchedPreset.fuelType}`)
+      .split('-')
+      .filter((t) => t.length > 1);
+
+    for (const brand of MODULAR_BRANDS) {
+      if (!queryMatchesBrand(normalizeAlphaNum(matchedPreset.brand), brand.name, brand.id)) continue;
+      for (const model of brand.models) {
+        if (!queryMatchesModel(normalizeAlphaNum(`${matchedPreset.brand} ${matchedPreset.modelName} ${matchedPreset.id}`), model.name, model.id)) continue;
+        for (const gen of model.generations) {
+          for (const eng of gen.engines) {
+            // Strictly enforce fuel category fidelity (never map Gasoline C300 to Diesel OM654)
+            if (classifyFuel(eng.fuelType) !== presetFuelCat) continue;
+
+            // Enforce displacement compatibility when both specify liters (prevent 3.0L->2.0L, 1.9->2.0, 2.0->1.8)
+            const engDisp = eng.displacementCc
+              ? +(eng.displacementCc / 1000).toFixed(1)
+              : extractDispLiters(`${eng.name} ${eng.engineCode}`);
+            if (presetDisp && engDisp && Math.abs(presetDisp - engDisp) >= 0.15) continue;
+
+            // Enforce generation compatibility when both specify chassis/gen codes (prevent E46->G20, Mk4->Mk8, W204->W205)
+            const engGenTag = extractGenTag(`${gen.id} ${gen.name} ${eng.id} ${eng.name}`);
+            if (presetGenTag && engGenTag && presetGenTag !== engGenTag) continue;
+
+            const engText = normalizeAlphaNum(`${gen.name} ${eng.name} ${eng.engineCode} ${eng.fuelType} ${eng.id}`);
+            let score = 0;
+            for (const tok of presetTokens) {
+              if (engText.includes(tok)) score++;
+            }
+            if (score > bestSameModelScore && score >= 2) {
+              bestSameModelScore = score;
+              bestSameModelModular = { brand, model, generation: gen, engine: eng };
+            }
+          }
+        }
+      }
+    }
+
+    if (bestSameModelModular) {
+      return bestSameModelModular;
+    }
+
+    // Otherwise synthesize a 100% model-accurate dossier for this preset (using aliasedModular only as same-engine issue donor)
+    const safeDonor =
+      aliasedModular && classifyFuel(aliasedModular.engine?.fuelType) === presetFuelCat
+        ? aliasedModular
+        : null;
+    return synthesizeModularEntryForPreset(matchedPreset, safeDonor);
+  }
+
+  // If no preset matched by exact ID/name, but an explicit alias matched (e.g. 'ioniq-5', 'kia-ev6')
+  if (aliasedModular) {
+    return aliasedModular;
+  }
+
+  // 4. Strict Brand + Model fuzzy matching against MODULAR_BRANDS
+  const tokens = normQuery.split('-').filter((t) => t.length >= 2);
   let bestMatch = null;
   let maxScore = 0;
 
   for (const brand of MODULAR_BRANDS) {
+    if (!queryMatchesBrand(normQuery, brand.name, brand.id)) continue;
     for (const model of brand.models) {
+      if (!queryMatchesModel(normQuery, model.name, model.id)) continue;
       for (const gen of model.generations) {
         for (const eng of gen.engines) {
           let score = 0;
-          const engText = `${brand.name} ${model.name} ${gen.name} ${eng.name} ${eng.engineCode} ${eng.id}`.toLowerCase();
+          const engText = normalizeAlphaNum(
+            `${brand.name} ${model.name} ${gen.name} ${eng.name} ${eng.engineCode} ${eng.fuelType} ${eng.id}`
+          );
           for (const token of tokens) {
             if (engText.includes(token)) score++;
           }
@@ -265,7 +724,36 @@ export function findEngineVariant(engineId) {
     }
   }
 
-  return bestMatch;
+  if (bestMatch) {
+    return bestMatch;
+  }
+
+  // 5. Strict Brand + Model fuzzy matching against VEHICLE_PRESETS
+  let bestPreset = null;
+  let bestPresetScore = 0;
+  for (const preset of VEHICLE_PRESETS) {
+    if (!queryMatchesBrand(normQuery, preset.brand)) continue;
+    if (!queryMatchesModel(normQuery, preset.modelName)) continue;
+    const presetText = normalizeAlphaNum(
+      `${preset.brand} ${preset.modelName} ${preset.name} ${preset.engineCode} ${preset.fuelType} ${preset.id}`
+    );
+    let score = 0;
+    for (const token of tokens) {
+      if (presetText.includes(token)) score++;
+    }
+    if (score > bestPresetScore && score >= 2) {
+      bestPresetScore = score;
+      bestPreset = preset;
+    }
+  }
+
+  if (bestPreset) {
+    const donorId = ENGINE_PRESET_ALIASES[bestPreset.id];
+    const donor = donorId ? findModularEngineById(donorId) : null;
+    return synthesizeModularEntryForPreset(bestPreset, donor);
+  }
+
+  return null;
 }
 
 /**
@@ -288,6 +776,19 @@ export function getKnownIssuesForVehicle({ brandId, modelId, generationId, engin
   if (engineId) {
     const issues = getKnownIssuesForEngine(engineId);
     if (issues.length > 0) return issues;
+  }
+
+  // Try strict brand+model resolution first (supports both MODULAR_BRANDS and synthesized VEHICLE_PRESETS)
+  if (brandId && modelId) {
+    const query = [brandId, modelId, generationId].filter(Boolean).join(' ');
+    const resolved = findEngineVariant(query);
+    if (resolved) {
+      const genIssues = resolved.generation?.modelKnownIssues || [];
+      const engIssues = resolved.engine?.knownIssues || [];
+      if (engIssues.length + genIssues.length > 0) {
+        return [...engIssues, ...genIssues];
+      }
+    }
   }
 
   const gens = getGenerationsForModel(brandId, modelId);

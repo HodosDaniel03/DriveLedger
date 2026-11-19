@@ -12,6 +12,7 @@ export {
   resolvePowertrainType,
   normalizePowertrainType,
   isPureElectric,
+  normalizeEvKwhPer100Mi,
   calculateBatterySoh,
   calculateEvEnergyCost,
   calculatePhevEnergyCost,
@@ -28,6 +29,7 @@ import {
   POWERTRAIN_TYPES,
   resolvePowertrainType,
   isPureElectric,
+  normalizeEvKwhPer100Mi,
   calculateNonLinearDepreciation,
   parseSanitizedNumber,
   parseNonNegativeNumber,
@@ -664,10 +666,33 @@ export function evaluateComponentHealth(firstArg, ...rest) {
   const transMultiplier =
     component.id === 'drivetrain-dmf-dsg' ? (transProfile.urbanWearFactor - 1) * urbanFraction * 0.4 + 1 : 1.0;
 
+  const rawVehicleWearFactor = Number(params?.maintenanceWearFactor ?? vehicle?.maintenanceWearFactor);
+  const vehicleCostScale =
+    Number.isFinite(rawVehicleWearFactor) && rawVehicleWearFactor > 0 ? rawVehicleWearFactor : 1.0;
+  // Damped wear rate scaling so high-wear powertrains accumulate effective wear miles proportionally faster
+  const vehicleWearMultiplier =
+    Number.isFinite(rawVehicleWearFactor) && rawVehicleWearFactor > 0
+      ? 1 + (rawVehicleWearFactor - 1) * 0.2
+      : 1.0;
+
   const combinedMultiplier =
-    urbanMultiplier * effectiveOilMultiplier * historyProfile.multiplier * transMultiplier;
+    urbanMultiplier * effectiveOilMultiplier * historyProfile.multiplier * transMultiplier * vehicleWearMultiplier;
 
   const effectiveWearMiles = Math.round(odo * combinedMultiplier);
+
+  // Scale component repair cost ranges by vehicle maintenanceWearFactor when vehicle is provided
+  const baseCosts = component.costsUsd || {};
+  const scaledCostsUsd = {
+    dealership: baseCosts.dealership
+      ? [Math.round(baseCosts.dealership[0] * vehicleCostScale), Math.round(baseCosts.dealership[1] * vehicleCostScale)]
+      : [0, 0],
+    independent: baseCosts.independent
+      ? [Math.round(baseCosts.independent[0] * vehicleCostScale), Math.round(baseCosts.independent[1] * vehicleCostScale)]
+      : [0, 0],
+    diyParts: baseCosts.diyParts
+      ? [Math.round(baseCosts.diyParts[0] * vehicleCostScale), Math.round(baseCosts.diyParts[1] * vehicleCostScale)]
+      : [0, 0],
+  };
 
   // Calculate wear percentage monotonically relative to critical limit and service interval
   const cycleMiles = effectiveWearMiles;
@@ -705,6 +730,8 @@ export function evaluateComponentHealth(firstArg, ...rest) {
     cycleMiles,
     combinedMultiplier: +combinedMultiplier.toFixed(2),
     urbanMultiplier: +urbanMultiplier.toFixed(2),
+    maintenanceWearFactor: +vehicleCostScale.toFixed(2),
+    scaledCostsUsd,
     wearPctOfCritical,
     remainingLifespanPct,
     remainingPhysicalMiles,
@@ -716,30 +743,41 @@ export function evaluateComponentHealth(firstArg, ...rest) {
 }
 
 /**
- * Filters the component catalog so that EV strictly contains only EV-applicable components,
- * eliminating 100% of internal combustion items.
+ * Filters the component catalog so that EV strictly contains only EV-applicable components
+ * (eliminating 100% of internal combustion items) and non-EV powertrains strictly receive
+ * components applicable to their actual engine architecture (e.g., no diesel DPF on petrol/hybrid,
+ * no gasoline spark/GDI service on diesels).
  */
 export function filterComponentsForPowertrain(components = MAINTENANCE_COMPONENTS, powertrainOrVehicle) {
   const pType = resolvePowertrainType(powertrainOrVehicle);
   const isEv = isPureElectric(pType);
+
+  let explicitLegacyKey = null;
+  if (typeof powertrainOrVehicle === 'string') {
+    const rawStr = powertrainOrVehicle.trim().toLowerCase();
+    if (['diesel', 'gasoline-turbo', 'gasoline-na', 'hybrid'].includes(rawStr)) {
+      explicitLegacyKey = rawStr;
+    }
+  } else if (powertrainOrVehicle && typeof powertrainOrVehicle === 'object') {
+    const rawPt = String(powertrainOrVehicle.powertrain || '').trim().toLowerCase();
+    if (['diesel', 'gasoline-turbo', 'gasoline-na', 'hybrid'].includes(rawPt)) {
+      explicitLegacyKey = rawPt;
+    }
+  }
+
   return (components || MAINTENANCE_COMPONENTS).filter((comp) => {
     if (isEv) {
       if (ICE_EXCLUSIVE_COMPONENT_IDS.has(comp.id)) return false;
       return Array.isArray(comp.applicablePowertrains) && comp.applicablePowertrains.includes('ev');
     }
     const legacyKey =
-      pType === POWERTRAIN_TYPES.ICE_DIESEL
+      explicitLegacyKey ||
+      (pType === POWERTRAIN_TYPES.ICE_DIESEL
         ? 'diesel'
         : pType === POWERTRAIN_TYPES.HEV || pType === POWERTRAIN_TYPES.PHEV
         ? 'hybrid'
-        : 'gasoline-turbo';
-    return (
-      Array.isArray(comp.applicablePowertrains) &&
-      (comp.applicablePowertrains.includes(legacyKey) ||
-        comp.applicablePowertrains.includes('diesel') ||
-        comp.applicablePowertrains.includes('gasoline-turbo') ||
-        comp.applicablePowertrains.includes('gasoline-na'))
-    );
+        : 'gasoline-turbo');
+    return Array.isArray(comp.applicablePowertrains) && comp.applicablePowertrains.includes(legacyKey);
   });
 }
 
@@ -813,20 +851,27 @@ export function calculateMaintenanceReserve({
   evaluatedComponents = [],
   workshopTier = 'independent',
   annualDistanceMiles = 12000,
+  maintenanceWearFactor,
+  vehicle,
 } = {}) {
   const annualDist = Math.max(500, Number(annualDistanceMiles) || 12000);
   const annualMileageScale = Math.min(2.5, Math.max(0.25, annualDist / 12000));
+  const rawWearFactor = maintenanceWearFactor ?? vehicle?.maintenanceWearFactor;
+  const hasExplicitWear = Number.isFinite(Number(rawWearFactor)) && Number(rawWearFactor) > 0;
+  const wearScale = hasExplicitWear ? Number(rawWearFactor) : 1.0;
   const list = Array.isArray(evaluatedComponents) ? evaluatedComponents : [];
   let reserve = 0;
 
   for (const item of list) {
     if (!item) continue;
+    const usePreScaled = !hasExplicitWear && Boolean(item.health?.scaledCostsUsd);
+    const sourceCosts = usePreScaled ? item.health.scaledCostsUsd : item.costsUsd;
     const costRange = workshopTier === 'dealership'
-      ? item.costsUsd?.dealership || [0, 0]
-      : item.costsUsd?.independent || [0, 0];
+      ? sourceCosts?.dealership || [0, 0]
+      : sourceCosts?.independent || [0, 0];
     const c0 = Number(costRange[0]) || 0;
     const c1 = Number(costRange[1]) || 0;
-    const avgCost = (c0 + c1) / 2;
+    const avgCost = ((c0 + c1) / 2) * (usePreScaled ? 1.0 : wearScale);
 
     if (avgCost <= 0) continue;
 
@@ -950,9 +995,11 @@ export function calculateTcoProjection({
   annualInsuranceUsd,
   baseAnnualMaintenanceUsd = 800,
   maintenanceWearFactor = 1.0,
+  financeType = 'loan',
   downPaymentPct = 20,
   aprPct = 6.2,
   loanTermMonths = 60,
+  leaseAcquisitionFeeUsd = 695,
   horizonYears = 5,
   residualCurve10Yr,
   homeChargePct = 80,
@@ -968,6 +1015,9 @@ export function calculateTcoProjection({
   const eff = Math.max(1, Number(mpgUs) > 0 ? Number(mpgUs) : 30);
   const pType = resolvePowertrainType(powertrainType || vehicle || (isEv ? 'EV' : 'ICE_PETROL'));
   const isPureEv = isPureElectric(pType);
+  const normalizedFinanceType = typeof financeType === 'string' ? financeType.trim().toLowerCase() : 'loan';
+  const isLease = normalizedFinanceType === 'lease';
+  const isCash = normalizedFinanceType === 'cash';
 
   const defaultEnergyPrice = isPureEv ? 0.16 : 3.65;
   const unitEnergyPrice = (fuelPriceUsdGal !== undefined && fuelPriceUsdGal !== null && fuelPriceUsdGal !== '' && !isNaN(Number(fuelPriceUsdGal)))
@@ -979,22 +1029,76 @@ export function calculateTcoProjection({
   const years = Math.min(10, Math.max(1, Math.round(Number(horizonYears) || 5)));
   const passedCurve = residualCurve10Yr || vehicle?.residualCurve10Yr;
 
-  // Financing amortization math
-  const dpPct = (downPaymentPct !== undefined && downPaymentPct !== null && downPaymentPct !== '' && !isNaN(Number(downPaymentPct)))
+  // Financing amortization & lease modeling
+  const dpPct = isCash
+    ? 100
+    : (downPaymentPct !== undefined && downPaymentPct !== null && downPaymentPct !== '' && !isNaN(Number(downPaymentPct)))
     ? Math.min(100, Math.max(0, Number(downPaymentPct)))
     : 20;
   const dpFraction = dpPct / 100;
   const downPaymentUsd = price * dpFraction;
   const principalUsd = Math.max(0, price - downPaymentUsd);
-  const termMos = Math.max(0, Math.round(Number(loanTermMonths) >= 0 ? Number(loanTermMonths) : 60));
-  const apr = (aprPct !== undefined && aprPct !== null && aprPct !== '' && !isNaN(Number(aprPct)))
+  const termMos = isCash
+    ? 0
+    : Math.max(0, Math.round(Number(loanTermMonths) >= 0 ? Number(loanTermMonths) : 60));
+  const apr = isCash
+    ? 0
+    : (aprPct !== undefined && aprPct !== null && aprPct !== '' && !isNaN(Number(aprPct)))
     ? Math.max(0, Number(aprPct))
     : 6.2;
   const annualRate = apr / 100;
   const monthlyRate = annualRate / 12;
 
   let monthlyLoanPaymentUsd = 0;
-  if (principalUsd > 0 && termMos > 0) {
+  let leaseDetails = null;
+  let leaseTermMos = 0;
+  let leaseCapCostReductionUsd = 0;
+  let leaseAcquisitionUsd = 0;
+  let monthlyLeaseDepreciationUsd = 0;
+  let monthlyLeaseRentChargeUsd = 0;
+  let monthlyLeasePaymentUsd = 0;
+
+  if (isLease) {
+    // Residual-value + Money-Factor lease calculation
+    leaseTermMos = Math.max(12, termMos > 0 ? termMos : 36);
+    const leaseTermYears = leaseTermMos / 12;
+    const leaseResidualAtTerm = calculateNonLinearDepreciation({
+      purchasePriceUsd: price,
+      odometerMiles: startOdo,
+      annualDistanceMiles: annualMi,
+      ownershipYear: leaseTermYears,
+      powertrainType: pType,
+      residualCurve10Yr: passedCurve,
+    });
+    const leaseResidualValueUsd = leaseResidualAtTerm.residualValueUsd;
+    const leaseResidualPct = +(Math.max(5.0, (leaseResidualValueUsd / price) * 100)).toFixed(1);
+    const moneyFactor = apr / 2400;
+    const maxCapCostReductionUsd = Math.max(0, price - leaseResidualValueUsd);
+    leaseCapCostReductionUsd = Math.min(maxCapCostReductionUsd, downPaymentUsd);
+    const adjustedCapCostUsd = Math.max(leaseResidualValueUsd, price - leaseCapCostReductionUsd);
+    leaseAcquisitionUsd = parseSanitizedNumber(leaseAcquisitionFeeUsd, 695, 0);
+
+    monthlyLeaseDepreciationUsd = Math.max(0, adjustedCapCostUsd - leaseResidualValueUsd) / leaseTermMos;
+    monthlyLeaseRentChargeUsd = (adjustedCapCostUsd + leaseResidualValueUsd) * moneyFactor;
+    monthlyLeasePaymentUsd = monthlyLeaseDepreciationUsd + monthlyLeaseRentChargeUsd;
+    monthlyLoanPaymentUsd = monthlyLeasePaymentUsd;
+
+    leaseDetails = {
+      leaseTermMonths: leaseTermMos,
+      grossCapCostUsd: Math.round(price),
+      capCostReductionUsd: Math.round(leaseCapCostReductionUsd),
+      adjustedCapCostUsd: Math.round(adjustedCapCostUsd),
+      residualValueUsd: leaseResidualValueUsd,
+      residualPct: leaseResidualPct,
+      moneyFactor: +moneyFactor.toFixed(5),
+      equivalentAprPct: +apr.toFixed(2),
+      acquisitionFeeUsd: Math.round(leaseAcquisitionUsd),
+      monthlyDepreciationUsd: Math.round(monthlyLeaseDepreciationUsd),
+      monthlyRentChargeUsd: Math.round(monthlyLeaseRentChargeUsd),
+      monthlyLeasePaymentUsd: Math.round(monthlyLeasePaymentUsd),
+      dueAtSigningUsd: Math.round(leaseCapCostReductionUsd + leaseAcquisitionUsd + monthlyLeasePaymentUsd),
+    };
+  } else if (principalUsd > 0 && termMos > 0) {
     if (monthlyRate === 0) {
       monthlyLoanPaymentUsd = principalUsd / termMos;
     } else {
@@ -1017,13 +1121,14 @@ export function calculateTcoProjection({
       0
     );
     const effectiveTariff = homeFrac * homeTariff + dcFrac * dcTariff;
-    // eff is kWh / 100 miles
-    annualFuelCostUsd = annualMi > 0 ? (annualMi / 100) * eff * effectiveTariff : 0;
+    // Defensive normalization: convert MPGe (> 60) to kWh/100mi (3370.5 / MPGe)
+    const evKwhPer100Mi = normalizeEvKwhPer100Mi(eff, 28.0);
+    annualFuelCostUsd = annualMi > 0 ? (annualMi / 100) * evKwhPer100Mi * effectiveTariff : 0;
   } else if (pType === POWERTRAIN_TYPES.PHEV) {
     // PHEV: combined profile (electric commute share e.g. 65% + gasoline share e.g. 35%)
     const evFrac = Math.min(1, Math.max(0, (Number(electricSharePct ?? 65)) / 100));
     const iceFrac = 1 - evFrac;
-    const evEff = Number(phevKwhPer100Mi) > 0 ? Number(phevKwhPer100Mi) : 30.0;
+    const evEff = normalizeEvKwhPer100Mi(Number(phevKwhPer100Mi) > 0 ? Number(phevKwhPer100Mi) : 30.0, 30.0);
     const iceEfficiency = Number(phevIceMpg) > 0 ? Number(phevIceMpg) : Math.max(5, eff);
     const homeTariff = parseSanitizedNumber(homeTariffUsdPerKwh, 0.16, 0);
     const gasRate = unitEnergyPrice;
@@ -1042,7 +1147,9 @@ export function calculateTcoProjection({
   let cumulativeMaintenanceUsd = 0;
   let cumulativeInterestUsd = 0;
   let cumulativePrincipalPaidUsd = 0;
-  let remainingLoanBalanceUsd = principalUsd;
+  let cumulativeLeaseDepreciationUsd = 0;
+  let cumulativeLeaseCashOutflowUsd = 0;
+  let remainingLoanBalanceUsd = isLease ? 0 : principalUsd;
   let prevResidualValueUsd = price;
 
   for (let yr = 1; yr <= years; yr++) {
@@ -1059,8 +1166,8 @@ export function calculateTcoProjection({
     });
     // Monotonicity invariant: vehicle asset must never appreciate in value
     const residualValueUsd = Math.min(depResult.residualValueUsd, prevResidualValueUsd);
-    const yearDepreciationUsd = Math.max(0, prevResidualValueUsd - residualValueUsd);
-    const cumulativeDepreciationUsd = price - residualValueUsd;
+    let yearDepreciationUsd = Math.max(0, prevResidualValueUsd - residualValueUsd);
+    let cumulativeDepreciationUsd = price - residualValueUsd;
     prevResidualValueUsd = residualValueUsd;
 
     let yearInterestUsd = 0;
@@ -1068,16 +1175,40 @@ export function calculateTcoProjection({
     const startMonth = (yr - 1) * 12 + 1;
     const endMonth = yr * 12;
 
-    for (let m = startMonth; m <= endMonth; m++) {
-      if (m <= termMos && remainingLoanBalanceUsd > 0.01) {
-        const interestForMonth = remainingLoanBalanceUsd * monthlyRate;
-        const principalForMonth = Math.min(
-          remainingLoanBalanceUsd,
-          monthlyLoanPaymentUsd - interestForMonth
-        );
-        yearInterestUsd += interestForMonth;
-        yearPrincipalUsd += principalForMonth;
-        remainingLoanBalanceUsd = Math.max(0, remainingLoanBalanceUsd - principalForMonth);
+    if (isLease) {
+      let yearLeaseDep = 0;
+      let yearLeaseFinance = 0;
+      let yearLeaseCash = 0;
+      const monthlyEconomicDepUsd = (leaseCapCostReductionUsd / leaseTermMos) + monthlyLeaseDepreciationUsd;
+
+      for (let m = startMonth; m <= endMonth; m++) {
+        const isCycleOrigin = (m - 1) % leaseTermMos === 0;
+        const cycleAcqFee = isCycleOrigin ? leaseAcquisitionUsd : 0;
+        const cycleCapReductionCash = isCycleOrigin ? leaseCapCostReductionUsd : 0;
+
+        yearLeaseDep += monthlyEconomicDepUsd;
+        yearLeaseFinance += monthlyLeaseRentChargeUsd + cycleAcqFee;
+        yearLeaseCash += cycleCapReductionCash + cycleAcqFee + monthlyLeasePaymentUsd;
+      }
+
+      cumulativeLeaseDepreciationUsd += yearLeaseDep;
+      cumulativeLeaseCashOutflowUsd += yearLeaseCash;
+      yearDepreciationUsd = Math.round(yearLeaseDep);
+      cumulativeDepreciationUsd = Math.round(cumulativeLeaseDepreciationUsd);
+      yearInterestUsd = yearLeaseFinance;
+      remainingLoanBalanceUsd = 0;
+    } else {
+      for (let m = startMonth; m <= endMonth; m++) {
+        if (m <= termMos && remainingLoanBalanceUsd > 0.01) {
+          const interestForMonth = remainingLoanBalanceUsd * monthlyRate;
+          const principalForMonth = Math.min(
+            remainingLoanBalanceUsd,
+            monthlyLoanPaymentUsd - interestForMonth
+          );
+          yearInterestUsd += interestForMonth;
+          yearPrincipalUsd += principalForMonth;
+          remainingLoanBalanceUsd = Math.max(0, remainingLoanBalanceUsd - principalForMonth);
+        }
       }
     }
 
@@ -1108,8 +1239,8 @@ export function calculateTcoProjection({
       cumulativeMaintenanceUsd +
       cumulativeInterestUsd;
 
-    const roundedLoanBalanceUsd = Math.round(remainingLoanBalanceUsd);
-    const isUnderwater = roundedLoanBalanceUsd > residualValueUsd;
+    const roundedLoanBalanceUsd = isLease ? 0 : Math.round(remainingLoanBalanceUsd);
+    const isUnderwater = isLease ? false : roundedLoanBalanceUsd > residualValueUsd;
     const negativeEquityUsd = isUnderwater ? roundedLoanBalanceUsd - residualValueUsd : 0;
 
     yearlySchedule.push({
@@ -1141,14 +1272,21 @@ export function calculateTcoProjection({
       cumulativeInterestUsd
   );
 
-  const totalCashOutflowUsd = Math.round(
-    downPaymentUsd +
-      cumulativePrincipalPaidUsd +
-      cumulativeInterestUsd +
-      cumulativeFuelUsd +
-      cumulativeInsuranceUsd +
-      cumulativeMaintenanceUsd
-  );
+  const totalCashOutflowUsd = isLease
+    ? Math.round(
+        cumulativeLeaseCashOutflowUsd +
+          cumulativeFuelUsd +
+          cumulativeInsuranceUsd +
+          cumulativeMaintenanceUsd
+      )
+    : Math.round(
+        downPaymentUsd +
+          cumulativePrincipalPaidUsd +
+          cumulativeInterestUsd +
+          cumulativeFuelUsd +
+          cumulativeInsuranceUsd +
+          cumulativeMaintenanceUsd
+      );
 
   const totalDistanceMiles = annualMi * years;
   const costPerMileUsd = totalDistanceMiles > 0 ? +(totalEconomicCostUsd / totalDistanceMiles).toFixed(3) : 0;
@@ -1158,7 +1296,7 @@ export function calculateTcoProjection({
   const breakdownRaw = [
     {
       id: 'depreciation',
-      label: 'Depreciation',
+      label: isLease ? 'Lease Depreciation' : 'Depreciation',
       amountUsd: totalDepreciationUsd,
       color: '#183D22',
     },
@@ -1182,7 +1320,7 @@ export function calculateTcoProjection({
     },
     {
       id: 'interest',
-      label: 'Financing Interest',
+      label: isLease ? 'Lease Rent & Fees' : 'Financing Interest',
       amountUsd: Math.round(cumulativeInterestUsd),
       color: '#94A3B8',
     },
@@ -1195,11 +1333,12 @@ export function calculateTcoProjection({
     perMileUsd: totalDistanceMiles > 0 ? b.amountUsd / totalDistanceMiles : 0,
   }));
 
-  const hasUnderwaterEquity = yearlySchedule.some((s) => s.isUnderwater);
-  const maxUnderwaterEquityUsd = Math.max(0, ...yearlySchedule.map((s) => s.negativeEquityUsd));
-  const underwaterYears = yearlySchedule.filter((s) => s.isUnderwater).map((s) => s.year);
+  const hasUnderwaterEquity = isLease ? false : yearlySchedule.some((s) => s.isUnderwater);
+  const maxUnderwaterEquityUsd = isLease ? 0 : Math.max(0, ...yearlySchedule.map((s) => s.negativeEquityUsd));
+  const underwaterYears = isLease ? [] : yearlySchedule.filter((s) => s.isUnderwater).map((s) => s.year);
 
   return {
+    financeType: normalizedFinanceType,
     totalEconomicCostUsd,
     totalCashOutflowUsd,
     costPerMileUsd,
@@ -1212,6 +1351,8 @@ export function calculateTcoProjection({
     totalMaintenanceUsd: Math.round(cumulativeMaintenanceUsd),
     totalInterestUsd: Math.round(cumulativeInterestUsd),
     monthlyLoanPaymentUsd: Math.round(monthlyLoanPaymentUsd),
+    monthlyLeasePaymentUsd: isLease ? Math.round(monthlyLeasePaymentUsd) : 0,
+    leaseDetails,
     totalDistanceMiles,
     breakdown,
     yearlySchedule,

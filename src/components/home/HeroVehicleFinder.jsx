@@ -272,23 +272,24 @@ export default function HeroVehicleFinder({
             { label: 'Tesla Model 3', id: 'tesla-model-3-lr' },
             { label: 'Ford Focus', id: 'ford-focus-ecoblue' },
           ].map((item) => (
-            <button
+            <a
               key={item.id}
-              type="button"
-              onClick={() => {
+              href={`/tco/${item.id}`}
+              onClick={(e) => {
+                e.preventDefault();
                 onSelectPreset(item.id);
                 onNavigateToTco(item.id);
               }}
-              className="min-h-[32px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg px-2.5 py-1 text-xs font-sans font-medium hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
+              className="min-h-[32px] inline-flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg px-2.5 py-1 text-xs font-sans font-medium hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition cursor-pointer"
             >
               {item.label}
-            </button>
+            </a>
           ))}
         </div>
 
         {/* Factual Highlights */}
         <div className="mt-5 text-xs font-sans font-medium text-body dark:text-zinc-400">
-          <strong className="text-ink dark:text-zinc-200 font-mono tabular-nums font-semibold">120+</strong> models covered · US, UK &amp; EU regional pricing · Free, no sign-up
+          <strong className="text-ink dark:text-zinc-200 font-mono tabular-nums font-semibold">179+</strong> models covered · US, UK &amp; EU regional pricing · Free, no sign-up
         </div>
 
         {/* Accessible hidden select for test compatibility */}

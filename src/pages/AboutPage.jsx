@@ -257,11 +257,11 @@ export default function AboutPage({ onNavigateTab }) {
           </div>
         </section>
 
-        {/* Operator Impresszum & Legal Information */}
+        {/* Operator Imprint / Legal Disclosure & Legal Information */}
         <section className="bg-canvas dark:bg-zinc-900/40 rounded-3xl p-8 border border-border dark:border-zinc-800 space-y-4 text-xs text-muted dark:text-zinc-400">
           <div className="flex items-center gap-2 font-bold text-ink dark:text-zinc-200 text-sm">
             <FileText className="w-4 h-4 text-primary-600 dark:text-emerald-400" />
-            Operator Impresszum & Regulatory Disclosures
+            Operator Imprint / Legal Disclosure &amp; Regulatory Information
           </div>
           <p className="leading-relaxed">
             In compliance with the European Union e-Commerce Directive (2000/31/EC), the Hungarian Act CVIII of 2001 on Electronic Commerce Services, and international digital media transparency frameworks:

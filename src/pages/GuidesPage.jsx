@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { GUIDES_DATA } from '../data/guidesData';
+import { GUIDES_DATA, ALL_GUIDES_DATA } from '../data/guidesData';
 import {
   BookOpen,
   ArrowRight,
@@ -28,22 +28,24 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
   const [checkedItems, setCheckedItems] = useState({});
   const [copiedLink, setCopiedLink] = useState(false);
 
+  const guidesCatalog = ALL_GUIDES_DATA || GUIDES_DATA;
+
   // Find active guide if slug is provided
   const currentGuide = useMemo(() => {
     if (!activeSlug) return null;
-    return GUIDES_DATA.find((g) => g.slug === activeSlug) || null;
-  }, [activeSlug]);
+    return guidesCatalog.find((g) => g.slug === activeSlug) || null;
+  }, [activeSlug, guidesCatalog]);
 
   const categories = useMemo(() => {
     const cats = ['All'];
-    GUIDES_DATA.forEach((g) => {
+    guidesCatalog.forEach((g) => {
       if (!cats.includes(g.category)) cats.push(g.category);
     });
     return cats;
-  }, []);
+  }, [guidesCatalog]);
 
   const filteredGuides = useMemo(() => {
-    return GUIDES_DATA.filter((g) => {
+    return guidesCatalog.filter((g) => {
       const matchesCategory =
         selectedCategory === 'All' || g.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
@@ -54,7 +56,7 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
         g.category.toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, guidesCatalog]);
 
   const toggleChecklist = (index) => {
     setCheckedItems((prev) => ({
@@ -79,7 +81,7 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
   // DETAIL ARTICLE VIEW
   // =============================================================
   if (currentGuide) {
-    const otherGuides = GUIDES_DATA.filter((g) => g.slug !== currentGuide.slug).slice(0, 2);
+    const otherGuides = guidesCatalog.filter((g) => g.slug !== currentGuide.slug).slice(0, 2);
 
     return (
       <article className="min-h-screen bg-canvas dark:bg-[#09090B] text-ink dark:text-zinc-100 py-10 px-4 sm:px-6 lg:px-8">
@@ -446,7 +448,7 @@ export default function GuidesPage({ activeSlug, onSelectGuide, onNavigateTab })
             </div>
             {/* Category count indicator */}
             <span className="text-xs text-muted dark:text-zinc-400 shrink-0">
-              Showing {filteredGuides.length} of {GUIDES_DATA.length} guides
+              Showing {filteredGuides.length} of {guidesCatalog.length} guides
             </span>
           </div>
 

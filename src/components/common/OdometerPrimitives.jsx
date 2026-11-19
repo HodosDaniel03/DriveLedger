@@ -12,12 +12,12 @@ export function Card({ className = '', children, ...props }) {
   );
 }
 
-export function PageHeader({ title, subtitle, className = '' }) {
+export function PageHeader({ title, subtitle, className = '', as: HeadingTag = 'h1' }) {
   return (
     <header className={`mb-6 max-w-2xl ${className}`}>
-      <h1 className="font-sans text-balance text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-ink dark:text-zinc-50">
+      <HeadingTag className="font-sans text-balance text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-ink dark:text-zinc-50">
         {title}
-      </h1>
+      </HeadingTag>
       <p className="mt-2 font-sans font-medium text-pretty text-sm sm:text-base leading-relaxed text-body dark:text-zinc-400">
         {subtitle}
       </p>

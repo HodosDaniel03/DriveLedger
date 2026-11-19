@@ -4,14 +4,16 @@ import {
   OBD_CODES,
   LABOR_RATE_TIERS,
   calculateObdWorkshopEstimate,
+  buildObdCodeSummary,
 } from '../../data/obdCodes';
 import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
-import { getHybridVehicleObdContext } from '../../data/seoMatrixData';
+import { getHybridVehicleObdContext, isObdCompatibleWithVehicle } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
 import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar, Collapse } from '../common/OdometerPrimitives';
 import { buildAffiliateUrl } from '../../config/monetizationConfig';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
+import VehicleInternalLinks from '../seo/VehicleInternalLinks';
 import LivePidEvaluator from './LivePidEvaluator';
 import FixOrSellCalculator from './FixOrSellCalculator';
 
@@ -26,6 +28,8 @@ const CODE_LABELS = {
   P0401: 'EGR insufficient flow',
   P0128: 'Coolant thermostat',
   P0700: 'Transmission control',
+  P0A80: 'HV battery pack',
+  U0100: 'ECM/PCM CAN bus',
 };
 
 const OBD_CATEGORIES = [
@@ -36,6 +40,7 @@ const OBD_CATEGORIES = [
   'Engine Mechanical & Ignition',
   'Transmission & Drivetrain',
   'Cooling & Thermal',
+  'Hybrid & Network Telemetry',
 ];
 
 export const SYMPTOM_FILTERS = [
@@ -56,15 +61,27 @@ export default function ObdEstimator({
   onSelectCode,
   selectedPresetId,
   onSelectPreset,
+  onNavigateToTco,
   onNavigateToRisk,
+  onNavigateToRiskBracket,
+  onNavigateToChecklist,
+  onNavigateToHybridObd,
   onNavigateToCompare,
+  onNavigateToVehicles,
 }) {
-  const activeCodeId = selectedObdCode || selectedCode || 'P2002';
   const { region, formatCurrency } = useUnits();
 
   const [localPresetId, setLocalPresetId] = useState(
     selectedPresetId || VEHICLE_PRESETS[0].id
   );
+  const resolvedDefaultCode = useMemo(() => {
+    const presetObj = VEHICLE_PRESETS.find((p) => p.id === localPresetId) || VEHICLE_PRESETS[0];
+    const preferred = (presetObj.commonObdCodes || []).find((c) => isObdCompatibleWithVehicle(presetObj, c));
+    if (preferred) return preferred;
+    const firstCompat = OBD_CODES.find((c) => isObdCompatibleWithVehicle(presetObj, c));
+    return firstCompat ? firstCompat.code : 'P0420';
+  }, [localPresetId]);
+  const activeCodeId = selectedObdCode || selectedCode || resolvedDefaultCode;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Systems');
   const [laborTierId, setLaborTierId] = useState('independent'); // 'independent' | 'dealership' | 'diy'
@@ -84,6 +101,14 @@ export default function ObdEstimator({
     if (typeof onSelectPreset === 'function') {
       onSelectPreset(nextPresetId);
     }
+    const nextPreset = VEHICLE_PRESETS.find((p) => p.id === nextPresetId);
+    if (nextPreset && !isObdCompatibleWithVehicle(nextPreset, activeCodeId)) {
+      const compatibleCommon = (nextPreset.commonObdCodes || []).find((c) =>
+        isObdCompatibleWithVehicle(nextPreset, c)
+      );
+      const fallbackCode = compatibleCommon || (nextPreset.isEv ? 'U0100' : 'P0420');
+      handleSelect(fallbackCode);
+    }
   };
 
   const handleSelect = (code) => {
@@ -100,34 +125,39 @@ export default function ObdEstimator({
   const activePreset = hybridContext.preset;
   const activeDossier = hybridContext.dossier;
   const isKnownVulnerability = hybridContext.isKnownWeakPoint;
+  const codeSummary = useMemo(
+    () => buildObdCodeSummary(activeDossier, activePreset),
+    [activeDossier, activePreset]
+  );
 
-  // Workshop cost estimate + DIY vs Dealership savings comparison
+  // Workshop cost estimate + DIY vs Dealership savings comparison (scaled by vehicle maintenanceWearFactor)
   const est = useMemo(() => {
-    return calculateObdWorkshopEstimate(activeDossier, laborTierId);
-  }, [activeDossier, laborTierId]);
+    return calculateObdWorkshopEstimate(activeDossier, laborTierId, { vehicle: activePreset });
+  }, [activeDossier, laborTierId, activePreset]);
 
   const dealershipEst = useMemo(
-    () => calculateObdWorkshopEstimate(activeDossier, 'dealership'),
-    [activeDossier]
+    () => calculateObdWorkshopEstimate(activeDossier, 'dealership', { vehicle: activePreset }),
+    [activeDossier, activePreset]
   );
   const diyEst = useMemo(
-    () => calculateObdWorkshopEstimate(activeDossier, 'diy'),
-    [activeDossier]
+    () => calculateObdWorkshopEstimate(activeDossier, 'diy', { vehicle: activePreset }),
+    [activeDossier, activePreset]
   );
   const diySavingsVsDealerUsd = Math.max(
     0,
     (dealershipEst?.weightedExpectedUsd || 0) - (diyEst?.weightedExpectedUsd || 0)
   );
 
-  // Root-cause cost extremes for dynamic OBD2 scanner payback math
+  // Root-cause cost extremes for dynamic OBD2 scanner payback math (scaled by maintenanceWearFactor)
   const causeCostStats = useMemo(() => {
     const causes = activeDossier.rootCauses || [];
+    const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
     if (!causes.length) {
       return { cheapestCauseUsd: 95, costliestCauseUsd: 1650, cheapCauseProbPct: 42 };
     }
     const priced = causes.map((rc) => {
-      const pAvg = ((Number(rc.partsCostUsd?.[0]) || 0) + (Number(rc.partsCostUsd?.[1]) || 0)) / 2;
-      const lAvg = ((Number(rc.laborHours?.[0]) || 0) + (Number(rc.laborHours?.[1]) || 0)) / 2;
+      const pAvg = (((Number(rc.partsCostUsd?.[0]) || 0) + (Number(rc.partsCostUsd?.[1]) || 0)) / 2) * wearScale;
+      const lAvg = (((Number(rc.laborHours?.[0]) || 0) + (Number(rc.laborHours?.[1]) || 0)) / 2) * wearScale;
       return {
         totalUsd: Math.max(35, Math.round(pAvg + lAvg * 115)),
         prob: Number(rc.probabilityPct) || 0,
@@ -139,22 +169,32 @@ export default function ObdEstimator({
       costliestCauseUsd: sortedAsc[sortedAsc.length - 1].totalUsd,
       cheapCauseProbPct: sortedAsc[0].prob || 35,
     };
-  }, [activeDossier]);
+  }, [activeDossier, activePreset]);
 
   const effectiveLaborRate = est.rateUsdPerHr;
 
-  // Search filter
+  // Search & category filter
   const searchMatches = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
     return OBD_CODES.filter((item) => {
+      if (selectedCategory !== 'All Systems' && item.systemCategory !== selectedCategory) {
+        return false;
+      }
       const inCode = item.code.toLowerCase().includes(q);
       const inTitle = item.title.toLowerCase().includes(q);
       const inSymptoms = (item.symptoms || []).some((s) => s.toLowerCase().includes(q));
       const inCauses = (item.rootCauses || []).some((rc) => rc.cause.toLowerCase().includes(q));
       return inCode || inTitle || inSymptoms || inCauses;
     });
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory]);
+
+  const displayedQuickCodes = useMemo(() => {
+    if (selectedCategory === 'All Systems') {
+      return QUICK_CODES;
+    }
+    return OBD_CODES.filter((item) => item.systemCategory === selectedCategory).map((item) => item.code);
+  }, [selectedCategory]);
 
   // Top 3 ranked root causes
   const topRootCauses = useMemo(() => {
@@ -204,8 +244,10 @@ export default function ObdEstimator({
     return buildAffiliateUrl('obd-scanner', {
       activeCode: activeDossier.code,
       vehicleName: activePreset.name,
+      region,
+      skipPlaceholder: true,
     });
-  }, [activeDossier.code, activePreset.name]);
+  }, [activeDossier.code, activePreset.name, region]);
 
   const obdTldrFacts = useMemo(() => [
     {
@@ -223,8 +265,12 @@ export default function ObdEstimator({
       label: 'Severity & Drivability',
       value: activeDossier.severity?.includes('CRITICAL') ? 'Critical (Stop driving immediately)' : activeDossier.severity?.includes('HIGH') ? 'Moderate (Service within 1–2 weeks)' : 'Low (Safe for short trips)',
       subtext: activeDossier.severity?.includes('CRITICAL')
-        ? 'Continued driving causes permanent engine or catalyst destruction!'
-        : 'Service promptly to safeguard catalytic converter and emissions hardware.',
+        ? activePreset?.isEv
+          ? 'Continued driving risks high-voltage isolation shutdown or power electronics damage!'
+          : 'Continued driving causes permanent engine or catalyst destruction!'
+        : activePreset?.isEv
+        ? 'Service promptly to safeguard high-voltage battery modules and charging electronics.'
+        : `Service promptly to protect ${codeSummary.subsystem} components and avoid secondary damage.`,
       badge: (
         <RiskBadge
           level={activeDossier.severity?.includes('CRITICAL') ? 'critical' : activeDossier.severity?.includes('HIGH') ? 'moderate' : 'low'}
@@ -307,7 +353,7 @@ export default function ObdEstimator({
                         <span className="font-bold tabular-nums text-primary-600 dark:text-emerald-400 font-mono text-base">{m.code}</span>
                         <span className="font-sans text-ink dark:text-zinc-50 font-medium">{m.title}</span>
                       </div>
-                      <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">{m.category}</span>
+                      <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">{m.systemCategory || m.category}</span>
                     </button>
                   </li>
                 ))}
@@ -403,20 +449,23 @@ export default function ObdEstimator({
           )}
         </div>
 
-        {/* Common Codes Quick-Select Chips */}
+        {/* Common Codes Quick-Select Chips (Filtered by Selected System Category) */}
         <div className="pt-2">
-          <span className="font-sans text-xs font-medium text-muted dark:text-zinc-400 block mb-2">Common diagnostic codes:</span>
+          <span className="font-sans text-xs font-medium text-muted dark:text-zinc-400 block mb-2">
+            {selectedCategory === 'All Systems' ? 'Common diagnostic codes:' : `${selectedCategory} diagnostic codes:`}
+          </span>
           <div className="flex flex-wrap gap-2">
-            {QUICK_CODES.map((c) => {
+            {displayedQuickCodes.map((c) => {
               const active = c === activeDossier.code;
               const isKnownForVehicle = Array.isArray(activePreset.commonObdCodes) && activePreset.commonObdCodes.includes(c);
+              const codeObj = OBD_CODES.find((item) => item.code === c);
               return (
                 <button
                   key={c}
                   type="button"
                   aria-pressed={active}
                   onClick={() => handleSelect(c)}
-                  title={isKnownForVehicle ? `Known weak point on ${activePreset.name}` : undefined}
+                  title={isKnownForVehicle ? `Known weak point on ${activePreset.name}` : codeObj?.title}
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     active
                       ? 'border-[#183D22] bg-[#183D22] text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
@@ -426,7 +475,7 @@ export default function ObdEstimator({
                   }`}
                 >
                   <span className="font-semibold tabular-nums font-mono">{c}</span>
-                  <span className="font-sans text-[11px] opacity-85">{CODE_LABELS[c] || ''}</span>
+                  <span className="font-sans text-[11px] opacity-85">{CODE_LABELS[c] || codeObj?.title?.split(':')[0] || ''}</span>
                 </button>
               );
             })}
@@ -516,7 +565,9 @@ export default function ObdEstimator({
                 <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold mr-1">
                   Known Faults:
                 </span>
-                {activePreset.commonObdCodes.map((c) => (
+                {activePreset.commonObdCodes
+                  .filter((c) => isObdCompatibleWithVehicle(activePreset, c))
+                  .map((c) => (
                   <button
                     key={c}
                     type="button"
@@ -547,7 +598,7 @@ export default function ObdEstimator({
                   {activeDossier.code}
                 </span>
                 <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  {activeDossier.category || 'Emissions & Exhaust'}
+                  {codeSummary.systemCategory}
                 </span>
               </div>
               <Pill tone={severityTone}>
@@ -560,7 +611,7 @@ export default function ObdEstimator({
             </h3>
 
             <p className="font-sans text-body dark:text-zinc-300 text-sm mt-2 leading-relaxed">
-              {activeDossier.description || 'Catalytic converter efficiency or sensor threshold fault registered by powertrain control module.'}
+              {codeSummary.description}
             </p>
 
             {/* Common Symptoms List */}
@@ -642,8 +693,9 @@ export default function ObdEstimator({
 
             <ol className="flex flex-col gap-3">
               {topRootCauses.map((c, i) => {
-                const p0 = Math.max(0, Number(c.partsCostUsd?.[0]) || 0);
-                const p1 = Math.max(p0, Number(c.partsCostUsd?.[1]) || p0);
+                const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
+                const p0 = Math.max(0, Number(c.partsCostUsd?.[0]) || 0) * wearScale;
+                const p1 = Math.max(p0, (Number(c.partsCostUsd?.[1]) || 0) * wearScale);
                 const activeTierObj = LABOR_RATE_TIERS.find((t) => t.id === laborTierId) || LABOR_RATE_TIERS[1];
                 const markup = activeTierObj?.partsMarkupFactor ?? (laborTierId === 'dealership' ? 1.25 : laborTierId === 'diy' ? 0.85 : 1.0);
                 const avgPart = ((p0 + p1) / 2) * markup;
@@ -651,7 +703,7 @@ export default function ObdEstimator({
                 const h0 = Math.max(0, Number(c.laborHours?.[0]) || 0);
                 const h1 = Math.max(h0, Number(c.laborHours?.[1]) || h0);
                 const rate = activeTierObj?.rateUsdPerHr ?? (laborTierId === 'dealership' ? 185 : laborTierId === 'diy' ? 0 : 115);
-                const avgLabor = ((h0 + h1) / 2) * rate;
+                const avgLabor = ((h0 + h1) / 2) * rate * wearScale;
                 const estimatedCulpritCost = Math.max(0, Math.round(avgPart + avgLabor));
                 const isExpanded = expandedCause === i;
 
@@ -698,7 +750,7 @@ export default function ObdEstimator({
 
                         <div className="flex flex-wrap items-center justify-between font-sans text-muted dark:text-zinc-400 gap-2 pt-0.5">
                           <span>
-                            Parts: <span className="font-mono tabular-nums">{formatCurrency(c.partsCostUsd[0])}–{formatCurrency(c.partsCostUsd[1])}</span> · Labour: <span className="font-mono tabular-nums">{c.laborHours[0]}–{c.laborHours[1]}</span> hrs
+                            Parts: <span className="font-mono tabular-nums">{formatCurrency(Math.round(p0 * markup))}–{formatCurrency(Math.round(p1 * markup))}</span> · Labour: <span className="font-mono tabular-nums">{c.laborHours[0]}–{c.laborHours[1]}</span> hrs
                           </span>
                         </div>
 
@@ -975,12 +1027,12 @@ export default function ObdEstimator({
               Powertrain Component Wear Check
             </h4>
             <p className="font-sans text-xs text-body dark:text-zinc-300 leading-relaxed">
-              Fault code <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums">{activeDossier.code}</strong> frequently correlates with mechanical wear on {activeDossier.subsystem || 'exhaust and induction subsystems'}. Check component failure probabilities by mileage.
+              Fault code <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums">{activeDossier.code}</strong> frequently correlates with mechanical wear on {codeSummary.subsystem}. Check component failure probabilities by mileage.
             </p>
             <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <button
                 type="button"
-                onClick={onNavigateToRisk}
+                onClick={() => onNavigateToRisk && onNavigateToRisk(activePreset.id)}
                 className="font-sans text-xs font-semibold text-primary-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 transition-colors"
               >
                 <span>Open Powertrain Risk Matrix</span>
@@ -1005,6 +1057,25 @@ export default function ObdEstimator({
         tool="obd"
         activeCode={activeDossier.code}
         vehicleName={activePreset.name}
+      />
+
+      {/* Crawlable Internal Links for Active Vehicle & Compatible OBD Codes */}
+      <VehicleInternalLinks
+        vehicle={activePreset}
+        onSelectPreset={handlePresetChange}
+        onNavigateToTco={onNavigateToTco}
+        onNavigateToRisk={onNavigateToRisk}
+        onNavigateToRiskBracket={onNavigateToRiskBracket}
+        onNavigateToChecklist={onNavigateToChecklist}
+        onNavigateToCompare={onNavigateToCompare}
+        onNavigateToHybridObd={
+          onNavigateToHybridObd ||
+          ((presetId, code) => {
+            handlePresetChange(presetId);
+            handleSelect(code);
+          })
+        }
+        onNavigateToVehicles={onNavigateToVehicles}
       />
 
       {/* 7. Mobile Sticky Summary Bar for real-time OBD-II workshop cost feedback on small screens */}

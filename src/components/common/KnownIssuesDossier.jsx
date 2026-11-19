@@ -63,7 +63,7 @@ export default function KnownIssuesDossier({
   model,
   className = '',
 }) {
-  const { region, formatCurrency, formatDistance } = useUnits();
+  const { region, formatCurrency, formatDistance, formatEfficiency } = useUnits();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [selectedGenId, setSelectedGenId] = useState('');
@@ -82,19 +82,38 @@ export default function KnownIssuesDossier({
   const activeModelId = initialResolved?.model?.id || model || 'ford-focus';
   const activeModelName = initialResolved?.model?.name || model || 'Focus';
 
+  const isSynthesizedPreset = Boolean(initialResolved?.generation?.id?.endsWith('-gen'));
+
   // Available model generations
   const availableGenerations = useMemo(() => {
-    return getGenerationsForModel(activeBrandId, activeModelId);
-  }, [activeBrandId, activeModelId]);
+    if (isSynthesizedPreset) {
+      return initialResolved?.generation ? [initialResolved.generation] : [];
+    }
+    const gens = getGenerationsForModel(activeBrandId, activeModelId);
+    if (gens && gens.length > 0) return gens;
+    return initialResolved?.generation ? [initialResolved.generation] : [];
+  }, [activeBrandId, activeModelId, initialResolved, isSynthesizedPreset]);
 
   const currentGenId = selectedGenId || initialResolved?.generation?.id || availableGenerations[0]?.id;
 
   // Available engines for current generation
   const availableEngines = useMemo(() => {
-    return getEnginesForGeneration(activeBrandId, activeModelId, currentGenId);
-  }, [activeBrandId, activeModelId, currentGenId]);
+    if (isSynthesizedPreset) {
+      return initialResolved?.engine ? [initialResolved.engine] : [];
+    }
+    const engs = getEnginesForGeneration(activeBrandId, activeModelId, currentGenId);
+    if (engs && engs.length > 0) return engs;
+    return initialResolved?.engine ? [initialResolved.engine] : [];
+  }, [activeBrandId, activeModelId, currentGenId, initialResolved, isSynthesizedPreset]);
 
   const currentEngineId = selectedEngineId || initialResolved?.engine?.id || availableEngines[0]?.id;
+
+  const resolvedYear = useMemo(() => {
+    const m = String(vehicleName || '').match(/\b(20\d{2})\b/);
+    if (m) return Number(m[1]);
+    const fromYr = initialResolved?.engine?.years?.from || initialResolved?.generation?.years?.from;
+    return fromYr ? Math.min(2024, fromYr + 2) : 2021;
+  }, [vehicleName, initialResolved]);
 
   // Sync state when presetId or vehicle changes
   useEffect(() => {
@@ -111,16 +130,20 @@ export default function KnownIssuesDossier({
     const instant = vehicleDataService.getCuratedIntelligence({
       make: activeBrandName,
       model: activeModelName,
-      year: 2021,
+      year: resolvedYear,
       generationId: currentGenId,
       engineId: targetEngineId,
     });
-    setData((prev) => (prev ? {
-      ...instant,
-      nhtsaRecalls: prev.nhtsaRecalls?.length ? prev.nhtsaRecalls : instant.nhtsaRecalls,
-      nhtsaComplaints: prev.nhtsaComplaints?.totalCount ? prev.nhtsaComplaints : instant.nhtsaComplaints,
-      fuelEconomy: prev.fuelEconomy?.combinedMpg ? prev.fuelEconomy : instant.fuelEconomy,
-    } : instant));
+    setData((prev) =>
+      prev && prev.engine?.id === targetEngineId
+        ? {
+            ...instant,
+            nhtsaRecalls: prev.nhtsaRecalls?.length ? prev.nhtsaRecalls : instant.nhtsaRecalls,
+            nhtsaComplaints: prev.nhtsaComplaints?.totalCount ? prev.nhtsaComplaints : instant.nhtsaComplaints,
+            fuelEconomy: prev.fuelEconomy?.combinedMpg ? prev.fuelEconomy : instant.fuelEconomy,
+          }
+        : instant
+    );
 
     // 2. Background Revalidation via Live APIs
     setLoading(true);
@@ -128,7 +151,7 @@ export default function KnownIssuesDossier({
       const liveIntel = await vehicleDataService.getVehicleIntelligence({
         make: activeBrandName,
         model: activeModelName,
-        year: 2021,
+        year: resolvedYear,
         generationId: currentGenId,
         engineId: targetEngineId,
         bypassCache: forceRefresh,
@@ -144,7 +167,7 @@ export default function KnownIssuesDossier({
 
   useEffect(() => {
     loadData(false);
-  }, [presetId, currentGenId, currentEngineId, brand, model]);
+  }, [presetId, currentGenId, currentEngineId, brand, model, resolvedYear]);
 
   const toggleIssueExpand = (issueId) => {
     setExpandedIssues((prev) => ({
@@ -155,13 +178,30 @@ export default function KnownIssuesDossier({
 
   const formatCostInRegion = (cost) => {
     if (!cost) return 'N/A';
-    if (region === 'EU') return cost.formattedEur;
-    if (region === 'UK') {
-      const gbpMin = Math.round(cost.parts.min * 0.85);
-      const gbpMax = Math.round(cost.parts.max * 0.85 + cost.labor.max * 0.85);
-      return `£${gbpMin.toLocaleString()} - £${gbpMax.toLocaleString()}`;
+    const minEur = (Number(cost.parts?.min) || 0) + (Number(cost.labor?.min) || 0);
+    const maxEur = (Number(cost.parts?.max) || 0) + (Number(cost.labor?.max) || 0);
+    if (minEur > 0 || maxEur > 0) {
+      return formatEurBandInRegion(minEur, maxEur);
     }
-    return cost.formattedUsd;
+    return region === 'EU' ? cost.formattedEur : cost.formattedUsd;
+  };
+
+  const formatEurBandInRegion = (minEur, maxEur) => {
+    if (region === 'EU') {
+      return `€${Number(minEur || 0).toLocaleString()} – €${Number(maxEur || 0).toLocaleString()}`;
+    }
+    // Convert EUR to USD baseline (1 EUR = 1 / 0.92 USD) then format via UnitContext
+    const minUsd = Math.round((Number(minEur) || 0) / 0.92);
+    const maxUsd = Math.round((Number(maxEur) || 0) / 0.92);
+    return `${formatCurrency(minUsd)} – ${formatCurrency(maxUsd)}`;
+  };
+
+  const formatCriticalMileage = (crit) => {
+    if (!crit) return '';
+    if (region === 'EU') return crit.display;
+    const minMiles = Math.round((Number(crit.minKm) || 0) / 1.609344 / 1000) * 1000;
+    const maxMiles = Math.round((Number(crit.maxKm) || 0) / 1.609344 / 1000) * 1000;
+    return `${formatDistance(minMiles, false)} – ${formatDistance(maxMiles)}`;
   };
 
   if (!data && loading) {
@@ -299,7 +339,7 @@ export default function KnownIssuesDossier({
             )}
             {engine?.powerHp && (
               <span className="text-muted dark:text-zinc-400 font-mono tabular-nums">
-                · {engine.powerHp} LE {engine.torqueNm ? `· ${engine.torqueNm} Nm` : ''}
+                · {engine.powerHp} HP {engine.torqueNm ? `· ${engine.torqueNm} Nm` : ''}
               </span>
             )}
             {engine?.criticalDefectTag && (
@@ -351,7 +391,7 @@ export default function KnownIssuesDossier({
                           </span>
                           <span className="text-xs font-mono tabular-nums font-semibold text-ink dark:text-zinc-200 flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-muted" />
-                            {issue.criticalMileage.display}
+                            {formatCriticalMileage(issue.criticalMileage)}
                           </span>
                         </div>
                         <h5 className="font-sans text-sm font-bold tracking-tight text-ink dark:text-zinc-100 mt-1">
@@ -420,13 +460,13 @@ export default function KnownIssuesDossier({
                           <div>
                             <span className="text-muted block">Parts Range:</span>
                             <span className="font-bold font-mono tabular-nums text-ink dark:text-zinc-200">
-                              €{issue.repairCost.parts.min} – €{issue.repairCost.parts.max}
+                              {formatEurBandInRegion(issue.repairCost.parts.min, issue.repairCost.parts.max)}
                             </span>
                           </div>
                           <div>
                             <span className="text-muted block">Labor Range:</span>
                             <span className="font-bold font-mono tabular-nums text-ink dark:text-zinc-200">
-                              €{issue.repairCost.labor.min} – €{issue.repairCost.labor.max}
+                              {formatEurBandInRegion(issue.repairCost.labor.min, issue.repairCost.labor.max)}
                             </span>
                           </div>
                           <div>
@@ -489,14 +529,34 @@ export default function KnownIssuesDossier({
 
             {/* EPA Fuel Economy Stat Card */}
             <div className="p-3.5 rounded-xl bg-surface-subtle dark:bg-zinc-800/50 border border-border dark:border-zinc-700/80">
-              <span className="text-[11px] font-medium text-muted dark:text-zinc-400 block">Official EPA Fuel Economy</span>
+              <span className="text-[11px] font-medium text-muted dark:text-zinc-400 block">
+                {engine?.fuelType === 'Electric' ? 'Official EV Energy Consumption' : 'Official EPA Fuel Economy'}
+              </span>
               <div className="flex items-baseline justify-between mt-1">
-                <span className="text-xl font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
-                  {fuelEconomy.lPer100Km} <span className="text-xs font-sans font-normal text-muted">L/100km</span>
-                </span>
-                <span className="text-xs font-mono tabular-nums font-semibold text-muted">
-                  {fuelEconomy.combinedMpg} MPG
-                </span>
+                {engine?.fuelType === 'Electric' ? (
+                  <>
+                    <span className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
+                      {formatEfficiency(
+                        fuelEconomy.combinedMpg > 60 ? +(3370.5 / fuelEconomy.combinedMpg).toFixed(1) : fuelEconomy.combinedMpg,
+                        true
+                      )}
+                    </span>
+                    <span className="text-xs font-mono tabular-nums font-semibold text-muted">
+                      {fuelEconomy.kwhPer100Km
+                        ? `${fuelEconomy.kwhPer100Km} kWh/100km`
+                        : `${Math.round(fuelEconomy.combinedMpg)} MPGe`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100">
+                      {formatEfficiency(fuelEconomy.combinedMpg, false)}
+                    </span>
+                    <span className="text-xs font-mono tabular-nums font-semibold text-muted">
+                      {region === 'EU' ? `${fuelEconomy.combinedMpg} MPG` : `${fuelEconomy.lPer100Km} L/100km`}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
