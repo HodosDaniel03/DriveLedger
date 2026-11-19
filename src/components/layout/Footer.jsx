@@ -49,10 +49,11 @@ export default function Footer({
   onOpenCookiePreferences,
   hideFaq = false,
   selectedPresetId,
+  hasSelectedVehicle = Boolean(selectedPresetId),
 }) {
   const { formatCurrency } = useUnits();
   const [openFaq, setOpenFaq] = useState(null);
-  const activePreset = selectedPresetId ? getPresetById(selectedPresetId) : null;
+  const activePreset = hasSelectedVehicle && selectedPresetId ? getPresetById(selectedPresetId) : null;
 
   const benchmarkPresets = [
     { id: 'toyota-camry-hybrid', name: 'Toyota Camry Hybrid 2.5L', price: 31500 },

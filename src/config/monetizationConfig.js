@@ -361,10 +361,10 @@ export function resolveAffiliateOffer({
   }
 
   if (type === 'insurance-finance' || type === 'autoInsurance') {
-    const totalOutlay =
-      Number(insuranceAndInterest5YrUsd) > 0
-        ? formatCurrency(insuranceAndInterest5YrUsd)
-        : formatCurrency(6800);
+    const hasMeasuredOutlay = Number(insuranceAndInterest5YrUsd) > 0;
+    const totalOutlay = hasMeasuredOutlay
+      ? formatCurrency(insuranceAndInterest5YrUsd)
+      : null;
     const shareLabel =
       Number(insuranceSharePct) > 0 ? ` (${Math.round(insuranceSharePct)}% of 5-yr TCO)` : '';
     const monthlySave =
@@ -378,7 +378,9 @@ export function resolveAffiliateOffer({
       partnerName: resolvedPartnerName,
       badgeText: partner.badgeText,
       badge: `Partner link · ${resolvedPartnerName}`,
-      title: `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName}: trim ~${monthlySave}/mo`,
+      title: hasMeasuredOutlay
+        ? `Insurance & financing consume ${totalOutlay}${shareLabel} on ${vehicleName}: trim ~${monthlySave}/mo`
+        : `Compare motor insurance & auto loan refinancing rates for ${vehicleName}: trim ~${monthlySave}/mo`,
       description: `Fixed insurance and APR charges account for${shareLabel || ' a major share of ownership cost'}. Compare motor insurance tariffs and refinancing quotes via ${resolvedPartnerName}.`,
       features: [
         `Trim ~${monthlySave}/mo off Fixed Costs`,

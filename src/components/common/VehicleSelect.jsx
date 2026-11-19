@@ -195,6 +195,7 @@ export default function VehicleSelect({
   showTelemetryStrip = true,
   hideHiddenSelect = false,
   dropdownInFlow = false,
+  compactGrid = false,
   className = '',
 }) {
   let unitCtx = null;
@@ -300,9 +301,14 @@ export default function VehicleSelect({
     return scored.slice(0, 8);
   }, [effectiveSearchQuery]);
 
-  const activePreset = useMemo(
-    () => getPresetById(selectedPresetId),
+  const hasSelection = useMemo(
+    () => Boolean(selectedPresetId && VEHICLE_PRESETS.some((p) => p.id === selectedPresetId)),
     [selectedPresetId]
+  );
+
+  const activePreset = useMemo(
+    () => (hasSelection ? getPresetById(selectedPresetId) : null),
+    [hasSelection, selectedPresetId]
   );
 
   const activeArchetype = useMemo(
@@ -317,6 +323,9 @@ export default function VehicleSelect({
 
   // Find hierarchy from vehicle catalog and gracefully handle any normalized preset from VEHICLE_PRESETS
   const hierarchy = useMemo(() => {
+    if (!hasSelection || !activePreset) {
+      return { brand: null, model: null, engine: null };
+    }
     const found = findCatalogHierarchyByEngineId(selectedPresetId);
     if (found) {
       return {
@@ -371,7 +380,7 @@ export default function VehicleSelect({
       modelObj.engines?.[0];
 
     return { brand: brandObj, model: modelObj, engine: engineObj };
-  }, [selectedPresetId, activePreset]);
+  }, [hasSelection, selectedPresetId, activePreset]);
 
   const currentBrand = hierarchy.brand;
   const currentModel = hierarchy.model;
@@ -401,6 +410,7 @@ export default function VehicleSelect({
   }, []);
 
   const models = useMemo(() => {
+    if (!currentBrand) return [];
     const catalogModels = [...getModelsForBrand(currentBrand.name)];
     const normBrand = normalizeText(currentBrand.name);
 
@@ -435,9 +445,10 @@ export default function VehicleSelect({
       });
     }
     return catalogModels;
-  }, [currentBrand.name, currentModel, currentEngine]);
+  }, [currentBrand, currentModel, currentEngine]);
 
   const engines = useMemo(() => {
+    if (!currentBrand || !currentModel) return [];
     const rawEngines = getEnginesForModel(currentBrand.name, currentModel.name);
     const enriched = rawEngines.map((e) => getPresetById(e.id) || e);
     const seenIds = new Set(enriched.map((e) => e.id));
@@ -463,9 +474,13 @@ export default function VehicleSelect({
       return [currentEngine, ...enriched];
     }
     return enriched;
-  }, [currentBrand.name, currentModel.name, currentEngine]);
+  }, [currentBrand, currentModel, currentEngine]);
 
   const handleMakeChange = (brandName) => {
+    if (!brandName) {
+      onSelectPreset(null);
+      return;
+    }
     const normBrand = normalizeText(brandName);
     const brand = VEHICLE_CATALOG.find((b) => normalizeText(b.name) === normBrand);
     if (brand && brand.models.length > 0 && brand.models[0].engines.length > 0) {
@@ -479,6 +494,7 @@ export default function VehicleSelect({
   };
 
   const handleModelChange = (modelName) => {
+    if (!modelName || !currentBrand) return;
     const normModel = normalizeText(modelName);
     const model = currentBrand.models?.find((m) => normalizeText(m.name) === normModel);
     if (model && model.engines && model.engines.length > 0) {
@@ -496,6 +512,7 @@ export default function VehicleSelect({
   };
 
   const handleEngineChange = (engineId) => {
+    if (!engineId) return;
     onSelectPreset(engineId);
   };
 
@@ -688,35 +705,50 @@ export default function VehicleSelect({
       </div>
 
       {/* 3 Cascading Selectors: Make -> Model -> Engine */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-3 ${compactGrid ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
         <SelectField
           label="Make"
           id="select-make"
-          value={currentBrand.name}
-          options={brands.map((b) => ({ value: b.name, label: b.name }))}
+          value={currentBrand ? currentBrand.name : ''}
+          options={[
+            ...(!hasSelection ? [{ value: '', label: 'Select make...' }] : []),
+            ...brands.map((b) => ({ value: b.name, label: b.name })),
+          ]}
           onChange={handleMakeChange}
         />
         <SelectField
           label="Model"
           id="select-model"
-          value={currentModel.name}
-          options={models.map((m) => ({ value: m.name, label: m.name }))}
+          value={currentModel ? currentModel.name : ''}
+          disabled={!hasSelection}
+          options={
+            hasSelection
+              ? models.map((m) => ({ value: m.name, label: m.name }))
+              : [{ value: '', label: 'Select model...' }]
+          }
           onChange={handleModelChange}
         />
-        <SelectField
-          label="Engine"
-          id="select-engine"
-          value={currentEngine.id}
-          options={engines.map((e) => ({
-            value: e.id,
-            label: `${e.name}${e.powerHp ? ` (${e.powerHp} hp)` : ''}`,
-          }))}
-          onChange={handleEngineChange}
-        />
+        <div className={compactGrid ? 'sm:col-span-2' : ''}>
+          <SelectField
+            label="Engine"
+            id="select-engine"
+            value={currentEngine ? currentEngine.id : ''}
+            disabled={!hasSelection}
+            options={
+              hasSelection
+                ? engines.map((e) => ({
+                    value: e.id,
+                    label: `${e.name}${e.powerHp ? ` (${e.powerHp} hp)` : ''}`,
+                  }))
+                : [{ value: '', label: 'Select engine...' }]
+            }
+            onChange={handleEngineChange}
+          />
+        </div>
       </div>
 
       {/* Compact Active Archetype & Brand-Tier Telemetry Pill Strip */}
-      {showTelemetryStrip && (
+      {showTelemetryStrip && hasSelection && activePreset && (
         <div
           id="vehicle-telemetry-strip"
           className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-surface-subtle/70 px-3 py-2 text-xs dark:bg-[#121215] dark:border-zinc-800 dark:text-zinc-100 min-w-0"
@@ -756,9 +788,10 @@ export default function VehicleSelect({
           <label htmlFor={selectDropdownId}>Select Preset Dropdown</label>
           <select
             id={selectDropdownId}
-            value={selectedPresetId}
-            onChange={(e) => onSelectPreset(e.target.value)}
+            value={hasSelection ? selectedPresetId : ''}
+            onChange={(e) => onSelectPreset(e.target.value || null)}
           >
+            <option value="">Select a vehicle...</option>
             {VEHICLE_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

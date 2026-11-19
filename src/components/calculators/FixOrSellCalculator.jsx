@@ -376,7 +376,7 @@ export default function FixOrSellCalculator({
           {onNavigateToCompare && (
             <div className="pt-2 border-t border-border/60 dark:border-zinc-800 flex items-center justify-between">
               <span className="text-[11px] text-muted font-sans font-medium">
-                {vehicle?.shortName || vehicle?.name || 'Active Vehicle'} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
+                {vehicle?.shortName || vehicle?.name || 'Generic Vehicle'} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
               </span>
               <button
                 type="button"

@@ -36,7 +36,13 @@ const REGION_OPTIONS = [
   { id: 'EU', flag: '🇪🇺', label: 'EU', fullLabel: 'EU (€ · km)', hint: '€ · km · L/100km' },
 ];
 
-export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSelectPreset }) {
+export default function Navbar({
+  activeTab,
+  onSelectTab,
+  selectedPresetId,
+  hasSelectedVehicle = Boolean(selectedPresetId),
+  onSelectPreset,
+}) {
   const { region, setRegion, formatDistance, formatCurrency } = useUnits();
   const { theme, setTheme } = useTheme();
   const garage = useGarage();
@@ -94,7 +100,11 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
     }, 2000);
   };
 
-  const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
+  const isVehicleSelected = Boolean(hasSelectedVehicle && selectedPresetId);
+  const activePreset = useMemo(
+    () => (isVehicleSelected ? getPresetById(selectedPresetId) : null),
+    [isVehicleSelected, selectedPresetId]
+  );
   const filteredNavbarPresets = useMemo(() => {
     const q = vehicleSearchQuery.trim().toLowerCase();
     if (!q) return VEHICLE_PRESETS.slice(0, 12);
@@ -404,16 +414,15 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                       Saved vehicles &amp; side-by-side comparison
                     </span>
                   </div>
-                  {selectedPresetId && garage?.saveVehicleToGarage && (
+                  {isVehicleSelected && activePreset && garage?.saveVehicleToGarage && (
                     <button
                       type="button"
                       onClick={() => {
-                        const preset = getPresetById(selectedPresetId);
                         garage.saveVehicleToGarage({
-                          presetId: preset.id,
-                          name: preset.name,
-                          odometerMiles: preset.defaultOdometerMiles,
-                          purchasePriceUsd: preset.purchasePriceUsd,
+                          presetId: activePreset.id,
+                          name: activePreset.name,
+                          odometerMiles: activePreset.defaultOdometerMiles,
+                          purchasePriceUsd: activePreset.purchasePriceUsd,
                         });
                       }}
                       className="text-[11px] font-sans font-semibold text-[#183D22] dark:text-emerald-400 hover:underline"
@@ -674,8 +683,8 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-[#183D22] dark:text-emerald-400 block">
                       Active Vehicle
                     </span>
-                    <span className="text-xs font-sans font-bold text-ink dark:text-zinc-50 truncate block">
-                      {activePreset.name}
+                    <span className={`text-xs font-sans truncate block ${isVehicleSelected && activePreset ? 'font-bold text-ink dark:text-zinc-50' : 'font-medium text-muted dark:text-zinc-400'}`}>
+                      {isVehicleSelected && activePreset ? activePreset.name : 'No vehicle selected'}
                     </span>
                   </div>
                   <button
@@ -683,7 +692,7 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                     onClick={() => setDrawerVehicleExpanded((prev) => !prev)}
                     className="min-h-[38px] px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800/60 text-xs font-sans font-semibold text-[#183D22] dark:text-emerald-300 shrink-0"
                   >
-                    {drawerVehicleExpanded ? 'Done' : 'Switch Car'}
+                    {drawerVehicleExpanded ? 'Done' : isVehicleSelected ? 'Switch Car' : 'Select Car'}
                   </button>
                 </div>
 
@@ -865,16 +874,15 @@ export default function Navbar({ activeTab, onSelectTab, selectedPresetId, onSel
                         Bookmark vehicles &amp; compare side-by-side
                       </span>
                     </div>
-                    {selectedPresetId && garage?.saveVehicleToGarage && (
+                    {isVehicleSelected && activePreset && garage?.saveVehicleToGarage && (
                       <button
                         type="button"
                         onClick={() => {
-                          const preset = getPresetById(selectedPresetId);
                           garage.saveVehicleToGarage({
-                            presetId: preset.id,
-                            name: preset.name,
-                            odometerMiles: preset.defaultOdometerMiles,
-                            purchasePriceUsd: preset.purchasePriceUsd,
+                            presetId: activePreset.id,
+                            name: activePreset.name,
+                            odometerMiles: activePreset.defaultOdometerMiles,
+                            purchasePriceUsd: activePreset.purchasePriceUsd,
                           });
                         }}
                         className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white text-xs font-sans font-semibold shrink-0"

@@ -36,7 +36,7 @@ const BAR_COLOR = {
 
 export default function MaintenanceRiskMatrix({
   selectedPresetId,
-  hasSelectedVehicle = true,
+  hasSelectedVehicle: hasSelectedVehicleProp = Boolean(selectedPresetId),
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -50,6 +50,7 @@ export default function MaintenanceRiskMatrix({
 }) {
   const {
     region,
+    currencySymbol,
     distanceUnit,
     formatCurrency,
     formatDistance,
@@ -59,14 +60,20 @@ export default function MaintenanceRiskMatrix({
 
   const garage = useGarage();
 
+  const isVehicleSelected = Boolean(
+    hasSelectedVehicleProp && selectedPresetId && VEHICLE_PRESETS.some((p) => p.id === selectedPresetId)
+  );
   const activePreset = useMemo(
-    () => getPresetById(selectedPresetId),
-    [selectedPresetId]
+    () => (isVehicleSelected ? getPresetById(selectedPresetId) : null),
+    [isVehicleSelected, selectedPresetId]
   );
 
   const [physicalOdometerMiles, setPhysicalOdometerMiles] = useState(() => {
     if (Number(initialOdometerMiles) > 0) return Math.round(Number(initialOdometerMiles));
-    return Math.max(0, Number(activePreset.defaultOdometerMiles) >= 0 ? Number(activePreset.defaultOdometerMiles) : 58000);
+    if (activePreset && Number(activePreset.defaultOdometerMiles) >= 0) {
+      return Math.max(0, Number(activePreset.defaultOdometerMiles));
+    }
+    return 60000;
   });
   const [scheduleMode, setScheduleMode] = useState('preventative'); // 'preventative' | 'oem'
   const [drivingStyle, setDrivingStyle] = useState('mixed'); // 'highway' | 'mixed' | 'city'
@@ -78,14 +85,22 @@ export default function MaintenanceRiskMatrix({
   const [showComparator, setShowComparator] = useState(false);
   const [justSavedGarage, setJustSavedGarage] = useState(false);
   const [showSwitchCarModal, setShowSwitchCarModal] = useState(false);
-  const [draftPresetId, setDraftPresetId] = useState(selectedPresetId);
+  const [draftPresetId, setDraftPresetId] = useState(isVehicleSelected ? selectedPresetId : null);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
-    setDraftPresetId(selectedPresetId);
-  }, [selectedPresetId]);
+    setDraftPresetId(isVehicleSelected ? selectedPresetId : null);
+    if (!isVehicleSelected) {
+      setShowExportMenu(false);
+      setShowDossierModal(false);
+      setShowForumShareModal(false);
+    }
+  }, [isVehicleSelected, selectedPresetId]);
 
-  const draftPreset = useMemo(() => getPresetById(draftPresetId), [draftPresetId]);
+  const draftPreset = useMemo(
+    () => (draftPresetId && VEHICLE_PRESETS.some((p) => p.id === draftPresetId) ? getPresetById(draftPresetId) : null),
+    [draftPresetId]
+  );
   const quickPresets = useMemo(
     () => [
       { id: 'ford-focus-ecoblue', label: 'Ford 2.0 EcoBlue Diesel' },
@@ -103,23 +118,28 @@ export default function MaintenanceRiskMatrix({
   useEffect(() => {
     if (Number(initialOdometerMiles) > 0) {
       setPhysicalOdometerMiles(Math.round(Number(initialOdometerMiles)));
-    } else {
+    } else if (activePreset) {
       setPhysicalOdometerMiles(
         Math.max(0, Number(activePreset.defaultOdometerMiles) >= 0 ? Number(activePreset.defaultOdometerMiles) : 58000)
       );
+    } else {
+      setPhysicalOdometerMiles(60000);
     }
     setJustSavedGarage(false);
   }, [activePreset, initialOdometerMiles]);
 
-  const completedMilestones = garage?.isProviderActive
+  const completedMilestones = activePreset && garage?.isProviderActive
     ? garage.getCompletedMilestones(activePreset.id)
     : {};
 
-  const servicedComponents = garage?.isProviderActive
-    ? garage.getServicedComponents(activePreset.id)
-    : localServicedByPreset[activePreset.id] || {};
+  const servicedComponents = activePreset
+    ? garage?.isProviderActive
+      ? garage.getServicedComponents(activePreset.id)
+      : localServicedByPreset[activePreset.id] || {}
+    : {};
 
   const handleToggleComponentServiced = (componentId) => {
+    if (!activePreset) return;
     if (garage?.isProviderActive) {
       garage.toggleServicedComponent(activePreset.id, componentId);
     } else {
@@ -137,14 +157,16 @@ export default function MaintenanceRiskMatrix({
   };
 
   const isSavedInGarage = useMemo(() => {
+    if (!isVehicleSelected || !activePreset) return false;
     if (justSavedGarage) return true;
     if (!garage?.savedVehicles) return false;
     return garage.savedVehicles.some(
       (v) => v.presetId === activePreset.id && v.odometerMiles === physicalOdometerMiles
     );
-  }, [garage?.savedVehicles, activePreset.id, physicalOdometerMiles, justSavedGarage]);
+  }, [isVehicleSelected, garage?.savedVehicles, activePreset, physicalOdometerMiles, justSavedGarage]);
 
   const handleSaveToGarage = () => {
+    if (!isVehicleSelected || !activePreset) return;
     const completedCount =
       Object.values(completedMilestones).filter(Boolean).length +
       Object.values(servicedComponents).filter(Boolean).length;
@@ -178,6 +200,7 @@ export default function MaintenanceRiskMatrix({
 
   // Evaluate applicable mechanical components
   const evaluatedComponents = useMemo(() => {
+    if (!isVehicleSelected || !activePreset) return [];
     const pType = resolvePowertrainType(activePreset);
     const isEv = isPureElectric(pType);
 
@@ -220,7 +243,7 @@ export default function MaintenanceRiskMatrix({
         };
       })
       .filter(Boolean);
-  }, [activePreset, physicalOdometerMiles, urbanTripSharePct, scheduleMode, completedMilestones, servicedComponents]);
+  }, [isVehicleSelected, activePreset, physicalOdometerMiles, urbanTripSharePct, scheduleMode, completedMilestones, servicedComponents]);
 
   // Compute 12-month service reserve estimate (scaled by dynamic OEM risk multiplier in OEM mode)
   // and deduct verified service credits when components or milestones are checked off
@@ -231,6 +254,15 @@ export default function MaintenanceRiskMatrix({
     verifiedServiceCreditUsd,
     maintenanceBonusPts,
   } = useMemo(() => {
+    if (!isVehicleSelected || !activePreset || evaluatedComponents.length === 0) {
+      return {
+        baseReserveUsd: 0,
+        serviceReserveUsd: 0,
+        effectiveWearMax: physicalOdometerMiles,
+        verifiedServiceCreditUsd: 0,
+        maintenanceBonusPts: 0,
+      };
+    }
     let reserve = 0;
     let maxEff = physicalOdometerMiles;
     let rawServiceCredit = 0;
@@ -300,7 +332,7 @@ export default function MaintenanceRiskMatrix({
       verifiedServiceCreditUsd: creditRounded,
       maintenanceBonusPts: Math.min(25, bonusPts),
     };
-  }, [evaluatedComponents, physicalOdometerMiles, workshopTier, scheduleMode, oemRiskMultiplier, completedMilestones, activePreset]);
+  }, [isVehicleSelected, evaluatedComponents, physicalOdometerMiles, workshopTier, scheduleMode, oemRiskMultiplier, completedMilestones, activePreset]);
 
   // Dynamic 18-25 points penalty scaling with physical mileage in OEM mode
   const oemScoreDeduction = useMemo(() => {
@@ -336,47 +368,71 @@ export default function MaintenanceRiskMatrix({
   );
   const topCriticalItem = criticalItems[0] || warningItems[0] || evaluatedComponents[0];
 
-  const riskTldrFacts = useMemo(() => [
-    {
-      label: '12-Month Service Reserve',
-      value: formatCurrency(serviceReserveUsd),
-      subtext: scheduleMode === 'oem'
-        ? `OEM deferrals add +${oemRiskMultiplier.toFixed(2)}x risk multiplier!`
-        : `Expected wear reserve at ${formatDistance(physicalOdometerMiles)}.`,
-      badge: (
-        <RiskBadge
-          level={serviceReserveUsd > 2200 ? 'critical' : serviceReserveUsd > 1000 ? 'moderate' : 'low'}
-          label={serviceReserveUsd > 2200 ? 'Critical Reserve' : serviceReserveUsd > 1000 ? 'Moderate Reserve' : 'Low Reserve'}
-        />
-      ),
-    },
-    {
-      label: 'Risk Status',
-      value: `${criticalItems.length} Critical · ${warningItems.length} Due`,
-      subtext: criticalItems.length > 0
-        ? `Immediate service advised: ${topCriticalItem?.name || 'Wear item'}.`
-        : 'All monitored assemblies operate within safety tolerances.',
-      badge: (
-        <RiskBadge
-          level={criticalItems.length > 0 ? 'critical' : warningItems.length > 0 ? 'moderate' : 'low'}
-          label={criticalItems.length > 0 ? 'Critical Risk' : warningItems.length > 0 ? 'Moderate Risk' : 'Low Risk'}
-        />
-      ),
-    },
-    {
-      label: 'Reliability Verdict',
-      value: `${reliabilityScore}/100 pts`,
-      subtext: scheduleMode === 'oem'
-        ? 'OEM marketing interval: elevated risk of timing and transmission failure.'
-        : 'Preventative servicing prevents multi-thousand-dollar major component overhauls.',
-      badge: (
-        <RiskBadge
-          level={reliabilityScore >= 75 ? 'low' : reliabilityScore >= 50 ? 'moderate' : 'critical'}
-          label={reliabilityScore >= 75 ? 'Reliable' : reliabilityScore >= 50 ? 'Monitor' : 'Critical'}
-        />
-      ),
-    },
-  ], [serviceReserveUsd, scheduleMode, oemRiskMultiplier, formatCurrency, physicalOdometerMiles, formatDistance, criticalItems, warningItems, topCriticalItem, reliabilityScore]);
+  const riskTldrFacts = useMemo(() => {
+    if (!isVehicleSelected) {
+      return [
+        {
+          label: '12-Month Service Reserve',
+          value: `${currencySymbol}-`,
+          subtext: 'Select a vehicle to calculate expected 12-month maintenance & wear reserve.',
+          badge: null,
+        },
+        {
+          label: 'Risk Status',
+          value: 'Select a Vehicle',
+          subtext: 'Powertrain-specific component wear horizons unlock once a model is chosen.',
+          badge: null,
+        },
+        {
+          label: 'Reliability Verdict',
+          value: '-/100 pts',
+          subtext: 'Engineering reliability score adapts to mileage, urban cycles, and schedule mode.',
+          badge: null,
+        },
+      ];
+    }
+    return [
+      {
+        label: '12-Month Service Reserve',
+        value: formatCurrency(serviceReserveUsd),
+        subtext: scheduleMode === 'oem'
+          ? `OEM deferrals add +${oemRiskMultiplier.toFixed(2)}x risk multiplier!`
+          : `Expected wear reserve at ${formatDistance(physicalOdometerMiles)}.`,
+        badge: (
+          <RiskBadge
+            level={serviceReserveUsd > 2200 ? 'critical' : serviceReserveUsd > 1000 ? 'moderate' : 'low'}
+            label={serviceReserveUsd > 2200 ? 'Critical Reserve' : serviceReserveUsd > 1000 ? 'Moderate Reserve' : 'Low Reserve'}
+          />
+        ),
+      },
+      {
+        label: 'Risk Status',
+        value: `${criticalItems.length} Critical · ${warningItems.length} Due`,
+        subtext: criticalItems.length > 0
+          ? `Immediate service advised: ${topCriticalItem?.name || 'Wear item'}.`
+          : 'All monitored assemblies operate within safety tolerances.',
+        badge: (
+          <RiskBadge
+            level={criticalItems.length > 0 ? 'critical' : warningItems.length > 0 ? 'moderate' : 'low'}
+            label={criticalItems.length > 0 ? 'Critical Risk' : warningItems.length > 0 ? 'Moderate Risk' : 'Low Risk'}
+          />
+        ),
+      },
+      {
+        label: 'Reliability Verdict',
+        value: `${reliabilityScore}/100 pts`,
+        subtext: scheduleMode === 'oem'
+          ? 'OEM marketing interval: elevated risk of timing and transmission failure.'
+          : 'Preventative servicing prevents multi-thousand-dollar major component overhauls.',
+        badge: (
+          <RiskBadge
+            level={reliabilityScore >= 75 ? 'low' : reliabilityScore >= 50 ? 'moderate' : 'critical'}
+            label={reliabilityScore >= 75 ? 'Reliable' : reliabilityScore >= 50 ? 'Monitor' : 'Critical'}
+          />
+        ),
+      },
+    ];
+  }, [isVehicleSelected, currencySymbol, serviceReserveUsd, scheduleMode, oemRiskMultiplier, formatCurrency, physicalOdometerMiles, formatDistance, criticalItems, warningItems, topCriticalItem, reliabilityScore]);
 
   return (
     <div className="space-y-6">
@@ -393,58 +449,129 @@ export default function MaintenanceRiskMatrix({
           <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card" aria-labelledby="profile-heading">
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="profile-heading" className="font-sans text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
-                Vehicle &amp; driving profile
+                {isVehicleSelected ? 'Vehicle & driving profile' : 'Select your vehicle'}
               </h2>
-              <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-0.5 text-xs font-sans font-medium">
-                {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
-              </span>
+              {isVehicleSelected && activePreset ? (
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-0.5 text-xs font-sans font-medium">
+                  {activePreset.powerHp ? `${activePreset.powerHp} HP · ` : ''}{activePreset.fuelType}
+                </span>
+              ) : (
+                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2.5 py-0.5 text-xs font-sans font-medium">
+                  179+ Models
+                </span>
+              )}
             </div>
 
-            {/* Unified Active Vehicle Card with Switch Car Button */}
-            <div className="mb-6">
-              <VehicleVisualCard
-                vehicle={activePreset}
-                variant="showcase"
-                className="!p-4 sm:!p-5 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl"
-                secondaryMetrics={
-                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800">
-                    <span className="font-sans font-medium text-muted dark:text-zinc-400">Current odometer</span>
-                    <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
-                      {formatDistance(physicalOdometerMiles)}
+            {isVehicleSelected && activePreset ? (
+              /* Unified Active Vehicle Card with Switch Car Button */
+              <div className="mb-6">
+                <VehicleVisualCard
+                  vehicle={activePreset}
+                  variant="showcase"
+                  className="!p-4 sm:!p-5 !shadow-none bg-zinc-50/70 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl"
+                  secondaryMetrics={
+                    <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800">
+                      <span className="font-sans font-medium text-muted dark:text-zinc-400">Current odometer</span>
+                      <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
+                        {formatDistance(physicalOdometerMiles)}
+                      </span>
+                    </div>
+                  }
+                  actionButtons={
+                    <div className="flex flex-wrap items-center justify-between w-full gap-2.5">
+                      <button
+                        type="button"
+                        data-testid="risk-switch-car-button"
+                        onClick={() => {
+                          setDraftPresetId(selectedPresetId);
+                          setShowSwitchCarModal(true);
+                        }}
+                        className="min-h-[40px] bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Switch Car</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDossierInitialMode('dossier');
+                          setShowDossierModal(true);
+                        }}
+                        className="min-h-[40px] bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3 py-1.5 font-sans text-xs font-medium text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Share report ↗</span>
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
+            ) : (
+              /* Clean Inline Vehicle Picker (Zero pre-selected vehicle photo or numbers) */
+              <div
+                data-testid="risk-empty-vehicle-picker"
+                className="mb-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 p-4 space-y-4"
+              >
+                <VehicleSelect
+                  selectedPresetId={draftPresetId}
+                  onSelectPreset={setDraftPresetId}
+                  onAutocompleteSelect={(id) => onSelectPreset(id)}
+                  showTelemetryStrip={false}
+                  dropdownInFlow={true}
+                  compactGrid={true}
+                  selectDropdownId="risk-preset-sync"
+                />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800">
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+                      {draftPreset ? 'Selected from dropdown:' : 'No vehicle selected yet:'}
+                    </span>
+                    <span className={`block font-sans text-xs sm:text-sm ${draftPreset ? 'font-semibold text-ink dark:text-zinc-100 truncate' : 'font-medium text-muted dark:text-zinc-400'}`}>
+                      {draftPreset ? draftPreset.name : 'Choose a make & model above, or pick a popular model below'}
                     </span>
                   </div>
-                }
-                actionButtons={
-                  <div className="flex flex-wrap items-center justify-between w-full gap-2.5">
+                  <button
+                    type="button"
+                    data-testid="risk-apply-vehicle-button"
+                    disabled={!draftPreset}
+                    onClick={() => draftPreset && onSelectPreset(draftPreset.id)}
+                    className={`min-h-[40px] rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shrink-0 ${
+                      draftPreset
+                        ? 'bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs cursor-pointer'
+                        : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <Car className="w-4 h-4 shrink-0" />
+                    <span>Inspect This Vehicle</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/70">
+                  <span className="text-[11px] font-sans font-semibold text-muted dark:text-zinc-400 mr-1">
+                    Popular:
+                  </span>
+                  {[
+                    { id: 'vw-golf-20-tdi', label: 'VW Golf TDI' },
+                    { id: 'toyota-corolla-18-hybrid', label: 'Corolla Hybrid' },
+                    { id: 'toyota-camry-hybrid', label: 'Camry Hybrid' },
+                    { id: 'tesla-model-3-lr', label: 'Model 3' },
+                    { id: 'bmw-320d-b47', label: 'BMW 320d' },
+                  ].map((item) => (
                     <button
+                      key={item.id}
                       type="button"
-                      data-testid="risk-switch-car-button"
-                      onClick={() => {
-                        setDraftPresetId(selectedPresetId);
-                        setShowSwitchCarModal(true);
-                      }}
-                      className="min-h-[40px] bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-2 cursor-pointer"
+                      onClick={() => onSelectPreset(item.id)}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-sans font-medium text-zinc-700 dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Switch Car</span>
+                      {item.label}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDossierInitialMode('dossier');
-                        setShowDossierModal(true);
-                      }}
-                      className="min-h-[40px] bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3 py-1.5 font-sans text-xs font-medium text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Share report ↗</span>
-                    </button>
-                  </div>
-                }
-              />
-            </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Persistent accessible vehicle catalog select mounted in DOM for programmatic sync */}
-            {!showSwitchCarModal && (
+            {isVehicleSelected && !showSwitchCarModal && (
               <div className="sr-only" aria-hidden="false">
                 <VehicleSelect
                   selectedPresetId={selectedPresetId}
@@ -581,9 +708,15 @@ export default function MaintenanceRiskMatrix({
                   <button
                     type="button"
                     data-testid="toggle-risk-export-menu"
+                    disabled={!isVehicleSelected}
                     aria-expanded={showExportMenu}
-                    onClick={() => setShowExportMenu((prev) => !prev)}
-                    className="inline-flex items-center gap-1 font-sans text-[11px] font-semibold text-primary-600 dark:text-emerald-400 hover:underline shrink-0 cursor-pointer"
+                    onClick={() => isVehicleSelected && setShowExportMenu((prev) => !prev)}
+                    title={!isVehicleSelected ? 'Select a vehicle first to export or share' : undefined}
+                    className={`inline-flex items-center gap-1 font-sans text-[11px] font-semibold shrink-0 ${
+                      !isVehicleSelected
+                        ? 'text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
+                        : 'text-primary-600 dark:text-emerald-400 hover:underline cursor-pointer'
+                    }`}
                   >
                     <Printer className="w-3 h-3 shrink-0" />
                     <span>{showExportMenu ? 'Hide Export & Share' : 'Export & Share (PDF / Reddit)'}</span>
@@ -594,11 +727,14 @@ export default function MaintenanceRiskMatrix({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
+                    disabled={!isVehicleSelected}
                     onClick={handleSaveToGarage}
-                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2.5 font-sans text-xs font-semibold transition-colors border shadow-xs cursor-pointer ${
-                      isSavedInGarage
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
-                        : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 dark:hover:bg-emerald-500'
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2.5 font-sans text-xs font-semibold transition-colors border shadow-xs ${
+                      !isVehicleSelected
+                        ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 cursor-not-allowed shadow-none'
+                        : isSavedInGarage
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 cursor-pointer'
+                        : 'bg-[#183D22] text-white border-[#183D22] hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:border-emerald-500 dark:hover:bg-emerald-500 cursor-pointer'
                     }`}
                   >
                     {isSavedInGarage ? (
@@ -629,12 +765,13 @@ export default function MaintenanceRiskMatrix({
                 </div>
 
                 {/* Collapsible Export & Share Drawer (remains mounted in DOM via sr-only when collapsed) */}
-                <div className={showExportMenu ? 'grid grid-cols-1 gap-1.5 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 animate-fade-in' : 'sr-only'}>
+                <div className={showExportMenu && isVehicleSelected ? 'grid grid-cols-1 gap-1.5 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 animate-fade-in' : 'sr-only'}>
                   <button
                     type="button"
                     data-testid="open-forum-share-btn"
-                    onClick={() => setShowForumShareModal(true)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    disabled={!isVehicleSelected}
+                    onClick={() => isVehicleSelected && setShowForumShareModal(true)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
                     <span>Share for Reddit / Forums</span>
@@ -642,11 +779,13 @@ export default function MaintenanceRiskMatrix({
 
                   <button
                     type="button"
+                    disabled={!isVehicleSelected}
                     onClick={() => {
+                      if (!isVehicleSelected) return;
                       setDossierInitialMode('negotiation');
                       setShowDossierModal(true);
                     }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>Export Buyer&apos;s Inspection Sheet (PDF)</span>
@@ -654,11 +793,13 @@ export default function MaintenanceRiskMatrix({
 
                   <button
                     type="button"
+                    disabled={!isVehicleSelected}
                     onClick={() => {
+                      if (!isVehicleSelected) return;
                       setDossierInitialMode('dossier');
                       setShowDossierModal(true);
                     }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2 font-sans text-xs font-medium text-ink dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
                     <span>Export Dossier / Print</span>
@@ -716,7 +857,19 @@ export default function MaintenanceRiskMatrix({
             {/* Unified Gauge + Reserve Split */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
               <div className="sm:col-span-4 flex flex-col items-center justify-center">
-                <RadialScoreGauge score={reliabilityScore} label="Reliability Score" size={136} inverted={true} />
+                {isVehicleSelected ? (
+                  <RadialScoreGauge score={reliabilityScore} label="Reliability Score" size={136} inverted={true} />
+                ) : (
+                  <div
+                    data-testid="risk-empty-gauge"
+                    className="w-[136px] h-[136px] rounded-full border-[10px] border-white/15 flex flex-col items-center justify-center text-center"
+                  >
+                    <span className="font-mono text-2xl font-bold text-white/80 tabular-nums">--/100</span>
+                    <span className="mt-1 px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-sans font-medium text-white/75">
+                      Select a Car
+                    </span>
+                  </div>
+                )}
                 <span className="mt-1.5 font-sans text-[11px] font-semibold uppercase tracking-wider text-white/70">
                   Reliability Score
                 </span>
@@ -732,16 +885,16 @@ export default function MaintenanceRiskMatrix({
                         content="The recommended annual maintenance fund weighted by each component's current wear percentage, workshop labor tier, and annual driving distance."
                       />
                     </p>
-                    {scheduleMode === 'oem' && (
+                    {isVehicleSelected && scheduleMode === 'oem' && (
                       <span className="text-[11px] font-sans font-medium bg-rose-950/60 text-rose-200 px-2 py-0.5 rounded-md border border-rose-500/40">
                         OEM Deferral Scaled
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-[clamp(2rem,8vw,3rem)] font-bold tabular-nums tracking-tight font-mono text-white leading-none" aria-live="polite">
-                    {formatCurrency(serviceReserveUsd)}
+                    {isVehicleSelected ? formatCurrency(serviceReserveUsd) : `${currencySymbol}-`}
                   </p>
-                  {scheduleMode === 'oem' && (
+                  {isVehicleSelected && scheduleMode === 'oem' && (
                     <p className="text-xs text-white/70 font-sans mt-1">
                       Base preventative: <span className="font-mono tabular-nums">{formatCurrency(baseReserveUsd)}</span> · Scaled by <span className="font-mono tabular-nums">{oemRiskMultiplier.toFixed(2)}x</span> dynamic risk
                     </p>
@@ -758,7 +911,9 @@ export default function MaintenanceRiskMatrix({
                         content="Mechanical stress age adjusted for urban stop-and-go thermal cycles and oil drain intervals, often 20-45% higher than raw physical odometer miles."
                       />
                     </dt>
-                    <dd className="font-semibold tabular-nums font-mono text-white mt-0.5 truncate">{formatDistance(effectiveWearMax)}</dd>
+                    <dd className="font-semibold tabular-nums font-mono text-white mt-0.5 truncate">
+                      {isVehicleSelected ? formatDistance(effectiveWearMax) : '—'}
+                    </dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="text-white/65 font-sans truncate">Odometer</dt>
@@ -767,13 +922,17 @@ export default function MaintenanceRiskMatrix({
                   <div className="min-w-0">
                     <dt className="text-white/65 font-sans truncate">Risk Status</dt>
                     <dd className="font-semibold tabular-nums font-mono text-white mt-0.5 truncate">
-                      {criticalItems.length} Crit · {warningItems.length} Due
+                      {isVehicleSelected ? `${criticalItems.length} Crit · ${warningItems.length} Due` : '—'}
                     </dd>
                   </div>
                 </dl>
 
                 {/* Diagnostic Verdict Callout */}
-                {scheduleMode === 'oem' ? (
+                {!isVehicleSelected ? (
+                  <p className="text-xs text-emerald-100/85 font-sans leading-relaxed">
+                    Select a vehicle on the left to evaluate powertrain-specific wear horizons, failure probabilities, and 12-month service reserves.
+                  </p>
+                ) : scheduleMode === 'oem' ? (
                   <div className="bg-rose-950/50 rounded-xl p-3 text-xs text-rose-100 leading-relaxed border border-rose-500/35">
                     ⚠️ <strong>OEM &quot;Lifetime&quot; Risk Alert:</strong> Dealership &quot;sealed for life&quot; guidelines are calibrated for the 60k-mi warranty period. Switching to <strong>Specialist Preventative</strong> restores score by <strong>+{oemScoreDeduction} points</strong>.
                   </div>
@@ -791,6 +950,22 @@ export default function MaintenanceRiskMatrix({
           </div>
 
           {/* 5 Powertrain Telemetry Assembly Cards */}
+          {!isVehicleSelected ? (
+            <div
+              data-testid="risk-empty-dossier-state"
+              className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-surface dark:bg-[#121215] p-6 sm:p-8 text-center space-y-3"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-[#183D22] dark:text-emerald-400 flex items-center justify-center mx-auto">
+                <Wrench className="w-5 h-5" />
+              </div>
+              <h2 id="schedule-heading" className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50">
+                Select a vehicle to inspect component wear
+              </h2>
+              <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+                Choose any of 179+ petrol, diesel, hybrid, or EV models on the left to unlock assembly-by-assembly failure thresholds, workshop quotes, known engine defects, and a full service milestone roadmap.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="schedule-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
@@ -1044,6 +1219,7 @@ export default function MaintenanceRiskMatrix({
               })}
             </ul>
           </div>
+          )}
         </div>
       </div>
 
@@ -1132,7 +1308,7 @@ export default function MaintenanceRiskMatrix({
                     Selected vehicle:
                   </span>
                   <span className="block font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 truncate">
-                    {draftPreset.name}
+                    {draftPreset ? draftPreset.name : 'Choose a vehicle above'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -1146,11 +1322,13 @@ export default function MaintenanceRiskMatrix({
                   <button
                     type="button"
                     data-testid="risk-modal-apply-button"
+                    disabled={!draftPreset}
                     onClick={() => {
-                      onSelectPreset(draftPresetId);
+                      if (!draftPreset) return;
+                      onSelectPreset(draftPreset.id);
                       setShowSwitchCarModal(false);
                     }}
-                    className="px-4 py-2 rounded-xl bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 font-sans text-xs sm:text-sm font-semibold transition-colors shadow-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 font-sans text-xs sm:text-sm font-semibold transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Apply Vehicle
                   </button>
@@ -1164,8 +1342,9 @@ export default function MaintenanceRiskMatrix({
       {/* Inline Side-by-Side Vehicle Comparator */}
       {showComparator && (
         <VehicleComparator
-          primaryPresetId={selectedPresetId}
-          primaryOdometerMiles={physicalOdometerMiles}
+          primaryPresetId={isVehicleSelected ? selectedPresetId : null}
+          hasSelectedVehicle={isVehicleSelected}
+          primaryOdometerMiles={isVehicleSelected ? physicalOdometerMiles : undefined}
           scheduleMode={scheduleMode}
           urbanTripSharePct={urbanTripSharePct}
           workshopTier={workshopTier}
@@ -1174,7 +1353,7 @@ export default function MaintenanceRiskMatrix({
         />
       )}
 
-      {showDossierModal && (
+      {showDossierModal && isVehicleSelected && activePreset && (
         <VehicleDossierExport
           vehicle={activePreset}
           odometerMiles={physicalOdometerMiles}
@@ -1186,7 +1365,7 @@ export default function MaintenanceRiskMatrix({
         />
       )}
 
-      {showForumShareModal && (
+      {showForumShareModal && isVehicleSelected && activePreset && (
         <ForumShareModal
           isOpen={showForumShareModal}
           onClose={() => setShowForumShareModal(false)}
@@ -1213,63 +1392,71 @@ export default function MaintenanceRiskMatrix({
       />
 
       {/* 3. Interactive "Should I Fix It or Sell It?" Decision Engine */}
-      <FixOrSellCalculator
-        vehicle={activePreset}
-        initialRepairQuoteUsd={Math.max(850, serviceReserveUsd)}
-        initialOdometerMiles={physicalOdometerMiles}
-        sourceLabel="12-Month Service & Wear Reserve"
-        onNavigateToCompare={onNavigateToCompare}
-      />
+      {isVehicleSelected && activePreset && (
+        <FixOrSellCalculator
+          vehicle={activePreset}
+          initialRepairQuoteUsd={Math.max(850, serviceReserveUsd)}
+          initialOdometerMiles={physicalOdometerMiles}
+          sourceLabel="12-Month Service & Wear Reserve"
+          onNavigateToCompare={onNavigateToCompare}
+        />
+      )}
 
       {/* 4. Known Issues & Live NHTSA/EPA Telemetry Dossier */}
-      <KnownIssuesDossier
-        presetId={activePreset.id}
-        vehicleName={activePreset.name}
-        brand={activePreset.brand}
-        model={activePreset.modelName}
-      />
+      {isVehicleSelected && activePreset && (
+        <KnownIssuesDossier
+          presetId={activePreset.id}
+          vehicleName={activePreset.name}
+          brand={activePreset.brand}
+          model={activePreset.modelName}
+        />
+      )}
 
       {/* 5. Manufacturer Maintenance Milestone Roadmap */}
-      <MaintenanceMilestones
-        presetId={activePreset.id}
-        currentOdometerMiles={physicalOdometerMiles}
-        scheduleMode={scheduleMode}
-        drivingStyle={drivingStyle}
-        workshopTier={workshopTier}
-      />
+      {isVehicleSelected && activePreset && (
+        <MaintenanceMilestones
+          presetId={activePreset.id}
+          currentOdometerMiles={physicalOdometerMiles}
+          scheduleMode={scheduleMode}
+          drivingStyle={drivingStyle}
+          workshopTier={workshopTier}
+        />
+      )}
 
       {/* 6. Contextual Repair Protection & Warranty Banner + Zero-CLS AdSense Slot */}
       <TopTabAffiliateBanner
         type="warranty"
-        vehicleName={activePreset.name}
-        odometerMiles={physicalOdometerMiles}
-        serviceReserveUsd={serviceReserveUsd}
+        vehicleName={isVehicleSelected && activePreset ? activePreset.name : 'your vehicle'}
+        odometerMiles={isVehicleSelected ? physicalOdometerMiles : undefined}
+        serviceReserveUsd={isVehicleSelected ? serviceReserveUsd : undefined}
       />
 
       {/* Crawlable Internal Links for Active Vehicle */}
-      <VehicleInternalLinks
-        vehicle={activePreset}
-        onSelectPreset={onSelectPreset}
-        onNavigateToTco={onNavigateToTco}
-        onNavigateToRisk={onNavigateToRisk}
-        onNavigateToRiskBracket={onNavigateToRiskBracket}
-        onNavigateToChecklist={onNavigateToChecklist}
-        onNavigateToCompare={onNavigateToCompare}
-        onNavigateToHybridObd={
-          onNavigateToHybridObd || ((_presetId, code) => onNavigateToObd && onNavigateToObd(code))
-        }
-        onNavigateToVehicles={onNavigateToVehicles}
-      />
+      {isVehicleSelected && activePreset && (
+        <VehicleInternalLinks
+          vehicle={activePreset}
+          onSelectPreset={onSelectPreset}
+          onNavigateToTco={onNavigateToTco}
+          onNavigateToRisk={onNavigateToRisk}
+          onNavigateToRiskBracket={onNavigateToRiskBracket}
+          onNavigateToChecklist={onNavigateToChecklist}
+          onNavigateToCompare={onNavigateToCompare}
+          onNavigateToHybridObd={
+            onNavigateToHybridObd || ((_presetId, code) => onNavigateToObd && onNavigateToObd(code))
+          }
+          onNavigateToVehicles={onNavigateToVehicles}
+        />
+      )}
 
       {/* 7. Mobile Sticky Summary Bar for real-time odometer & schedule feedback on small screens */}
       <MobileStickySummaryBar
-        label={`${activePreset.name} · Wear & Risk`}
-        primaryValue={`${formatCurrency(serviceReserveUsd)}/yr`}
-        secondaryValue={`Reliability ${reliabilityScore}/100`}
-        badgeText={`${criticalItems.length} Critical`}
-        actionLabel="See Assemblies"
+        label={isVehicleSelected && activePreset ? `${activePreset.name} · Wear & Risk` : 'Select a vehicle · Wear & Risk'}
+        primaryValue={isVehicleSelected ? `${formatCurrency(serviceReserveUsd)}/yr` : 'Pick a car'}
+        secondaryValue={isVehicleSelected ? `Reliability ${reliabilityScore}/100` : '179+ models'}
+        badgeText={isVehicleSelected ? `${criticalItems.length} Critical` : 'Ready'}
+        actionLabel={isVehicleSelected ? 'See Assemblies' : 'Select Car'}
         onAction={() => {
-          const el = document.getElementById('schedule-heading');
+          const el = document.getElementById(isVehicleSelected ? 'schedule-heading' : 'profile-heading');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />

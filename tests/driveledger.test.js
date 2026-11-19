@@ -953,8 +953,8 @@ tcoNavFor6F.dispatchEvent({ type: 'click' });
 await waitForLazy();
 assert.equal(
   rootContainer.getElementById('preset-select-dropdown').value,
-  'toyota-camry-hybrid',
-  'Navigating to /tco from / in US region must default to regional sample toyota-camry-hybrid preset'
+  '',
+  'Navigating to /tco from / in US region must NOT pre-select Toyota Camry or any default vehicle'
 );
 
 console.log('✓ 6E. Consecutive Preset Clicks, Consecutive Tab Clicks, OBD Code Clicks & PopState Sync verified');

@@ -317,7 +317,11 @@ const { default: App } = await import('../src/App.jsx');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let rootInstance = null;
+let mountSeq = 0;
 async function mountRoute(pathname, search = '') {
+  if (rootInstance) {
+    rootInstance.render(null);
+  }
   headElement.childNodes = [];
   rootContainer.childNodes = [];
   globalThis.document.title = '';
@@ -326,7 +330,9 @@ async function mountRoute(pathname, search = '') {
   globalThis.window.location.hash = '';
   globalThis.window.location.href = `http://localhost:5173${pathname}${search}`;
   rootInstance = createRoot(rootContainer);
-  rootInstance.render(React.createElement(BrowserRouter, null, React.createElement(App)));
+  rootInstance.render(
+    React.createElement(BrowserRouter, { key: `mount-${++mountSeq}` }, React.createElement(App))
+  );
   await sleep(110);
 }
 
@@ -547,4 +553,328 @@ test('DOM-AUDIT-12: Malformed percent-encoded & junk-punctuation URLs render 404
     const robotsMeta = headElement.querySelector('meta[name="robots"]');
     assert.equal(robotsMeta?.getAttribute('content'), 'noindex, nofollow', `${badRoute} must set noindex, nofollow`);
   }
+});
+
+test('DOM-AUDIT-13: Zero default vehicle pre-selection across /, /tco, /risk-matrix, /obd-estimator, /compare, /checklist in US, UK & EU', async () => {
+  // 1. Fresh Homepage (/)
+  storageMap.clear();
+  await mountRoute('/');
+  assert.equal(rootContainer.getElementById('preset-select-dropdown')?.value, '', 'Homepage hidden preset select must default to empty string');
+  const homePpi = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'homepage-ppi-preview')[0];
+  assert.ok(homePpi, 'Homepage must render PPI preview section');
+  assert.ok(homePpi.textContent.includes('Universal Pre-Purchase Inspection Points'), 'Homepage PPI preview must be universal when no vehicle is selected');
+  assert.ok(!homePpi.textContent.includes('Toyota Camry'), 'Homepage PPI preview must NOT default to Toyota Camry');
+  const footerVin = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'vin-check-banner')[0];
+  assert.ok(footerVin, 'Footer must render VinCheckBanner');
+  assert.ok(!footerVin.textContent.includes('Toyota Camry'), 'Footer VinCheckBanner must NOT mention Toyota Camry when unselected');
+  assert.ok(!footerVin.textContent.includes('$31,500') && !footerVin.textContent.includes('$24,800'), 'Footer VinCheckBanner must NOT leak sample price');
+  const saveActiveBtns = rootContainer.querySelectorAll(
+    (el) => el.tagName === 'BUTTON' && (el.textContent.includes('+ Save Active') || el.textContent.includes('+ Save Car'))
+  );
+  assert.equal(saveActiveBtns.length, 0, 'Navbar must NOT show "+ Save Active" or "+ Save Car" when no vehicle is selected');
+
+  // Open mobile drawer on / and verify no default active car
+  const mobileMenuBtn = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'navbar-mobile-menu-toggle')[0];
+  assert.ok(mobileMenuBtn, 'Must find mobile menu button');
+  mobileMenuBtn.dispatchEvent({ type: 'click' });
+  await sleep(40);
+  const mobileDrawer = rootContainer.getElementById('mobile-nav-drawer');
+  assert.ok(mobileDrawer?.textContent.includes('No vehicle selected'), 'Mobile drawer must show "No vehicle selected" when unselected');
+  assert.ok(!mobileDrawer?.textContent.includes('Toyota Camry'), 'Mobile drawer must NOT default to Toyota Camry');
+
+  // 2. Fresh /tco + region switch to UK & EU (must NOT auto-select Toyota Camry or VW Golf)
+  await mountRoute('/tco');
+  await sleep(120);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'tco-empty-vehicle-picker').length, 1, '/tco must render empty vehicle picker');
+  assert.equal(rootContainer.getElementById('preset-select-dropdown')?.value, '', '/tco hidden select must default to empty string');
+  assert.equal(rootContainer.getElementById('select-make')?.value, '', '/tco Make dropdown must default to empty placeholder');
+  assert.ok(rootContainer.getElementById('select-model')?.hasAttribute('disabled'), '/tco Model dropdown must be disabled until Make is chosen');
+  assert.ok(rootContainer.getElementById('select-engine')?.hasAttribute('disabled'), '/tco Engine dropdown must be disabled until Make is chosen');
+  const tcoApplyBtn = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'tco-apply-vehicle-button')[0];
+  assert.ok(tcoApplyBtn?.hasAttribute('disabled'), '/tco Calculate This Vehicle CTA must be disabled before selecting a vehicle');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'market-deal-verdict-badge').length, 0, '/tco must hide market deal badge when unselected');
+  assert.equal(rootContainer.getElementById('input-purchase-price')?.value, '30,000', '/tco must start with neutral $30,000 baseline, not Camry $31,500');
+
+  for (const regionLabel of ['UK (£', 'EU (€', 'US ($']) {
+    const regBtn = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes(regionLabel))[0];
+    assert.ok(regBtn, `Must find region switcher button for ${regionLabel}`);
+    regBtn.dispatchEvent({ type: 'click' });
+    await sleep(40);
+    assert.equal(rootContainer.getElementById('preset-select-dropdown')?.value, '', `Switching region to ${regionLabel} while unselected must keep no vehicle selected`);
+  }
+
+  // 3. Fresh /risk-matrix (Maintenance tab)
+  await mountRoute('/risk-matrix');
+  await sleep(80);
+  assert.equal(rootContainer.getElementById('risk-preset-sync')?.value, '', '/risk-matrix must default to empty vehicle selection');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-vehicle-picker').length, 1, '/risk-matrix must render empty vehicle picker');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-gauge').length, 1, '/risk-matrix must render neutral --/100 gauge');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-dossier-state').length, 1, '/risk-matrix must render empty dossier state');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'vehicle-internal-links').length, 0, '/risk-matrix must hide vehicle internal links when unselected');
+  assert.ok(!rootContainer.toHtml().includes('28,000 mi'), '/risk-matrix must not leak Camry 28,000 mi default');
+
+  // 4. Fresh /obd-estimator (OBD-II Lookup tab)
+  await mountRoute('/obd-estimator');
+  await sleep(80);
+  const obdSelect = rootContainer.getElementById('obd-preset-select');
+  assert.ok(obdSelect, '/obd-estimator must render #obd-preset-select');
+  assert.equal(obdSelect.value, '', '/obd-estimator TARGET VEHICLE dropdown must default to empty (generic)');
+  const obdHtml = rootContainer.toHtml();
+  assert.ok(obdHtml.includes('GENERIC SAE J1979 PROFILE'), '/obd-estimator must show GENERIC SAE J1979 PROFILE when no vehicle is selected');
+  assert.ok(obdHtml.includes('obd-no-vehicle-prompt'), '/obd-estimator must render obd-no-vehicle-prompt');
+  assert.ok(obdHtml.includes('P0420 WORKSHOP COST SUMMARY'), '/obd-estimator must default to universal P0420, not Camry P0A80');
+  assert.ok(!obdHtml.includes('P0A80 WORKSHOP COST SUMMARY'), '/obd-estimator must NOT auto-select Camry P0A80');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'vehicle-internal-links').length, 0, '/obd-estimator must hide vehicle internal links when unselected');
+
+  // Clicking an OBD code without selecting a vehicle must NOT leak any fallback vehicle into SEO title or URL
+  const p0299Chip = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('P0299'))[0];
+  assert.ok(p0299Chip, 'Must find P0299 quick code button');
+  p0299Chip.dispatchEvent({ type: 'click' });
+  await sleep(40);
+  assert.ok(!globalThis.window.location.search.includes('preset='), 'Selecting an OBD code without a vehicle must NOT inject preset= into URL');
+  assert.ok(!globalThis.document.title.includes('Camry') && !globalThis.document.title.includes('Focus') && !globalThis.document.title.includes('Golf'), `Generic OBD title must not leak any vehicle: ${globalThis.document.title}`);
+
+  // 5. Fresh /compare (Compare tab)
+  await mountRoute('/compare');
+  await sleep(120);
+  const selectA = rootContainer.querySelectorAll((el) => el.tagName === 'SELECT' && el.getAttribute('aria-label') === 'Select primary vehicle')[0];
+  const selectB = rootContainer.querySelectorAll((el) => el.tagName === 'SELECT' && el.getAttribute('aria-label') === 'Select comparison vehicle')[0];
+  assert.equal(selectA?.value, '', '/compare Vehicle A dropdown must default to empty');
+  assert.equal(selectB?.value, '', '/compare Vehicle B dropdown must default to empty');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-card-a').length, 1, '/compare must render empty Vehicle A card');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-card-b').length, 1, '/compare must render empty Vehicle B card');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 1, '/compare must render comparator empty state');
+  assert.ok(globalThis.document.title.includes('Head-to-Head Vehicle Cost & Reliability Comparator'), `Unselected /compare title unexpected: ${globalThis.document.title}`);
+  assert.ok(!globalThis.document.title.includes('Camry') && !globalThis.document.title.includes('Focus'), '/compare title must not leak default vehicles');
+
+  // 6. Fresh /checklist (PPI Checklist tab)
+  await mountRoute('/checklist');
+  await sleep(120);
+  assert.equal(rootContainer.getElementById('ppi-vehicle-select')?.value, '', '/checklist vehicle dropdown must default to empty');
+  const ppiH1 = rootContainer.querySelectorAll((el) => el.tagName === 'H1')[0];
+  assert.ok(ppiH1?.textContent.includes('Pre-Purchase Inspection (PPI) | Field Inspection Checklist'), `Unexpected unselected /checklist H1: ${ppiH1?.textContent}`);
+  assert.ok(!ppiH1?.textContent.includes('Camry'), '/checklist H1 must NOT mention Toyota Camry');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'ppi-empty-vehicle-picker').length, 1, '/checklist must render empty vehicle picker');
+  assert.equal(rootContainer.getElementById('ppi-asking-price'), null, '/checklist must hide asking price input when unselected');
+  assert.equal(rootContainer.getElementById('ppi-odometer-input'), null, '/checklist must hide odometer input when unselected');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'negotiation-battlecard-summary').length, 0, '/checklist must hide negotiation battlecard when unselected');
+});
+
+test('DOM-AUDIT-14: Interactive vehicle selection, clearing & stale-closure-free routing across all tabs', async () => {
+  // 1. /tco Make selection -> enable button -> calculate vehicle
+  await mountRoute('/tco');
+  await sleep(120);
+  const makeSelect = rootContainer.getElementById('select-make');
+  makeSelect.value = 'Toyota';
+  makeSelect.dispatchEvent({ type: 'change' });
+  await sleep(40);
+  const applyBtn = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'tco-apply-vehicle-button')[0];
+  assert.ok(applyBtn && !applyBtn.hasAttribute('disabled'), 'Selecting a make in /tco VehicleSelect must enable Calculate This Vehicle button');
+  applyBtn.dispatchEvent({ type: 'click' });
+  await sleep(60);
+  assert.ok(globalThis.window.location.pathname.startsWith('/tco/'), `Clicking Calculate This Vehicle must navigate to /tco/:id (got ${globalThis.window.location.pathname})`);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'tco-empty-vehicle-picker').length, 0, 'Empty picker must disappear after selecting vehicle');
+
+  // 2. /risk-matrix quick-pick selection
+  await mountRoute('/risk-matrix');
+  await sleep(80);
+  const golfChip = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.trim() === 'VW Golf TDI')[0];
+  assert.ok(golfChip, 'Must find VW Golf TDI quick-pick chip on /risk-matrix');
+  golfChip.dispatchEvent({ type: 'click' });
+  await sleep(60);
+  assert.equal(globalThis.window.location.pathname, '/risk-matrix/vw-golf-20-tdi', 'Quick-pick chip on /risk-matrix must update URL to /risk-matrix/vw-golf-20-tdi');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-dossier-state').length, 0, 'Empty dossier must clear after selecting vehicle');
+  assert.ok(rootContainer.toHtml().includes('Volkswagen Golf'), 'Risk matrix must display selected Volkswagen Golf telemetry');
+
+  // 3. /obd-estimator selecting EV while on P0420 must auto-switch code AND keep preset= in URL, then clearing returns to generic
+  await mountRoute('/obd-estimator');
+  await sleep(80);
+  const obdSelect = rootContainer.getElementById('obd-preset-select');
+  obdSelect.value = 'tesla-model-3-lr';
+  obdSelect.dispatchEvent({ type: 'change' });
+  await sleep(60);
+  assert.ok(
+    globalThis.window.location.search.includes('preset=tesla-model-3-lr') || globalThis.window.location.pathname.includes('/obd/tesla-model-3-lr/'),
+    `Selecting Tesla EV on /obd-estimator must preserve preset in URL (got ${globalThis.window.location.pathname}${globalThis.window.location.search})`
+  );
+  assert.ok(!rootContainer.toHtml().includes('P0420 WORKSHOP COST SUMMARY'), 'Selecting pure EV must replace incompatible P0420 catalytic code');
+  assert.ok(rootContainer.toHtml().includes('Tesla Model 3'), 'OBD banner must reflect selected Tesla Model 3');
+
+  // Clear back to generic
+  const obdSelectAfter = rootContainer.getElementById('obd-preset-select');
+  obdSelectAfter.value = '';
+  obdSelectAfter.dispatchEvent({ type: 'change' });
+  await sleep(60);
+  const obdHtmlAfterClear = rootContainer.toHtml();
+  assert.ok(obdHtmlAfterClear.includes('GENERIC SAE J1979 PROFILE'), 'Clearing OBD vehicle must return to GENERIC SAE J1979 PROFILE');
+  assert.ok(obdHtmlAfterClear.includes('P0420 WORKSHOP COST SUMMARY'), 'Clearing auto-switched EV vehicle on /obd-estimator must return to universal P0420');
+  assert.equal(globalThis.window.location.pathname, '/obd-estimator', 'Clearing OBD vehicle with no explicit code must return to clean /obd-estimator');
+  assert.equal(globalThis.window.location.search, '', 'Clearing OBD vehicle with no explicit code must not leave ?code=U0100 behind');
+
+  // 4. /compare Popular matchup atomic URL update + Set Vehicle B as Primary swap + clearing Vehicle A
+  await mountRoute('/compare');
+  await sleep(120);
+  const petrolEvBtn = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('Petrol vs Pure EV'))[0];
+  assert.ok(petrolEvBtn, 'Must find Petrol vs Pure EV button on /compare');
+  petrolEvBtn.dispatchEvent({ type: 'click' });
+  await sleep(60);
+  assert.equal(
+    globalThis.window.location.pathname,
+    '/compare/bmw-330i-g20-vs-tesla-model-3-lr',
+    `Popular matchup on unselected /compare must atomically navigate to /compare/bmw-330i-g20-vs-tesla-model-3-lr (got ${globalThis.window.location.pathname})`
+  );
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 0, 'Empty state must clear when both vehicles are set');
+
+  const promoteBtn = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('Set Vehicle B as Primary'))[0];
+  assert.ok(promoteBtn, 'Must find Set Vehicle B as Primary button');
+  promoteBtn.dispatchEvent({ type: 'click' });
+  await sleep(60);
+  assert.equal(
+    globalThis.window.location.pathname,
+    '/compare/tesla-model-3-lr-vs-bmw-330i-g20',
+    `Promoting Vehicle B must atomically update URL to /compare/tesla-model-3-lr-vs-bmw-330i-g20 (got ${globalThis.window.location.pathname})`
+  );
+
+  // Clear Vehicle A back to empty
+  const selectAAfter = rootContainer.querySelectorAll((el) => el.tagName === 'SELECT' && el.getAttribute('aria-label') === 'Select primary vehicle')[0];
+  selectAAfter.value = '';
+  selectAAfter.dispatchEvent({ type: 'change' });
+  await sleep(60);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-card-a').length, 1, 'Clearing Vehicle A must render empty Vehicle A card');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 1, 'Clearing Vehicle A must restore comparator empty state');
+
+  // 5. /checklist selection via #ppi-vehicle-select and clearing back to empty
+  await mountRoute('/checklist');
+  await sleep(120);
+  const ppiSelect = rootContainer.getElementById('ppi-vehicle-select');
+  ppiSelect.value = 'tesla-model-3-lr';
+  ppiSelect.dispatchEvent({ type: 'change' });
+  await sleep(60);
+  assert.equal(globalThis.window.location.pathname, '/checklist/tesla-model-3-lr', 'Selecting vehicle on /checklist must update URL to /checklist/tesla-model-3-lr');
+  assert.ok(rootContainer.getElementById('ppi-asking-price'), 'Selecting vehicle on /checklist must reveal asking price input');
+  assert.ok(rootContainer.toHtml().includes('HV Battery State of Health'), 'Selecting Tesla Model 3 on /checklist must render EV battery inspection step');
+
+  const ppiSelectClear = rootContainer.getElementById('ppi-vehicle-select');
+  ppiSelectClear.value = '';
+  ppiSelectClear.dispatchEvent({ type: 'change' });
+  await sleep(60);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'ppi-empty-vehicle-picker').length, 1, 'Clearing /checklist dropdown must restore empty picker');
+});
+
+test('DOM-AUDIT-15: Deep links hydrate explicitly, invalid ?preset= stays unselected, and popstate clears back to unselected', async () => {
+  // Invalid ?preset= query param must safely remain unselected (never fall back to Camry or index 0)
+  await mountRoute('/risk-matrix', '?preset=nonexistent-car-xyz');
+  await sleep(80);
+  assert.equal(rootContainer.getElementById('risk-preset-sync')?.value, '', 'Invalid ?preset= on /risk-matrix must remain unselected');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-vehicle-picker').length, 1, 'Invalid ?preset= must render empty picker');
+
+  // Deep link to /risk-matrix/toyota-camry-hybrid hydrates Camry explicitly
+  await mountRoute('/risk-matrix/toyota-camry-hybrid');
+  await sleep(80);
+  assert.equal(rootContainer.getElementById('risk-preset-sync')?.value, 'toyota-camry-hybrid', 'Explicit deep link /risk-matrix/toyota-camry-hybrid must hydrate Camry');
+
+  // Browser Back (popstate) to bare /risk-matrix clears selection cleanly
+  globalThis.window.history.pushState({}, '', '/risk-matrix');
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await sleep(60);
+  assert.equal(rootContainer.getElementById('risk-preset-sync')?.value, '', 'popstate back to bare /risk-matrix must clear selected vehicle');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'risk-empty-vehicle-picker').length, 1, 'popstate back to bare /risk-matrix must restore empty picker');
+
+  // Deep link to /compare/bmw-330i-g20-vs-tesla-model-3-lr then popstate back to bare /compare
+  await mountRoute('/compare/bmw-330i-g20-vs-tesla-model-3-lr');
+  await sleep(120);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 0, 'Explicit /compare matchup must hydrate both vehicles');
+  globalThis.window.history.pushState({}, '', '/compare');
+  globalThis.window.dispatchEvent({ type: 'popstate' });
+  await sleep(60);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 1, 'popstate back to bare /compare must clear both vehicles');
+});
+
+test('DOM-AUDIT-16: Unselected export/modal guards, zero fabricated CTA figures, clean non-OBD URLs, CommunityInvoiceModal & Garage Pair loading', async () => {
+  // 1. Unselected /tco: sr-only export buttons must be disabled & never open broken ForumShareModal, and AffiliateCTA must not fabricate $6,800
+  storageMap.clear();
+  await mountRoute('/tco');
+  await sleep(120);
+  const tcoForumBtn = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'open-forum-share-btn')[0];
+  assert.ok(tcoForumBtn, '/tco must keep open-forum-share-btn mounted');
+  assert.ok(tcoForumBtn.hasAttribute('disabled'), 'open-forum-share-btn must be disabled on unselected /tco');
+  tcoForumBtn.dispatchEvent({ type: 'click' });
+  await sleep(40);
+  assert.equal(
+    rootContainer.querySelectorAll((el) => el.getAttribute('role') === 'dialog').length,
+    0,
+    'Clicking disabled sr-only open-forum-share-btn on unselected /tco must NOT open ForumShareModal'
+  );
+  const tcoInsCta = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'affiliate-cta-insurance-finance')[0];
+  assert.ok(tcoInsCta, '/tco must render insurance-finance AffiliateCTA');
+  assert.ok(!tcoInsCta.textContent.includes('$6,800'), 'Unselected /tco AffiliateCTA must NOT fabricate $6,800 outlay');
+
+  // 2. Unselected /risk-matrix: sr-only export buttons must be disabled & clicking them must NOT queue latent modal popup when a car is later chosen
+  await mountRoute('/risk-matrix');
+  await sleep(80);
+  const riskForumBtn = rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'open-forum-share-btn')[0];
+  assert.ok(riskForumBtn?.hasAttribute('disabled'), 'open-forum-share-btn must be disabled on unselected /risk-matrix');
+  riskForumBtn.dispatchEvent({ type: 'click' });
+  await sleep(30);
+  const golfChip = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.trim() === 'VW Golf TDI')[0];
+  golfChip.dispatchEvent({ type: 'click' });
+  await sleep(60);
+  assert.equal(
+    rootContainer.querySelectorAll((el) => el.getAttribute('role') === 'dialog').length,
+    0,
+    'Previously clicking disabled export button on unselected /risk-matrix must NOT pop up modal once a car is selected'
+  );
+
+  // 3. Selecting an OBD code without selecting a vehicle, then switching to non-OBD tabs must NOT pollute URLs with ?code=
+  await mountRoute('/obd-estimator');
+  await sleep(80);
+  const p2002Chip = rootContainer.querySelectorAll((el) => el.tagName === 'BUTTON' && el.textContent.includes('P2002'))[0];
+  assert.ok(p2002Chip, 'Must find P2002 chip');
+  p2002Chip.dispatchEvent({ type: 'click' });
+  await sleep(40);
+  assert.ok(globalThis.window.location.search.includes('code=P2002'), '/obd-estimator must preserve code=P2002');
+  for (const [tabId, expectedPath] of [
+    ['tab-tco', '/tco'],
+    ['tab-risk', '/risk-matrix'],
+    ['tab-compare', '/compare'],
+    ['tab-checklist', '/checklist'],
+    ['tab-overview', '/'],
+  ]) {
+    const tabEl = rootContainer.getElementById(tabId);
+    assert.ok(tabEl, `Must find nav element #${tabId}`);
+    tabEl.dispatchEvent({ type: 'click' });
+    await sleep(60);
+    assert.equal(globalThis.window.location.pathname, expectedPath, `Navigating to ${tabId} while unselected must land on ${expectedPath}`);
+    assert.equal(globalThis.window.location.search, '', `Navigating to ${tabId} after picking an OBD code must NOT pollute URL with ?code=`);
+  }
+
+  // 4. CommunityInvoiceModal on /reviews must default to empty vehicle selection (not Ford Focus or Camry)
+  await mountRoute('/reviews');
+  await sleep(120);
+  const openInvoiceBtn = rootContainer.querySelectorAll(
+    (el) => el.tagName === 'BUTTON' && el.textContent.includes('Compare a Workshop Quote')
+  )[0];
+  assert.ok(openInvoiceBtn, 'Must find Compare a Workshop Quote button on /reviews');
+  openInvoiceBtn.dispatchEvent({ type: 'click' });
+  await sleep(50);
+  const invoiceSelect = rootContainer.getElementById('invoice-vehicle-select');
+  assert.ok(invoiceSelect, 'CommunityInvoiceModal must render #invoice-vehicle-select');
+  assert.equal(invoiceSelect.value, '', 'CommunityInvoiceModal must NOT pre-select Ford Focus or any default vehicle');
+
+  // 5. ?garage= pair loading on unselected /compare preserves custom price/odometer & updates canonical matchup URL
+  storageMap.clear();
+  await mountRoute('/compare', '?garage=vw-golf-20-tdi:19500:85000,tesla-model-3-lr:34000:22000');
+  await sleep(120);
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-empty-state').length, 1, '/compare with ?garage= must start unselected until user loads pair');
+  const loadPairBtn = rootContainer.querySelectorAll(
+    (el) => el.tagName === 'BUTTON' && el.textContent.includes('Load My Garage Pair')
+  )[0];
+  assert.ok(loadPairBtn, 'Must render Load My Garage Pair button when 2 garage vehicles are present');
+  loadPairBtn.dispatchEvent({ type: 'click' });
+  await sleep(80);
+  assert.equal(globalThis.window.location.pathname, '/compare/vw-golf-20-tdi-vs-tesla-model-3-lr', 'Loading Garage pair must navigate to canonical matchup URL');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-price-a')[0]?.value, '19500', 'Vehicle A custom garage price must be preserved');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-odo-a')[0]?.value, '85000', 'Vehicle A custom garage odometer must be preserved');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-price-b')[0]?.value, '34000', 'Vehicle B custom garage price must be preserved');
+  assert.equal(rootContainer.querySelectorAll((el) => el.getAttribute('data-testid') === 'comparator-odo-b')[0]?.value, '22000', 'Vehicle B custom garage odometer must be preserved');
 });

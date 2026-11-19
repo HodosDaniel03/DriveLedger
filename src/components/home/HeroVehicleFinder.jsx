@@ -6,7 +6,7 @@ import { useUnits } from '../../context/UnitContext';
 
 export default function HeroVehicleFinder({
   selectedPresetId,
-  hasSelectedVehicle = true,
+  hasSelectedVehicle = Boolean(selectedPresetId),
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -297,9 +297,10 @@ export default function HeroVehicleFinder({
           <label htmlFor="preset-select-dropdown">Select Preset</label>
           <select
             id="preset-select-dropdown"
-            value={selectedPresetId}
-            onChange={(e) => onSelectPreset(e.target.value)}
+            value={hasSelectedVehicle && selectedPresetId ? selectedPresetId : ''}
+            onChange={(e) => onSelectPreset(e.target.value || null)}
           >
+            <option value="">Select a vehicle...</option>
             {VEHICLE_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

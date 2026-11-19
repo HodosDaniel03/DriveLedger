@@ -25,6 +25,7 @@ import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import VehicleInternalLinks from '../seo/VehicleInternalLinks';
+import VehicleSelect from '../common/VehicleSelect';
 
 export { generatePpiChecklist };
 
@@ -172,6 +173,7 @@ function sanitizeStep(step) {
 
 export default function PreInspectionChecklist({
   presetId,
+  hasSelectedVehicle = Boolean(presetId),
   currentOdometerMiles = 75000,
   standalone = false,
   onNavigateToObd,
@@ -196,9 +198,17 @@ export default function PreInspectionChecklist({
     convertRegionToUsd,
   } = useUnits();
 
-  const [selectedPreset, setSelectedPreset] = useState(() => {
-    return getPresetById(presetId) || VEHICLE_PRESETS[0];
-  });
+  const resolveValidPreset = (id) =>
+    id && VEHICLE_PRESETS.some((p) => p.id === id) ? getPresetById(id) : null;
+
+  const [selectedPreset, setSelectedPreset] = useState(() =>
+    hasSelectedVehicle ? resolveValidPreset(presetId) : null
+  );
+  const [draftPresetId, setDraftPresetId] = useState(() =>
+    hasSelectedVehicle && presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null
+  );
+  const draftPreset = useMemo(() => resolveValidPreset(draftPresetId), [draftPresetId]);
+  const isVehicleSelected = Boolean(selectedPreset);
 
   const [odometerMiles, setOdometerMiles] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -206,7 +216,7 @@ export default function PreInspectionChecklist({
       const urlOdo = Number(params.get('odo'));
       if (urlOdo > 0) return Math.round(urlOdo);
     }
-    return Math.max(0, Number(currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000));
+    return Math.max(0, Number(currentOdometerMiles || selectedPreset?.defaultOdometerMiles || 75000));
   });
 
   const [askingPriceUsd, setAskingPriceUsd] = useState(() => {
@@ -215,6 +225,7 @@ export default function PreInspectionChecklist({
       const urlPrice = Number(params.get('price'));
       if (urlPrice > 0) return Math.round(urlPrice);
     }
+    if (!selectedPreset) return 25000;
     return estimateMileageAdjustedMarketValue(
       selectedPreset,
       odometerMiles || currentOdometerMiles || selectedPreset.defaultOdometerMiles || 75000
@@ -243,23 +254,53 @@ export default function PreInspectionChecklist({
   });
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  const applySelectedVehicle = (nextPresetId) => {
+    const p = resolveValidPreset(nextPresetId);
+    if (!p) {
+      setSelectedPreset(null);
+      setDraftPresetId(null);
+      setCheckedIds({});
+      setFlaggedDefectIds({});
+      if (onSelectPreset) onSelectPreset(null);
+      return;
+    }
+    setSelectedPreset(p);
+    setDraftPresetId(p.id);
+    const nextOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
+    setOdometerMiles(nextOdo);
+    setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, nextOdo));
+    setCheckedIds({});
+    setFlaggedDefectIds({});
+    if (onSelectPreset) onSelectPreset(p.id);
+  };
+
   useEffect(() => {
-    if (presetId) {
-      const p = getPresetById(presetId);
-      if (p && p.id !== selectedPreset.id) {
-        setSelectedPreset(p);
-        const defaultOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
-        setOdometerMiles(defaultOdo);
-        setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, defaultOdo));
+    if (presetId === undefined) return;
+    if (!hasSelectedVehicle || !presetId) {
+      if (selectedPreset !== null) {
+        setSelectedPreset(null);
+        setDraftPresetId(null);
         setCheckedIds({});
         setFlaggedDefectIds({});
       }
+      return;
     }
-  }, [presetId]);
+    const p = resolveValidPreset(presetId);
+    if (p && p.id !== selectedPreset?.id) {
+      setSelectedPreset(p);
+      setDraftPresetId(p.id);
+      const defaultOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
+      setOdometerMiles(defaultOdo);
+      setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, defaultOdo));
+      setCheckedIds({});
+      setFlaggedDefectIds({});
+    }
+  }, [presetId, hasSelectedVehicle]);
 
   const odometerKm = Math.round(odometerMiles * 1.609344);
 
   const inspectionSteps = useMemo(() => {
+    if (!selectedPreset) return [];
     const raw = generatePpiChecklist(selectedPreset, odometerKm);
     return raw.map(sanitizeStep);
   }, [selectedPreset, odometerKm]);
@@ -289,6 +330,9 @@ export default function PreInspectionChecklist({
 
   // Compute upcoming wear reserve exposure at current odometer (50% negotiation weight)
   const wearExposure = useMemo(() => {
+    if (!selectedPreset) {
+      return { scheduledWearDeductionUsd: 0, serviceReserve12MoUsd: 0 };
+    }
     const pType = resolvePowertrainType(selectedPreset);
     const isEv = isPureElectric(pType);
     const relevant = MAINTENANCE_COMPONENTS.filter((comp) =>
@@ -366,6 +410,7 @@ export default function PreInspectionChecklist({
   const displayAskingPrice = Math.round(convertUsdToRegion(askingPriceUsd));
 
   const handleShareLink = () => {
+    if (!selectedPreset) return;
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mydriveledger.com';
       const activeFlagged = Object.keys(flaggedDefectIds).filter((k) => flaggedDefectIds[k]);
@@ -382,6 +427,7 @@ export default function PreInspectionChecklist({
   };
 
   const handlePrint = () => {
+    if (!selectedPreset) return;
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
       window.print();
     }
@@ -410,48 +456,62 @@ export default function PreInspectionChecklist({
           </div>
           {standalone ? (
             <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-              {selectedPreset.name} | Field Inspection Checklist
+              {isVehicleSelected
+                ? `${selectedPreset.name} | Field Inspection Checklist`
+                : 'Pre-Purchase Inspection (PPI) | Field Inspection Checklist'}
             </h1>
           ) : (
             <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-              {selectedPreset.name} | Field Inspection Checklist
+              {isVehicleSelected
+                ? `${selectedPreset.name} | Field Inspection Checklist`
+                : 'Pre-Purchase Inspection (PPI) | Field Inspection Checklist'}
             </h2>
           )}
           <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700 break-words">
-            {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
+            {isVehicleSelected ? (
+              <>
+                {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
+              </>
+            ) : (
+              'Select a vehicle model below to generate an engine-specific field inspection checklist, known defect warnings, and a live negotiation battlecard.'
+            )}
           </p>
         </div>
 
         {/* Toolbar Buttons (Hidden during Print) */}
         <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <button
-            type="button"
-            onClick={handleShareLink}
-            className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
-            title="Share state as URL link"
-          >
-            {copyFeedback ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold">Link copied!</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                <span>Share link</span>
-              </>
-            )}
-          </button>
+          {isVehicleSelected && (
+            <>
+              <button
+                type="button"
+                onClick={handleShareLink}
+                className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+                title="Share state as URL link"
+              >
+                {copyFeedback ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">Link copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                    <span>Share link</span>
+                  </>
+                )}
+              </button>
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
-            title="Print or save Negotiation Battlecard as PDF"
-          >
-            <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-            <span>Print Negotiation Battlecard</span>
-          </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+                title="Print or save Negotiation Battlecard as PDF"
+              >
+                <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                <span>Print Negotiation Battlecard</span>
+              </button>
+            </>
+          )}
 
           {onNavigateToObd && (
             <button
@@ -466,8 +526,14 @@ export default function PreInspectionChecklist({
         </div>
       </div>
 
-      {/* Vehicle Preset, Asking Price & Odometer Quick Selector (Hidden during print) */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-subtle dark:bg-zinc-800/60 border border-border dark:border-zinc-800 print:hidden min-w-0">
+      {/* Vehicle Preset, Asking Price & Odometer Quick Selector (compact bar when selected; accessible select when empty) */}
+      <div
+        className={
+          isVehicleSelected
+            ? 'flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-subtle dark:bg-zinc-800/60 border border-border dark:border-zinc-800 print:hidden min-w-0'
+            : 'sr-only'
+        }
+      >
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 min-w-0 w-full sm:w-auto">
           <label htmlFor="ppi-vehicle-select" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5 shrink-0">
             <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -475,22 +541,12 @@ export default function PreInspectionChecklist({
           </label>
           <select
             id="ppi-vehicle-select"
-            value={selectedPreset.id}
-            onChange={(e) => {
-              const p = getPresetById(e.target.value);
-              if (p) {
-                setSelectedPreset(p);
-                const nextOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
-                setOdometerMiles(nextOdo);
-                setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, nextOdo));
-                setCheckedIds({});
-                setFlaggedDefectIds({});
-                if (onSelectPreset) onSelectPreset(p.id);
-              }
-            }}
+            value={selectedPreset ? selectedPreset.id : ''}
+            onChange={(e) => applySelectedVehicle(e.target.value)}
             aria-label="Select vehicle model"
-            className="w-full sm:max-w-[260px] min-h-[44px] sm:min-h-0 truncate font-sans text-base sm:text-xs font-medium rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-3 py-2 sm:py-1.5 text-ink dark:text-zinc-100 focus:outline-none focus:border-primary-600 shadow-sm"
+            className="w-full sm:max-w-[280px] min-h-[44px] sm:min-h-0 truncate font-sans text-base sm:text-xs font-medium rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-3 py-2 sm:py-1.5 text-ink dark:text-zinc-100 focus:outline-none focus:border-primary-600 shadow-sm"
           >
+            <option value="">Select a vehicle model...</option>
             {VEHICLE_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.fuelType} · {p.engineCode})
@@ -499,58 +555,127 @@ export default function PreInspectionChecklist({
           </select>
         </div>
 
-        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <label htmlFor="ppi-asking-price" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
-              Asking Price:
-            </label>
-            <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
-              <span className="text-xs font-mono text-muted mr-1">{currencySymbol}</span>
-              <input
-                id="ppi-asking-price"
-                type="number"
-                min="500"
-                max="250000"
-                step="250"
-                value={displayAskingPrice}
-                onChange={(e) =>
-                  setAskingPriceUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
-                }
-                className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
-              />
+        {isVehicleSelected && (
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <label htmlFor="ppi-asking-price" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
+                Asking Price:
+              </label>
+              <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
+                <span className="text-xs font-mono text-muted mr-1">{currencySymbol}</span>
+                <input
+                  id="ppi-asking-price"
+                  type="number"
+                  min="500"
+                  max="250000"
+                  step="250"
+                  value={displayAskingPrice}
+                  onChange={(e) =>
+                    setAskingPriceUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
+                  }
+                  className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
+                />
+              </div>
             </div>
+
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <label htmlFor="ppi-odometer-input" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
+                Odometer:
+              </label>
+              <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
+                <input
+                  id="ppi-odometer-input"
+                  type="number"
+                  min="0"
+                  max="600000"
+                  step="2500"
+                  value={displayOdo}
+                  onChange={(e) =>
+                    setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
+                  }
+                  className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
+                />
+                <span className="text-xs font-sans text-muted ml-1">{distanceUnit}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Empty-State Inline Vehicle Picker when no vehicle is selected */}
+      {!isVehicleSelected && (
+        <div
+          data-testid="ppi-empty-vehicle-picker"
+          className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 print:hidden"
+        >
+          <VehicleSelect
+            selectedPresetId={draftPresetId}
+            onSelectPreset={setDraftPresetId}
+            onAutocompleteSelect={(id) => applySelectedVehicle(id)}
+            showTelemetryStrip={false}
+            dropdownInFlow={true}
+            selectDropdownId="ppi-preset-sync"
+          />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800">
+            <div className="min-w-0">
+              <span className="block text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+                {draftPreset ? 'Selected from dropdown:' : 'No vehicle selected yet:'}
+              </span>
+              <span className={`block font-sans text-xs sm:text-sm ${draftPreset ? 'font-semibold text-ink dark:text-zinc-100 truncate' : 'font-medium text-muted dark:text-zinc-400'}`}>
+                {draftPreset ? draftPreset.name : 'Search 179+ models above, use Make/Model/Engine, or pick a popular model below'}
+              </span>
+            </div>
+            <button
+              type="button"
+              data-testid="ppi-apply-vehicle-button"
+              disabled={!draftPreset}
+              onClick={() => draftPreset && applySelectedVehicle(draftPreset.id)}
+              className={`min-h-[42px] rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shrink-0 ${
+                draftPreset
+                  ? 'bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs cursor-pointer'
+                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              <Car className="w-4 h-4 shrink-0" />
+              <span>Generate PPI Checklist</span>
+            </button>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <label htmlFor="ppi-odometer-input" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
-              Odometer:
-            </label>
-            <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
-              <input
-                id="ppi-odometer-input"
-                type="number"
-                min="0"
-                max="600000"
-                step="2500"
-                value={displayOdo}
-                onChange={(e) =>
-                  setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
-                }
-                className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
-              />
-              <span className="text-xs font-sans text-muted ml-1">{distanceUnit}</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/70">
+            <span className="text-[11px] font-sans font-semibold text-muted dark:text-zinc-400 mr-1">
+              Popular:
+            </span>
+            {[
+              { id: 'vw-golf-20-tdi', label: 'VW Golf TDI' },
+              { id: 'toyota-corolla-18-hybrid', label: 'Corolla Hybrid' },
+              { id: 'toyota-camry-hybrid', label: 'Camry Hybrid' },
+              { id: 'tesla-model-3-lr', label: 'Model 3' },
+              { id: 'bmw-320d-b47', label: 'BMW 320d' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => applySelectedVehicle(item.id)}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-sans font-medium text-zinc-700 dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Step 0: Dynamic Geo-Routed Digital VIN & Odometer Rollback Verification */}
       <VinCheckBanner
         placement="ppi"
-        vehicleName={selectedPreset.name}
-        purchasePriceUsd={askingPriceUsd}
-        odometerMiles={odometerMiles}
+        vehicleName={isVehicleSelected ? selectedPreset.name : ''}
+        purchasePriceUsd={isVehicleSelected ? askingPriceUsd : undefined}
+        odometerMiles={isVehicleSelected ? odometerMiles : undefined}
       />
+
+      {isVehicleSelected && selectedPreset && (
+      <>
 
       {/* Interactive Progress & Live Negotiation Strip */}
       <div className="p-4 rounded-xl bg-primary-50/50 dark:bg-zinc-800/40 border border-primary-100 dark:border-zinc-800 print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -811,30 +936,30 @@ export default function PreInspectionChecklist({
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Rich Editorial Methodology & Tips (Hidden in print) */}
       <ToolEditorialSection
         tool="checklist"
-        vehicleName={selectedPreset.name}
+        vehicleName={isVehicleSelected && selectedPreset ? selectedPreset.name : ''}
         className="print:hidden"
       />
 
-      <VehicleInternalLinks
-        vehicle={selectedPreset}
-        onSelectPreset={(id) => {
-          const p = getPresetById(id);
-          if (p) setSelectedPreset(p);
-          if (onSelectPreset) onSelectPreset(id);
-        }}
-        onNavigateToTco={onNavigateToTco}
-        onNavigateToRisk={onNavigateToRisk}
-        onNavigateToRiskBracket={onNavigateToRiskBracket}
-        onNavigateToChecklist={onNavigateToChecklist}
-        onNavigateToHybridObd={onNavigateToHybridObd}
-        onNavigateToObd={onNavigateToObd}
-        onNavigateToCompare={onNavigateToCompare}
-        onNavigateToVehicles={onNavigateToVehicles}
-      />
+      {isVehicleSelected && selectedPreset && (
+        <VehicleInternalLinks
+          vehicle={selectedPreset}
+          onSelectPreset={(id) => applySelectedVehicle(id)}
+          onNavigateToTco={onNavigateToTco}
+          onNavigateToRisk={onNavigateToRisk}
+          onNavigateToRiskBracket={onNavigateToRiskBracket}
+          onNavigateToChecklist={onNavigateToChecklist}
+          onNavigateToHybridObd={onNavigateToHybridObd}
+          onNavigateToObd={onNavigateToObd}
+          onNavigateToCompare={onNavigateToCompare}
+          onNavigateToVehicles={onNavigateToVehicles}
+        />
+      )}
     </section>
   );
 }

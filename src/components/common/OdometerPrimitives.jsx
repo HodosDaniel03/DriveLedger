@@ -151,7 +151,7 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
   );
 }
 
-export function SelectField({ label, value, options, onChange, id, className = '' }) {
+export function SelectField({ label, value, options, onChange, id, disabled = false, className = '' }) {
   return (
     <div className={`min-w-0 w-full ${className}`}>
       {label && (
@@ -163,8 +163,9 @@ export function SelectField({ label, value, options, onChange, id, className = '
         <select
           id={id}
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 min-h-[44px] w-full cursor-pointer appearance-none truncate rounded-xl border border-border bg-surface pr-9 pl-3 font-sans text-base sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-border-strong focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-700"
+          className="h-11 min-h-[44px] w-full cursor-pointer appearance-none truncate rounded-xl border border-border bg-surface pr-9 pl-3 font-sans text-base sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-border-strong focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 dark:border-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-700"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value} className="dark:bg-zinc-900 dark:text-zinc-100">

@@ -112,6 +112,7 @@ export function computeReliabilityAndRisk(
 
 export default function VehicleComparator({
   primaryPresetId,
+  hasSelectedVehicle = Boolean(primaryPresetId),
   secondaryPresetId,
   primaryPurchasePriceUsd,
   primaryPriceUsd,
@@ -152,21 +153,30 @@ export default function VehicleComparator({
   } = useUnits();
   const garage = useGarage();
 
-  const [activePresetAId, setActivePresetAId] = useState(() => primaryPresetId || VEHICLE_PRESETS[0].id);
-  const vehicleA = useMemo(() => getPresetById(activePresetAId) || VEHICLE_PRESETS[0], [activePresetAId]);
+  const resolveValidId = (id) =>
+    id && VEHICLE_PRESETS.some((p) => p.id === id) ? id : null;
+
+  const initialPresetAId = hasSelectedVehicle ? resolveValidId(primaryPresetId) : null;
+  const [activePresetAId, setActivePresetAId] = useState(initialPresetAId);
+  const vehicleA = useMemo(
+    () => (activePresetAId ? getPresetById(activePresetAId) : null),
+    [activePresetAId]
+  );
 
   const [vehicleBId, setVehicleBId] = useState(() => {
-    if (
-      secondaryPresetId &&
-      secondaryPresetId !== (primaryPresetId || VEHICLE_PRESETS[0].id) &&
-      VEHICLE_PRESETS.some((p) => p.id === secondaryPresetId)
-    ) {
-      return secondaryPresetId;
+    const validSecondary = resolveValidId(secondaryPresetId);
+    if (validSecondary && validSecondary !== initialPresetAId) {
+      return validSecondary;
     }
-    if (activePresetAId === 'toyota-camry-hybrid') return 'ford-focus-ecoblue';
-    if (vehicleA.fuelType === 'Diesel') return 'toyota-camry-hybrid';
-    if (vehicleA.isEv) return 'bmw-330i-g20';
-    return 'tesla-model-3-lr';
+    // In inline drawer mode where Vehicle A is already selected, pre-populate a contrasting counterpart
+    if (!standalone && initialPresetAId) {
+      const carA = getPresetById(initialPresetAId);
+      if (initialPresetAId === 'toyota-camry-hybrid') return 'ford-focus-ecoblue';
+      if (carA?.fuelType === 'Diesel') return 'toyota-camry-hybrid';
+      if (carA?.isEv) return 'bmw-330i-g20';
+      return 'tesla-model-3-lr';
+    }
+    return null;
   });
 
   // Editable custom listing price & odometer overrides for Vehicle A and Vehicle B
@@ -175,70 +185,98 @@ export default function VehicleComparator({
   const [customPriceBUsd, setCustomPriceBUsd] = useState(null);
   const [customOdoBMiles, setCustomOdoBMiles] = useState(null);
 
+  const updateVehicleA = (nextAId) => {
+    const cleanA = resolveValidId(nextAId);
+    setActivePresetAId(cleanA);
+    setCustomPriceAUsd(null);
+    setCustomOdoAMiles(null);
+    if (typeof onApplyPreset === 'function') {
+      onApplyPreset(cleanA);
+    }
+  };
+
   const updateVehicleB = (nextBId) => {
-    setVehicleBId(nextBId);
+    const cleanB = resolveValidId(nextBId);
+    setVehicleBId(cleanB);
     setCustomPriceBUsd(null);
     setCustomOdoBMiles(null);
     if (typeof onSelectSecondaryPreset === 'function') {
-      onSelectSecondaryPreset(nextBId);
+      onSelectSecondaryPreset(cleanB);
     }
   };
 
   // Keep Vehicle A in sync if prop changes
   React.useEffect(() => {
-    if (primaryPresetId && primaryPresetId !== activePresetAId) {
-      setActivePresetAId(primaryPresetId);
+    if (primaryPresetId === undefined) return;
+    const nextA = hasSelectedVehicle ? resolveValidId(primaryPresetId) : null;
+    if (nextA !== activePresetAId) {
+      setActivePresetAId(nextA);
       setCustomPriceAUsd(null);
       setCustomOdoAMiles(null);
     }
-  }, [primaryPresetId]);
+  }, [primaryPresetId, hasSelectedVehicle]);
 
   // Keep Vehicle B in sync if secondaryPresetId prop changes (e.g. /compare/:carA-vs-:carB route)
   React.useEffect(() => {
-    if (
-      secondaryPresetId &&
-      secondaryPresetId !== activePresetAId &&
-      secondaryPresetId !== vehicleBId &&
-      VEHICLE_PRESETS.some((p) => p.id === secondaryPresetId)
-    ) {
-      setVehicleBId(secondaryPresetId);
+    if (secondaryPresetId === undefined) return;
+    const validB = resolveValidId(secondaryPresetId);
+    if (!validB) {
+      if (standalone && vehicleBId !== null) {
+        setVehicleBId(null);
+        setCustomPriceBUsd(null);
+        setCustomOdoBMiles(null);
+      }
+      return;
+    }
+    if (validB !== activePresetAId && validB !== vehicleBId) {
+      setVehicleBId(validB);
       setCustomPriceBUsd(null);
       setCustomOdoBMiles(null);
     }
-  }, [secondaryPresetId, activePresetAId]);
+  }, [secondaryPresetId, activePresetAId, standalone]);
 
-  // Prevent Vehicle B from ever being identical to Vehicle A
+  // Prevent Vehicle B from ever being identical to Vehicle A when both are selected
   React.useEffect(() => {
-    if (vehicleBId === activePresetAId) {
-      const fallback = VEHICLE_PRESETS.find((p) => p.id !== activePresetAId);
-      if (fallback) updateVehicleB(fallback.id);
+    if (activePresetAId && vehicleBId && vehicleBId === activePresetAId) {
+      setVehicleBId(null);
+      if (typeof onSelectSecondaryPreset === 'function') {
+        onSelectSecondaryPreset(null);
+      }
     }
   }, [activePresetAId, vehicleBId]);
 
-  const vehicleB = useMemo(() => getPresetById(vehicleBId) || VEHICLE_PRESETS[1], [vehicleBId]);
+  const vehicleB = useMemo(
+    () => (vehicleBId ? getPresetById(vehicleBId) : null),
+    [vehicleBId]
+  );
+  const hasBothVehicles = Boolean(vehicleA && vehicleB);
 
   // Telemetry parameters for Vehicle A & Vehicle B
   const resolvedPrimaryPrice = primaryPurchasePriceUsd ?? primaryPriceUsd;
   const resolvedAnnualMiles = Number(primaryAnnualMiles) > 0 ? Number(primaryAnnualMiles) : annualDistanceMiles;
-  const basePriceA = Number(resolvedPrimaryPrice) > 0 ? Number(resolvedPrimaryPrice) : vehicleA.purchasePriceUsd;
-  const baseOdoA =
-    standalone && customOdoAMiles === null
-      ? (vehicleA.defaultOdometerMiles || 62000)
-      : Number(primaryOdometerMiles) >= 0
-      ? Number(primaryOdometerMiles)
-      : (vehicleA.defaultOdometerMiles || 62000);
+  const basePriceA = vehicleA
+    ? (Number(resolvedPrimaryPrice) > 0 ? Number(resolvedPrimaryPrice) : vehicleA.purchasePriceUsd)
+    : 0;
+  const baseOdoA = vehicleA
+    ? (standalone && customOdoAMiles === null
+        ? (vehicleA.defaultOdometerMiles || 62000)
+        : Number(primaryOdometerMiles) >= 0
+        ? Number(primaryOdometerMiles)
+        : (vehicleA.defaultOdometerMiles || 62000))
+    : 0;
 
   const priceA = customPriceAUsd !== null ? customPriceAUsd : basePriceA;
   const odoA = customOdoAMiles !== null ? customOdoAMiles : baseOdoA;
-  const priceB = customPriceBUsd !== null ? customPriceBUsd : vehicleB.purchasePriceUsd;
-  const odoB = customOdoBMiles !== null ? customOdoBMiles : (vehicleB.defaultOdometerMiles || 58000);
+  const priceB = vehicleB ? (customPriceBUsd !== null ? customPriceBUsd : vehicleB.purchasePriceUsd) : 0;
+  const odoB = vehicleB ? (customOdoBMiles !== null ? customOdoBMiles : (vehicleB.defaultOdometerMiles || 58000)) : 0;
 
-  const mpgA = Number(primaryMpgUs) > 0 ? Number(primaryMpgUs) : vehicleA.mpgUs;
-  const fuelPriceA = Number(primaryFuelPriceUsdGal) > 0 ? Number(primaryFuelPriceUsdGal) : vehicleA.defaultFuelPriceUsdGal;
-  const insuranceA = Number(primaryInsuranceUsd) >= 0 ? Number(primaryInsuranceUsd) : vehicleA.annualInsuranceUsd;
+  const mpgA = vehicleA ? (Number(primaryMpgUs) > 0 ? Number(primaryMpgUs) : vehicleA.mpgUs) : 32;
+  const fuelPriceA = vehicleA ? (Number(primaryFuelPriceUsdGal) > 0 ? Number(primaryFuelPriceUsdGal) : vehicleA.defaultFuelPriceUsdGal) : 3.65;
+  const insuranceA = vehicleA ? (Number(primaryInsuranceUsd) >= 0 ? Number(primaryInsuranceUsd) : vehicleA.annualInsuranceUsd) : 1400;
 
   // Calculate TCO projections for both vehicles
   const tcoA = useMemo(() => {
+    if (!vehicleA) return null;
     if (
       primaryTco &&
       customPriceAUsd === null &&
@@ -289,6 +327,7 @@ export default function VehicleComparator({
   ]);
 
   const tcoB = useMemo(() => {
+    if (!vehicleB) return null;
     return calculateTcoProjection({
       purchasePriceUsd: priceB,
       odometerMiles: odoB,
@@ -312,6 +351,7 @@ export default function VehicleComparator({
 
   // Compute Break-even Trajectory across mileage using live custom prices & odometers
   const breakEvenTrajectory = useMemo(() => {
+    if (!vehicleA || !vehicleB) return null;
     return computeBreakEvenTrajectory(
       { ...vehicleA, purchasePriceUsd: priceA, defaultOdometerMiles: odoA },
       { ...vehicleB, purchasePriceUsd: priceB, defaultOdometerMiles: odoB },
@@ -326,6 +366,7 @@ export default function VehicleComparator({
   const currentKm = Math.round(odoA * 1.609344);
 
   const knownIssuesA = useMemo(() => {
+    if (!vehicleA) return [];
     const engineVariant = findEngineVariant(vehicleA.id);
     return engineVariant
       ? [...(engineVariant.engine?.knownIssues || []), ...(engineVariant.generation?.modelKnownIssues || [])]
@@ -333,6 +374,7 @@ export default function VehicleComparator({
   }, [vehicleA]);
 
   const knownIssuesB = useMemo(() => {
+    if (!vehicleB) return [];
     const engineVariant = findEngineVariant(vehicleB.id);
     return engineVariant
       ? [...(engineVariant.engine?.knownIssues || []), ...(engineVariant.generation?.modelKnownIssues || [])]
@@ -341,40 +383,50 @@ export default function VehicleComparator({
 
   // Calculate Mechanical Reliability & 12-Month Repair Risk Exposure for both vehicles
   const riskA = useMemo(
-    () => computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles),
+    () => (vehicleA ? computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles) : null),
     [vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
   const riskB = useMemo(
-    () => computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles),
+    () => (vehicleB ? computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles) : null),
     [vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
   // Financial & Mechanical Deltas
-  const monthlySavingsB = tcoA.monthlyEconomicCostUsd - tcoB.monthlyEconomicCostUsd;
-  const monthlyCostDeltaB = tcoB.monthlyEconomicCostUsd - tcoA.monthlyEconomicCostUsd;
-  const total5YrSavingsB = tcoA.totalEconomicCostUsd - tcoB.totalEconomicCostUsd;
-  const fuelDiffMonthly = Math.round((tcoA.totalFuelUsd - tcoB.totalFuelUsd) / (horizonYears * 12));
-  const depreciationDiffTotal = tcoA.totalDepreciationUsd - tcoB.totalDepreciationUsd;
-  const maintenanceDiffTotal = tcoA.totalMaintenanceUsd - tcoB.totalMaintenanceUsd;
+  const monthlySavingsB = hasBothVehicles && tcoA && tcoB ? tcoA.monthlyEconomicCostUsd - tcoB.monthlyEconomicCostUsd : 0;
+  const monthlyCostDeltaB = hasBothVehicles && tcoA && tcoB ? tcoB.monthlyEconomicCostUsd - tcoA.monthlyEconomicCostUsd : 0;
+  const total5YrSavingsB = hasBothVehicles && tcoA && tcoB ? tcoA.totalEconomicCostUsd - tcoB.totalEconomicCostUsd : 0;
+  const fuelDiffMonthly = hasBothVehicles && tcoA && tcoB ? Math.round((tcoA.totalFuelUsd - tcoB.totalFuelUsd) / (horizonYears * 12)) : 0;
+  const depreciationDiffTotal = hasBothVehicles && tcoA && tcoB ? tcoA.totalDepreciationUsd - tcoB.totalDepreciationUsd : 0;
+  const maintenanceDiffTotal = hasBothVehicles && tcoA && tcoB ? tcoA.totalMaintenanceUsd - tcoB.totalMaintenanceUsd : 0;
 
   // Reliability & Repair Risk Deltas
-  const reliabilityDeltaB = riskB.reliabilityScore - riskA.reliabilityScore;
-  const riskExposureDeltaB = riskB.serviceReserveUsd - riskA.serviceReserveUsd;
-  const alertCountA = riskA.criticalCount + riskA.warningCount;
-  const alertCountB = riskB.criticalCount + riskB.warningCount;
+  const reliabilityDeltaB = hasBothVehicles && riskA && riskB ? riskB.reliabilityScore - riskA.reliabilityScore : 0;
+  const riskExposureDeltaB = hasBothVehicles && riskA && riskB ? riskB.serviceReserveUsd - riskA.serviceReserveUsd : 0;
+  const alertCountA = riskA ? riskA.criticalCount + riskA.warningCount : 0;
+  const alertCountB = riskB ? riskB.criticalCount + riskB.warningCount : 0;
   const alertDeltaB = alertCountB - alertCountA;
 
   const handlePromoteVehicleB = () => {
+    if (!activePresetAId || !vehicleBId) return;
     const oldPrimary = activePresetAId;
     const newPrimary = vehicleBId;
+    const oldPriceA = customPriceAUsd;
+    const oldOdoA = customOdoAMiles;
+    const oldPriceB = customPriceBUsd;
+    const oldOdoB = customOdoBMiles;
     if (onApplyPreset) {
       onApplyPreset(newPrimary);
     }
     setActivePresetAId(newPrimary);
-    setCustomPriceAUsd(customPriceBUsd);
-    setCustomOdoAMiles(customOdoBMiles);
-    updateVehicleB(oldPrimary);
+    setCustomPriceAUsd(oldPriceB);
+    setCustomOdoAMiles(oldOdoB);
+    setVehicleBId(oldPrimary);
+    setCustomPriceBUsd(oldPriceA);
+    setCustomOdoBMiles(oldOdoA);
+    if (typeof onSelectSecondaryPreset === 'function') {
+      onSelectSecondaryPreset(oldPrimary);
+    }
   };
 
   const quickBenchmarkPairs = [
@@ -384,51 +436,56 @@ export default function VehicleComparator({
     { label: 'Family Hybrid vs Kia EV6', idA: 'toyota-corolla-18-hybrid', idB: 'kia-ev6-long-range' },
   ];
 
-  const comparatorTldrFacts = useMemo(() => [
-    {
-      label: '5-Year Cost Differential',
-      value: monthlySavingsB >= 0
-        ? `${vehicleB.name} is cheaper`
-        : `${vehicleA.name} is cheaper`,
-      subtext: `Monthly delta: ${formatCurrency(Math.abs(monthlySavingsB))}/mo · 5-yr net difference: ${formatCurrency(Math.abs(total5YrSavingsB))}.`,
-      badge: (
-        <RiskBadge
-          level={Math.abs(monthlySavingsB) > 100 ? 'low' : 'moderate'}
-          label="Winner · Lower TCO"
-        />
-      ),
-    },
-    {
-      label: 'Break-Even Payback Distance',
-      value: breakEvenTrajectory.status === 'crossover'
-        ? `${(region === 'EU' ? breakEvenTrajectory.breakEvenKm : breakEvenTrajectory.breakEvenMiles).toLocaleString()} ${distanceUnit} (${breakEvenTrajectory.breakEvenYears} yrs)`
-        : breakEvenTrajectory.status === 'b_always_cheaper'
-        ? `${vehicleB.name} cheaper from mile zero`
-        : `${vehicleA.name} cheaper across all miles`,
-      subtext: breakEvenTrajectory.status === 'crossover'
-        ? 'Lower running costs offset upfront premium at this distance.'
-        : 'No crossover point within analyzed mileage range.',
-      badge: (
-        <RiskBadge
-          level={breakEvenTrajectory.status === 'crossover' && breakEvenTrajectory.breakEvenYears <= 4 ? 'low' : 'moderate'}
-          label={breakEvenTrajectory.status === 'crossover' ? `${breakEvenTrajectory.breakEvenYears}-Yr Payback` : 'Dominant Choice'}
-        />
-      ),
-    },
-    {
-      label: 'Reliability Risk & Service Buffer',
-      value: `${formatCurrency(riskA.serviceReserveUsd)} vs ${formatCurrency(riskB.serviceReserveUsd)}`,
-      subtext: riskExposureDeltaB <= 0
-        ? `${vehicleB.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`
-        : `${vehicleA.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`,
-      badge: (
-        <RiskBadge
-          level={Math.abs(riskExposureDeltaB) > 600 ? 'critical' : 'low'}
-          label={riskExposureDeltaB <= 0 ? 'B Lower Service' : 'A Lower Service'}
-        />
-      ),
-    },
-  ], [monthlySavingsB, total5YrSavingsB, vehicleA.name, vehicleB.name, formatCurrency, riskA, riskB, riskExposureDeltaB, breakEvenTrajectory, region, distanceUnit]);
+  const comparatorTldrFacts = useMemo(() => {
+    if (!hasBothVehicles || !vehicleA || !vehicleB || !riskA || !riskB || !breakEvenTrajectory) {
+      return [];
+    }
+    return [
+      {
+        label: '5-Year Cost Differential',
+        value: monthlySavingsB >= 0
+          ? `${vehicleB.name} is cheaper`
+          : `${vehicleA.name} is cheaper`,
+        subtext: `Monthly delta: ${formatCurrency(Math.abs(monthlySavingsB))}/mo · 5-yr net difference: ${formatCurrency(Math.abs(total5YrSavingsB))}.`,
+        badge: (
+          <RiskBadge
+            level={Math.abs(monthlySavingsB) > 100 ? 'low' : 'moderate'}
+            label="Winner · Lower TCO"
+          />
+        ),
+      },
+      {
+        label: 'Break-Even Payback Distance',
+        value: breakEvenTrajectory.status === 'crossover'
+          ? `${(region === 'EU' ? breakEvenTrajectory.breakEvenKm : breakEvenTrajectory.breakEvenMiles).toLocaleString()} ${distanceUnit} (${breakEvenTrajectory.breakEvenYears} yrs)`
+          : breakEvenTrajectory.status === 'b_always_cheaper'
+          ? `${vehicleB.name} cheaper from mile zero`
+          : `${vehicleA.name} cheaper across all miles`,
+        subtext: breakEvenTrajectory.status === 'crossover'
+          ? 'Lower running costs offset upfront premium at this distance.'
+          : 'No crossover point within analyzed mileage range.',
+        badge: (
+          <RiskBadge
+            level={breakEvenTrajectory.status === 'crossover' && breakEvenTrajectory.breakEvenYears <= 4 ? 'low' : 'moderate'}
+            label={breakEvenTrajectory.status === 'crossover' ? `${breakEvenTrajectory.breakEvenYears}-Yr Payback` : 'Dominant Choice'}
+          />
+        ),
+      },
+      {
+        label: 'Reliability Risk & Service Buffer',
+        value: `${formatCurrency(riskA.serviceReserveUsd)} vs ${formatCurrency(riskB.serviceReserveUsd)}`,
+        subtext: riskExposureDeltaB <= 0
+          ? `${vehicleB.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`
+          : `${vehicleA.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`,
+        badge: (
+          <RiskBadge
+            level={Math.abs(riskExposureDeltaB) > 600 ? 'critical' : 'low'}
+            label={riskExposureDeltaB <= 0 ? 'B Lower Service' : 'A Lower Service'}
+          />
+        ),
+      },
+    ];
+  }, [hasBothVehicles, monthlySavingsB, total5YrSavingsB, vehicleA, vehicleB, formatCurrency, riskA, riskB, riskExposureDeltaB, breakEvenTrajectory, region, distanceUnit]);
 
   // SVG Chart Dimensions & Scales
   const svgWidth = 620;
@@ -437,19 +494,18 @@ export default function VehicleComparator({
   const graphWidth = svgWidth - padding.left - padding.right;
   const graphHeight = svgHeight - padding.top - padding.bottom;
 
-  const points = breakEvenTrajectory.points;
-  const maxDist = points[points.length - 1].distMiles;
-  const maxCost = Math.max(
-    ...points.map((p) => p.costA),
-    ...points.map((p) => p.costB)
-  ) * 1.08;
-  const minCost = Math.min(
-    ...points.map((p) => p.costA),
-    ...points.map((p) => p.costB)
-  ) * 0.85;
+  const points = breakEvenTrajectory?.points || [];
+  const maxDist = points.length > 0 ? points[points.length - 1].distMiles : 1;
+  const maxCost = points.length > 0
+    ? Math.max(...points.map((p) => p.costA), ...points.map((p) => p.costB)) * 1.08
+    : 1;
+  const minCost = points.length > 0
+    ? Math.min(...points.map((p) => p.costA), ...points.map((p) => p.costB)) * 0.85
+    : 0;
+  const costRange = Math.max(1, maxCost - minCost);
 
-  const getX = (distMiles) => padding.left + (distMiles / maxDist) * graphWidth;
-  const getY = (cost) => padding.top + graphHeight - ((cost - minCost) / (maxCost - minCost)) * graphHeight;
+  const getX = (distMiles) => padding.left + (distMiles / Math.max(1, maxDist)) * graphWidth;
+  const getY = (cost) => padding.top + graphHeight - ((cost - minCost) / costRange) * graphHeight;
 
   const pathD_A = points
     .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.distMiles).toFixed(1)} ${getY(p.costA).toFixed(1)}`)
@@ -459,13 +515,13 @@ export default function VehicleComparator({
     .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.distMiles).toFixed(1)} ${getY(p.costB).toFixed(1)}`)
     .join(' ');
 
-  // User current 5-year point X coordinate (clamped to stays inside plot area)
-  const userX = getX(Math.min(maxDist, breakEvenTrajectory.user5YrMiles));
+  // User current 5-year point X coordinate (clamped to stay inside plot area)
+  const userX = breakEvenTrajectory ? getX(Math.min(maxDist, breakEvenTrajectory.user5YrMiles)) : padding.left;
   const userLabelAnchor = userX > svgWidth * 0.6 ? 'end' : userX < svgWidth * 0.4 ? 'start' : 'middle';
   const userLabelX = Math.max(padding.left + 4, Math.min(svgWidth - padding.right - 4, userX));
 
   // Break-even X coordinate if crossover exists
-  const crossX = breakEvenTrajectory.breakEvenMiles ? getX(Math.min(maxDist, breakEvenTrajectory.breakEvenMiles)) : null;
+  const crossX = breakEvenTrajectory?.breakEvenMiles ? getX(Math.min(maxDist, breakEvenTrajectory.breakEvenMiles)) : null;
 
   return (
     <Card
@@ -481,7 +537,9 @@ export default function VehicleComparator({
           <div className="min-w-0">
             {standalone ? (
               <h1 id="comparator-heading" className="text-lg sm:text-2xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
-                {vehicleA.shortName || vehicleA.name} vs {vehicleB.shortName || vehicleB.name} · Dual-Vehicle Side-by-Side Comparison
+                {hasBothVehicles
+                  ? `${vehicleA.shortName || vehicleA.name} vs ${vehicleB.shortName || vehicleB.name} · Dual-Vehicle Side-by-Side Comparison`
+                  : 'Dual-Vehicle Side-by-Side Comparison'}
               </h1>
             ) : (
               <h2 id="comparator-heading" className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
@@ -489,7 +547,9 @@ export default function VehicleComparator({
               </h2>
             )}
             <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-              5-year TCO comparison, dynamic break-even crossover trajectory, and odometer-calibrated known flaws.
+              {hasBothVehicles
+                ? '5-year TCO comparison, dynamic break-even crossover trajectory, and odometer-calibrated known flaws.'
+                : 'Select two vehicles below to compare 5-year TCO, break-even crossover trajectory, and odometer-calibrated known flaws.'}
             </p>
           </div>
         </div>
@@ -505,13 +565,15 @@ export default function VehicleComparator({
         )}
       </div>
 
-      {/* Comparison Summary Box */}
-      <TldrVerdictBox
-        title="Comparison Summary"
-        subtitle="3 key comparative metrics at a glance (zero fluff)"
-        badge="Decision Balance"
-        facts={comparatorTldrFacts}
-      />
+      {/* Comparison Summary Box (only when both vehicles selected) */}
+      {hasBothVehicles && (
+        <TldrVerdictBox
+          title="Comparison Summary"
+          subtitle="3 key comparative metrics at a glance (zero fluff)"
+          badge="Decision Balance"
+          facts={comparatorTldrFacts}
+        />
+      )}
 
       {/* My Garage Multi-Vehicle Comparison Strip (when 2+ cars saved) */}
       {garage?.savedVehicles && garage.savedVehicles.length >= 2 && (
@@ -584,105 +646,120 @@ export default function VehicleComparator({
                 VEHICLE A (Current)
               </Pill>
               <select
-                value={activePresetAId}
-                onChange={(e) => {
-                  setActivePresetAId(e.target.value);
-                  setCustomPriceAUsd(null);
-                  setCustomOdoAMiles(null);
-                  if (onApplyPreset) onApplyPreset(e.target.value);
-                }}
+                value={activePresetAId || ''}
+                onChange={(e) => updateVehicleA(e.target.value)}
                 aria-label="Select primary vehicle"
                 className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
               >
-                {VEHICLE_PRESETS.map((p) => (
+                <option value="">Select Vehicle A...</option>
+                {VEHICLE_PRESETS.filter((p) => p.id !== vehicleBId).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.fuelType})
                   </option>
                 ))}
               </select>
             </div>
-            <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleA.name}>
-              {vehicleA.name}
-            </h3>
-            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
-              Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceA)}</span> · {vehicleA.powerHp ? `${vehicleA.powerHp} HP` : ''} · {vehicleA.engineCode}
-            </p>
+            {vehicleA && tcoA && riskA ? (
+              <>
+                <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleA.name}>
+                  {vehicleA.name}
+                </h3>
+                <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
+                  Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceA)}</span> · {vehicleA.powerHp ? `${vehicleA.powerHp} HP` : ''} · {vehicleA.engineCode}
+                </p>
 
-            {/* Inline Listing Price & Odometer Overrides for Vehicle A */}
-            <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
-                <input
-                  data-testid="comparator-price-a"
-                  type="number"
-                  min={500}
-                  max={250000}
-                  step={500}
-                  value={Math.round(convertUsdToRegion(priceA))}
-                  onChange={(e) => {
-                    if (e.target.value === '') return;
-                    setCustomPriceAUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
-                  }}
-                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
-                <input
-                  data-testid="comparator-odo-a"
-                  type="number"
-                  min={0}
-                  max={500000}
-                  step={1000}
-                  value={Math.round(convertMilesToRegion(odoA))}
-                  onChange={(e) => {
-                    if (e.target.value === '') return;
-                    setCustomOdoAMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
-                  }}
-                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                />
-              </label>
-            </div>
+                {/* Inline Listing Price & Odometer Overrides for Vehicle A */}
+                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                    <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
+                    <input
+                      data-testid="comparator-price-a"
+                      type="number"
+                      min={500}
+                      max={250000}
+                      step={500}
+                      value={Math.round(convertUsdToRegion(priceA))}
+                      onChange={(e) => {
+                        if (e.target.value === '') return;
+                        setCustomPriceAUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
+                      }}
+                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                    <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
+                    <input
+                      data-testid="comparator-odo-a"
+                      type="number"
+                      min={0}
+                      max={500000}
+                      step={1000}
+                      value={Math.round(convertMilesToRegion(odoA))}
+                      onChange={(e) => {
+                        if (e.target.value === '') return;
+                        setCustomOdoAMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
+                      }}
+                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                    />
+                  </label>
+                </div>
 
-            <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
-              <VehicleImageResolver vehicle={vehicleA} variant="compact" className="w-full h-full" interactive />
-            </div>
+                <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
+                  <VehicleImageResolver vehicle={vehicleA} variant="compact" className="w-full h-full" interactive />
+                </div>
+              </>
+            ) : (
+              <div
+                data-testid="comparator-empty-card-a"
+                className="mt-4 py-10 px-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/70 dark:bg-[#121215]/60 text-center space-y-2"
+              >
+                <Car className="w-7 h-7 text-zinc-400 dark:text-zinc-500 mx-auto" />
+                <p className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
+                  Choose Vehicle A
+                </p>
+                <p className="font-sans text-xs text-muted dark:text-zinc-400 max-w-xs mx-auto">
+                  Select a model from the dropdown above or pick a popular matchup to start comparing.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3 min-w-0">
-            <div>
-              <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
-              <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
-                {formatCurrency(tcoA.monthlyEconomicCostUsd)}
-                <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
-              </p>
-              <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
-                <span className="font-mono tabular-nums">{formatCurrency(tcoA.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoA)}</span>)
-              </p>
-            </div>
+          {vehicleA && tcoA && riskA && (
+            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3 min-w-0">
+              <div>
+                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
+                <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
+                  {formatCurrency(tcoA.monthlyEconomicCostUsd)}
+                  <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
+                </p>
+                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
+                  <span className="font-mono tabular-nums">{formatCurrency(tcoA.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoA)}</span>)
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800/80 items-stretch">
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
-                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  {riskA.reliabilityScore}/100
-                </span>
-              </div>
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
-                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  {formatCurrency(riskA.serviceReserveUsd)}
-                </span>
-              </div>
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
-                <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  <span>{knownIssuesA.length}</span>
-                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
-                </span>
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800/80 items-stretch">
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
+                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    {riskA.reliabilityScore}/100
+                  </span>
+                </div>
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
+                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    {formatCurrency(riskA.serviceReserveUsd)}
+                  </span>
+                </div>
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
+                  <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    <span>{knownIssuesA.length}</span>
+                    <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Vehicle B */}
@@ -693,11 +770,12 @@ export default function VehicleComparator({
                 VEHICLE B (Counterpart)
               </Pill>
               <select
-                value={vehicleBId}
+                value={vehicleBId || ''}
                 onChange={(e) => updateVehicleB(e.target.value)}
                 aria-label="Select comparison vehicle"
                 className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
               >
+                <option value="">Select Vehicle B...</option>
                 {VEHICLE_PRESETS.filter((p) => p.id !== activePresetAId).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.fuelType})
@@ -705,103 +783,139 @@ export default function VehicleComparator({
                 ))}
               </select>
             </div>
-            <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleB.name}>
-              {vehicleB.name}
-            </h3>
-            <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
-              Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceB)}</span> · {vehicleB.powerHp ? `${vehicleB.powerHp} HP` : ''} · {vehicleB.engineCode}
-            </p>
+            {vehicleB && tcoB && riskB ? (
+              <>
+                <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleB.name}>
+                  {vehicleB.name}
+                </h3>
+                <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
+                  Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceB)}</span> · {vehicleB.powerHp ? `${vehicleB.powerHp} HP` : ''} · {vehicleB.engineCode}
+                </p>
 
-            {/* Inline Listing Price & Odometer Overrides for Vehicle B */}
-            <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
-                <input
-                  data-testid="comparator-price-b"
-                  type="number"
-                  min={500}
-                  max={250000}
-                  step={500}
-                  value={Math.round(convertUsdToRegion(priceB))}
-                  onChange={(e) => {
-                    if (e.target.value === '') return;
-                    setCustomPriceBUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
-                  }}
-                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
-                <input
-                  data-testid="comparator-odo-b"
-                  type="number"
-                  min={0}
-                  max={500000}
-                  step={1000}
-                  value={Math.round(convertMilesToRegion(odoB))}
-                  onChange={(e) => {
-                    if (e.target.value === '') return;
-                    setCustomOdoBMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
-                  }}
-                  className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                />
-              </label>
-            </div>
+                {/* Inline Listing Price & Odometer Overrides for Vehicle B */}
+                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                    <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
+                    <input
+                      data-testid="comparator-price-b"
+                      type="number"
+                      min={500}
+                      max={250000}
+                      step={500}
+                      value={Math.round(convertUsdToRegion(priceB))}
+                      onChange={(e) => {
+                        if (e.target.value === '') return;
+                        setCustomPriceBUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
+                      }}
+                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
+                    <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
+                    <input
+                      data-testid="comparator-odo-b"
+                      type="number"
+                      min={0}
+                      max={500000}
+                      step={1000}
+                      value={Math.round(convertMilesToRegion(odoB))}
+                      onChange={(e) => {
+                        if (e.target.value === '') return;
+                        setCustomOdoBMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
+                      }}
+                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
+                    />
+                  </label>
+                </div>
 
-            <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
-              <VehicleImageResolver vehicle={vehicleB} variant="compact" className="w-full h-full" interactive />
-            </div>
+                <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
+                  <VehicleImageResolver vehicle={vehicleB} variant="compact" className="w-full h-full" interactive />
+                </div>
+              </>
+            ) : (
+              <div
+                data-testid="comparator-empty-card-b"
+                className="mt-4 py-10 px-4 rounded-xl border border-dashed border-primary-300/70 dark:border-primary-800/60 bg-white/70 dark:bg-[#121215]/60 text-center space-y-2"
+              >
+                <GitCompare className="w-7 h-7 text-primary-600/70 dark:text-emerald-400/70 mx-auto" />
+                <p className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
+                  Choose Vehicle B
+                </p>
+                <p className="font-sans text-xs text-muted dark:text-zinc-400 max-w-xs mx-auto">
+                  Pick a second vehicle above to unlock the 5-year cost delta, break-even trajectory, and known flaws comparison.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-primary-100 dark:border-zinc-800 space-y-3 min-w-0">
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tabular-nums border ${
-                    monthlyCostDeltaB <= 0
-                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
-                      : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
-                  }`}
-                >
-                  {monthlyCostDeltaB <= 0
-                    ? `-${formatCurrency(Math.abs(monthlyCostDeltaB))}/mo`
-                    : `+${formatCurrency(monthlyCostDeltaB)}/mo`}
-                </span>
+          {vehicleB && tcoB && riskB && (
+            <div className="mt-4 pt-3 border-t border-primary-100 dark:border-zinc-800 space-y-3 min-w-0">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
+                  {hasBothVehicles && (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tabular-nums border ${
+                        monthlyCostDeltaB <= 0
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+                          : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
+                      }`}
+                    >
+                      {monthlyCostDeltaB <= 0
+                        ? `-${formatCurrency(Math.abs(monthlyCostDeltaB))}/mo`
+                        : `+${formatCurrency(monthlyCostDeltaB)}/mo`}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400">
+                  {formatCurrency(tcoB.monthlyEconomicCostUsd)}
+                  <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
+                </p>
+                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
+                  <span className="font-mono tabular-nums">{formatCurrency(tcoB.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoB)}</span>)
+                </p>
               </div>
-              <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400">
-                {formatCurrency(tcoB.monthlyEconomicCostUsd)}
-                <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
-              </p>
-              <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
-                <span className="font-mono tabular-nums">{formatCurrency(tcoB.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoB)}</span>)
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-primary-100/80 dark:border-zinc-800/80 items-stretch">
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
-                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  {riskB.reliabilityScore}/100
-                </span>
-              </div>
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
-                <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  {formatCurrency(riskB.serviceReserveUsd)}
-                </span>
-              </div>
-              <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
-                <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                  <span>{knownIssuesB.length}</span>
-                  <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
-                </span>
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-primary-100/80 dark:border-zinc-800/80 items-stretch">
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
+                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    {riskB.reliabilityScore}/100
+                  </span>
+                </div>
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
+                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    {formatCurrency(riskB.serviceReserveUsd)}
+                  </span>
+                </div>
+                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
+                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
+                  <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
+                    <span>{knownIssuesB.length}</span>
+                    <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
+
+      {!hasBothVehicles ? (
+        <div
+          data-testid="comparator-empty-state"
+          className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-900/40 p-6 sm:p-8 text-center space-y-2.5"
+        >
+          <p className="font-sans text-sm sm:text-base font-bold text-ink dark:text-zinc-100">
+            Select both Vehicle A and Vehicle B to run the side-by-side comparison
+          </p>
+          <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            Once two models are selected, DriveLedger computes the 5-year TCO differential, break-even crossover mileage chart, known powertrain defects, and line-by-line cost breakdown.
+          </p>
+        </div>
+      ) : (
+      <>
 
       {/* Break-Even Crossover Interactive SVG Graph */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
@@ -1305,6 +1419,8 @@ export default function VehicleComparator({
           </div>
         );
       })()}
+      </>
+      )}
     </Card>
   );
 }

@@ -233,7 +233,7 @@ export default function DynamicSeoHead({
       if (qPreset && VEHICLE_PRESETS.some((p) => p.id === qPreset)) return true;
     }
     return false;
-  }, [hasSelectedVehicle, activeMileageBracket, activeTab, selectedPresetId]);
+  }, [hasSelectedVehicle, activeMileageBracket, activeTab, selectedPresetId, currentPath]);
 
   const activeBrand = useMemo(
     () => (activeTab === 'vehicles' && activeBrandSlug ? getBrandBySlug(activeBrandSlug) : null),
@@ -335,7 +335,7 @@ export default function DynamicSeoHead({
         hasSelectedObdCode ||
         (typeof window !== 'undefined' && /^\/obd\//i.test(window.location.pathname));
 
-      if (isExplicitObdLanding) {
+      if (isExplicitObdLanding && isVehicleSelected) {
         const canonicalPath = `/obd/${preset.id}/${codeLower}`;
         const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
         const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
@@ -344,6 +344,19 @@ export default function DynamicSeoHead({
           description,
           canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
           canonicalPath,
+        });
+      }
+
+      if (hasSelectedObdCode) {
+        const canonicalPath = '/obd-estimator';
+        const title = `${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
+        const description = `Diagnose ${obdDossier.code} (${obdDossier.title}). Compare Dealership vs Independent vs DIY repair costs and run First-Principles OBD-II Live PID telemetry checks.`;
+        return withImage({
+          title,
+          description,
+          canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
+          canonicalPath,
+          imageUrl: DEFAULT_OG_IMAGE,
         });
       }
 
@@ -356,6 +369,7 @@ export default function DynamicSeoHead({
         description,
         canonicalUrl: `${SITE_ORIGIN}${canonicalPath}`,
         canonicalPath,
+        imageUrl: DEFAULT_OG_IMAGE,
       });
     }
 
@@ -418,7 +432,7 @@ export default function DynamicSeoHead({
     }
 
     if (activeTab === 'compare') {
-      if (secondaryPreset && secondaryTelemetry) {
+      if (isVehicleSelected && secondaryPreset && secondaryTelemetry) {
         const canonicalPath = `/compare/${preset.id}-vs-${secondaryPreset.id}`;
         const delta5Yr = Math.abs(telemetry.total5YrTcoUsd - secondaryTelemetry.total5YrTcoUsd);
         const cheaperName =
@@ -802,12 +816,16 @@ export default function DynamicSeoHead({
       });
     }
     if (activeTab === 'obd' && (hasSelectedObdCode || isVehicleSelected)) {
-      const wearScale = Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0;
+      const wearScale = isVehicleSelected && Number(preset.maintenanceWearFactor) > 0 ? Number(preset.maintenanceWearFactor) : 1.0;
       const faqMinParts = Math.round((obdDossier.partsCostRangeUsd?.[0] ?? 95) * wearScale);
       const faqMaxParts = Math.round((obdDossier.partsCostRangeUsd?.[1] ?? 1650) * wearScale);
       dynamicFaqs.push({
-        question: `How much does it cost to fix OBD-II code ${obdDossier.code} (${obdDossier.title}) on a ${preset.name}?`,
-        answer: `For code ${obdDossier.code} on the ${preset.name}, component parts typically range from $${faqMinParts} to $${faqMaxParts} with ${obdDossier.laborHoursRange?.[0] ?? 1.0} to ${obdDossier.laborHoursRange?.[1] ?? 4.0} hours of workshop labor. ${obdDossier.liveTelemetryCheck?.costTrapWarning || ''}`,
+        question: isVehicleSelected
+          ? `How much does it cost to fix OBD-II code ${obdDossier.code} (${obdDossier.title}) on a ${preset.name}?`
+          : `How much does it cost to fix OBD-II code ${obdDossier.code} (${obdDossier.title})?`,
+        answer: isVehicleSelected
+          ? `For code ${obdDossier.code} on the ${preset.name}, component parts typically range from $${faqMinParts} to $${faqMaxParts} with ${obdDossier.laborHoursRange?.[0] ?? 1.0} to ${obdDossier.laborHoursRange?.[1] ?? 4.0} hours of workshop labor. ${obdDossier.liveTelemetryCheck?.costTrapWarning || ''}`
+          : `For code ${obdDossier.code}, component parts typically range from $${faqMinParts} to $${faqMaxParts} with ${obdDossier.laborHoursRange?.[0] ?? 1.0} to ${obdDossier.laborHoursRange?.[1] ?? 4.0} hours of workshop labor. ${obdDossier.liveTelemetryCheck?.costTrapWarning || ''}`,
       });
     }
     dynamicFaqs.push(...FAQ_ITEMS.slice(0, 3));
@@ -885,7 +903,7 @@ export default function DynamicSeoHead({
 
   // 5. Head-to-Head Vehicle Comparison ItemList Schema
   const compareItemListSchema = useMemo(() => {
-    if (activeTab !== 'compare' || !secondaryPreset || !secondaryTelemetry) return null;
+    if (activeTab !== 'compare' || !isVehicleSelected || !secondaryPreset || !secondaryTelemetry) return null;
     return {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
@@ -913,7 +931,7 @@ export default function DynamicSeoHead({
         },
       ],
     };
-  }, [activeTab, preset, telemetry, secondaryPreset, secondaryTelemetry]);
+  }, [activeTab, isVehicleSelected, preset, telemetry, secondaryPreset, secondaryTelemetry]);
 
   // 6. Editorial Guide Article Schema
   const guideArticleSchema = useMemo(() => {
@@ -1107,7 +1125,7 @@ export default function DynamicSeoHead({
     !isNotFound &&
     !resolvedLegalKey &&
     activeTab === 'obd' &&
-    (hasSelectedObdCode || isVehicleSelected);
+    isVehicleSelected;
 
   const showFaqSchema =
     !isNotFound &&

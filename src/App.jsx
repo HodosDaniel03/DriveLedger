@@ -147,16 +147,17 @@ function parseCleanVehiclePath(pathname) {
   };
 }
 
-function getSamplePresetIdForRegion(region) {
-  const targetId = region === 'US' ? 'toyota-camry-hybrid' : 'vw-golf-20-tdi';
-  return VEHICLE_PRESETS.some((p) => p.id === targetId) ? targetId : VEHICLE_PRESETS[0].id;
-}
-
 function resolveCompatibleObdCode(presetId, candidateCode) {
-  const preset = getPresetById(presetId) || VEHICLE_PRESETS[0];
   const candidateObj = candidateCode
     ? OBD_CODES.find((c) => c.code === String(candidateCode).toUpperCase())
     : null;
+  if (!presetId) {
+    return candidateObj ? candidateObj.code : 'P0420';
+  }
+  const preset = VEHICLE_PRESETS.find((p) => p.id === presetId);
+  if (!preset) {
+    return candidateObj ? candidateObj.code : 'P0420';
+  }
   if (candidateObj && isObdCompatibleWithVehicle(preset, candidateObj)) {
     return candidateObj.code;
   }
@@ -286,17 +287,24 @@ function DriveLedgerWorkspace() {
   const [isNotFoundRoute, setIsNotFoundRoute] = useState(
     () => !isKnownApplicationPath(location.pathname, searchParams)
   );
-  const [hasSelectedVehicle, setHasSelectedVehicle] = useState(Boolean(initialExplicitPreset));
   const [hasSelectedObdCode, setHasSelectedObdCode] = useState(Boolean(initialExplicitCode));
   const [selectedPresetId, setSelectedPresetIdState] = useState(
-    () => initialExplicitPreset || getSamplePresetIdForRegion(region)
+    () => initialExplicitPreset || null
   );
+  const hasSelectedVehicle = Boolean(selectedPresetId);
   const [secondaryPresetId, setSecondaryPresetIdState] = useState(resolveInitialSecondaryPreset);
   const [riskOdometerOverride, setRiskOdometerOverride] = useState(resolveInitialRiskOdometer);
   const [selectedObdCode, setSelectedObdCodeState] = useState(() =>
-    initialExplicitCode ||
-    resolveCompatibleObdCode(initialExplicitPreset || getSamplePresetIdForRegion(region), null)
+    initialExplicitCode || resolveCompatibleObdCode(initialExplicitPreset, null)
   );
+  const selectedPresetIdRef = useRef(selectedPresetId);
+  selectedPresetIdRef.current = selectedPresetId;
+  const secondaryPresetIdRef = useRef(secondaryPresetId);
+  secondaryPresetIdRef.current = secondaryPresetId;
+  const selectedObdCodeRef = useRef(selectedObdCode);
+  selectedObdCodeRef.current = selectedObdCode;
+  const hasSelectedObdCodeRef = useRef(hasSelectedObdCode);
+  hasSelectedObdCodeRef.current = hasSelectedObdCode;
   const [activeGuideSlug, setActiveGuideSlug] = useState(() => parseGuidePath(location.pathname)?.slug || null);
   const [activeBrandSlug, setActiveBrandSlug] = useState(() => parseBrandHubPath(location.pathname)?.brandSlug || null);
   const [activeLegalModal, setActiveLegalModal] = useState(resolveInitialLegalModal);
@@ -310,19 +318,8 @@ function DriveLedgerWorkspace() {
     }
   }, [searchParams, setRegion]);
 
-  // Keep the unselected sample vehicle aligned with the active region (US vs UK/EU)
-  useEffect(() => {
-    if (!hasSelectedVehicle) {
-      const sampleId = getSamplePresetIdForRegion(region);
-      setSelectedPresetIdState((prev) => (prev !== sampleId ? sampleId : prev));
-      if (!hasSelectedObdCode) {
-        setSelectedObdCodeState((prev) => resolveCompatibleObdCode(sampleId, prev));
-      }
-    }
-  }, [region, hasSelectedVehicle, hasSelectedObdCode]);
-
   // Keep URL query parameters synchronized for programmatic SEO & deep-link sharing
-  // without polluting URLs with unselected sample defaults.
+  // without polluting URLs when no vehicle or OBD code has been selected.
   const syncUrlParams = useCallback(
     (
       nextTab,
@@ -332,7 +329,7 @@ function DriveLedgerWorkspace() {
       explicitPreset = hasSelectedVehicle,
       explicitCode = hasSelectedObdCode
     ) => {
-      if (nextTab === 'compare' && nextSecondaryPreset && nextSecondaryPreset !== nextPreset) {
+      if (nextTab === 'compare' && nextPreset && nextSecondaryPreset && nextSecondaryPreset !== nextPreset) {
         navigate(`/compare/${nextPreset}-vs-${nextSecondaryPreset}`, { replace: true });
         return;
       }
@@ -348,16 +345,16 @@ function DriveLedgerWorkspace() {
         navigate(activeGuideSlug ? `/guides/${activeGuideSlug}` : '/guides', { replace: true });
         return;
       }
-      if (nextTab === 'overview' && !explicitPreset && !explicitCode) {
+      if (nextTab === 'overview' && (!explicitPreset || !nextPreset)) {
         navigate('/', { replace: true });
         return;
       }
+      const includeCode = nextTab === 'obd' && Boolean(explicitCode) && Boolean(nextCode);
       if (
         nextTab === 'obd' &&
         explicitPreset &&
-        explicitCode &&
+        includeCode &&
         nextPreset &&
-        nextCode &&
         typeof window !== 'undefined' &&
         /^\/obd\//i.test(window.location?.pathname || '')
       ) {
@@ -365,7 +362,7 @@ function DriveLedgerWorkspace() {
         return;
       }
       const targetPath = TAB_TO_PATH[nextTab] || '/tco';
-      if (!explicitPreset && !explicitCode) {
+      if ((!explicitPreset || !nextPreset) && !includeCode) {
         navigate(targetPath, { replace: true });
         return;
       }
@@ -379,10 +376,10 @@ function DriveLedgerWorkspace() {
       }
       const params = new URLSearchParams();
       params.set('tab', nextTab);
-      if (explicitPreset) {
+      if (explicitPreset && nextPreset) {
         params.set('preset', nextPreset);
       }
-      if (explicitCode) {
+      if (includeCode) {
         params.set('code', nextCode);
       }
       navigate(`${targetPath}?${params.toString()}`, { replace: true });
@@ -412,7 +409,15 @@ function DriveLedgerWorkspace() {
     if (tabId === 'vehicles') {
       setActiveBrandSlug(null);
     }
-    syncUrlParams(tabId, selectedPresetId, selectedObdCode);
+    const currentPreset = selectedPresetIdRef.current;
+    syncUrlParams(
+      tabId,
+      currentPreset,
+      selectedObdCodeRef.current,
+      secondaryPresetIdRef.current,
+      Boolean(currentPreset),
+      hasSelectedObdCodeRef.current
+    );
     setActiveTabState(tabId);
     if (tabId !== 'risk') {
       setRiskOdometerOverride({ miles: null, slug: null });
@@ -423,11 +428,19 @@ function DriveLedgerWorkspace() {
   const handleSelectPreset = (presetId) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const compatCode = resolveCompatibleObdCode(presetId, selectedObdCode);
-    setHasSelectedVehicle(true);
-    syncUrlParams(activeTab, presetId, compatCode, secondaryPresetId, true, hasSelectedObdCode);
-    setSelectedPresetIdState(presetId);
-    if (compatCode !== selectedObdCode) {
+    const validId = presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null;
+    const currentCode = selectedObdCodeRef.current;
+    const currentExplicitCode = hasSelectedObdCodeRef.current;
+    const compatCode = validId
+      ? resolveCompatibleObdCode(validId, currentCode)
+      : currentExplicitCode
+        ? currentCode
+        : 'P0420';
+    selectedPresetIdRef.current = validId;
+    selectedObdCodeRef.current = compatCode;
+    syncUrlParams(activeTab, validId, compatCode, secondaryPresetIdRef.current, Boolean(validId), currentExplicitCode);
+    setSelectedPresetIdState(validId);
+    if (compatCode !== currentCode) {
       setSelectedObdCodeState(compatCode);
     }
     setRiskOdometerOverride({ miles: null, slug: null });
@@ -436,34 +449,43 @@ function DriveLedgerWorkspace() {
   const handleSelectSecondaryPreset = (presetBId) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    setSecondaryPresetIdState(presetBId);
-    if (activeTab === 'compare' && presetBId && presetBId !== selectedPresetId) {
-      setHasSelectedVehicle(true);
-      syncUrlParams('compare', selectedPresetId, selectedObdCode, presetBId, true, hasSelectedObdCode);
+    const validBId = presetBId && VEHICLE_PRESETS.some((p) => p.id === presetBId) ? presetBId : null;
+    secondaryPresetIdRef.current = validBId;
+    setSecondaryPresetIdState(validBId);
+    const currentA = selectedPresetIdRef.current;
+    if (activeTab === 'compare') {
+      if (currentA && validBId && validBId !== currentA) {
+        syncUrlParams('compare', currentA, selectedObdCodeRef.current, validBId, true, hasSelectedObdCodeRef.current);
+      } else {
+        navigate('/compare', { replace: true });
+      }
     }
   };
 
   const handleSelectObdCode = (code) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
+    hasSelectedObdCodeRef.current = true;
+    selectedObdCodeRef.current = code;
     setHasSelectedObdCode(true);
-    syncUrlParams(activeTab, selectedPresetId, code, secondaryPresetId, hasSelectedVehicle, true);
+    const currentPreset = selectedPresetIdRef.current;
+    syncUrlParams(activeTab, currentPreset, code, secondaryPresetIdRef.current, Boolean(currentPreset), true);
     setSelectedObdCodeState(code);
   };
 
   const handleNavigateToPresetTco = (presetId) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const explicit = Boolean(presetId);
-    const targetPreset = presetId || selectedPresetId;
-    const compatCode = resolveCompatibleObdCode(targetPreset, selectedObdCode);
-    const nextExplicitPreset = explicit || hasSelectedVehicle;
-    if (explicit) {
-      setHasSelectedVehicle(true);
-    }
-    syncUrlParams('tco', targetPreset, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+    const explicitId = presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null;
+    const targetPreset = explicitId || selectedPresetIdRef.current || null;
+    const currentCode = selectedObdCodeRef.current;
+    const compatCode = targetPreset ? resolveCompatibleObdCode(targetPreset, currentCode) : currentCode;
+    const nextExplicitPreset = Boolean(targetPreset);
+    selectedPresetIdRef.current = targetPreset;
+    selectedObdCodeRef.current = compatCode;
+    syncUrlParams('tco', targetPreset, compatCode, secondaryPresetIdRef.current, nextExplicitPreset, hasSelectedObdCodeRef.current);
     setSelectedPresetIdState(targetPreset);
-    if (compatCode !== selectedObdCode) {
+    if (compatCode !== currentCode) {
       setSelectedObdCodeState(compatCode);
     }
     setActiveTabState('tco');
@@ -474,12 +496,15 @@ function DriveLedgerWorkspace() {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
     const explicit = Boolean(code);
-    const targetCode = code || resolveCompatibleObdCode(selectedPresetId, selectedObdCode);
-    const nextExplicitCode = explicit || hasSelectedObdCode;
+    const currentPreset = selectedPresetIdRef.current;
+    const targetCode = code || resolveCompatibleObdCode(currentPreset, selectedObdCodeRef.current);
+    const nextExplicitCode = explicit || hasSelectedObdCodeRef.current;
     if (explicit) {
+      hasSelectedObdCodeRef.current = true;
       setHasSelectedObdCode(true);
     }
-    syncUrlParams('obd', selectedPresetId, targetCode, secondaryPresetId, hasSelectedVehicle, nextExplicitCode);
+    selectedObdCodeRef.current = targetCode;
+    syncUrlParams('obd', currentPreset, targetCode, secondaryPresetIdRef.current, Boolean(currentPreset), nextExplicitCode);
     setSelectedObdCodeState(targetCode);
     setActiveTabState('obd');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -489,15 +514,25 @@ function DriveLedgerWorkspace() {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
     const targetPreset =
-      presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : selectedPresetId;
-    const normalizedCode = code ? String(code).toUpperCase() : selectedObdCode;
+      presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : selectedPresetIdRef.current;
+    const normalizedCode = code ? String(code).toUpperCase() : selectedObdCodeRef.current;
     const targetCode = OBD_CODES.some((c) => c.code === normalizedCode)
       ? normalizedCode
-      : resolveCompatibleObdCode(targetPreset, selectedObdCode);
+      : resolveCompatibleObdCode(targetPreset, selectedObdCodeRef.current);
+    hasSelectedObdCodeRef.current = true;
+    selectedObdCodeRef.current = targetCode;
+    if (!targetPreset) {
+      setHasSelectedObdCode(true);
+      syncUrlParams('obd', null, targetCode, secondaryPresetIdRef.current, false, true);
+      setSelectedObdCodeState(targetCode);
+      setActiveTabState('obd');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    selectedPresetIdRef.current = targetPreset;
     navigate(`/obd/${targetPreset}/${targetCode.toLowerCase()}`, {
       replace: true,
     });
-    setHasSelectedVehicle(true);
     setHasSelectedObdCode(true);
     setSelectedPresetIdState(targetPreset);
     setSelectedObdCodeState(targetCode);
@@ -508,24 +543,25 @@ function DriveLedgerWorkspace() {
   const handleNavigateToRiskMatrix = (preset) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const explicitId = typeof preset === 'string' ? preset : preset?.id;
-    const pId = explicitId || selectedPresetId;
-    const compatCode = resolveCompatibleObdCode(pId, selectedObdCode);
-    const nextExplicitPreset = Boolean(explicitId) || hasSelectedVehicle;
-    if (explicitId) {
-      setHasSelectedVehicle(true);
-    }
+    const rawId = typeof preset === 'string' ? preset : preset?.id;
+    const explicitId = rawId && VEHICLE_PRESETS.some((p) => p.id === rawId) ? rawId : null;
+    const pId = explicitId || selectedPresetIdRef.current || null;
+    const currentCode = selectedObdCodeRef.current;
+    const compatCode = pId ? resolveCompatibleObdCode(pId, currentCode) : currentCode;
+    const nextExplicitPreset = Boolean(pId);
     const mileageSlug = typeof preset === 'object' ? preset?.mileageSlug : null;
     const odoMiles = typeof preset === 'object' ? preset?.defaultOdometerMiles : null;
-    if (mileageSlug && odoMiles) {
+    selectedPresetIdRef.current = pId;
+    selectedObdCodeRef.current = compatCode;
+    if (pId && mileageSlug && odoMiles) {
       navigate(`/risk-matrix/${pId}/${mileageSlug}`, { replace: false });
       setRiskOdometerOverride({ miles: odoMiles, slug: mileageSlug });
     } else {
-      syncUrlParams('risk', pId, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+      syncUrlParams('risk', pId, compatCode, secondaryPresetIdRef.current, nextExplicitPreset, hasSelectedObdCodeRef.current);
       setRiskOdometerOverride({ miles: null, slug: null });
     }
     setSelectedPresetIdState(pId);
-    if (compatCode !== selectedObdCode) {
+    if (compatCode !== currentCode) {
       setSelectedObdCodeState(compatCode);
     }
     setActiveTabState('risk');
@@ -535,11 +571,19 @@ function DriveLedgerWorkspace() {
   const handleNavigateToRiskBracket = (presetId, bracketSlug, miles) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const pId = presetId || selectedPresetId;
-    const compatCode = resolveCompatibleObdCode(pId, selectedObdCode);
-    setHasSelectedVehicle(true);
+    const pId = (presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null) || selectedPresetIdRef.current;
+    if (!pId) {
+      navigate('/risk-matrix', { replace: false });
+      setActiveTabState('risk');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const currentCode = selectedObdCodeRef.current;
+    const compatCode = resolveCompatibleObdCode(pId, currentCode);
+    selectedPresetIdRef.current = pId;
+    selectedObdCodeRef.current = compatCode;
     setSelectedPresetIdState(pId);
-    if (compatCode !== selectedObdCode) {
+    if (compatCode !== currentCode) {
       setSelectedObdCodeState(compatCode);
     }
     setRiskOdometerOverride({ miles: miles || null, slug: bracketSlug || null });
@@ -551,16 +595,16 @@ function DriveLedgerWorkspace() {
   const handleNavigateToChecklist = (presetId) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const explicit = Boolean(presetId);
-    const targetPreset = presetId || selectedPresetId;
-    const compatCode = resolveCompatibleObdCode(targetPreset, selectedObdCode);
-    const nextExplicitPreset = explicit || hasSelectedVehicle;
-    if (explicit) {
-      setHasSelectedVehicle(true);
-    }
-    syncUrlParams('checklist', targetPreset, compatCode, secondaryPresetId, nextExplicitPreset, hasSelectedObdCode);
+    const explicitId = presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null;
+    const targetPreset = explicitId || selectedPresetIdRef.current || null;
+    const currentCode = selectedObdCodeRef.current;
+    const compatCode = targetPreset ? resolveCompatibleObdCode(targetPreset, currentCode) : currentCode;
+    const nextExplicitPreset = Boolean(targetPreset);
+    selectedPresetIdRef.current = targetPreset;
+    selectedObdCodeRef.current = compatCode;
+    syncUrlParams('checklist', targetPreset, compatCode, secondaryPresetIdRef.current, nextExplicitPreset, hasSelectedObdCodeRef.current);
     setSelectedPresetIdState(targetPreset);
-    if (compatCode !== selectedObdCode) {
+    if (compatCode !== currentCode) {
       setSelectedObdCodeState(compatCode);
     }
     setActiveTabState('checklist');
@@ -570,18 +614,27 @@ function DriveLedgerWorkspace() {
   const handleNavigateToCompare = (presetAId, presetBId) => {
     setIsNotFoundRoute(false);
     setActiveLegalModal(null);
-    const pA = presetAId && VEHICLE_PRESETS.some((p) => p.id === presetAId) ? presetAId : selectedPresetId;
-    const pB = presetBId && VEHICLE_PRESETS.some((p) => p.id === presetBId) ? presetBId : secondaryPresetId;
-    const compatCode = resolveCompatibleObdCode(pA, selectedObdCode);
-    setHasSelectedVehicle(true);
-    setSelectedPresetIdState(pA);
-    if (compatCode !== selectedObdCode) {
-      setSelectedObdCodeState(compatCode);
+    const pA = presetAId && VEHICLE_PRESETS.some((p) => p.id === presetAId) ? presetAId : selectedPresetIdRef.current;
+    const pB = presetBId && VEHICLE_PRESETS.some((p) => p.id === presetBId) ? presetBId : secondaryPresetIdRef.current;
+    const currentCode = selectedObdCodeRef.current;
+    const compatCode = pA ? resolveCompatibleObdCode(pA, currentCode) : currentCode;
+    if (pA) {
+      selectedPresetIdRef.current = pA;
+      selectedObdCodeRef.current = compatCode;
+      setSelectedPresetIdState(pA);
+      if (compatCode !== currentCode) {
+        setSelectedObdCodeState(compatCode);
+      }
     }
-    if (pB && pB !== pA) {
+    if (pA && pB && pB !== pA) {
+      secondaryPresetIdRef.current = pB;
       setSecondaryPresetIdState(pB);
       navigate(`/compare/${pA}-vs-${pB}`, { replace: false });
     } else {
+      if (pA && pB === pA) {
+        secondaryPresetIdRef.current = null;
+        setSecondaryPresetIdState(null);
+      }
       navigate('/compare', { replace: false });
     }
     setActiveTabState('compare');
@@ -668,7 +721,6 @@ function DriveLedgerWorkspace() {
 
     const explicitPreset = findExplicitPresetFromLocation(searchParams, location.pathname);
     if (explicitPreset) {
-      setHasSelectedVehicle(true);
       setSelectedPresetIdState((prev) => (prev !== explicitPreset ? explicitPreset : prev));
     }
 
@@ -765,15 +817,14 @@ function DriveLedgerWorkspace() {
         );
 
         const explicitPreset = findExplicitPresetFromLocation(params, window.location.pathname);
-        setHasSelectedVehicle(Boolean(explicitPreset));
-        setSelectedPresetIdState(
-          explicitPreset || getSamplePresetIdForRegion(regionRef.current)
-        );
+        const nextPreset = explicitPreset || null;
+        selectedPresetIdRef.current = nextPreset;
+        setSelectedPresetIdState(nextPreset);
 
         const qPresetB = params.get('presetB') || matchup?.presetB;
-        setSecondaryPresetIdState(
-          qPresetB && VEHICLE_PRESETS.some((p) => p.id === qPresetB) ? qPresetB : null
-        );
+        const nextSecondary = qPresetB && VEHICLE_PRESETS.some((p) => p.id === qPresetB) ? qPresetB : null;
+        secondaryPresetIdRef.current = nextSecondary;
+        setSecondaryPresetIdState(nextSecondary);
 
         if (riskMileage?.odometerMiles) {
           setRiskOdometerOverride({ miles: riskMileage.odometerMiles, slug: riskMileage.mileageSlug });
@@ -784,9 +835,11 @@ function DriveLedgerWorkspace() {
         }
 
         const explicitCode = findExplicitObdCodeFromLocation(params, window.location.pathname);
+        const nextCode = explicitCode || resolveCompatibleObdCode(explicitPreset, null);
+        hasSelectedObdCodeRef.current = Boolean(explicitCode);
+        selectedObdCodeRef.current = nextCode;
         setHasSelectedObdCode(Boolean(explicitCode));
-        const resolvedPreset = explicitPreset || getSamplePresetIdForRegion(regionRef.current);
-        setSelectedObdCodeState(explicitCode || resolveCompatibleObdCode(resolvedPreset, null));
+        setSelectedObdCodeState(nextCode);
 
         const policyKey =
           resolveLegalPolicyKey(window.location.pathname) ||
@@ -841,6 +894,7 @@ function DriveLedgerWorkspace() {
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         selectedPresetId={selectedPresetId}
+        hasSelectedVehicle={hasSelectedVehicle}
         onSelectPreset={handleSelectPreset}
       />
 
@@ -987,6 +1041,7 @@ function DriveLedgerWorkspace() {
             {activeTab === 'obd' && (
               <ObdEstimator
                 selectedPresetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
                 onSelectPreset={handleSelectPreset}
                 selectedObdCode={selectedObdCode}
                 selectedCode={selectedObdCode}
@@ -1006,6 +1061,7 @@ function DriveLedgerWorkspace() {
             {activeTab === 'compare' && (
               <VehicleComparator
                 primaryPresetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
                 secondaryPresetId={secondaryPresetId}
                 onApplyPreset={handleSelectPreset}
                 onSelectSecondaryPreset={handleSelectSecondaryPreset}
@@ -1022,6 +1078,7 @@ function DriveLedgerWorkspace() {
             {activeTab === 'checklist' && (
               <PreInspectionChecklist
                 presetId={selectedPresetId}
+                hasSelectedVehicle={hasSelectedVehicle}
                 onSelectPreset={handleSelectPreset}
                 onNavigateToObd={handleNavigateToObd}
                 onNavigateToHybridObd={handleNavigateToHybridObd}
@@ -1110,6 +1167,7 @@ function DriveLedgerWorkspace() {
           onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
           hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
           selectedPresetId={selectedPresetId}
+          hasSelectedVehicle={hasSelectedVehicle}
         />
       </main>
 

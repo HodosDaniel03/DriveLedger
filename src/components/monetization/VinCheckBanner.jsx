@@ -206,21 +206,28 @@ export default function VinCheckBanner({
     }
   };
 
+  const hasPrice = Boolean(vehiclePriceFormatted || (Number(purchasePriceUsd) > 0));
   const formattedPrice =
     vehiclePriceFormatted ||
-    (purchasePriceUsd ? `$${Number(purchasePriceUsd).toLocaleString()}` : '$24,800');
+    (Number(purchasePriceUsd) > 0 ? `$${Number(purchasePriceUsd).toLocaleString()}` : '');
 
   const cleanVehicleName = String(vehicleName || '').trim().replace(/^(a|an)\s+/i, '');
 
   const displayTitle =
     headline ||
     (cleanVehicleName
-      ? `Buying or owning this ${cleanVehicleName}? Check odometer rollbacks & salvage records before paying ${formattedPrice}`
-      : `Buying or owning a used vehicle? Check odometer rollbacks & salvage records before paying ${formattedPrice}`);
+      ? hasPrice
+        ? `Buying or owning this ${cleanVehicleName}? Check odometer rollbacks & salvage records before paying ${formattedPrice}`
+        : `Buying or owning this ${cleanVehicleName}? Check odometer rollbacks & salvage records before you buy`
+      : hasPrice
+      ? `Buying or owning a used vehicle? Check odometer rollbacks & salvage records before paying ${formattedPrice}`
+      : 'Buying or owning a used vehicle? Check odometer rollbacks & salvage records before you buy');
 
   const displayDescription =
     description ||
-    `Check chronological mileage records, past damage history, salvage or flood title status, and theft records via carVertical before paying ${formattedPrice}.`;
+    (hasPrice
+      ? `Check chronological mileage records, past damage history, salvage or flood title status, and theft records via carVertical before paying ${formattedPrice}.`
+      : 'Check chronological mileage records, past damage history, salvage or flood title status, and theft records via carVertical before you buy.');
 
   const features = [
     'Odometer Rollback Detection',

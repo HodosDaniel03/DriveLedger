@@ -60,6 +60,7 @@ export default function ObdEstimator({
   onSelectObdCode,
   onSelectCode,
   selectedPresetId,
+  hasSelectedVehicle = Boolean(selectedPresetId),
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -71,11 +72,15 @@ export default function ObdEstimator({
 }) {
   const { region, formatCurrency } = useUnits();
 
-  const [localPresetId, setLocalPresetId] = useState(
-    selectedPresetId || VEHICLE_PRESETS[0].id
+  const [localPresetId, setLocalPresetId] = useState(() =>
+    hasSelectedVehicle && selectedPresetId && VEHICLE_PRESETS.some((p) => p.id === selectedPresetId)
+      ? selectedPresetId
+      : null
   );
   const resolvedDefaultCode = useMemo(() => {
-    const presetObj = VEHICLE_PRESETS.find((p) => p.id === localPresetId) || VEHICLE_PRESETS[0];
+    if (!localPresetId) return 'P0420';
+    const presetObj = VEHICLE_PRESETS.find((p) => p.id === localPresetId);
+    if (!presetObj) return 'P0420';
     const preferred = (presetObj.commonObdCodes || []).find((c) => isObdCompatibleWithVehicle(presetObj, c));
     if (preferred) return preferred;
     const firstCompat = OBD_CODES.find((c) => isObdCompatibleWithVehicle(presetObj, c));
@@ -91,17 +96,26 @@ export default function ObdEstimator({
   const [expandedCause, setExpandedCause] = useState(null);
 
   useEffect(() => {
-    if (selectedPresetId && selectedPresetId !== localPresetId) {
-      setLocalPresetId(selectedPresetId);
+    if (selectedPresetId === undefined) return;
+    const nextId =
+      hasSelectedVehicle && selectedPresetId && VEHICLE_PRESETS.some((p) => p.id === selectedPresetId)
+        ? selectedPresetId
+        : null;
+    if (nextId !== localPresetId) {
+      setLocalPresetId(nextId);
     }
-  }, [selectedPresetId]);
+  }, [selectedPresetId, hasSelectedVehicle]);
 
   const handlePresetChange = (nextPresetId) => {
-    setLocalPresetId(nextPresetId);
+    const cleanId =
+      nextPresetId && VEHICLE_PRESETS.some((p) => p.id === nextPresetId) ? nextPresetId : null;
+    setLocalPresetId(cleanId);
     if (typeof onSelectPreset === 'function') {
-      onSelectPreset(nextPresetId);
+      onSelectPreset(cleanId);
+      return;
     }
-    const nextPreset = VEHICLE_PRESETS.find((p) => p.id === nextPresetId);
+    if (!cleanId) return;
+    const nextPreset = VEHICLE_PRESETS.find((p) => p.id === cleanId);
     if (nextPreset && !isObdCompatibleWithVehicle(nextPreset, activeCodeId)) {
       const compatibleCommon = (nextPreset.commonObdCodes || []).find((c) =>
         isObdCompatibleWithVehicle(nextPreset, c)
@@ -113,34 +127,40 @@ export default function ObdEstimator({
 
   const handleSelect = (code) => {
     if (typeof onSelectObdCode === 'function') onSelectObdCode(code);
-    if (typeof onSelectCode === 'function') onSelectCode(code);
+    if (typeof onSelectCode === 'function' && onSelectCode !== onSelectObdCode) onSelectCode(code);
     setSearchQuery('');
   };
 
-  // Active dossier & hybrid vehicle context
+  // Active dossier & optional hybrid vehicle context (null when no vehicle is selected)
   const hybridContext = useMemo(() => {
+    if (!localPresetId) return null;
     return getHybridVehicleObdContext(localPresetId, activeCodeId);
   }, [localPresetId, activeCodeId]);
 
-  const activePreset = hybridContext.preset;
-  const activeDossier = hybridContext.dossier;
-  const isKnownVulnerability = hybridContext.isKnownWeakPoint;
+  const activePreset = hybridContext ? hybridContext.preset : null;
+  const isVehicleSelected = Boolean(activePreset);
+  const activeDossier = useMemo(() => {
+    if (hybridContext?.dossier) return hybridContext.dossier;
+    const normalized = String(activeCodeId || 'P0420').toUpperCase();
+    return OBD_CODES.find((c) => c.code === normalized) || OBD_CODES[0];
+  }, [hybridContext, activeCodeId]);
+  const isKnownVulnerability = Boolean(hybridContext?.isKnownWeakPoint);
   const codeSummary = useMemo(
-    () => buildObdCodeSummary(activeDossier, activePreset),
+    () => buildObdCodeSummary(activeDossier, activePreset || undefined),
     [activeDossier, activePreset]
   );
 
-  // Workshop cost estimate + DIY vs Dealership savings comparison (scaled by vehicle maintenanceWearFactor)
+  // Workshop cost estimate + DIY vs Dealership savings comparison (scaled by vehicle maintenanceWearFactor when selected)
   const est = useMemo(() => {
-    return calculateObdWorkshopEstimate(activeDossier, laborTierId, { vehicle: activePreset });
+    return calculateObdWorkshopEstimate(activeDossier, laborTierId, { vehicle: activePreset || undefined });
   }, [activeDossier, laborTierId, activePreset]);
 
   const dealershipEst = useMemo(
-    () => calculateObdWorkshopEstimate(activeDossier, 'dealership', { vehicle: activePreset }),
+    () => calculateObdWorkshopEstimate(activeDossier, 'dealership', { vehicle: activePreset || undefined }),
     [activeDossier, activePreset]
   );
   const diyEst = useMemo(
-    () => calculateObdWorkshopEstimate(activeDossier, 'diy', { vehicle: activePreset }),
+    () => calculateObdWorkshopEstimate(activeDossier, 'diy', { vehicle: activePreset || undefined }),
     [activeDossier, activePreset]
   );
   const diySavingsVsDealerUsd = Math.max(
@@ -243,11 +263,11 @@ export default function ObdEstimator({
   const scannerCtaProps = useMemo(() => {
     return buildAffiliateUrl('obd-scanner', {
       activeCode: activeDossier.code,
-      vehicleName: activePreset.name,
+      vehicleName: activePreset?.name || '',
       region,
       skipPlaceholder: true,
     });
-  }, [activeDossier.code, activePreset.name, region]);
+  }, [activeDossier.code, activePreset?.name, region]);
 
   const obdTldrFacts = useMemo(() => [
     {
@@ -284,7 +304,7 @@ export default function ObdEstimator({
       subtext: 'Do not replace expensive major components blindly: verify live PID readings first!',
       badge: <RiskBadge level="low" label="Primary Suspect" />,
     },
-  ], [est, formatCurrency, activeDossier, topRootCauses]);
+  ], [est, formatCurrency, activeDossier, topRootCauses, activePreset, codeSummary]);
 
   return (
     <div className="space-y-8">
@@ -457,7 +477,7 @@ export default function ObdEstimator({
           <div className="flex flex-wrap gap-2">
             {displayedQuickCodes.map((c) => {
               const active = c === activeDossier.code;
-              const isKnownForVehicle = Array.isArray(activePreset.commonObdCodes) && activePreset.commonObdCodes.includes(c);
+              const isKnownForVehicle = Boolean(activePreset && Array.isArray(activePreset.commonObdCodes) && activePreset.commonObdCodes.includes(c));
               const codeObj = OBD_CODES.find((item) => item.code === c);
               return (
                 <button
@@ -465,7 +485,7 @@ export default function ObdEstimator({
                   type="button"
                   aria-pressed={active}
                   onClick={() => handleSelect(c)}
-                  title={isKnownForVehicle ? `Known weak point on ${activePreset.name}` : codeObj?.title}
+                  title={isKnownForVehicle && activePreset ? `Known weak point on ${activePreset.name}` : codeObj?.title}
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     active
                       ? 'border-[#183D22] bg-[#183D22] text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
@@ -495,16 +515,22 @@ export default function ObdEstimator({
                 <Car className="w-3.5 h-3.5 shrink-0" />
                 <span>Vehicle × OBD-II Programmatic Telemetry</span>
               </span>
-              {isKnownVulnerability ? (
-                <span className="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  KNOWN POWERTRAIN VULNERABILITY
-                </span>
+              {isVehicleSelected ? (
+                isKnownVulnerability ? (
+                  <span className="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
+                    KNOWN POWERTRAIN VULNERABILITY
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
+                    POWERTRAIN DIAGNOSTIC PROFILE
+                  </span>
+                )
               ) : (
                 <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  POWERTRAIN DIAGNOSTIC PROFILE
+                  GENERIC SAE J1979 PROFILE
                 </span>
               )}
-              {activePreset.criticalDefectTag && (
+              {isVehicleSelected && activePreset.criticalDefectTag && (
                 <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
                   {activePreset.criticalDefectTag}
                 </span>
@@ -515,7 +541,8 @@ export default function ObdEstimator({
               id="hybrid-vehicle-obd-heading"
               className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50 break-words"
             >
-              {activePreset.name} · <span className="font-mono tabular-nums">{activeDossier.code}</span> {activeDossier.title}: Repair Cost &amp; Live PID Guide
+              {isVehicleSelected && activePreset ? `${activePreset.name} · ` : ''}
+              <span className="font-mono tabular-nums">{activeDossier.code}</span> {activeDossier.title}: Repair Cost &amp; Live PID Guide
             </h2>
           </div>
 
@@ -530,10 +557,13 @@ export default function ObdEstimator({
             <select
               id="obd-preset-select"
               aria-label="Select vehicle powertrain for OBD-II telemetry correlation"
-              value={activePreset.id}
+              value={activePreset ? activePreset.id : ''}
               onChange={(e) => handlePresetChange(e.target.value)}
               className="h-11 sm:h-10 w-full sm:w-auto max-w-full truncate rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 font-sans text-base sm:text-xs font-medium text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600/30"
             >
+              <option value="" className="dark:bg-zinc-900 dark:text-zinc-100">
+                No specific vehicle (Generic OBD-II estimate)
+              </option>
               {VEHICLE_PRESETS.map((p) => (
                 <option key={p.id} value={p.id} className="dark:bg-zinc-900 dark:text-zinc-100">
                   {p.name} ({p.engineCode})
@@ -543,48 +573,59 @@ export default function ObdEstimator({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-xs">
-          <div className="lg:col-span-8 space-y-1 min-w-0">
-            <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 block">
-              Factory Mechanical Risk Notes ({activePreset.engineCode})
-            </span>
-            <p className="font-sans text-body dark:text-zinc-300 leading-relaxed">
-              {activePreset.knownRiskNotes}
+        {isVehicleSelected && activePreset ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-xs">
+            <div className="lg:col-span-8 space-y-1 min-w-0">
+              <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 block">
+                Factory Mechanical Risk Notes ({activePreset.engineCode})
+              </span>
+              <p className="font-sans text-body dark:text-zinc-300 leading-relaxed">
+                {activePreset.knownRiskNotes}
+              </p>
+            </div>
+
+            <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-sans text-muted dark:text-zinc-400 font-medium">Baseline Annual Maintenance:</span>
+                <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
+                  {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr
+                </span>
+              </div>
+              {activePreset.commonObdCodes && activePreset.commonObdCodes.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold mr-1">
+                    Known Faults:
+                  </span>
+                  {activePreset.commonObdCodes
+                    .filter((c) => isObdCompatibleWithVehicle(activePreset, c))
+                    .map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => handleSelect(c)}
+                      className={`px-2 py-0.5 rounded-md font-mono tabular-nums text-[11px] font-bold border transition-colors ${
+                        c === activeDossier.code
+                          ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                          : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-200 border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                      }`}
+                    >
+                      DTC {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            data-testid="obd-no-vehicle-prompt"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 text-xs font-sans text-muted dark:text-zinc-400"
+          >
+            <p className="leading-relaxed">
+              Showing universal SAE J1979 workshop cost benchmarks. Optional: choose a <strong className="text-ink dark:text-zinc-200">Target Vehicle</strong> above to calibrate parts &amp; labor by engine wear factor and flag known model vulnerabilities.
             </p>
           </div>
-
-          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-sans text-muted dark:text-zinc-400 font-medium">Baseline Annual Maintenance:</span>
-              <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
-                {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr
-              </span>
-            </div>
-            {activePreset.commonObdCodes && activePreset.commonObdCodes.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
-                <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold mr-1">
-                  Known Faults:
-                </span>
-                {activePreset.commonObdCodes
-                  .filter((c) => isObdCompatibleWithVehicle(activePreset, c))
-                  .map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => handleSelect(c)}
-                    className={`px-2 py-0.5 rounded-md font-mono tabular-nums text-[11px] font-bold border transition-colors ${
-                      c === activeDossier.code
-                        ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
-                        : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-200 border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
-                    }`}
-                  >
-                    DTC {c}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Hero Row: Single Unified Code Information Card */}
@@ -1001,7 +1042,7 @@ export default function ObdEstimator({
             {/* Single Clean Partner CTA at Bottom of Right Dossier Card (mt-5, zero overlap) */}
             <TopTabAffiliateBanner
               type="obd-scanner"
-              vehicleName={activePreset.name}
+              vehicleName={activePreset ? activePreset.name : ''}
               activeCode={activeDossier.code}
               activeCodeTitle={activeDossier.title}
               cheapestCauseUsd={causeCostStats.cheapestCauseUsd}
@@ -1032,7 +1073,7 @@ export default function ObdEstimator({
             <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => onNavigateToRisk && onNavigateToRisk(activePreset.id)}
+                onClick={() => onNavigateToRisk && onNavigateToRisk(activePreset ? activePreset.id : undefined)}
                 className="font-sans text-xs font-semibold text-primary-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 transition-colors"
               >
                 <span>Open Powertrain Risk Matrix</span>
@@ -1045,9 +1086,9 @@ export default function ObdEstimator({
 
       {/* 5. Interactive "Should I Fix It or Sell It?" Decision Engine (Pre-Filled with Active DTC Quote) */}
       <FixOrSellCalculator
-        vehicle={activePreset}
+        vehicle={activePreset || null}
         initialRepairQuoteUsd={liveVerdict ? liveVerdict.narrowedExpectedUsd : est.weightedExpectedUsd}
-        initialOdometerMiles={activePreset.defaultOdometerMiles}
+        initialOdometerMiles={activePreset?.defaultOdometerMiles || 75000}
         sourceLabel={`DTC ${activeDossier.code} Workshop Estimate`}
         onNavigateToCompare={onNavigateToCompare}
       />
@@ -1056,27 +1097,29 @@ export default function ObdEstimator({
       <ToolEditorialSection
         tool="obd"
         activeCode={activeDossier.code}
-        vehicleName={activePreset.name}
+        vehicleName={activePreset ? activePreset.name : ''}
       />
 
       {/* Crawlable Internal Links for Active Vehicle & Compatible OBD Codes */}
-      <VehicleInternalLinks
-        vehicle={activePreset}
-        onSelectPreset={handlePresetChange}
-        onNavigateToTco={onNavigateToTco}
-        onNavigateToRisk={onNavigateToRisk}
-        onNavigateToRiskBracket={onNavigateToRiskBracket}
-        onNavigateToChecklist={onNavigateToChecklist}
-        onNavigateToCompare={onNavigateToCompare}
-        onNavigateToHybridObd={
-          onNavigateToHybridObd ||
-          ((presetId, code) => {
-            handlePresetChange(presetId);
-            handleSelect(code);
-          })
-        }
-        onNavigateToVehicles={onNavigateToVehicles}
-      />
+      {isVehicleSelected && activePreset && (
+        <VehicleInternalLinks
+          vehicle={activePreset}
+          onSelectPreset={handlePresetChange}
+          onNavigateToTco={onNavigateToTco}
+          onNavigateToRisk={onNavigateToRisk}
+          onNavigateToRiskBracket={onNavigateToRiskBracket}
+          onNavigateToChecklist={onNavigateToChecklist}
+          onNavigateToCompare={onNavigateToCompare}
+          onNavigateToHybridObd={
+            onNavigateToHybridObd ||
+            ((presetId, code) => {
+              handlePresetChange(presetId);
+              handleSelect(code);
+            })
+          }
+          onNavigateToVehicles={onNavigateToVehicles}
+        />
+      )}
 
       {/* 7. Mobile Sticky Summary Bar for real-time OBD-II workshop cost feedback on small screens */}
       <MobileStickySummaryBar

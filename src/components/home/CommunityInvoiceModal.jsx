@@ -194,7 +194,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
     convertRegionToUsd,
     convertRegionToMiles,
   } = useUnits();
-  const [selectedPresetId, setSelectedPresetId] = useState(VEHICLE_PRESETS[0]?.id || 'ford-focus-ecoblue');
+  const [selectedPresetId, setSelectedPresetId] = useState('');
   const [customVehicleName, setCustomVehicleName] = useState('');
   const [assemblyLabel, setAssemblyLabel] = useState(REPAIRED_ASSEMBLIES[0].label);
   const [workshopTier, setWorkshopTier] = useState('independent');
@@ -205,8 +205,8 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
   const [submittedAudit, setSubmittedAudit] = useState(null);
 
   const selectedPreset = useMemo(() => {
-    if (selectedPresetId === 'custom') return null;
-    return VEHICLE_PRESETS.find((p) => p.id === selectedPresetId) || VEHICLE_PRESETS[0];
+    if (!selectedPresetId || selectedPresetId === 'custom') return null;
+    return VEHICLE_PRESETS.find((p) => p.id === selectedPresetId) || null;
   }, [selectedPresetId]);
 
   const liveAuditPreview = useMemo(() => {
@@ -214,7 +214,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
       assemblyLabel,
       workshopTier,
       amountPaid: Math.round(convertRegionToUsd(Number(invoiceAmount) || 0)),
-      wearFactor: selectedPreset?.maintenanceWearFactor || 1.2,
+      wearFactor: selectedPreset?.maintenanceWearFactor || 1.0,
     });
   }, [assemblyLabel, workshopTier, invoiceAmount, selectedPreset, convertRegionToUsd]);
 
@@ -235,7 +235,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
       assemblyLabel,
       workshopTier,
       amountPaid: numericAmountUsd,
-      wearFactor: selectedPreset?.maintenanceWearFactor || 1.2,
+      wearFactor: selectedPreset?.maintenanceWearFactor || 1.0,
     });
 
     const savingsOrDeltaText = stats.isBelowAvg
@@ -470,10 +470,12 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 </label>
                 <select
                   id="invoice-vehicle-select"
+                  required
                   value={selectedPresetId}
                   onChange={(e) => setSelectedPresetId(e.target.value)}
                   className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
+                  <option value="">Select a vehicle model...</option>
                   {VEHICLE_PRESETS.map((preset) => (
                     <option key={preset.id} value={preset.id}>
                       {preset.name} ({preset.fuelType})

@@ -24,9 +24,39 @@ import { GUIDES_DATA } from '../data/guidesData';
 import { RiskBadge, InfoTooltip } from '../components/common/OdometerPrimitives';
 import { BrandQuickJumpIndex } from '../components/seo/VehicleInternalLinks';
 
+const UNIVERSAL_PPI_PREVIEW_ITEMS = [
+  {
+    id: 'universal-obd-scan',
+    title: 'OBD-II DTC & Freeze Frame Live Data Scan',
+    focus: 'Scan active, stored, and pending DTCs and verify distance since codes were last cleared before buying.',
+    riskLabel: 'Critical / Mandatory',
+    riskLevel: 'critical',
+    isModelSpecific: false,
+    estSaving: '$600 – $2,400',
+  },
+  {
+    id: 'universal-cold-start',
+    title: 'Cold Start, Blowby & Fluid Condition Check',
+    focus: 'Start the engine completely cold, listen for timing chain or valvetrain noise, and inspect oil and coolant.',
+    riskLabel: 'Moderate / Important',
+    riskLevel: 'moderate',
+    isModelSpecific: false,
+    estSaving: '$500 – $1,800',
+  },
+  {
+    id: 'universal-body-chassis',
+    title: 'Paint Thickness, Structural Chassis & Road Test',
+    focus: 'Verify uniform panel paint depth (80–140 µm), matching glass stamps, smooth shifts, and straight braking.',
+    riskLabel: 'Critical / Resale Value',
+    riskLevel: 'critical',
+    isModelSpecific: false,
+    estSaving: '$1,000 – $3,500',
+  },
+];
+
 export default function HomePage({
   selectedPresetId,
-  hasSelectedVehicle = true,
+  hasSelectedVehicle = Boolean(selectedPresetId),
   onSelectPreset,
   onNavigateToTco,
   onNavigateToRisk,
@@ -42,15 +72,18 @@ export default function HomePage({
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [selectedBodyStyle, setSelectedBodyStyle] = useState('all');
 
-  const activePreset = useMemo(() => getPresetById(selectedPresetId), [selectedPresetId]);
-  const previewPpiItems = useMemo(
-    () =>
-      generatePpiChecklist(
-        activePreset,
-        Math.round((activePreset.defaultOdometerMiles || 60000) * 1.609344)
-      ).slice(0, 3),
-    [activePreset]
+  const isVehicleSelected = Boolean(hasSelectedVehicle && selectedPresetId);
+  const activePreset = useMemo(
+    () => (isVehicleSelected ? getPresetById(selectedPresetId) : null),
+    [isVehicleSelected, selectedPresetId]
   );
+  const previewPpiItems = useMemo(() => {
+    if (!activePreset) return UNIVERSAL_PPI_PREVIEW_ITEMS;
+    return generatePpiChecklist(
+      activePreset,
+      Math.round((activePreset.defaultOdometerMiles || 60000) * 1.609344)
+    ).slice(0, 3);
+  }, [activePreset]);
 
   const POPULAR_BODY_TYPES = useMemo(() => [
     { id: 'all', label: 'All Body Styles', count: VEHICLE_PRESETS.length },
@@ -601,18 +634,22 @@ export default function HomePage({
               <span>ON-SITE BUYER CHECKLIST</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-              Pre-Purchase Inspection Points for {activePreset.name}
+              {isVehicleSelected && activePreset
+                ? `Pre-Purchase Inspection Points for ${activePreset.name}`
+                : 'Universal Pre-Purchase Inspection Points'}
             </h2>
             <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-1">
-              Top engine-specific red flags to verify in person before signing a purchase agreement.
+              {isVehicleSelected && activePreset
+                ? 'Top engine-specific red flags to verify in person before signing a purchase agreement.'
+                : 'Essential on-site checks to verify before buying any used car — select a model to unlock engine-specific red flags.'}
             </p>
           </div>
           <a
-            href={hasSelectedVehicle ? `/checklist/${activePreset.id}` : '/checklist'}
+            href={isVehicleSelected && activePreset ? `/checklist/${activePreset.id}` : '/checklist'}
             onClick={(e) => {
               e.preventDefault();
               if (onNavigateToChecklist) {
-                onNavigateToChecklist(hasSelectedVehicle ? activePreset.id : undefined);
+                onNavigateToChecklist(isVehicleSelected && activePreset ? activePreset.id : undefined);
               } else {
                 onNavigateToRisk();
               }
