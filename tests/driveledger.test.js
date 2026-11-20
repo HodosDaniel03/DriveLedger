@@ -639,6 +639,7 @@ const navButtons = rootContainer.querySelectorAll(
 );
 assert.ok(navButtons.length > 0, 'Must find Powertrain Risk Matrix tab button');
 navButtons[0].dispatchEvent({ type: 'click' });
+await waitForLazy();
 
 const riskHtml = rootContainer.toHtml();
 assert.ok(riskHtml.includes('POWERTRAIN TELEMETRY DOSSIER'), 'Risk Matrix tab must render telemetry dossier');
@@ -670,6 +671,7 @@ const obdTabBtn = rootContainer.querySelectorAll(
 )[0];
 assert.ok(obdTabBtn, 'Must find OBD-II Workshop Estimator tab button');
 obdTabBtn.dispatchEvent({ type: 'click' });
+await waitForLazy();
 
 const obdHtml = rootContainer.toHtml();
 assert.ok(

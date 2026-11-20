@@ -7,8 +7,6 @@ import Navbar, { WORKSPACE_TABS } from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ScrollToTop from './components/common/ScrollToTop';
 import HomePage from './pages/HomePage';
-import MaintenanceRiskMatrix from './components/calculators/MaintenanceRiskMatrix';
-import ObdEstimator from './components/calculators/ObdEstimator';
 import DynamicSeoHead from './components/seo/DynamicSeoHead';
 import LegalModal from './components/legal/LegalModal';
 import CookieConsentBanner, { openPrivacySettings } from './components/legal/CookieConsentBanner';
@@ -28,6 +26,8 @@ import { parseBrandHubPath, getBrandBySlug } from './data/brandDirectory';
 
 // Code-split calculators & editorial/catalog pages to keep initial homepage bundle lean
 const TcoCalculator = lazy(() => import('./components/calculators/TcoCalculator'));
+const MaintenanceRiskMatrix = lazy(() => import('./components/calculators/MaintenanceRiskMatrix'));
+const ObdEstimator = lazy(() => import('./components/calculators/ObdEstimator'));
 const TechnicalMethodologyGuide = lazy(() => import('./components/seo/TechnicalMethodologyGuide'));
 const VehicleComparator = lazy(() => import('./components/calculators/VehicleComparator'));
 const PreInspectionChecklist = lazy(() => import('./components/home/PreInspectionChecklist'));

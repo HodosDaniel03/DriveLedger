@@ -527,3 +527,77 @@ test('10. Trailing Slash Handling: Route matchers parse paths with and without t
   assert.equal(riskClean.preset, riskSlash.preset);
   assert.equal(riskClean.odometerMiles, riskSlash.odometerMiles);
 });
+
+// ============================================================================
+// 11. PRERENDERED APP SHELL, ZERO NESTED DIVS & LAZY BUNDLE SPLIT TEST
+// ============================================================================
+
+test('11. Prerendered Branded App Shell, Zero Nested Divs & Lazy Bundle Split', () => {
+  const sampleHtmlFiles = [
+    path.join(DIST_DIR, 'index.html'),
+    path.join(DIST_DIR, 'tco', 'index.html'),
+    path.join(DIST_DIR, 'tco', 'vw-golf-20-tdi', 'index.html'),
+    path.join(DIST_DIR, 'vehicles', 'bmw', 'index.html'),
+  ];
+
+  for (const filePath of sampleHtmlFiles) {
+    assert.ok(fs.existsSync(filePath), `Expected prerendered file to exist: ${filePath}`);
+    const html = fs.readFileSync(filePath, 'utf8');
+
+    // 1. Scoped inline shell CSS supporting both light and dark themes
+    assert.ok(
+      html.includes('<style id="prerender-shell-styles">'),
+      `Missing inline prerender shell styles in ${filePath}`
+    );
+    assert.ok(html.includes('#F7F7F4'), `Missing light canvas #F7F7F4 in ${filePath}`);
+    assert.ok(html.includes('html.dark') && html.includes('#09090B'), `Missing dark theme #09090B in ${filePath}`);
+
+    // 2. Semantic App Shell structure inside #root
+    const rootMatch = html.match(/<div\s+id=["']root["'][^>]*>([\s\S]*?)<\/div>/i);
+    assert.ok(rootMatch, `Missing <div id="root">...</div> in ${filePath}`);
+    const innerRoot = rootMatch[1];
+
+    assert.ok(innerRoot.includes('<main data-prerendered="true" class="dl-pr">'), `Missing dl-pr main shell in ${filePath}`);
+    assert.ok(innerRoot.includes('<header class="dl-pr-header">'), `Missing dl-pr-header in ${filePath}`);
+    assert.ok(innerRoot.includes('<section class="dl-pr-viewport">'), `Missing dl-pr-viewport in ${filePath}`);
+    assert.ok(innerRoot.includes('<section class="dl-pr-below-fold"'), `Missing dl-pr-below-fold in ${filePath}`);
+
+    // 3. Strictly zero nested <div> tags inside #root (guarantees idempotency of rootDivRegex)
+    assert.ok(
+      !/<\/?div\b/i.test(innerRoot),
+      `Prerendered #root content must not contain any nested <div> tags in ${filePath}`
+    );
+  }
+
+  // 4. Running injectRouteMetadata twice on built dist/index.html stays idempotent
+  const rootDistHtml = fs.readFileSync(path.join(DIST_DIR, 'index.html'), 'utf8');
+  const pass1 = injectRouteMetadata(rootDistHtml, {
+    title: 'Idempotency Check Title',
+    description: 'Idempotency check description for prerendered app shell.',
+    canonicalUrl: 'https://mydriveledger.com/tco',
+  });
+  const pass2 = injectRouteMetadata(pass1, {
+    title: 'Idempotency Check Title',
+    description: 'Idempotency check description for prerendered app shell.',
+    canonicalUrl: 'https://mydriveledger.com/tco',
+  });
+  assert.equal(
+    (pass2.match(/<main\s+data-prerendered="true"/gi) || []).length,
+    1,
+    'Re-injecting metadata into dist/index.html must yield strictly 1 <main data-prerendered="true">'
+  );
+  assert.ok(
+    pass2.includes('</main></div>'),
+    'Re-injected root container must close cleanly with </main></div>'
+  );
+
+  // 5. Homepage hero headline & lazy calculator split verification
+  assert.ok(
+    rootDistHtml.includes('Know what your car really costs'),
+    'dist/index.html must render branded hero headline'
+  );
+  assert.ok(
+    !/<link\s+rel=["']modulepreload["'][^>]*calculators-/i.test(rootDistHtml),
+    'dist/index.html must not eagerly modulepreload monolithic calculators chunk'
+  );
+});

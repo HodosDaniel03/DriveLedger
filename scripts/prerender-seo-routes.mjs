@@ -168,6 +168,94 @@ export function computePresetTelemetry(preset) {
   };
 }
 
+const PRIMARY_SHELL_NAV = [
+  { href: '/', label: 'Overview' },
+  { href: '/tco', label: 'Cost Calculator' },
+  { href: '/risk-matrix', label: 'Maintenance' },
+  { href: '/obd-estimator', label: 'OBD-II Lookup' },
+  { href: '/guides', label: 'Guides' },
+];
+
+const QUICK_CHIP_LINKS = [
+  { href: '/tco', label: '5-Year TCO Calculator' },
+  { href: '/risk-matrix', label: 'Maintenance Risk Matrix' },
+  { href: '/obd-estimator', label: 'OBD-II Repair Estimator' },
+  { href: '/compare', label: 'Vehicle Comparator' },
+  { href: '/checklist', label: 'PPI Checklist' },
+  { href: '/vehicles', label: 'All 179+ Vehicles' },
+  { href: '/guides', label: 'Buyer Guides' },
+];
+
+const BRAND_GAUGE_SVG = `<svg class="dl-pr-logo" viewBox="0 0 64 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="#10B981" stroke-width="5.4" stroke-linecap="butt" fill="none"><path d="M 9 31 A 23 23 0 0 1 11.33 20.92" /><path d="M 12.24 19.22 A 23 23 0 0 1 19.41 11.75" /><path d="M 21.06 10.77 A 23 23 0 0 1 31.04 8.02" /><path d="M 32.96 8.02 A 23 23 0 0 1 42.94 10.77" /><path d="M 44.59 11.75 A 23 23 0 0 1 51.76 19.22" /><path d="M 52.67 20.92 A 23 23 0 0 1 55 31" /></g><path d="M 17.88 29.52 A 14.2 14.2 0 0 1 40.35 19.51" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" fill="none" /><polygon points="34.18,26.55 46.57,17.89 36.66,29.30" fill="#10B981" /><circle cx="32" cy="31" r="4.2" stroke="#10B981" stroke-width="2.6" fill="none" /></svg>`;
+
+function resolveShellActiveNavPath(cleanRoutePath) {
+  if (cleanRoutePath === '/') return '/';
+  if (cleanRoutePath === '/tco' || cleanRoutePath.startsWith('/tco/')) return '/tco';
+  if (cleanRoutePath === '/risk-matrix' || cleanRoutePath.startsWith('/risk-matrix/')) return '/risk-matrix';
+  if (cleanRoutePath === '/obd-estimator' || cleanRoutePath.startsWith('/obd/')) return '/obd-estimator';
+  if (cleanRoutePath === '/guides' || cleanRoutePath.startsWith('/guides/')) return '/guides';
+  return '';
+}
+
+function resolveShellEyebrow(cleanRoutePath) {
+  if (cleanRoutePath === '/') return 'Free · Independent · No sign-up';
+  if (cleanRoutePath === '/tco' || cleanRoutePath.startsWith('/tco/')) return '5-Year True Cost to Own';
+  if (cleanRoutePath === '/risk-matrix' || cleanRoutePath.startsWith('/risk-matrix/')) return 'Powertrain Maintenance Risk Matrix';
+  if (cleanRoutePath === '/obd-estimator' || cleanRoutePath.startsWith('/obd/')) return 'OBD-II Diagnostic & Repair Estimator';
+  if (cleanRoutePath === '/guides' || cleanRoutePath.startsWith('/guides/')) return 'Buyer Guides & Technical Insights';
+  if (cleanRoutePath === '/vehicles' || cleanRoutePath.startsWith('/vehicles/')) return 'Vehicle Telemetry Directory';
+  if (cleanRoutePath === '/compare' || cleanRoutePath.startsWith('/compare/')) return 'Side-by-Side Vehicle Comparator';
+  if (cleanRoutePath === '/checklist' || cleanRoutePath.startsWith('/checklist/')) return 'Pre-Purchase Inspection Checklist';
+  return 'DriveLedger Independent Platform';
+}
+
+/**
+ * Builds a semantic, styled DriveLedger App Shell for <div id="root"> with zero nested <div> elements.
+ * Keeps the branded header & hero card above the fold while pushing long SEO directories below the fold.
+ */
+export function buildPrerenderedAppShell({
+  routePath = '/',
+  title = '',
+  description = '',
+  eyebrow,
+  headlineHtml,
+  subtitleHtml,
+  belowFoldHtml = '',
+  showSearchSkeleton = true,
+  showStatsStrip = false,
+}) {
+  const cleanRoutePath =
+    String(routePath || '/').split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+  const activeNavPath = resolveShellActiveNavPath(cleanRoutePath);
+  const resolvedEyebrow = eyebrow || resolveShellEyebrow(cleanRoutePath);
+  const resolvedHeadlineHtml = headlineHtml || escapeHtml(title);
+  const resolvedSubtitleHtml = subtitleHtml || escapeHtml(description);
+
+  const navItemsHtml = PRIMARY_SHELL_NAV.map((item) => {
+    const cls = item.href === activeNavPath ? 'dl-pr-pill dl-pr-pill-active' : 'dl-pr-pill';
+    return `<li><a class="${cls}" href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a></li>`;
+  }).join('');
+
+  const quickChipsHtml = QUICK_CHIP_LINKS.map(
+    (item) =>
+      `<li><a class="dl-pr-chip" href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a></li>`
+  ).join('');
+
+  const searchSkeletonHtml = showSearchSkeleton
+    ? `<figure class="dl-pr-search-skel" aria-hidden="true"><span class="dl-pr-search-text">Search any car model or OBD-II code (e.g. Golf 2.0 TDI, P2002)...</span><span class="dl-pr-search-cta">Check now</span></figure>`
+    : '';
+
+  const statsStripHtml = showStatsStrip
+    ? `<aside class="dl-pr-stats" aria-hidden="true"><p class="dl-pr-stat"><strong class="dl-pr-stat-val">179+</strong><span class="dl-pr-stat-lbl">Car models analysed</span></p><p class="dl-pr-stat"><strong class="dl-pr-stat-val">629</strong><span class="dl-pr-stat-lbl">Vehicle × OBD2 dossiers</span></p><p class="dl-pr-stat"><strong class="dl-pr-stat-val">3</strong><span class="dl-pr-stat-lbl">Regions: US · UK · EU</span></p><p class="dl-pr-stat"><strong class="dl-pr-stat-val">0</strong><span class="dl-pr-stat-lbl">Sign-ups required</span></p></aside>`
+    : '';
+
+  const belowSectionHtml = belowFoldHtml
+    ? `<section class="dl-pr-below-fold" aria-label="Directory &amp; Telemetry Links">${belowFoldHtml}</section>`
+    : '';
+
+  return `<main data-prerendered="true" class="dl-pr"><header class="dl-pr-header"><nav class="dl-pr-header-inner" aria-label="Main Navigation"><a class="dl-pr-brand" href="/" aria-label="DriveLedger home">${BRAND_GAUGE_SVG}<span class="dl-pr-wordmark">Drive<span class="dl-pr-wordmark-accent">Ledger</span></span></a><ul class="dl-pr-nav-list">${navItemsHtml}</ul><span class="dl-pr-header-pill" aria-hidden="true">US · UK · EU</span></nav></header><section class="dl-pr-viewport"><article class="dl-pr-hero"><p class="dl-pr-eyebrow">${escapeHtml(resolvedEyebrow)}</p><h1>${resolvedHeadlineHtml}</h1><p class="dl-pr-sub">${resolvedSubtitleHtml}</p>${searchSkeletonHtml}<nav class="dl-pr-quick-links" aria-label="Quick Calculator Links"><ul>${quickChipsHtml}</ul></nav></article>${statsStripHtml}</section>${belowSectionHtml}</main>`;
+}
+
 /**
  * Idempotently injects or replaces route-specific <title>, <meta name="description">,
  * <link rel="canonical">, OpenGraph tags, Twitter tags, static JSON-LD, and crawlable
@@ -181,6 +269,12 @@ export function injectRouteMetadata(
   const escapedDescription = escapeHtml(description);
   const escapedCanonicalUrl = escapeHtml(canonicalUrl);
   const resolvedImage = escapeHtml(imageUrl || DEFAULT_OG_IMAGE);
+  let routePath = '/';
+  try {
+    routePath = new URL(canonicalUrl || `${SITE_ORIGIN}/`).pathname || '/';
+  } catch {
+    routePath = '/';
+  }
 
   let html = templateHtml;
 
@@ -271,7 +365,14 @@ export function injectRouteMetadata(
 
   // 6. Idempotently inject search-crawler static HTML summary & internal <a href> links inside <div id="root">
   // Note: uses semantic <main>/<section>/<nav> tags without nested <div> so <div id="root">...</div> replacement is 100% idempotent.
-  const defaultBodyHtml = `<main data-prerendered="true"><h1>${escapedTitle}</h1><p>${escapedDescription}</p><nav aria-label="Primary Calculators"><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection (PPI) Checklist</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Benchmarked Vehicles</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li></ul></nav></main>`;
+  const defaultBelowFoldHtml = `<nav aria-label="Primary Calculators"><h2>DriveLedger Platform Modules</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection (PPI) Checklist</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Benchmarked Vehicles</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li></ul></nav>`;
+  const defaultBodyHtml = buildPrerenderedAppShell({
+    routePath,
+    title,
+    description,
+    showStatsStrip: true,
+    belowFoldHtml: defaultBelowFoldHtml,
+  });
   const innerRootHtml = bodyHtml || defaultBodyHtml;
   const rootDivRegex = /<div\s+id=["']root["'][^>]*>[\s\S]*?<\/div>/i;
   if (rootDivRegex.test(html)) {
@@ -344,7 +445,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Lookup diagnostic trouble codes (DTC), compare DIY vs Independent vs Dealership repair prices, and run first-principles live PID tests.',
       canonicalUrl: `${SITE_ORIGIN}/obd-estimator`,
-      bodyHtml: `<main data-prerendered="true"><h1>OBD-II Diagnostic Trouble Code Repair Cost Estimator | DriveLedger</h1><p>Lookup diagnostic trouble codes (DTC), compare DIY vs Independent vs Dealership repair prices, and run first-principles live PID tests.</p><section aria-label="Benchmarked OBD-II Fault Codes"><h2>Supported OBD-II Diagnostic Trouble Codes</h2><ul>${obdDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li><li><a href="/compare">Vehicle Comparisons</a></li></ul></nav></main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/obd-estimator',
+        title: 'OBD-II Diagnostic Trouble Code Repair Cost Estimator | DriveLedger',
+        description:
+          'Lookup diagnostic trouble codes (DTC), compare DIY vs Independent vs Dealership repair prices, and run first-principles live PID tests.',
+        showStatsStrip: true,
+        belowFoldHtml: `<section aria-label="Benchmarked OBD-II Fault Codes"><h2>Supported OBD-II Diagnostic Trouble Codes</h2><ul>${obdDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li><li><a href="/compare">Vehicle Comparisons</a></li></ul></nav>`,
+      }),
     },
     {
       path: '/compare',
@@ -352,7 +460,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Compare any two vehicles side-by-side: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.',
       canonicalUrl: `${SITE_ORIGIN}/compare`,
-      bodyHtml: `<main data-prerendered="true"><h1>Head-to-Head Vehicle Cost &amp; Reliability Comparator | DriveLedger</h1><p>Compare any two vehicles side-by-side: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.</p><nav aria-label="Canonical Head-to-Head Comparisons"><h2>All ${PROGRAMMATIC_COMPARE_PAIRS.length} Benchmarked Vehicle Matchups</h2><ul>${compareDirectoryHtml}</ul></nav><nav aria-label="Primary Calculators"><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav></main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/compare',
+        title: 'Head-to-Head Vehicle Cost & Reliability Comparator | DriveLedger',
+        description:
+          'Compare any two vehicles side-by-side: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.',
+        showStatsStrip: true,
+        belowFoldHtml: `<nav aria-label="Canonical Head-to-Head Comparisons"><h2>All ${PROGRAMMATIC_COMPARE_PAIRS.length} Benchmarked Vehicle Matchups</h2><ul>${compareDirectoryHtml}</ul></nav><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav>`,
+      }),
     },
     {
       path: '/checklist',
@@ -375,7 +490,14 @@ export function collectAllSeoRoutes(options = {}) {
         url: `${SITE_ORIGIN}/vehicles`,
         numberOfItems: VEHICLE_PRESETS.length,
       },
-      bodyHtml: `<main data-prerendered="true"><h1>All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models | DriveLedger</h1><p>Direct HTML directory of every DriveLedger manufacturer hub, vehicle 5-Year TCO calculator, Powertrain Risk Matrix, and Pre-Purchase Inspection checklist.</p>${vehiclesDirectoryHtml}</main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/vehicles',
+        title: `All ${BRAND_DIRECTORY.length} Brands & ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models | DriveLedger`,
+        description:
+          'Direct HTML directory of every DriveLedger manufacturer hub, vehicle 5-Year TCO calculator, Powertrain Risk Matrix, and Pre-Purchase Inspection checklist.',
+        showStatsStrip: true,
+        belowFoldHtml: vehiclesDirectoryHtml,
+      }),
     },
     {
       path: '/guides',
@@ -383,7 +505,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.',
       canonicalUrl: `${SITE_ORIGIN}/guides`,
-      bodyHtml: `<main data-prerendered="true"><h1>Buyer Guides &amp; Automotive Due Diligence Insights | DriveLedger</h1><p>In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.</p><section aria-label="All Buyer Guides"><h2>All ${GUIDES_DATA.length} Technical Buyer Guides</h2><ul>${guidesDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav></main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/guides',
+        title: 'Buyer Guides & Automotive Due Diligence Insights | DriveLedger',
+        description:
+          'In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.',
+        showStatsStrip: true,
+        belowFoldHtml: `<section aria-label="All Buyer Guides"><h2>All ${GUIDES_DATA.length} Technical Buyer Guides</h2><ul>${guidesDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav>`,
+      }),
     },
     {
       path: '/about',
@@ -513,7 +642,12 @@ export function collectAllSeoRoutes(options = {}) {
       canonicalUrl: `${SITE_ORIGIN}/vehicles/${brand.slug}`,
       imageUrl: brandImage,
       jsonLd: brandJsonLd,
-      bodyHtml: `<main data-prerendered="true"><h1>${escapeHtml(brandTitle)}</h1><p>${escapeHtml(brandDesc)}</p><section aria-label="${escapeHtml(brand.name)} Ownership Summary"><dl><dt>Benchmarked Models</dt><dd>${brand.modelCount}</dd><dt>Average 5-Year TCO</dt><dd>$${brandTel.avg5YrTcoUsd.toLocaleString()} ($${brandTel.avgMonthlyTcoUsd}/mo)</dd><dt>5-Year TCO Range</dt><dd>$${brandTel.min5YrTcoUsd.toLocaleString()} – $${brandTel.max5YrTcoUsd.toLocaleString()}</dd></dl></section><section aria-label="${escapeHtml(brand.name)} Models"><h2>Benchmarked ${escapeHtml(brand.name)} Models</h2><ul>${brandModelsHtml}</ul></section><nav aria-label="Other Automotive Brands"><h2>Explore Other Manufacturers</h2><ul><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li>${siblingBrandLinksHtml}</ul></nav></main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: `/vehicles/${brand.slug}`,
+        title: brandTitle,
+        description: brandDesc,
+        belowFoldHtml: `<section aria-label="${escapeHtml(brand.name)} Ownership Summary"><h2>${escapeHtml(brand.name)} Ownership Summary</h2><dl><dt>Benchmarked Models</dt><dd>${brand.modelCount}</dd><dt>Average 5-Year TCO</dt><dd>$${brandTel.avg5YrTcoUsd.toLocaleString()} ($${brandTel.avgMonthlyTcoUsd}/mo)</dd><dt>5-Year TCO Range</dt><dd>$${brandTel.min5YrTcoUsd.toLocaleString()} – $${brandTel.max5YrTcoUsd.toLocaleString()}</dd></dl></section><section aria-label="${escapeHtml(brand.name)} Models"><h2>Benchmarked ${escapeHtml(brand.name)} Models</h2><ul>${brandModelsHtml}</ul></section><nav aria-label="Other Automotive Brands"><h2>Explore Other Manufacturers</h2><ul><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li>${siblingBrandLinksHtml}</ul></nav>`,
+      }),
     });
   }
 
@@ -565,7 +699,12 @@ export function collectAllSeoRoutes(options = {}) {
       description: guideDesc,
       canonicalUrl: `${SITE_ORIGIN}/guides/${guide.slug}`,
       jsonLd: guideJsonLd,
-      bodyHtml: `<main data-prerendered="true"><article><h1>${escapeHtml(guide.title)}</h1><p>${escapeHtml(guide.summary)}</p><ul>${takeawaysHtml}</ul>${sectionsHtml}</article><nav aria-label="Related Guides &amp; Calculators"><ul><li><a href="/guides">All ${GUIDES_DATA.length} Buyer Guides</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li>${relatedGuideLinks}</ul></nav></main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: `/guides/${guide.slug}`,
+        title: guide.title,
+        description: guide.summary,
+        belowFoldHtml: `<article><h2>Key Takeaways &amp; Technical Breakdown</h2><ul>${takeawaysHtml}</ul>${sectionsHtml}</article><nav aria-label="Related Guides &amp; Calculators"><h2>Related Guides &amp; Calculators</h2><ul><li><a href="/guides">All ${GUIDES_DATA.length} Buyer Guides</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li>${relatedGuideLinks}</ul></nav>`,
+      }),
     });
   }
 
@@ -607,7 +746,7 @@ export function collectAllSeoRoutes(options = {}) {
 
     const brandSlug = slugifyBrandName(preset.brand);
 
-    return `<section aria-label="Vehicle Telemetry Summary"><dl><dt>5-Year True Cost to Own</dt><dd>$${tel.total5YrTcoUsd.toLocaleString()} ($${tel.monthlyTcoUsd}/mo · $${tel.costPerMileUsd}/mi)</dd><dt>5-Year Depreciation</dt><dd>$${tel.depreciation5YrUsd.toLocaleString()}</dd><dt>Engineering Reliability Score</dt><dd>${tel.reliabilityScore}/100 at ${tel.odometerMiles.toLocaleString()} miles</dd><dt>Engine &amp; Powertrain</dt><dd>${escapeHtml(preset.engineCode)} · ${escapeHtml(preset.fuelType)} · ${preset.powerHp} HP</dd><dt>Critical Watchpoint</dt><dd>${escapeHtml(preset.criticalDefectTag || 'Scheduled Maintenance')} — ${escapeHtml(preset.knownRiskNotes || '')}</dd></dl></section><nav aria-label="Related Vehicle Dossiers"><h2>Related ${escapeHtml(preset.name)} Calculators &amp; Diagnostics</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO Calculator</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Maintenance Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles/${escapeHtml(brandSlug)}">All ${escapeHtml(preset.brand)} Models &amp; Maintenance Costs</a></li>${bracketLinks}${rivalLinks}${obdLinks}<li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicle Models</a></li></ul></nav>`;
+    return `<section aria-label="Vehicle Telemetry Summary"><h2>${escapeHtml(preset.name)} Telemetry Summary</h2><dl><dt>5-Year True Cost to Own</dt><dd>$${tel.total5YrTcoUsd.toLocaleString()} ($${tel.monthlyTcoUsd}/mo · $${tel.costPerMileUsd}/mi)</dd><dt>5-Year Depreciation</dt><dd>$${tel.depreciation5YrUsd.toLocaleString()}</dd><dt>Engineering Reliability Score</dt><dd>${tel.reliabilityScore}/100 at ${tel.odometerMiles.toLocaleString()} miles</dd><dt>Engine &amp; Powertrain</dt><dd>${escapeHtml(preset.engineCode)} · ${escapeHtml(preset.fuelType)} · ${preset.powerHp} HP</dd><dt>Critical Watchpoint</dt><dd>${escapeHtml(preset.criticalDefectTag || 'Scheduled Maintenance')} — ${escapeHtml(preset.knownRiskNotes || '')}</dd></dl></section><nav aria-label="Related Vehicle Dossiers"><h2>Related ${escapeHtml(preset.name)} Calculators &amp; Diagnostics</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO Calculator</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Maintenance Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles/${escapeHtml(brandSlug)}">All ${escapeHtml(preset.brand)} Models &amp; Maintenance Costs</a></li>${bracketLinks}${rivalLinks}${obdLinks}<li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicle Models</a></li></ul></nav>`;
   };
 
   for (const preset of VEHICLE_PRESETS) {
@@ -654,7 +793,12 @@ export function collectAllSeoRoutes(options = {}) {
       canonicalUrl: `${SITE_ORIGIN}/tco/${preset.id}`,
       imageUrl,
       jsonLd: vehicleJsonLd,
-      bodyHtml: `<main data-prerendered="true"><h1>${escapeHtml(tcoTitle)}</h1><p>${escapeHtml(tcoDesc)}</p>${vehicleNavHtml}</main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: `/tco/${preset.id}`,
+        title: tcoTitle,
+        description: tcoDesc,
+        belowFoldHtml: vehicleNavHtml,
+      }),
     });
 
     // /risk-matrix/:id
@@ -667,7 +811,12 @@ export function collectAllSeoRoutes(options = {}) {
       canonicalUrl: `${SITE_ORIGIN}/risk-matrix/${preset.id}`,
       imageUrl,
       jsonLd: vehicleJsonLd,
-      bodyHtml: `<main data-prerendered="true"><h1>${escapeHtml(riskTitle)}</h1><p>${escapeHtml(riskDesc)}</p>${vehicleNavHtml}</main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: `/risk-matrix/${preset.id}`,
+        title: riskTitle,
+        description: riskDesc,
+        belowFoldHtml: vehicleNavHtml,
+      }),
     });
 
     // /checklist/:id
@@ -680,7 +829,12 @@ export function collectAllSeoRoutes(options = {}) {
       canonicalUrl: `${SITE_ORIGIN}/checklist/${preset.id}`,
       imageUrl,
       jsonLd: vehicleJsonLd,
-      bodyHtml: `<main data-prerendered="true"><h1>${escapeHtml(ppiTitle)}</h1><p>${escapeHtml(ppiDesc)}</p>${vehicleNavHtml}</main>`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: `/checklist/${preset.id}`,
+        title: ppiTitle,
+        description: ppiDesc,
+        belowFoldHtml: vehicleNavHtml,
+      }),
     });
 
     // /risk-matrix/:id/:bracketSlug (60k-miles, 100k-miles, 150k-miles)
@@ -697,7 +851,12 @@ export function collectAllSeoRoutes(options = {}) {
         canonicalUrl: `${SITE_ORIGIN}/risk-matrix/${preset.id}/${bracket.slug}`,
         imageUrl,
         jsonLd: vehicleJsonLd,
-        bodyHtml: `<main data-prerendered="true"><h1>${escapeHtml(bTitle)}</h1><p>${escapeHtml(bDesc)}</p>${vehicleNavHtml}</main>`,
+        bodyHtml: buildPrerenderedAppShell({
+          routePath: `/risk-matrix/${preset.id}/${bracket.slug}`,
+          title: bTitle,
+          description: bDesc,
+          belowFoldHtml: vehicleNavHtml,
+        }),
       });
     }
   }
@@ -754,7 +913,12 @@ export function collectAllSeoRoutes(options = {}) {
         : undefined;
     const compareBodyHtml =
       presetA && presetB
-        ? `<main data-prerendered="true"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><nav aria-label="Compared Vehicles"><ul><li><a href="/tco/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} Risk Matrix</a></li><li><a href="/tco/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} Risk Matrix</a></li><li><a href="/compare">All Vehicle Comparisons</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav></main>`
+        ? buildPrerenderedAppShell({
+            routePath: matchup.path,
+            title,
+            description,
+            belowFoldHtml: `<nav aria-label="Compared Vehicles"><h2>Compared Vehicle Dossiers</h2><ul><li><a href="/tco/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} Risk Matrix</a></li><li><a href="/tco/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} Risk Matrix</a></li><li><a href="/compare">All Vehicle Comparisons</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`,
+          })
         : undefined;
 
     addRoute({
@@ -832,7 +996,12 @@ export function collectAllSeoRoutes(options = {}) {
     };
     const tel = telemetryMap.get(preset.id);
     const vehicleNavHtml = tel ? buildVehicleInternalNavHtml(preset, tel) : '';
-    const obdBodyHtml = `<main data-prerendered="true"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><section aria-label="Diagnostic Causes"><h2>Top Root Causes for ${escapeHtml(dossier.code)} on ${escapeHtml(preset.name)}</h2><ul>${causesHtml}</ul><p>${escapeHtml(dossier.liveTelemetryCheck?.diagnosticProtocol || '')}</p></section>${vehicleNavHtml || `<nav aria-label="Related Vehicle Links"><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Checklist</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`}</main>`;
+    const obdBodyHtml = buildPrerenderedAppShell({
+      routePath: `/obd/${preset.id}/${codeLower}`,
+      title,
+      description,
+      belowFoldHtml: `<section aria-label="Diagnostic Causes"><h2>Top Root Causes for ${escapeHtml(dossier.code)} on ${escapeHtml(preset.name)}</h2><ul>${causesHtml}</ul><p>${escapeHtml(dossier.liveTelemetryCheck?.diagnosticProtocol || '')}</p></section>${vehicleNavHtml || `<nav aria-label="Related Vehicle Links"><h2>Related Vehicle Links</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Checklist</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`}`,
+    });
 
     addRoute({
       path: `/obd/${preset.id}/${codeLower}`,
@@ -910,7 +1079,20 @@ export async function prerenderSeoRoutes(options = {}) {
         },
       ],
     },
-    bodyHtml: `<main data-prerendered="true"><h1>DriveLedger | Independent Car Ownership Cost, Reliability &amp; OBD-II Platform</h1><p>Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 179+ models.</p><nav aria-label="Primary Calculators"><ul><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li><li><a href="/methodology">Engineering Methodology</a></li><li><a href="/reviews">Verified Workshop Quote Benchmarks</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact</a></li></ul></nav><nav aria-label="Automotive Brand Hubs"><h2>Browse All ${BRAND_DIRECTORY.length} Manufacturers</h2><ul>${rootBrandLinks}</ul></nav><section aria-label="Buyer Guides"><h2>Technical Buyer Guides</h2><ul>${rootGuideLinks}</ul></section><nav aria-label="All Benchmarked Vehicles"><h2>All ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models</h2><ul>${rootVehicleLinks}</ul></nav><nav aria-label="Legal and Compliance"><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li><li><a href="/cookies">Cookie Policy</a></li><li><a href="/disclaimer">Liability Disclaimer</a></li><li><a href="/affiliate-disclosure">Affiliate Disclosure</a></li><li><a href="/do-not-sell">Do Not Sell or Share My Personal Information</a></li></ul></nav></main>`,
+    bodyHtml: buildPrerenderedAppShell({
+      routePath: '/',
+      title: 'DriveLedger | Independent Car Ownership Cost, Reliability & OBD-II Platform',
+      description:
+        'Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 179+ models.',
+      eyebrow: 'Free · Independent · No sign-up',
+      headlineHtml:
+        'Know what your car really costs <span class="dl-pr-accent">before it costs you.</span>',
+      subtitleHtml:
+        'Real 5-year ownership costs, upcoming maintenance, and fair repair pricing in seconds.',
+      showSearchSkeleton: true,
+      showStatsStrip: true,
+      belowFoldHtml: `<nav aria-label="Primary Calculators"><h2>Primary Platform Tools &amp; Resources</h2><ul><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li><li><a href="/methodology">Engineering Methodology</a></li><li><a href="/reviews">Verified Workshop Quote Benchmarks</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact</a></li></ul></nav><nav aria-label="Automotive Brand Hubs"><h2>Browse All ${BRAND_DIRECTORY.length} Manufacturers</h2><ul>${rootBrandLinks}</ul></nav><section aria-label="Buyer Guides"><h2>Technical Buyer Guides</h2><ul>${rootGuideLinks}</ul></section><nav aria-label="All Benchmarked Vehicles"><h2>All ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models</h2><ul>${rootVehicleLinks}</ul></nav><nav aria-label="Legal and Compliance"><h2>Legal &amp; Compliance</h2><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li><li><a href="/cookies">Cookie Policy</a></li><li><a href="/disclaimer">Liability Disclaimer</a></li><li><a href="/affiliate-disclosure">Affiliate Disclosure</a></li><li><a href="/do-not-sell">Do Not Sell or Share My Personal Information</a></li></ul></nav>`,
+    }),
   });
   fs.writeFileSync(templatePath, rootHtml, 'utf8');
 

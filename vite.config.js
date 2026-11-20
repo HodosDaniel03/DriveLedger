@@ -32,12 +32,6 @@ export default defineConfig({
           ) {
             return 'catalog-core';
           }
-          if (
-            (id.includes('/src/components/calculators/') || id.includes('\\src\\components\\calculators\\')) &&
-            !id.includes('TcoCalculator')
-          ) {
-            return 'calculators';
-          }
         },
       },
     },
