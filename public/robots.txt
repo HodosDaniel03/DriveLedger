@@ -6,6 +6,7 @@ Allow: /obd-estimator
 Allow: /obd/
 Allow: /compare
 Allow: /checklist
+Allow: /vehicles
 Allow: /guides
 Allow: /about
 Allow: /contact

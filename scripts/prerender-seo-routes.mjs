@@ -24,14 +24,23 @@ import {
   MILEAGE_BRACKET_SLUGS,
   isObdCompatibleWithVehicle,
 } from '../src/data/seoMatrixData.js';
-import { OBD_CODES } from '../src/data/obdCodes.js';
+import { OBD_CODES, calculateObdWorkshopEstimate } from '../src/data/obdCodes.js';
 import {
   calculateTcoProjection,
   evaluateComponentHealth,
   filterComponentsForPowertrain,
   isPureElectric,
+  calculateMaintenanceReserve,
   MAINTENANCE_COMPONENTS,
 } from '../src/data/maintenanceData.js';
+import {
+  LEGAL_POLICIES,
+  NOMINATIVE_FAIR_USE_NOTICE,
+  WORKSPACE_LEGAL_NOTICE_LINE,
+} from '../src/data/legalPolicies.js';
+import { FAQ_ITEMS } from '../src/data/faqItems.js';
+import { generatePpiChecklist } from '../src/data/breakEvenAndPpi.js';
+import { getKnownIssuesForEngine } from '../src/data/vehicles/index.js';
 import { MONETIZATION_CONFIG } from '../src/config/monetizationConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -108,6 +117,49 @@ export function routePathToDistFile(distDir, routePath) {
   return path.join(distDir, ...segments, 'index.html');
 }
 
+function evaluatePowertrainAtOdometer(preset, odometerMiles) {
+  const safePreset = preset || VEHICLE_PRESETS[0];
+  const odo = Math.max(1000, Number(odometerMiles) || 60000);
+  const relevantComponents = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, safePreset);
+  const evaluated = relevantComponents.map((comp) => {
+    const health = evaluateComponentHealth({
+      component: comp,
+      physicalOdometerMiles: odo,
+      urbanTripSharePct: 45,
+      oilIntervalId: 'standard',
+      serviceHistoryId: 'verified',
+      transmissionId: safePreset.transmission || 'dct-dsg',
+      maintenanceWearFactor: safePreset.maintenanceWearFactor,
+    });
+    return { ...comp, comp, health, ...health };
+  });
+
+  let reliabilityScore = 75;
+  if (evaluated.length > 0) {
+    const avgWear = evaluated.reduce((acc, h) => acc + h.wearPctOfCritical, 0) / evaluated.length;
+    const criticalCount = evaluated.filter((h) => h.status === 'CRITICAL').length;
+    const warningCount = evaluated.filter((h) => h.status === 'WARNING').length;
+    const penalty = criticalCount * 14 + warningCount * 6;
+    const raw = 100 - avgWear * 0.45 - penalty;
+    reliabilityScore = Math.min(95, Math.max(18, Math.round(raw)));
+  }
+
+  const reserve = calculateMaintenanceReserve({
+    evaluatedComponents: evaluated,
+    workshopTier: 'independent',
+    annualDistanceMiles: safePreset.annualDistanceMiles || 12000,
+    maintenanceWearFactor: safePreset.maintenanceWearFactor,
+    vehicle: safePreset,
+  });
+
+  return {
+    odometerMiles: odo,
+    reliabilityScore,
+    evaluated,
+    reserve12MoUsd: Math.round(Number(reserve) > 0 ? Number(reserve) : safePreset.baseAnnualMaintenanceUsd || 650),
+  };
+}
+
 /**
  * Computes baseline 5-Year TCO and Reliability Score for a given vehicle preset.
  */
@@ -134,38 +186,50 @@ export function computePresetTelemetry(preset) {
   });
 
   const physicalOdometerMiles = Math.max(38000, safePreset.defaultOdometerMiles || 58000);
-  const relevantComponents = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, safePreset);
-
-  const evaluated = relevantComponents.map((comp) =>
-    evaluateComponentHealth({
-      component: comp,
-      physicalOdometerMiles,
-      urbanTripSharePct: 45,
-      oilIntervalId: 'standard',
-      serviceHistoryId: 'verified',
-      transmissionId: safePreset.transmission || 'dct-dsg',
-      maintenanceWearFactor: safePreset.maintenanceWearFactor,
-    })
-  );
-
-  let reliabilityScore = 75;
-  if (evaluated.length > 0) {
-    const avgWear = evaluated.reduce((acc, h) => acc + h.wearPctOfCritical, 0) / evaluated.length;
-    const criticalCount = evaluated.filter((h) => h.status === 'CRITICAL').length;
-    const warningCount = evaluated.filter((h) => h.status === 'WARNING').length;
-    const penalty = criticalCount * 14 + warningCount * 6;
-    const raw = 100 - avgWear * 0.45 - penalty;
-    reliabilityScore = Math.min(95, Math.max(18, Math.round(raw)));
-  }
+  const riskEval = evaluatePowertrainAtOdometer(safePreset, physicalOdometerMiles);
 
   return {
     total5YrTcoUsd: tco.totalEconomicCostUsd,
     monthlyTcoUsd: tco.monthlyEconomicCostUsd,
     costPerMileUsd: tco.costPerMileUsd,
     depreciation5YrUsd: tco.totalDepreciationUsd,
-    reliabilityScore,
+    totalFuelUsd: tco.totalFuelUsd || 0,
+    totalInsuranceUsd: tco.totalInsuranceUsd || 0,
+    totalMaintenanceUsd: tco.totalMaintenanceUsd || 0,
+    totalInterestUsd: tco.totalInterestUsd || 0,
+    resaleValueUsd: Math.max(0, Math.round((safePreset.purchasePriceUsd || 0) - (tco.totalDepreciationUsd || 0))),
+    reliabilityScore: riskEval.reliabilityScore,
     odometerMiles: physicalOdometerMiles,
+    evaluated: riskEval.evaluated,
+    reserve12MoUsd: riskEval.reserve12MoUsd,
   };
+}
+
+function buildFaqDetailsHtml(faqs, groupName = 'faq', heading = 'Frequently Asked Questions') {
+  if (!Array.isArray(faqs) || faqs.length === 0) return '';
+  const items = faqs
+    .map((f, idx) => {
+      const q = f.question || f.q || '';
+      const a = f.answer || f.a || '';
+      return `<details name="${escapeHtml(groupName)}"${idx === 0 ? ' open' : ''}><summary>${escapeHtml(q)}</summary><p>${escapeHtml(a)}</p></details>`;
+    })
+    .join('');
+  return `<section aria-label="${escapeHtml(heading)}"><h2>${escapeHtml(heading)}</h2>${items}</section>`;
+}
+
+function buildLegalPolicyHtml(policyKey) {
+  const policy = LEGAL_POLICIES[policyKey];
+  if (!policy) return '';
+  const sectionsHtml = (policy.sections || [])
+    .map(
+      (sec) =>
+        `<section><h2>${escapeHtml(sec.heading)}</h2>${(sec.paragraphs || [])
+          .map((p) => `<p>${escapeHtml(p)}</p>`)
+          .join('')}</section>`
+    )
+    .join('');
+  const legalNav = `<nav aria-label="Legal and Policy Documents"><h2>DriveLedger Governance &amp; Legal Documents</h2><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li><li><a href="/cookies">Cookie Policy</a></li><li><a href="/disclaimer">Liability Disclaimer</a></li><li><a href="/affiliate-disclosure">Affiliate Disclosure</a></li><li><a href="/do-not-sell">Do Not Sell or Share My Personal Information</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact Desk</a></li></ul></nav>`;
+  return `<article aria-label="${escapeHtml(policy.title)}"><p><strong>Effective &amp; Last Updated:</strong> ${escapeHtml(policy.lastUpdated || MONETIZATION_CONFIG.lastUpdated)} · <strong>Platform:</strong> ${escapeHtml(MONETIZATION_CONFIG.brandName)} (${escapeHtml(MONETIZATION_CONFIG.domain)}) · <strong>Legal Desk:</strong> ${escapeHtml(MONETIZATION_CONFIG.legalEmail)}</p>${sectionsHtml}<section><h2>Statutory Notice &amp; Contact</h2><p>${escapeHtml(NOMINATIVE_FAIR_USE_NOTICE)}</p><p>${escapeHtml(WORKSPACE_LEGAL_NOTICE_LINE)}</p></section></article>${legalNav}`;
 }
 
 const PRIMARY_SHELL_NAV = [
@@ -423,6 +487,26 @@ export function collectAllSeoRoutes(options = {}) {
     (g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a> — ${escapeHtml(g.summary)}</li>`
   ).join('');
 
+  const coreNavFooterHtml = `<nav aria-label="Primary Platform Modules"><h2>DriveLedger Platform Modules</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection (PPI) Checklist</a></li><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Benchmarked Vehicles</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li><li><a href="/methodology">Engineering Methodology</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact Desk</a></li></ul></nav>`;
+
+  const tcoLandingEditorialHtml = `<article aria-label="5-Year True Cost to Own Methodology"><h2>How DriveLedger Calculates 5-Year True Cost to Own (TCO)</h2><p>Automotive depreciation is the single largest financial expense of vehicle ownership, typically accounting for 38% to 52% of total 5-year economic cost. Rather than applying a misleading flat percentage drop, DriveLedger models residual retention with segment-specific non-linear curves calibrated against wholesale auction depreciation trajectories and annual mileage intensity.</p><p>Each simulation separates Total Cash Outflow (down payment, loan principal and interest installments, fuel or kWh charging, motor insurance, and routine maintenance) from Net Economic TCO (capital depreciation loss plus financing interest and operating expenses). You can also switch between loan financing and closed-end lease modeling, adjust annual distance, and convert seamlessly across United States (USD, miles, MPG), United Kingdom (GBP, miles, UK MPG), and European Union (EUR, kilometers, L/100km) regional labor and fuel tariffs.</p><h3>Regional Workshop Labor Rate Benchmarks</h3><table><thead><tr><th>Region</th><th>Franchised Dealership</th><th>Independent Specialist</th><th>DIY Home Garage</th></tr></thead><tbody><tr><td>United States (USD)</td><td>$160 – $220 / hr</td><td>$95 – $135 / hr</td><td>$0 / hr (parts only)</td></tr><tr><td>United Kingdom (GBP)</td><td>£120 – £175 / hr</td><td>£65 – £95 / hr</td><td>£0 / hr (parts only)</td></tr><tr><td>European Union (EUR)</td><td>€110 – €160 / hr</td><td>€55 – €85 / hr</td><td>€0 / hr (parts only)</td></tr></tbody></table></article>${buildFaqDetailsHtml(FAQ_ITEMS.slice(0, 4), 'tco-faq', '5-Year TCO Frequently Asked Questions')}${coreNavFooterHtml}`;
+
+  const riskLandingEditorialHtml = `<article aria-label="Powertrain Maintenance Risk Methodology"><h2>Powertrain Wear Horizons &amp; Thermodynamic Urban Multipliers</h2><p>Mechanical wear is not a linear function of odometer distance alone. Vehicles operated on short urban trips under 15 minutes rarely bring engine oil above 90°C or exhaust temperatures above 580°C. On modern diesels, incomplete thermal cycles prevent Diesel Particulate Filter (DPF) regeneration and foul EGR valves; on direct-injected petrol engines, cold-start fuel dilution accelerates timing chain tensioner wear and Belt-in-Oil (wet belt) elastomer degradation.</p><p>DriveLedger applies a 1.35x to 1.55x urban duty wear multiplier to sensitive assemblies while strictly isolating pure electric vehicles (EVs) from combustion wear items. EV evaluations focus exclusively on LFP versus NMC high-voltage battery State of Health (SoH %), onboard charger and ICCU power electronics, heat pump thermal valves, reduction gear oil, and regenerative braking corrosion.</p><h3>Key Mileage Risk Horizons Analysed</h3><dl><dt>60,000 Miles (96,000 km)</dt><dd>Factory warranty expiration, first DSG/ZF automatic transmission fluid flush, wet belt early inspection, and EV 12V/suspension check.</dd><dt>100,000 Miles (160,000 km)</dt><dd>Primary timing kit and water pump overhaul window, dual-mass flywheel fatigue, turbocharger actuator play, and DPF ash saturation check.</dd><dt>150,000 Miles (240,000 km)</dt><dd>High-mileage fuel injector and high-pressure pump wear, suspension bushing overhaul, and economic fix-or-sell capital boundary.</dd></dl></article>${buildFaqDetailsHtml(FAQ_ITEMS.slice(1, 5), 'risk-faq', 'Maintenance Risk Frequently Asked Questions')}${coreNavFooterHtml}`;
+
+  const obdLandingEditorialHtml = `<article aria-label="OBD-II Diagnostic Methodology"><h2>First-Principles OBD-II Fault Code Diagnosis &amp; Fair Workshop Pricing</h2><p>An SAE J2012 Diagnostic Trouble Code (DTC) does not prove that an expensive assembly has failed; it signals that a monitored sensor voltage, frequency, or pressure ratio departed from factory thresholds. DriveLedger ranks root causes by Bayesian workshop probability so drivers verify inexpensive sensors, vacuum hoses, and wiring harnesses before authorizing four-figure parts swaps.</p><p>Before clearing any fault code, record ECU freeze-frame telemetry (engine load, coolant temperature, short- and long-term fuel trims) and test live Mode $01 Parameter IDs (PIDs). Every fault dossier compares DIY parts-only cost, Certified Independent Specialist rates, and Franchised Dealership quotes scaled by vehicle complexity.</p></article><section aria-label="Benchmarked OBD-II Fault Codes"><h2>Supported OBD-II Diagnostic Trouble Codes (${OBD_CODES.length} Dossiers)</h2><ul>${obdDirectoryHtml}</ul></section>${coreNavFooterHtml}`;
+
+  const compareLandingEditorialHtml = `<article aria-label="Vehicle Comparison Methodology"><h2>Side-by-Side 5-Year TCO Break-Even &amp; Reliability Comparisons</h2><p>Sticker price alone rarely reveals the cheapest car to own over five years. Hybrids and electric vehicles often carry higher initial acquisition costs that break even within 28 to 48 months once fuel economy, brake wear reduction, and stronger resale retention compound. Conversely, low-mileage urban drivers may lose money on expensive high-depreciation powertrains.</p><p>DriveLedger compares any two vehicles under identical annual mileage, regional energy prices, financing APR, and workshop labor rates, pairing net 5-year economic savings directly against each model's Engineering Reliability Score and 12-month maintenance reserve.</p></article><nav aria-label="Canonical Head-to-Head Comparisons"><h2>All ${PROGRAMMATIC_COMPARE_PAIRS.length} Benchmarked Vehicle Matchups</h2><ul>${compareDirectoryHtml}</ul></nav>${coreNavFooterHtml}`;
+
+  const checklistLandingEditorialHtml = `<article aria-label="Pre-Purchase Inspection Methodology"><h2>Cold-Start Forensic Pre-Purchase Inspection (PPI) Protocol</h2><p>A structured on-site inspection protects used car buyers from concealed timing chain rattle, odometer rollback, structural collision repairs, and recently cleared emissions monitors. Always inspect the vehicle completely cold: starting an engine that has sat overnight exposes worn hydraulic tensioners, glow plug faults, blue oil-consumption smoke, and white coolant-leak exhaust plumes before thermal expansion masks them.</p><ol><li><strong>Cold Start &amp; Fluid Audit:</strong> Verify cold engine block, check coolant reservoir for oil emulsification, and listen for metallic rattle in the first 5 seconds.</li><li><strong>OBD-II &amp; Readiness Scan:</strong> Read active, pending, and permanent DTCs and confirm I/M readiness monitors were not reset immediately before your visit.</li><li><strong>Structural &amp; Paint Check:</strong> Inspect panel gaps, glass date stamps, strut tower welds, and brake rotor wear lips against claimed odometer mileage.</li><li><strong>20-Minute Operational Road Test:</strong> Reach full 90°C coolant and transmission fluid temperature to verify smooth shifts, straight braking, and clean boost delivery.</li><li><strong>Data-Backed Negotiation:</strong> Deduct itemized independent specialist repair midpoints for every flagged defect directly from your opening offer.</li></ol></article>${buildFaqDetailsHtml(FAQ_ITEMS.slice(2, 6), 'ppi-faq', 'Pre-Purchase Inspection FAQs')}${coreNavFooterHtml}`;
+
+  const aboutEditorialHtml = `<article aria-label="About DriveLedger"><section><h2>Our Mission &amp; Editorial Independence</h2><p>DriveLedger (${escapeHtml(MONETIZATION_CONFIG.domain)}) is an independent automotive engineering and financial analytics platform built for private used car buyers, everyday owners, and fleet analysts. We provide transparent 5-year True Cost to Own projections, mileage-adjusted powertrain failure probabilities, pre-purchase inspection checklists, and verified OBD-II workshop repair benchmarks across ${VEHICLE_PRESETS.length} vehicle configurations and ${BRAND_DIRECTORY.length} manufacturers.</p><p>We accept zero sponsorship from automobile manufacturers, franchised dealership groups, or captive auto lenders. All mathematical calculations run deterministically in your browser with zero mandatory sign-up and zero paywalls.</p></section><section><h2>Three Pillars of Our Engineering Methodology</h2><h3>1. Actuarial Depreciation Curves &amp; Used Vehicle Offsets</h3><p>Vehicle depreciation typically represents 40% to 55% of 5-year ownership cost. DriveLedger models non-linear residual decay across Years 1–3 showroom drop (20%–25% Year 1), Years 4–10 asymptotic stabilization (3%–7% annually), and a 5% salvage recovery floor, applying an annual mileage elasticity coefficient of 0.045 around the 12,500-mile baseline.</p><h3>2. Mileage Risk Weighting &amp; Thermodynamic Urban Multipliers</h3><p>Short city trips under 15 minutes prevent oil and exhaust aftertreatment systems from reaching operating temperature, triggering crankcase fuel dilution, EGR soot fouling, and DPF clogging. DriveLedger applies a 1.35x to 1.55x wear surcharge to affected subsystems under urban duty cycles.</p><h3>3. Regional Labor Rates Architecture (US, UK, EU)</h3><table><thead><tr><th>Market</th><th>Franchised Dealership</th><th>Independent Specialist</th><th>DIY Garage</th><th>Parts / Labor Split</th></tr></thead><tbody><tr><td>United States (USD)</td><td>$160 – $220 / hr</td><td>$95 – $135 / hr</td><td>$0 / hr</td><td>45% Parts / 55% Labor</td></tr><tr><td>United Kingdom (GBP)</td><td>£120 – £175 / hr</td><td>£65 – £95 / hr</td><td>£0 / hr</td><td>40% Parts / 60% Labor</td></tr><tr><td>European Union (EUR)</td><td>€110 – €160 / hr</td><td>€55 – €85 / hr</td><td>€0 / hr</td><td>50% Parts / 50% Labor</td></tr></tbody></table></section><section><h2>Commercial Firewall &amp; Operator Imprint</h2><p>Monetization relies on clearly labeled affiliate partnerships and display advertising. No partner can purchase favorable reliability scores or suppress known defect warnings. ${escapeHtml(NOMINATIVE_FAIR_USE_NOTICE)}</p><p>In compliance with the European Union e-Commerce Directive (2000/31/EC) and Hungarian Act CVIII of 2001 on Electronic Commerce Services:</p><dl><dt>Service Provider</dt><dd>DriveLedger Analytics Platform</dd><dt>Official Domain</dt><dd>${escapeHtml(MONETIZATION_CONFIG.domain)}</dd><dt>Editorial Contact</dt><dd>${escapeHtml(MONETIZATION_CONFIG.contactEmail)}</dd><dt>Data Protection Desk</dt><dd>${escapeHtml(MONETIZATION_CONFIG.legalEmail)}</dd><dt>Hosting Infrastructure</dt><dd>Cloudflare Pages (Global Anycast Edge)</dd><dt>Jurisdiction</dt><dd>European Union / Hungary</dd></dl></section></article>${coreNavFooterHtml}`;
+
+  const contactEditorialHtml = `<article aria-label="Contact DriveLedger"><section><h2>Direct Editorial, Technical &amp; Legal Mailboxes</h2><p>Have a question regarding our 5-year TCO depreciation formulas, spotted an OEM vehicle specification or OBD-II labor-hour correction, or need GDPR/CCPA data protection assistance? Reach our engineering and compliance desk directly.</p><dl><dt>Editorial &amp; Engineering Desk</dt><dd><a href="mailto:${escapeHtml(MONETIZATION_CONFIG.contactEmail)}">${escapeHtml(MONETIZATION_CONFIG.contactEmail)}</a></dd><dt>Privacy, GDPR &amp; Legal Desk</dt><dd><a href="mailto:${escapeHtml(MONETIZATION_CONFIG.legalEmail)}">${escapeHtml(MONETIZATION_CONFIG.legalEmail)}</a></dd><dt>Official Platform</dt><dd>https://${escapeHtml(MONETIZATION_CONFIG.domain)}</dd></dl></section><section><h2>Supported Inquiry Topics &amp; Response Time SLAs</h2><ul><li><strong>General Feedback &amp; Calculator Inquiries:</strong> Acknowledged and answered within 24 to 48 business hours.</li><li><strong>Vehicle Catalog &amp; OBD-II Spec Corrections:</strong> Cross-checked against OEM workshop manuals and flat-rate time guides within 1 to 3 business days.</li><li><strong>Statutory GDPR / UK GDPR / CCPA Privacy Requests:</strong> Acknowledged within 2 business days and fulfilled within 30 statutory days.</li><li><strong>Commercial &amp; Editorial Transparency Inquiries:</strong> Handled independently of our mathematical calibration team.</li></ul><p>Information sent to DriveLedger is processed strictly to respond to your inquiry. We never sell contact details or subscribe visitors to marketing mailing lists. Review our full <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.</p></section></article>${coreNavFooterHtml}`;
+
+  const methodologyEditorialHtml = `<article aria-label="DriveLedger Engineering Methodology White Paper"><section><h2>Mathematical Models &amp; Actuarial Calibration</h2><p>DriveLedger combines non-linear residual retention curves, thermodynamic component fatigue multipliers, and Bayesian OBD-II fault code probability trees into a unified, client-side ownership simulation engine covering ${VEHICLE_PRESETS.length} benchmarked vehicle presets across ${BRAND_DIRECTORY.length} automotive manufacturers.</p><h3>1. Logarithmic Residual Retention &amp; Depreciation</h3><p>Vehicle residual value at year t is computed as V(t) = P0 × Rseg(t) × [1 - α × ((Mann - 12,500) / 12,500)]^t, where P0 is capitalized acquisition cost, Rseg(t) is the segment empirical 10-year residual retention vector, Mann is annual distance in miles, and α = 0.045 is the odometer elasticity coefficient. A 5% residual salvage floor prevents unrealistic negative valuations at extreme mileage.</p><h3>2. Thermodynamic Urban Wear &amp; Powertrain Isolation</h3><p>Internal combustion assemblies (DPF, EGR, dual-mass flywheel, wet timing belts, turbochargers) receive a 1.35x to 1.55x urban thermal wear penalty when short commutes dominate. Pure electric powertrains are completely isolated from combustion components and evaluated on LFP versus NMC battery degradation curves, thermal heat-pump valves, OBC/ICCU electronics, and reduction gear lubricants.</p><h3>3. Bayesian OBD-II Workshop Cost Modeling</h3><p>Each SAE J2012 fault code dossier maps probable root causes weighted by independent workshop repair frequency, pairing flat-rate labor hours with OEM/OE-quality parts pricing across DIY, Independent Specialist, and Franchised Dealership tiers scaled by each vehicle's empirical maintenanceWearFactor.</p></section></article>${buildFaqDetailsHtml(FAQ_ITEMS, 'methodology-faq', 'Technical Methodology Frequently Asked Questions')}${coreNavFooterHtml}`;
+
+  const reviewsEditorialHtml = `<article aria-label="Verified Workshop Quote Benchmarks"><section><h2>Independent Specialist vs. Franchised Dealership Repair Benchmarks</h2><p>Dealership service desks frequently bundle high-margin preventative flushes or apply 50%–80% labor markups over certified independent marque specialists. Below are representative regional workshop repair benchmarks comparing independent specialist invoices against franchised dealership averages across petrol, diesel, hybrid, and electric powertrains.</p><table><thead><tr><th>Vehicle</th><th>Repair Assembly</th><th>Odometer</th><th>Independent Benchmark</th><th>Dealership Average</th></tr></thead><tbody><tr><td>Ford Focus 2.0 EcoBlue</td><td>Timing Wet Belt &amp; Water Pump</td><td>68,400 mi</td><td>$1,080</td><td>$1,380</td></tr><tr><td>BMW 320d (B47 G20)</td><td>ZF 8HP50 Transmission Fluid &amp; Filter Pan</td><td>61,500 mi</td><td>$620</td><td>$980</td></tr><tr><td>VW Golf 2.0 TDI</td><td>Dual-Mass Flywheel &amp; Clutch Pack</td><td>94,200 mi</td><td>$1,490</td><td>$2,150</td></tr><tr><td>Audi A4 2.0 TFSI</td><td>GDI Intake Valve Walnut Blasting &amp; PCV</td><td>76,000 mi</td><td>$590</td><td>$1,120</td></tr><tr><td>Toyota Camry Hybrid 2.5L</td><td>Inverter Coolant, e-CVT Fluid &amp; Spark Plugs</td><td>98,500 mi</td><td>$490</td><td>$860</td></tr><tr><td>Tesla Model 3 Long Range</td><td>Front Upper Control Arms &amp; 4-Wheel Alignment</td><td>54,200 mi</td><td>$640</td><td>$1,280</td></tr><tr><td>Ford F-150 3.5L EcoBoost</td><td>VCT Cam Phasers, Timing Chains &amp; Water Pump</td><td>88,600 mi</td><td>$2,450</td><td>$3,900</td></tr><tr><td>VW ID.4 Pro 77 kWh</td><td>Heat Pump Coolant, Reducer Oil &amp; Brake Service</td><td>51,800 mi</td><td>$540</td><td>$1,020</td></tr></tbody></table><p>Use our interactive <a href="/obd-estimator">OBD-II Repair Cost Estimator</a> and <a href="/risk-matrix">Maintenance Risk Matrix</a> to benchmark your own workshop quote against regional flat-rate hours before approving work.</p></section></article>${coreNavFooterHtml}`;
+
   // 1. Core and Legal Routes (17 sub-routes + root = 18 core routes)
   const CORE_ROUTES = [
     {
@@ -431,6 +515,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Calculate 5-year ownership costs, non-linear depreciation curves, financing interest, fuel, insurance, and scheduled maintenance for any vehicle.',
       canonicalUrl: `${SITE_ORIGIN}/tco`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/tco',
+        title: '5-Year True Cost to Own (TCO) Calculator | DriveLedger',
+        description:
+          'Calculate 5-year ownership costs, non-linear depreciation curves, financing interest, fuel, insurance, and scheduled maintenance for any vehicle.',
+        showStatsStrip: true,
+        belowFoldHtml: tcoLandingEditorialHtml,
+      }),
     },
     {
       path: '/risk-matrix',
@@ -438,6 +530,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Inspect upcoming maintenance horizons, thermodynamic urban wear penalties, and known powertrain defects across 179 vehicle configurations.',
       canonicalUrl: `${SITE_ORIGIN}/risk-matrix`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/risk-matrix',
+        title: 'Powertrain Maintenance Risk Matrix & Reliability Score | DriveLedger',
+        description:
+          'Inspect upcoming maintenance horizons, thermodynamic urban wear penalties, and known powertrain defects across 179 vehicle configurations.',
+        showStatsStrip: true,
+        belowFoldHtml: riskLandingEditorialHtml,
+      }),
     },
     {
       path: '/obd-estimator',
@@ -451,7 +551,7 @@ export function collectAllSeoRoutes(options = {}) {
         description:
           'Lookup diagnostic trouble codes (DTC), compare DIY vs Independent vs Dealership repair prices, and run first-principles live PID tests.',
         showStatsStrip: true,
-        belowFoldHtml: `<section aria-label="Benchmarked OBD-II Fault Codes"><h2>Supported OBD-II Diagnostic Trouble Codes</h2><ul>${obdDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li><li><a href="/compare">Vehicle Comparisons</a></li></ul></nav>`,
+        belowFoldHtml: obdLandingEditorialHtml,
       }),
     },
     {
@@ -466,7 +566,7 @@ export function collectAllSeoRoutes(options = {}) {
         description:
           'Compare any two vehicles side-by-side: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.',
         showStatsStrip: true,
-        belowFoldHtml: `<nav aria-label="Canonical Head-to-Head Comparisons"><h2>All ${PROGRAMMATIC_COMPARE_PAIRS.length} Benchmarked Vehicle Matchups</h2><ul>${compareDirectoryHtml}</ul></nav><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav>`,
+        belowFoldHtml: compareLandingEditorialHtml,
       }),
     },
     {
@@ -475,6 +575,14 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Master the used car pre-purchase inspection: cold-start protocols, fluid condition tests, diagnostic scans, and printable PDF inspection reports.',
       canonicalUrl: `${SITE_ORIGIN}/checklist`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/checklist',
+        title: 'Pre-Purchase Inspection (PPI) Checklist & Defect Flagging | DriveLedger',
+        description:
+          'Master the used car pre-purchase inspection: cold-start protocols, fluid condition tests, diagnostic scans, and printable PDF inspection reports.',
+        showStatsStrip: true,
+        belowFoldHtml: checklistLandingEditorialHtml,
+      }),
     },
     {
       path: '/vehicles',
@@ -511,7 +619,7 @@ export function collectAllSeoRoutes(options = {}) {
         description:
           'In-depth used car buyer guides, pre-purchase inspection protocols, and long-term ownership cost analyses written by master automotive technicians.',
         showStatsStrip: true,
-        belowFoldHtml: `<section aria-label="All Buyer Guides"><h2>All ${GUIDES_DATA.length} Technical Buyer Guides</h2><ul>${guidesDirectoryHtml}</ul></section><nav aria-label="Primary Calculators"><h2>Primary Calculators</h2><ul><li><a href="/">DriveLedger Overview</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li></ul></nav>`,
+        belowFoldHtml: `<section aria-label="All Buyer Guides"><h2>All ${GUIDES_DATA.length} Technical Buyer Guides</h2><ul>${guidesDirectoryHtml}</ul></section>${coreNavFooterHtml}`,
       }),
     },
     {
@@ -520,6 +628,15 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger is an independent automotive engineering and financial analytics platform. Learn about our actuarial depreciation curves, mileage risk weighting, and regional labor rates.',
       canonicalUrl: `${SITE_ORIGIN}/about`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/about',
+        title: 'About DriveLedger | Independent Car Cost & Reliability Analytics',
+        description:
+          'DriveLedger is an independent automotive engineering and financial analytics platform. Learn about our actuarial depreciation curves, mileage risk weighting, and regional labor rates.',
+        showSearchSkeleton: false,
+        showStatsStrip: true,
+        belowFoldHtml: aboutEditorialHtml,
+      }),
     },
     {
       path: '/contact',
@@ -527,6 +644,15 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Contact the DriveLedger automotive engineering team for calculation inquiries, catalog corrections, or data protection assistance.',
       canonicalUrl: `${SITE_ORIGIN}/contact`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/contact',
+        title: 'Contact DriveLedger | Editorial, Engineering & Legal Desk',
+        description:
+          'Contact the DriveLedger automotive engineering team for calculation inquiries, catalog corrections, or data protection assistance.',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: contactEditorialHtml,
+      }),
     },
     {
       path: '/methodology',
@@ -534,6 +660,15 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Mathematical models, logarithmic depreciation formulas, Bayesian OBD-II probability, and actuarial data sources powering the DriveLedger platform.',
       canonicalUrl: `${SITE_ORIGIN}/methodology`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/methodology',
+        title: 'Automotive Engineering & Cost Methodology | DriveLedger',
+        description:
+          'Mathematical models, logarithmic depreciation formulas, Bayesian OBD-II probability, and actuarial data sources powering the DriveLedger platform.',
+        showSearchSkeleton: false,
+        showStatsStrip: true,
+        belowFoldHtml: methodologyEditorialHtml,
+      }),
     },
     {
       path: '/reviews',
@@ -541,6 +676,15 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Compare real-world repair shop quotes against independent parts and labor benchmarks, and read verified owner maintenance notes.',
       canonicalUrl: `${SITE_ORIGIN}/reviews`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/reviews',
+        title: 'Owner Reviews & Repair Cost Benchmarks | DriveLedger',
+        description:
+          'Compare real-world repair shop quotes against independent parts and labor benchmarks, and read verified owner maintenance notes.',
+        showSearchSkeleton: false,
+        showStatsStrip: true,
+        belowFoldHtml: reviewsEditorialHtml,
+      }),
     },
     {
       path: '/privacy',
@@ -548,6 +692,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger Privacy Policy: European GDPR, UK GDPR, and US state regulations (CCPA/CPRA/VCDPA/CPA/CTDPA) compliance, Google AdSense (ca-pub-6581535125716295) disclosures, and telemetry governance.',
       canonicalUrl: `${SITE_ORIGIN}/privacy`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/privacy',
+        title: 'Privacy Policy & Telemetry Data Governance | DriveLedger',
+        description:
+          'DriveLedger Privacy Policy: European GDPR, UK GDPR, and US state regulations (CCPA/CPRA/VCDPA/CPA/CTDPA) compliance, Google AdSense (ca-pub-6581535125716295) disclosures, and telemetry governance.',
+        eyebrow: 'Legal & Privacy Governance',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('privacy'),
+      }),
     },
     {
       path: '/terms',
@@ -555,6 +709,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger Terms of Service: workshop safety waiver, statistical depreciation disclaimers, and nominative trademark fair use notices.',
       canonicalUrl: `${SITE_ORIGIN}/terms`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/terms',
+        title: 'Terms of Service, Liability Shield & Disclaimers | DriveLedger',
+        description:
+          'DriveLedger Terms of Service: workshop safety waiver, statistical depreciation disclaimers, and nominative trademark fair use notices.',
+        eyebrow: 'Legal & Terms of Use',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('terms'),
+      }),
     },
     {
       path: '/cookies',
@@ -562,6 +726,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger Cookie Policy: First-party local storage, Google AdSense (ca-pub-6581535125716295) DoubleClick advertising cookies, IAB TCF v2.2 compliance, and opt-out controls.',
       canonicalUrl: `${SITE_ORIGIN}/cookies`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/cookies',
+        title: 'Cookie Policy, Local Storage & Consent Governance | DriveLedger',
+        description:
+          'DriveLedger Cookie Policy: First-party local storage, Google AdSense (ca-pub-6581535125716295) DoubleClick advertising cookies, IAB TCF v2.2 compliance, and opt-out controls.',
+        eyebrow: 'Cookie & Consent Governance',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('cookies'),
+      }),
     },
     {
       path: '/disclaimer',
@@ -569,6 +743,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger Liability Disclaimer: Statistical financial estimates, workshop safety waivers, and nominative fair use declarations.',
       canonicalUrl: `${SITE_ORIGIN}/disclaimer`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/disclaimer',
+        title: 'Comprehensive Automotive & Financial Disclaimer | DriveLedger',
+        description:
+          'DriveLedger Liability Disclaimer: Statistical financial estimates, workshop safety waivers, and nominative fair use declarations.',
+        eyebrow: 'Automotive & Financial Disclaimer',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('disclaimer'),
+      }),
     },
     {
       path: '/affiliate-disclosure',
@@ -576,6 +760,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'DriveLedger FTC 16 CFR Part 255 compliance, Amazon Associates program disclosure, and algorithmic firewall guarantees.',
       canonicalUrl: `${SITE_ORIGIN}/affiliate-disclosure`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/affiliate-disclosure',
+        title: 'FTC Affiliate Disclosure & Editorial Independence | DriveLedger',
+        description:
+          'DriveLedger FTC 16 CFR Part 255 compliance, Amazon Associates program disclosure, and algorithmic firewall guarantees.',
+        eyebrow: 'Commercial Transparency & FTC Disclosure',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('affiliate-disclosure'),
+      }),
     },
     {
       path: '/do-not-sell',
@@ -583,6 +777,16 @@ export function collectAllSeoRoutes(options = {}) {
       description:
         'Exercise your US state privacy rights under CCPA, CPRA, VCDPA, CPA, and CTDPA to opt out of the sale or sharing of personal information for cross-context behavioral advertising.',
       canonicalUrl: `${SITE_ORIGIN}/do-not-sell`,
+      bodyHtml: buildPrerenderedAppShell({
+        routePath: '/do-not-sell',
+        title: 'Do Not Sell or Share My Personal Information | DriveLedger',
+        description:
+          'Exercise your US state privacy rights under CCPA, CPRA, VCDPA, CPA, and CTDPA to opt out of the sale or sharing of personal information for cross-context behavioral advertising.',
+        eyebrow: 'US State Privacy Opt-Out Rights',
+        showSearchSkeleton: false,
+        showStatsStrip: false,
+        belowFoldHtml: buildLegalPolicyHtml('do-not-sell'),
+      }),
     },
   ];
 
@@ -661,6 +865,17 @@ export function collectAllSeoRoutes(options = {}) {
     const sectionsHtml = (guide.sections || [])
       .map((s) => `<section><h2>${escapeHtml(s.heading)}</h2><p>${escapeHtml(s.content)}</p></section>`)
       .join('');
+    const guideTableHtml = guide.table
+      ? `<section aria-label="${escapeHtml(guide.table.title)}"><h2>${escapeHtml(guide.table.title)}</h2><p>${escapeHtml(guide.table.description || '')}</p><table><thead><tr>${(guide.table.headers || []).map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${(guide.table.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></section>`
+      : '';
+    const guideChecklistHtml = guide.checklist
+      ? `<section aria-label="${escapeHtml(guide.checklist.title)}"><h2>${escapeHtml(guide.checklist.title)}</h2><p>${escapeHtml(guide.checklist.description || '')}</p><ol>${(guide.checklist.items || []).map((item) => `<li>${escapeHtml(typeof item === 'string' ? item : `${item.label || ''} ${item.detail || ''}`)}</li>`).join('')}</ol></section>`
+      : '';
+    const guideFaqsHtml = buildFaqDetailsHtml(
+      guide.faqs || [],
+      `guide-faq-${guide.slug}`,
+      'Frequently Asked Questions'
+    );
     const relatedGuideLinks = GUIDES_DATA.filter((g) => g.slug !== guide.slug)
       .slice(0, 4)
       .map((g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a></li>`)
@@ -703,7 +918,8 @@ export function collectAllSeoRoutes(options = {}) {
         routePath: `/guides/${guide.slug}`,
         title: guide.title,
         description: guide.summary,
-        belowFoldHtml: `<article><h2>Key Takeaways &amp; Technical Breakdown</h2><ul>${takeawaysHtml}</ul>${sectionsHtml}</article><nav aria-label="Related Guides &amp; Calculators"><h2>Related Guides &amp; Calculators</h2><ul><li><a href="/guides">All ${GUIDES_DATA.length} Buyer Guides</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li>${relatedGuideLinks}</ul></nav>`,
+        showSearchSkeleton: false,
+        belowFoldHtml: `<article><p><strong>Category:</strong> ${escapeHtml(guide.category || 'Buyer Guide')} · <strong>Author:</strong> ${escapeHtml(guide.author || 'DriveLedger Engineering Team')} · <strong>Updated:</strong> ${escapeHtml(guide.lastUpdated || guide.publishedDate || '')}</p><h2>Key Takeaways &amp; Technical Breakdown</h2><ul>${takeawaysHtml}</ul>${sectionsHtml}${guideTableHtml}${guideChecklistHtml}</article>${guideFaqsHtml}<nav aria-label="Related Guides &amp; Calculators"><h2>Related Guides &amp; Calculators</h2><ul><li><a href="/guides">All ${GUIDES_DATA.length} Buyer Guides</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li><li><a href="/tco">5-Year TCO Calculator</a></li><li><a href="/risk-matrix">Maintenance Risk Matrix</a></li>${relatedGuideLinks}</ul></nav>`,
       }),
     });
   }
@@ -711,12 +927,42 @@ export function collectAllSeoRoutes(options = {}) {
   // 3. Vehicle Presets & Mileage Brackets (179 presets × 6 = 1,074 routes)
   const telemetryMap = new Map();
   const photoMap = new Map();
+  const knownIssuesMap = new Map();
   for (const preset of VEHICLE_PRESETS) {
     telemetryMap.set(preset.id, computePresetTelemetry(preset));
     photoMap.set(preset.id, resolvePrerenderVehiclePhotoUrl(preset));
+    knownIssuesMap.set(preset.id, getKnownIssuesForEngine(preset.id) || []);
   }
 
   const brackets = Object.values(MILEAGE_BRACKET_SLUGS);
+
+  const buildKnownIssuesHtml = (preset, issues) => {
+    if (!Array.isArray(issues) || issues.length === 0) return '';
+    const rows = issues
+      .slice(0, 4)
+      .map(
+        (iss) =>
+          `<tr><td><strong>${escapeHtml(iss.name)}</strong></td><td>${escapeHtml(iss.criticalMileage?.display || 'All mileages')}</td><td>${escapeHtml(iss.repairCost?.formattedUsd || iss.repairCost?.formattedEur || 'Varies')}</td><td>${escapeHtml(iss.prevention || iss.symptoms || '')}</td></tr>`
+      )
+      .join('');
+    return `<section aria-label="Known Engineering Issues"><h2>Known ${escapeHtml(preset.name)} (${escapeHtml(preset.engineCode)}) Defects &amp; Prevention</h2><table><thead><tr><th>Known Issue</th><th>Risk Window</th><th>Typical Repair</th><th>Symptoms &amp; Prevention</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+  };
+
+  const buildComponentHealthTableHtml = (preset, evalData, heading) => {
+    const topComponents = (evalData.evaluated || [])
+      .slice()
+      .sort((a, b) => (b.wearPctOfCritical || 0) - (a.wearPctOfCritical || 0))
+      .slice(0, 8);
+    const rows = topComponents
+      .map((item) => {
+        const indCosts = item.health?.scaledCostsUsd?.independent || item.comp?.costsUsd?.independent || [250, 450];
+        const minCost = Number(indCosts[0]) || 250;
+        const maxCost = Number(indCosts[1]) || Math.round(minCost * 1.8);
+        return `<tr><td>${escapeHtml(item.comp?.name || 'Powertrain Assembly')}</td><td>${Math.round(item.wearPctOfCritical || 0)}%</td><td>${escapeHtml(item.status || 'OPTIMAL')}</td><td>$${Math.round(minCost).toLocaleString()} – $${Math.round(maxCost).toLocaleString()}</td></tr>`;
+      })
+      .join('');
+    return `<section aria-label="${escapeHtml(heading)}"><h2>${escapeHtml(heading)}</h2><p>At ${evalData.odometerMiles.toLocaleString()} miles, the ${escapeHtml(preset.name)} (${escapeHtml(preset.engineCode)}) records an Engineering Reliability Score of <strong>${evalData.reliabilityScore}/100</strong> with an estimated 12-month preventative service and wear reserve of <strong>$${evalData.reserve12MoUsd.toLocaleString()}</strong> at certified independent specialist rates.</p><table><thead><tr><th>Powertrain Subsystem</th><th>Wear Horizon</th><th>Status</th><th>Est. Replacement Range</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+  };
 
   const buildVehicleInternalNavHtml = (preset, tel) => {
     const rivals = PROGRAMMATIC_COMPARE_PAIRS.filter(
@@ -746,13 +992,15 @@ export function collectAllSeoRoutes(options = {}) {
 
     const brandSlug = slugifyBrandName(preset.brand);
 
-    return `<section aria-label="Vehicle Telemetry Summary"><h2>${escapeHtml(preset.name)} Telemetry Summary</h2><dl><dt>5-Year True Cost to Own</dt><dd>$${tel.total5YrTcoUsd.toLocaleString()} ($${tel.monthlyTcoUsd}/mo · $${tel.costPerMileUsd}/mi)</dd><dt>5-Year Depreciation</dt><dd>$${tel.depreciation5YrUsd.toLocaleString()}</dd><dt>Engineering Reliability Score</dt><dd>${tel.reliabilityScore}/100 at ${tel.odometerMiles.toLocaleString()} miles</dd><dt>Engine &amp; Powertrain</dt><dd>${escapeHtml(preset.engineCode)} · ${escapeHtml(preset.fuelType)} · ${preset.powerHp} HP</dd><dt>Critical Watchpoint</dt><dd>${escapeHtml(preset.criticalDefectTag || 'Scheduled Maintenance')} — ${escapeHtml(preset.knownRiskNotes || '')}</dd></dl></section><nav aria-label="Related Vehicle Dossiers"><h2>Related ${escapeHtml(preset.name)} Calculators &amp; Diagnostics</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO Calculator</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Maintenance Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles/${escapeHtml(brandSlug)}">All ${escapeHtml(preset.brand)} Models &amp; Maintenance Costs</a></li>${bracketLinks}${rivalLinks}${obdLinks}<li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicle Models</a></li></ul></nav>`;
+    return `<nav aria-label="Related Vehicle Dossiers"><h2>Related ${escapeHtml(preset.name)} Calculators &amp; Diagnostics</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO Calculator</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Maintenance Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles/${escapeHtml(brandSlug)}">All ${escapeHtml(preset.brand)} Models &amp; Maintenance Costs</a></li>${bracketLinks}${rivalLinks}${obdLinks}<li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicle Models</a></li></ul></nav>`;
   };
 
   for (const preset of VEHICLE_PRESETS) {
     const tel = telemetryMap.get(preset.id);
     const imageUrl = photoMap.get(preset.id);
+    const issues = knownIssuesMap.get(preset.id) || [];
     const vehicleNavHtml = buildVehicleInternalNavHtml(preset, tel);
+    const knownIssuesHtml = buildKnownIssuesHtml(preset, issues);
     const vehicleJsonLd = {
       '@context': 'https://schema.org',
       '@type': 'Vehicle',
@@ -786,6 +1034,7 @@ export function collectAllSeoRoutes(options = {}) {
     // /tco/:id
     const tcoTitle = `${preset.name} 5-Year True Cost to Own & Depreciation | DriveLedger`;
     const tcoDesc = `${preset.name} (${preset.engineCode}) 5-year True Cost to Own is projected at $${tel.total5YrTcoUsd.toLocaleString()} ($${tel.monthlyTcoUsd}/mo or $${tel.costPerMileUsd}/mi), including $${tel.depreciation5YrUsd.toLocaleString()} non-linear depreciation and maintenance reserves.`;
+    const tcoBreakdownHtml = `<article aria-label="${escapeHtml(preset.name)} 5-Year TCO Breakdown"><h2>${escapeHtml(preset.name)} 5-Year Ownership Cost Breakdown</h2><p>Equipped with the ${escapeHtml(preset.engineCode)} ${escapeHtml(preset.fuelType)} powertrain (${preset.powerHp} HP, ${escapeHtml(preset.transmissionLabel || preset.transmission || 'automatic')}), the ${escapeHtml(preset.name)} carries a benchmark purchase baseline of $${Number(preset.purchasePriceUsd || 0).toLocaleString()}. Over five years at ${Number(preset.annualDistanceMiles || 12000).toLocaleString()} miles per year, net economic ownership expenditure totals <strong>$${tel.total5YrTcoUsd.toLocaleString()}</strong> ($${tel.monthlyTcoUsd}/month or $${tel.costPerMileUsd}/mile), retaining an estimated 5-year resale value of $${tel.resaleValueUsd.toLocaleString()}.</p><table><thead><tr><th>Cost Category (5-Year Horizon)</th><th>Projected Amount (USD)</th></tr></thead><tbody><tr><td>Baseline Acquisition Price</td><td>$${Number(preset.purchasePriceUsd || 0).toLocaleString()}</td></tr><tr><td>5-Year Non-Linear Depreciation Loss</td><td>$${tel.depreciation5YrUsd.toLocaleString()}</td></tr><tr><td>Projected 5-Year ${preset.isEv ? 'Electricity Charging' : 'Fuel'} Spend</td><td>$${tel.totalFuelUsd.toLocaleString()}</td></tr><tr><td>5-Year Motor Insurance Estimate</td><td>$${tel.totalInsuranceUsd.toLocaleString()}</td></tr><tr><td>5-Year Scheduled Maintenance &amp; Wear Reserve</td><td>$${tel.totalMaintenanceUsd.toLocaleString()}</td></tr><tr><td>5-Year Financing Interest (20% Down, 6.2% APR)</td><td>$${tel.totalInterestUsd.toLocaleString()}</td></tr><tr><td><strong>Total 5-Year Economic Cost to Own</strong></td><td><strong>$${tel.total5YrTcoUsd.toLocaleString()} ($${tel.monthlyTcoUsd}/mo)</strong></td></tr></tbody></table><p><strong>Key Mechanical Watchpoint:</strong> ${escapeHtml(preset.criticalDefectTag || 'Scheduled Maintenance')} — ${escapeHtml(preset.knownRiskNotes || 'Follow preventative oil and transmission fluid intervals to maximize residual value.')}</p></article>${knownIssuesHtml}${vehicleNavHtml}`;
     addRoute({
       path: `/tco/${preset.id}`,
       title: tcoTitle,
@@ -797,13 +1046,18 @@ export function collectAllSeoRoutes(options = {}) {
         routePath: `/tco/${preset.id}`,
         title: tcoTitle,
         description: tcoDesc,
-        belowFoldHtml: vehicleNavHtml,
+        belowFoldHtml: tcoBreakdownHtml,
       }),
     });
 
     // /risk-matrix/:id
     const riskTitle = `${preset.name} Reliability Score & Maintenance Risk Matrix | DriveLedger`;
     const riskDesc = `${preset.name} achieves a ${tel.reliabilityScore}/100 Engineering Reliability Score at ${tel.odometerMiles.toLocaleString()} miles. Inspect critical wear horizons, thermodynamic urban duty penalties, and known defects (${preset.criticalDefectTag || 'Powertrain Telemetry'}).`;
+    const riskBodyHtml = `${buildComponentHealthTableHtml(
+      preset,
+      tel,
+      `${preset.name} Powertrain Component Wear Matrix`
+    )}${knownIssuesHtml}${vehicleNavHtml}`;
     addRoute({
       path: `/risk-matrix/${preset.id}`,
       title: riskTitle,
@@ -815,13 +1069,25 @@ export function collectAllSeoRoutes(options = {}) {
         routePath: `/risk-matrix/${preset.id}`,
         title: riskTitle,
         description: riskDesc,
-        belowFoldHtml: vehicleNavHtml,
+        belowFoldHtml: riskBodyHtml,
       }),
     });
 
     // /checklist/:id
     const ppiTitle = `Pre-Purchase Inspection Checklist (PPI) – ${preset.name} | DriveLedger`;
     const ppiDesc = `On-site used car inspection checklist for ${preset.name} (${preset.engineCode}): critical known flaws, engine bay and chassis inspection, OBD-II diagnostics, and printable PDF report.`;
+    const ppiSteps = generatePpiChecklist(
+      preset,
+      Math.round((preset.defaultOdometerMiles || 60000) * 1.609344)
+    );
+    const ppiStepsHtml = ppiSteps
+      .slice(0, 8)
+      .map(
+        (step) =>
+          `<li><strong>${escapeHtml(step.title)}</strong> (${escapeHtml(step.riskLabel || 'Inspection Point')} · Leverage: ${escapeHtml(step.estSaving || 'Negotiable')}) — ${escapeHtml(step.focus || '')} ${escapeHtml(step.inspectionMethod || '')}</li>`
+      )
+      .join('');
+    const ppiBodyHtml = `<article aria-label="${escapeHtml(preset.name)} Pre-Purchase Inspection Checklist"><h2>On-Site Pre-Purchase Inspection Protocol for ${escapeHtml(preset.name)} (${escapeHtml(preset.engineCode)})</h2><p>Before buying a used ${escapeHtml(preset.name)}, perform this cold-start physical and OBD-II inspection sequence. Verify service invoices against each model-specific risk item below and deduct unaddressed maintenance items from your offer.</p><ol>${ppiStepsHtml}</ol></article>${knownIssuesHtml}${vehicleNavHtml}`;
     addRoute({
       path: `/checklist/${preset.id}`,
       title: ppiTitle,
@@ -833,17 +1099,29 @@ export function collectAllSeoRoutes(options = {}) {
         routePath: `/checklist/${preset.id}`,
         title: ppiTitle,
         description: ppiDesc,
-        belowFoldHtml: vehicleNavHtml,
+        belowFoldHtml: ppiBodyHtml,
       }),
     });
 
     // /risk-matrix/:id/:bracketSlug (60k-miles, 100k-miles, 150k-miles)
     const isPureEv = isPureElectric(preset);
     for (const bracket of brackets) {
+      const bracketOdo = Number(bracket.miles || bracket.odometerMiles) || 100000;
+      const bracketEval = evaluatePowertrainAtOdometer(preset, bracketOdo);
+      const criticalNames = bracketEval.evaluated
+        .filter((e) => e.status === 'CRITICAL' || e.status === 'WARNING')
+        .slice(0, 4)
+        .map((e) => e.comp?.name)
+        .filter(Boolean);
       const bTitle = `${preset.name} at ${bracket.label}: Reliability Risk & Maintenance Costs | DriveLedger`;
       const bDesc = isPureEv
-        ? `Buying or owning a ${preset.name} (${preset.engineCode}) at ${bracket.label}? Inspect HV battery State of Health (SoH %), OBC/ICCU electronics, heat pump thermal valves, reduction gear wear, and 12-month repair reserves.`
-        : `Buying or owning a ${preset.name} (${preset.engineCode}) at ${bracket.label}? Inspect imminent timing, transmission, DPF/emissions, and suspension failure probabilities, 12-month repair reserves, and OEM vs Preventative service schedules.`;
+        ? `Buying or owning a ${preset.name} (${preset.engineCode}) at ${bracket.label}? Reliability score is ${bracketEval.reliabilityScore}/100 with $${bracketEval.reserve12MoUsd.toLocaleString()}/yr projected wear reserve covering HV battery SoH, OBC/ICCU electronics, thermal valves, and suspension.`
+        : `Buying or owning a ${preset.name} (${preset.engineCode}) at ${bracket.label}? Reliability score is ${bracketEval.reliabilityScore}/100 with $${bracketEval.reserve12MoUsd.toLocaleString()}/yr projected wear reserve covering ${criticalNames.length ? criticalNames.join(', ') : 'timing, transmission, and suspension wear'}.`;
+      const bracketVerdictHtml = `<article aria-label="${escapeHtml(preset.name)} at ${escapeHtml(bracket.label)} Verdict"><h2>Buying or Owning a ${escapeHtml(preset.name)} at ${escapeHtml(bracket.label)}</h2><p>At ${bracketOdo.toLocaleString()} miles, ${isPureEv ? `electric powertrain inspection prioritizes battery State of Health (SoH %), onboard charger/ICCU recall verification, heat-pump valve operation, reduction gear lubricant condition, and high-torque control-arm bushing play` : `mechanical risk concentrates on ${criticalNames.length ? criticalNames.join(', ') : 'scheduled timing, cooling, and drivetrain assemblies'}`}. Demand documented workshop receipts before paying top retail market value, or budget approximately <strong>$${bracketEval.reserve12MoUsd.toLocaleString()}</strong> over the next 12 months for preventative servicing and wear items.</p></article>${buildComponentHealthTableHtml(
+        preset,
+        bracketEval,
+        `${preset.name} Component Wear at ${bracket.label}`
+      )}${knownIssuesHtml}${vehicleNavHtml}`;
       addRoute({
         path: `/risk-matrix/${preset.id}/${bracket.slug}`,
         title: bTitle,
@@ -855,7 +1133,7 @@ export function collectAllSeoRoutes(options = {}) {
           routePath: `/risk-matrix/${preset.id}/${bracket.slug}`,
           title: bTitle,
           description: bDesc,
-          belowFoldHtml: vehicleNavHtml,
+          belowFoldHtml: bracketVerdictHtml,
         }),
       });
     }
@@ -871,13 +1149,22 @@ export function collectAllSeoRoutes(options = {}) {
 
     let title = `${matchup.title} | DriveLedger`;
     let description = `Compare ${matchup.title}: 5-year TCO break-even crossover trajectory, true running costs, and known reliability flaws.`;
+    let compareBelowFoldHtml = '';
 
     if (presetA && presetB && telA && telB) {
       const delta5Yr = Math.abs(telA.total5YrTcoUsd - telB.total5YrTcoUsd);
-      const cheaperName =
-        telB.total5YrTcoUsd < telA.total5YrTcoUsd ? presetB.name : presetA.name;
+      const monthlyDelta = Math.abs(telA.monthlyTcoUsd - telB.monthlyTcoUsd);
+      const bIsCheaper = telB.total5YrTcoUsd < telA.total5YrTcoUsd;
+      const cheaperPreset = bIsCheaper ? presetB : presetA;
+      const pricierPreset = bIsCheaper ? presetA : presetB;
+      const moreReliablePreset =
+        telB.reliabilityScore >= telA.reliabilityScore ? presetB : presetA;
+      const relGap = Math.abs(telA.reliabilityScore - telB.reliabilityScore);
+
       title = `${presetA.name} vs ${presetB.name}: 5-Year TCO & Reliability Comparison | DriveLedger`;
-      description = `${presetA.name} ($${telA.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telA.reliabilityScore}/100 reliability) vs ${presetB.name} ($${telB.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telB.reliabilityScore}/100 reliability). ${cheaperName} saves $${delta5Yr.toLocaleString()} over 5 years.`;
+      description = `${presetA.name} ($${telA.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telA.reliabilityScore}/100 reliability) vs ${presetB.name} ($${telB.total5YrTcoUsd.toLocaleString()} 5-yr TCO, ${telB.reliabilityScore}/100 reliability). ${cheaperPreset.name} saves $${delta5Yr.toLocaleString()} over 5 years.`;
+
+      compareBelowFoldHtml = `<article aria-label="${escapeHtml(presetA.name)} vs ${escapeHtml(presetB.name)} Ownership Comparison"><h2>5-Year Ownership Cost &amp; Reliability Verdict: ${escapeHtml(presetA.name)} vs ${escapeHtml(presetB.name)}</h2><p>Over a standardized 5-year ownership horizon, the <strong>${escapeHtml(cheaperPreset.name)}</strong> delivers lower net economic cost than the ${escapeHtml(pricierPreset.name)}, saving approximately <strong>$${delta5Yr.toLocaleString()}</strong> ($${monthlyDelta.toLocaleString()}/month). On baseline mechanical durability, the <strong>${escapeHtml(moreReliablePreset.name)}</strong> leads by ${relGap} points on DriveLedger's 0–100 Engineering Reliability scale.</p><table><thead><tr><th>Ownership Metric</th><th>${escapeHtml(presetA.name)}</th><th>${escapeHtml(presetB.name)}</th></tr></thead><tbody><tr><td>Engine &amp; Powertrain</td><td>${escapeHtml(presetA.engineCode)} (${escapeHtml(presetA.fuelType)} · ${presetA.powerHp} HP)</td><td>${escapeHtml(presetB.engineCode)} (${escapeHtml(presetB.fuelType)} · ${presetB.powerHp} HP)</td></tr><tr><td>Benchmark Purchase Price</td><td>$${Number(presetA.purchasePriceUsd || 0).toLocaleString()}</td><td>$${Number(presetB.purchasePriceUsd || 0).toLocaleString()}</td></tr><tr><td>5-Year True Cost to Own (TCO)</td><td><strong>$${telA.total5YrTcoUsd.toLocaleString()}</strong> ($${telA.monthlyTcoUsd}/mo)</td><td><strong>$${telB.total5YrTcoUsd.toLocaleString()}</strong> ($${telB.monthlyTcoUsd}/mo)</td></tr><tr><td>Cost per Mile</td><td>$${telA.costPerMileUsd}/mi</td><td>$${telB.costPerMileUsd}/mi</td></tr><tr><td>5-Year Depreciation Loss</td><td>$${telA.depreciation5YrUsd.toLocaleString()}</td><td>$${telB.depreciation5YrUsd.toLocaleString()}</td></tr><tr><td>5-Year Fuel / Energy Cost</td><td>$${telA.totalFuelUsd.toLocaleString()}</td><td>$${telB.totalFuelUsd.toLocaleString()}</td></tr><tr><td>5-Year Scheduled Maintenance</td><td>$${telA.totalMaintenanceUsd.toLocaleString()}</td><td>$${telB.totalMaintenanceUsd.toLocaleString()}</td></tr><tr><td>Engineering Reliability Score</td><td>${telA.reliabilityScore}/100</td><td>${telB.reliabilityScore}/100</td></tr><tr><td>Primary Mechanical Watchpoint</td><td>${escapeHtml(presetA.criticalDefectTag || 'Routine Servicing')}</td><td>${escapeHtml(presetB.criticalDefectTag || 'Routine Servicing')}</td></tr></tbody></table><p><strong>Buyer Takeaway:</strong> Before choosing between the ${escapeHtml(presetA.name)} and ${escapeHtml(presetB.name)}, compare your annual mileage and urban-vs-highway driving mix in the interactive comparator above, and inspect full service history for ${escapeHtml(presetA.criticalDefectTag || 'major wear items')} and ${escapeHtml(presetB.criticalDefectTag || 'major wear items')}.</p></article><nav aria-label="Compared Vehicles"><h2>Compared Vehicle Dossiers</h2><ul><li><a href="/tco/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} PPI Checklist</a></li><li><a href="/tco/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} PPI Checklist</a></li><li><a href="/compare">All Vehicle Comparisons</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`;
     }
 
     const imageUrl = (presetA && photoMap.get(presetA.id)) || DEFAULT_OG_IMAGE;
@@ -917,7 +1204,7 @@ export function collectAllSeoRoutes(options = {}) {
             routePath: matchup.path,
             title,
             description,
-            belowFoldHtml: `<nav aria-label="Compared Vehicles"><h2>Compared Vehicle Dossiers</h2><ul><li><a href="/tco/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetA.id)}">${escapeHtml(presetA.name)} Risk Matrix</a></li><li><a href="/tco/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(presetB.id)}">${escapeHtml(presetB.name)} Risk Matrix</a></li><li><a href="/compare">All Vehicle Comparisons</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`,
+            belowFoldHtml: compareBelowFoldHtml,
           })
         : undefined;
 
@@ -945,21 +1232,27 @@ export function collectAllSeoRoutes(options = {}) {
     if (!preset || !dossier) continue;
 
     const wearScale = Number(preset.maintenanceWearFactor) || 1.0;
-    const minParts = Math.round((dossier.partsCostRangeUsd?.[0] ?? 95) * wearScale);
-    const maxParts = Math.round((dossier.partsCostRangeUsd?.[1] ?? 1650) * wearScale);
+    const diyEst = calculateObdWorkshopEstimate(dossier, 'diy', wearScale);
+    const indEst = calculateObdWorkshopEstimate(dossier, 'independent', wearScale);
+    const dealerEst = calculateObdWorkshopEstimate(dossier, 'dealership', wearScale);
+    const minParts = diyEst.minPartsUsd;
+    const maxParts = diyEst.maxPartsUsd;
     const minLabor = dossier.laborHoursRange?.[0] ?? 1.0;
     const maxLabor = dossier.laborHoursRange?.[1] ?? 4.0;
     const codeLower = dossier.code.toLowerCase();
     const imageUrl = photoMap.get(preset.id) || DEFAULT_OG_IMAGE;
 
     const title = `${preset.name} ${dossier.code} ${dossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
-    const description = `Diagnose ${dossier.code} (${dossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
+    const description = `Diagnose ${dossier.code} (${dossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership ($${dealerEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) vs Independent ($${indEst.minTotalUsd.toLocaleString()}–$${indEst.maxTotalUsd.toLocaleString()}) vs DIY ($${diyEst.minTotalUsd.toLocaleString()}–$${diyEst.maxTotalUsd.toLocaleString()}) repair costs and live PID checks.`;
 
     const causesHtml = (dossier.rootCauses || [])
       .map(
         (c) =>
-          `<li>${escapeHtml(c.cause)} (${Math.round(Number(c.probabilityPct) || 0)}% probability)</li>`
+          `<li><strong>${escapeHtml(c.cause)}</strong> (${Math.round(Number(c.probabilityPct) || 0)}% probability) — ${escapeHtml(c.notes || '')}</li>`
       )
+      .join('');
+    const pidStepsHtml = (dossier.liveTelemetryCheck?.pidsToMonitor || [])
+      .map((pid) => `<li>Monitor Live PID: <strong>${escapeHtml(pid)}</strong></li>`)
       .join('');
     const obdJsonLd = {
       '@context': 'https://schema.org',
@@ -1000,7 +1293,7 @@ export function collectAllSeoRoutes(options = {}) {
       routePath: `/obd/${preset.id}/${codeLower}`,
       title,
       description,
-      belowFoldHtml: `<section aria-label="Diagnostic Causes"><h2>Top Root Causes for ${escapeHtml(dossier.code)} on ${escapeHtml(preset.name)}</h2><ul>${causesHtml}</ul><p>${escapeHtml(dossier.liveTelemetryCheck?.diagnosticProtocol || '')}</p></section>${vehicleNavHtml || `<nav aria-label="Related Vehicle Links"><h2>Related Vehicle Links</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Checklist</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`}`,
+      belowFoldHtml: `<article aria-label="${escapeHtml(dossier.code)} Repair Cost Tiers"><h2>${escapeHtml(preset.name)} ${escapeHtml(dossier.code)} (${escapeHtml(dossier.title)}) Repair Cost Breakdown</h2><p>Diagnostic trouble code <strong>${escapeHtml(dossier.code)}</strong> affects the ${escapeHtml(dossier.systemCategory || 'powertrain')} subsystem on the ${escapeHtml(preset.name)} (${escapeHtml(preset.engineCode)}). Flat-rate labor spans ${minLabor}–${maxLabor} hours with a vehicle complexity factor of ${wearScale.toFixed(2)}x. Always verify the highest-probability sensor and wiring causes before authorizing major component replacement.</p><table><thead><tr><th>Service Tier</th><th>Parts Estimate</th><th>Labor Estimate</th><th>Total Projected Range</th><th>Probability-Weighted Avg</th></tr></thead><tbody><tr><td>DIY Home Garage</td><td>$${diyEst.minPartsUsd.toLocaleString()} – $${diyEst.maxPartsUsd.toLocaleString()}</td><td>$0</td><td>$${diyEst.minTotalUsd.toLocaleString()} – $${diyEst.maxTotalUsd.toLocaleString()}</td><td>$${diyEst.weightedExpectedUsd.toLocaleString()}</td></tr><tr><td>Independent Specialist</td><td>$${indEst.minPartsUsd.toLocaleString()} – $${indEst.maxPartsUsd.toLocaleString()}</td><td>$${indEst.minLaborUsd.toLocaleString()} – $${indEst.maxLaborUsd.toLocaleString()}</td><td>$${indEst.minTotalUsd.toLocaleString()} – $${indEst.maxTotalUsd.toLocaleString()}</td><td>$${indEst.weightedExpectedUsd.toLocaleString()}</td></tr><tr><td>Franchised Dealership</td><td>$${dealerEst.minPartsUsd.toLocaleString()} – $${dealerEst.maxPartsUsd.toLocaleString()}</td><td>$${dealerEst.minLaborUsd.toLocaleString()} – $${dealerEst.maxLaborUsd.toLocaleString()}</td><td>$${dealerEst.minTotalUsd.toLocaleString()} – $${dealerEst.maxTotalUsd.toLocaleString()}</td><td>$${dealerEst.weightedExpectedUsd.toLocaleString()}</td></tr></tbody></table></article><section aria-label="Diagnostic Causes"><h2>Top Root Causes for ${escapeHtml(dossier.code)} on ${escapeHtml(preset.name)}</h2><ul>${causesHtml}</ul><h3>First-Principles Live PID Verification Protocol</h3><p>${escapeHtml(dossier.liveTelemetryCheck?.diagnosticProtocol || '')}</p>${pidStepsHtml ? `<ol>${pidStepsHtml}</ol>` : ''}</section>${vehicleNavHtml || `<nav aria-label="Related Vehicle Links"><h2>Related Vehicle Links</h2><ul><li><a href="/tco/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} 5-Year TCO</a></li><li><a href="/risk-matrix/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Risk Matrix</a></li><li><a href="/checklist/${escapeHtml(preset.id)}">${escapeHtml(preset.name)} Pre-Purchase Checklist</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/vehicles">All 35 Brands &amp; 179 Vehicles</a></li></ul></nav>`}`,
     });
 
     addRoute({
@@ -1044,7 +1337,7 @@ export async function prerenderSeoRoutes(options = {}) {
     ensuredDirs.add(dirPath);
   }
 
-  // 3. Update root dist/index.html with default OpenGraph, Twitter tags, core nav, brand hubs, guides & full vehicle catalog links
+  // 3. Update root dist/index.html with default OpenGraph, Twitter tags, editorial overview, brand hubs, guides & full vehicle catalog links
   const rootBrandLinks = BRAND_DIRECTORY.map(
     (b) => `<li><a href="/vehicles/${escapeHtml(b.slug)}">${escapeHtml(b.name)} Maintenance &amp; Reliability (${b.modelCount})</a></li>`
   ).join('');
@@ -1052,8 +1345,9 @@ export async function prerenderSeoRoutes(options = {}) {
     (p) => `<li><a href="/tco/${escapeHtml(p.id)}">${escapeHtml(p.name)} 5-Year TCO</a> · <a href="/risk-matrix/${escapeHtml(p.id)}">Risk Matrix</a></li>`
   ).join('');
   const rootGuideLinks = GUIDES_DATA.map(
-    (g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a></li>`
+    (g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a> — ${escapeHtml(g.summary)}</li>`
   ).join('');
+  const rootEditorialOverview = `<article aria-label="About DriveLedger Platform"><h2>Independent Car Ownership Cost, Reliability &amp; OBD-II Diagnostics</h2><p>DriveLedger is an independent automotive engineering and financial analytics platform helping used car buyers and everyday owners uncover the real 5-year cost of owning a vehicle across the United States, United Kingdom, and European Union. Unlike dealership payment calculators that conceal depreciation and out-of-warranty repair exposure, DriveLedger combines non-linear residual retention curves, thermodynamic powertrain wear models, and probability-ranked OBD-II workshop repair estimates across ${VEHICLE_PRESETS.length} benchmarked vehicle configurations.</p><p>Select any vehicle to calculate 5-year depreciation, financing or lease totals, urban versus highway maintenance risk horizons, pre-purchase inspection red flags, and fair DIY versus Independent Specialist versus Dealership workshop pricing — 100% free with zero sign-up required.</p></article>`;
   const rootHtml = injectRouteMetadata(baseTemplate, {
     title: 'DriveLedger | Independent Car Ownership Cost, Reliability & OBD-II Platform',
     description:
@@ -1091,7 +1385,7 @@ export async function prerenderSeoRoutes(options = {}) {
         'Real 5-year ownership costs, upcoming maintenance, and fair repair pricing in seconds.',
       showSearchSkeleton: true,
       showStatsStrip: true,
-      belowFoldHtml: `<nav aria-label="Primary Calculators"><h2>Primary Platform Tools &amp; Resources</h2><ul><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li><li><a href="/methodology">Engineering Methodology</a></li><li><a href="/reviews">Verified Workshop Quote Benchmarks</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact</a></li></ul></nav><nav aria-label="Automotive Brand Hubs"><h2>Browse All ${BRAND_DIRECTORY.length} Manufacturers</h2><ul>${rootBrandLinks}</ul></nav><section aria-label="Buyer Guides"><h2>Technical Buyer Guides</h2><ul>${rootGuideLinks}</ul></section><nav aria-label="All Benchmarked Vehicles"><h2>All ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models</h2><ul>${rootVehicleLinks}</ul></nav><nav aria-label="Legal and Compliance"><h2>Legal &amp; Compliance</h2><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li><li><a href="/cookies">Cookie Policy</a></li><li><a href="/disclaimer">Liability Disclaimer</a></li><li><a href="/affiliate-disclosure">Affiliate Disclosure</a></li><li><a href="/do-not-sell">Do Not Sell or Share My Personal Information</a></li></ul></nav>`,
+      belowFoldHtml: `${rootEditorialOverview}<nav aria-label="Primary Calculators"><h2>Primary Platform Tools &amp; Resources</h2><ul><li><a href="/tco">5-Year True Cost to Own Calculator</a></li><li><a href="/risk-matrix">Powertrain Maintenance Risk Matrix</a></li><li><a href="/obd-estimator">OBD-II Repair Cost Estimator</a></li><li><a href="/compare">Side-by-Side Vehicle Comparator</a></li><li><a href="/checklist">Pre-Purchase Inspection Checklist</a></li><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li><li><a href="/guides">Buyer Guides &amp; Technical Insights</a></li><li><a href="/methodology">Engineering Methodology</a></li><li><a href="/reviews">Verified Workshop Quote Benchmarks</a></li><li><a href="/about">About DriveLedger</a></li><li><a href="/contact">Contact</a></li></ul></nav><nav aria-label="Automotive Brand Hubs"><h2>Browse All ${BRAND_DIRECTORY.length} Manufacturers</h2><ul>${rootBrandLinks}</ul></nav><section aria-label="Buyer Guides"><h2>Technical Buyer Guides</h2><ul>${rootGuideLinks}</ul></section><nav aria-label="All Benchmarked Vehicles"><h2>All ${VEHICLE_PRESETS.length} Benchmarked Vehicle Models</h2><ul>${rootVehicleLinks}</ul></nav><nav aria-label="Legal and Compliance"><h2>Legal &amp; Compliance</h2><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li><li><a href="/cookies">Cookie Policy</a></li><li><a href="/disclaimer">Liability Disclaimer</a></li><li><a href="/affiliate-disclosure">Affiliate Disclosure</a></li><li><a href="/do-not-sell">Do Not Sell or Share My Personal Information</a></li></ul></nav>`,
     }),
   });
   fs.writeFileSync(templatePath, rootHtml, 'utf8');

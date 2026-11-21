@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, ChevronDown, Info } from 'lucide-react';
 
 export function Card({ className = '', children, ...props }) {
@@ -274,12 +274,41 @@ export function NumberField({ label, value, decimals = 0, suffix = '', onCommit,
   );
 }
 
-export function Collapse({ open, id, children, className = '' }) {
+export function Collapse({ open, id, children, className = '', searchable = false, onBeforeMatch }) {
+  const containerRef = useRef(null);
+  const supportsUntilFound =
+    typeof HTMLElement !== 'undefined' && 'onbeforematch' in HTMLElement.prototype;
+  const useUntilFound = Boolean(searchable && !open && supportsUntilFound);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!searchable || !el || typeof el.addEventListener !== 'function') return undefined;
+    if (!supportsUntilFound) {
+      if (el.hasAttribute && el.hasAttribute('hidden')) {
+        el.removeAttribute('hidden');
+      }
+      return undefined;
+    }
+    const handleBeforeMatch = () => {
+      if (typeof onBeforeMatch === 'function') {
+        onBeforeMatch();
+      }
+    };
+    el.addEventListener('beforematch', handleBeforeMatch);
+    return () => {
+      if (typeof el.removeEventListener === 'function') {
+        el.removeEventListener('beforematch', handleBeforeMatch);
+      }
+    };
+  }, [searchable, supportsUntilFound, onBeforeMatch]);
+
   return (
     <div
+      ref={containerRef}
       id={id}
+      {...(useUntilFound ? { hidden: 'until-found' } : {})}
       className={`transition-[max-height,opacity] duration-300 ease-out overflow-hidden ${
-        open ? 'max-h-[1400px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+        open ? 'max-h-[1400px] opacity-100' : useUntilFound ? '' : 'max-h-0 opacity-0 pointer-events-none'
       } ${className}`}
     >
       <div className="pt-2">{children}</div>

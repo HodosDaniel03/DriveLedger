@@ -862,6 +862,54 @@ function DriveLedgerWorkspace() {
     };
   }, []);
 
+  const currentPathname =
+    (typeof window !== 'undefined' && window.location?.pathname) || location.pathname || '/';
+  const isDirectLegalPath = Boolean(activeLegalModal && resolveLegalPolicyKey(currentPathname));
+
+  const handleSelectLegalPolicy = useCallback(
+    (policyKey) => {
+      if (policyKey === 'about' || policyKey === 'contact') {
+        setActiveLegalModal(null);
+        handleSelectTab(policyKey);
+        return;
+      }
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
+        if (currentPathPolicy) {
+          window.history.replaceState(null, '', `/${policyKey}${window.location.search}`);
+        } else {
+          window.history.replaceState(
+            null,
+            '',
+            `${window.location.pathname}${window.location.search}#${policyKey}`
+          );
+        }
+      }
+      setActiveLegalModal(policyKey);
+    },
+    [handleSelectTab]
+  );
+
+  const handleCloseLegalModal = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
+      if (currentPathPolicy) {
+        const restoreUrl =
+          prevNonLegalUrlRef.current ||
+          (window.location.search ? `/${window.location.search}` : '/');
+        prevNonLegalUrlRef.current = null;
+        window.history.replaceState(null, '', restoreUrl);
+      } else if (window.location.hash) {
+        window.history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}${window.location.search}`
+        );
+      }
+    }
+    setActiveLegalModal(null);
+  }, []);
+
   // When visiting /do-not-sell, trigger Google CMP revocation message if available,
   // falling back to our internal cookie settings modal.
   useEffect(() => {
@@ -967,6 +1015,14 @@ function DriveLedgerWorkspace() {
               </a>
             </div>
           </section>
+        ) : isDirectLegalPath ? (
+          <LegalModal
+            standalone
+            activePolicy={activeLegalModal}
+            onSelectPolicy={handleSelectLegalPolicy}
+            onClose={handleCloseLegalModal}
+            onOpenCookieSettings={() => setShowCookieBannerOverride(true)}
+          />
         ) : (
         /* Dynamic Calculator Workspace */
         <div
@@ -1165,59 +1221,25 @@ function DriveLedgerWorkspace() {
           onNavigateToVehicles={handleNavigateToVehicles}
           onOpenLegalModal={handleOpenLegalModal}
           onOpenCookiePreferences={() => setShowCookieBannerOverride(true)}
-          hideFaq={activeTab === 'overview' || activeTab === 'methodology'}
+          hideFaq={isDirectLegalPath || activeTab === 'overview' || activeTab === 'methodology'}
+          hideVinBanner={
+            isNotFoundRoute ||
+            isDirectLegalPath ||
+            ['tco', 'compare', 'checklist', 'guides', 'about', 'contact', 'methodology'].includes(
+              activeTab
+            )
+          }
           selectedPresetId={selectedPresetId}
           hasSelectedVehicle={hasSelectedVehicle}
         />
       </main>
 
-      {/* Comprehensive Legal & Regulatory Modal Suite */}
-      {activeLegalModal && (
+      {/* Comprehensive Legal & Regulatory Modal Suite (only rendered as overlay when opened via #hash) */}
+      {activeLegalModal && !isDirectLegalPath && (
         <LegalModal
           activePolicy={activeLegalModal}
-          onSelectPolicy={(policyKey) => {
-            if (policyKey === 'about' || policyKey === 'contact') {
-              setActiveLegalModal(null);
-              handleSelectTab(policyKey);
-              return;
-            }
-            if (typeof window !== 'undefined' && window.history?.replaceState) {
-              const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
-              if (currentPathPolicy) {
-                window.history.replaceState(
-                  null,
-                  '',
-                  `/${policyKey}${window.location.search}`
-                );
-              } else {
-                window.history.replaceState(
-                  null,
-                  '',
-                  `${window.location.pathname}${window.location.search}#${policyKey}`
-                );
-              }
-            }
-            setActiveLegalModal(policyKey);
-          }}
-          onClose={() => {
-            if (typeof window !== 'undefined' && window.history?.replaceState) {
-              const currentPathPolicy = resolveLegalPolicyKey(window.location.pathname);
-              if (currentPathPolicy) {
-                const restoreUrl =
-                  prevNonLegalUrlRef.current ||
-                  (window.location.search ? `/${window.location.search}` : '/');
-                prevNonLegalUrlRef.current = null;
-                window.history.replaceState(null, '', restoreUrl);
-              } else if (window.location.hash) {
-                window.history.replaceState(
-                  null,
-                  '',
-                  `${window.location.pathname}${window.location.search}`
-                );
-              }
-            }
-            setActiveLegalModal(null);
-          }}
+          onSelectPolicy={handleSelectLegalPolicy}
+          onClose={handleCloseLegalModal}
           onOpenCookieSettings={() => setShowCookieBannerOverride(true)}
         />
       )}

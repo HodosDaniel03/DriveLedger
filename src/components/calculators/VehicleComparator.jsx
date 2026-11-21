@@ -33,6 +33,7 @@ import { Card, Pill, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimiti
 import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
 import VinCheckBanner from '../monetization/VinCheckBanner';
 import AffiliateCTA from '../monetization/AffiliateCTA';
+import ToolEditorialSection from '../seo/ToolEditorialSection';
 import { computeBreakEvenTrajectory } from '../../data/breakEvenAndPpi.js';
 
 export { computeBreakEvenTrajectory };
@@ -1420,6 +1421,16 @@ export default function VehicleComparator({
         );
       })()}
       </>
+      )}
+      {standalone && (
+        <ToolEditorialSection
+          tool="compare"
+          vehicleName={
+            hasBothVehicles && vehicleA && vehicleB
+              ? `${vehicleA.shortName || vehicleA.name} vs ${vehicleB.shortName || vehicleB.name}`
+              : ''
+          }
+        />
       )}
     </Card>
   );

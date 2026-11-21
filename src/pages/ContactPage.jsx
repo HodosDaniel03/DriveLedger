@@ -314,6 +314,7 @@ export default function ContactPage({ onNavigateTab }) {
                     type="text"
                     id="contact-name"
                     name="name"
+                    autoComplete="name"
                     value={formData.name}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -343,6 +344,8 @@ export default function ContactPage({ onNavigateTab }) {
                     type="email"
                     id="contact-email"
                     name="email"
+                    inputMode="email"
+                    autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}

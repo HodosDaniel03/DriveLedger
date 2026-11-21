@@ -200,38 +200,28 @@ export default function CookieConsentBanner({
     <aside
       data-testid="cookie-consent-banner"
       aria-label="GDPR and CCPA Cookie Consent Banner"
-      className={`fixed bottom-0 inset-x-0 ${isOpenOverride ? 'z-50' : 'z-40'} p-2 sm:p-4 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print`}
+      className={`fixed bottom-0 inset-x-0 ${isOpenOverride ? 'z-50' : 'z-40'} p-2 sm:p-3 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print`}
     >
-      <div className="mx-auto max-w-[1280px] max-h-[90dvh] overflow-y-auto pointer-events-auto rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-xl p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-start gap-3 max-w-3xl min-w-0">
-            <div className="hidden sm:flex w-9 h-9 shrink-0 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center mt-0.5">
-              <Shield className="w-4 h-4" />
+      <div className="mx-auto max-w-[1280px] max-h-[85dvh] overflow-y-auto pointer-events-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-lg px-3.5 py-2.5 sm:px-5 sm:py-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 lg:gap-4">
+          <div className="flex items-center gap-2.5 max-w-3xl min-w-0">
+            <div className="hidden sm:flex w-7 h-7 shrink-0 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
+              <Shield className="w-3.5 h-3.5" aria-hidden="true" />
             </div>
-            <div className="space-y-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-                  Privacy &amp; Cookie Governance (GDPR / UK GDPR / CCPA)
-                </span>
-                <span className="text-[10px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                  100% Client-Side Calculator Math
-                </span>
-              </div>
-              <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed">
-                {MONETIZATION_CONFIG.brandName} processes all vehicle cost and OBD-II calculations locally in your browser. We use essential local storage for unit/theme preferences and, with your consent, Google AdSense (DoubleClick DART) cookies to support free access. Review our{' '}
-                <a
-                  href="#cookies"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (onOpenPolicyModal) onOpenPolicyModal('cookies');
-                  }}
-                  className="font-semibold text-primary-600 dark:text-primary-400 underline hover:text-primary-700"
-                >
-                  Cookie &amp; AdSense DART Policy
-                </a>
-                .
-              </p>
-            </div>
+            <p className="text-[11px] sm:text-xs font-sans text-body dark:text-zinc-300 leading-snug min-w-0">
+              <strong className="text-ink dark:text-zinc-50 font-semibold">Privacy &amp; Cookies:</strong>{' '}
+              {MONETIZATION_CONFIG.brandName} runs calculator math locally and uses essential storage plus, with consent, Google AdSense (DoubleClick DART) cookies.{' '}
+              <a
+                href="#cookies"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onOpenPolicyModal) onOpenPolicyModal('cookies');
+                }}
+                className="font-semibold text-primary-600 dark:text-primary-400 underline hover:text-primary-700 whitespace-nowrap"
+              >
+                Cookie &amp; AdSense DART Policy
+              </a>
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -239,16 +229,16 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-settings-toggle"
               onClick={() => setShowSettings((prev) => !prev)}
-              className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[38px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2.5 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              <Sliders className="w-3.5 h-3.5" />
+              <Sliders className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Cookie Settings</span>
             </button>
             <button
               type="button"
               data-testid="cookie-essential-only"
               onClick={handleEssentialOnly}
-              className="min-h-[44px] sm:min-h-0 inline-flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[38px] sm:min-h-0 inline-flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               Essential Only
             </button>
@@ -256,9 +246,9 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-accept-all"
               onClick={handleAcceptAll}
-              className="min-h-[44px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-sans font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+              className="min-h-[38px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-xs font-sans font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Accept All</span>
             </button>
           </div>

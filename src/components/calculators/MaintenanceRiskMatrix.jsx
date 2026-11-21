@@ -27,6 +27,7 @@ import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
 import KnownIssuesDossier from '../common/KnownIssuesDossier';
 import FixOrSellCalculator from './FixOrSellCalculator';
 import VehicleInternalLinks from '../seo/VehicleInternalLinks';
+import ToolEditorialSection from '../seo/ToolEditorialSection';
 
 const BAR_COLOR = {
   OPTIMAL: '#12A150',
@@ -1429,6 +1430,12 @@ export default function MaintenanceRiskMatrix({
         vehicleName={isVehicleSelected && activePreset ? activePreset.name : 'your vehicle'}
         odometerMiles={isVehicleSelected ? physicalOdometerMiles : undefined}
         serviceReserveUsd={isVehicleSelected ? serviceReserveUsd : undefined}
+      />
+
+      {/* Editorial Methodology & Technical FAQ Section */}
+      <ToolEditorialSection
+        tool="risk"
+        vehicleName={isVehicleSelected && activePreset ? activePreset.name : ''}
       />
 
       {/* Crawlable Internal Links for Active Vehicle */}

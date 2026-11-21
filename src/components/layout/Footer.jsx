@@ -48,6 +48,7 @@ export default function Footer({
   onOpenLegalModal,
   onOpenCookiePreferences,
   hideFaq = false,
+  hideVinBanner = false,
   selectedPresetId,
   hasSelectedVehicle = Boolean(selectedPresetId),
 }) {
@@ -78,16 +79,18 @@ export default function Footer({
 
   return (
     <div className="mt-16 space-y-16">
-      {/* 1. Official carVertical Vehicle History Verification Card */}
-      <VinCheckBanner
-        placement="footer"
-        vehicleName={activePreset?.name || ''}
-        purchasePriceUsd={activePreset?.purchasePriceUsd}
-        vehiclePriceFormatted={activePreset?.purchasePriceUsd ? formatCurrency(activePreset.purchasePriceUsd) : undefined}
-        odometerMiles={activePreset?.defaultOdometerMiles}
-        compact={false}
-        className="max-w-[1380px] mx-auto w-full"
-      />
+      {/* 1. Official carVertical Vehicle History Verification Card (omitted on pages with an inline banner or trust/legal/error routes) */}
+      {!hideVinBanner && (
+        <VinCheckBanner
+          placement="footer"
+          vehicleName={activePreset?.name || ''}
+          purchasePriceUsd={activePreset?.purchasePriceUsd}
+          vehiclePriceFormatted={activePreset?.purchasePriceUsd ? formatCurrency(activePreset.purchasePriceUsd) : undefined}
+          odometerMiles={activePreset?.defaultOdometerMiles}
+          compact={false}
+          className="max-w-[1380px] mx-auto w-full"
+        />
+      )}
 
       {/* 2. Collapsible FAQ Accordion with Stitch Clean Styling */}
       {!hideFaq && (

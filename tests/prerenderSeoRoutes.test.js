@@ -601,3 +601,66 @@ test('11. Prerendered Branded App Shell, Zero Nested Divs & Lazy Bundle Split', 
     'dist/index.html must not eagerly modulepreload monolithic calculators chunk'
   );
 });
+
+// ============================================================================
+// 12. ADSENSE CONTENT DEPTH & ROUTE DIFFERENTIATION AUDIT
+// ============================================================================
+
+test('12. AdSense Content Depth: Core, Legal, Mileage Brackets, Comparisons & Guides prerender unique substantive HTML', () => {
+  const countRootWords = (filePath) => {
+    assert.ok(fs.existsSync(filePath), `Expected prerendered artifact: ${filePath}`);
+    const html = fs.readFileSync(filePath, 'utf8');
+    const rootMatch = html.match(/<div\s+id=["']root["'][^>]*>([\s\S]*?)<\/div>/i);
+    assert.ok(rootMatch, `Missing #root in ${filePath}`);
+    assert.ok(!/<\/?div\b/i.test(rootMatch[1]), `Zero nested <div> allowed in ${filePath}`);
+    const text = rootMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return { html: rootMatch[1], words: text.split(' ').filter(Boolean).length };
+  };
+
+  // Core & legal routes must render real editorial/policy prose (not thin 130-word nav shells)
+  const minWordExpectations = [
+    [path.join(DIST_DIR, 'privacy', 'index.html'), 1000],
+    [path.join(DIST_DIR, 'terms', 'index.html'), 700],
+    [path.join(DIST_DIR, 'cookies', 'index.html'), 900],
+    [path.join(DIST_DIR, 'about', 'index.html'), 450],
+    [path.join(DIST_DIR, 'contact', 'index.html'), 220],
+    [path.join(DIST_DIR, 'methodology', 'index.html'), 700],
+    [path.join(DIST_DIR, 'tco', 'index.html'), 550],
+    [path.join(DIST_DIR, 'risk-matrix', 'index.html'), 550],
+    [path.join(DIST_DIR, 'checklist', 'index.html'), 550],
+    [path.join(DIST_DIR, 'reviews', 'index.html'), 280],
+    [path.join(DIST_DIR, 'guides', 'how-to-spot-odometer-rollback', 'index.html'), 950],
+    [path.join(DIST_DIR, 'compare', 'bmw-330i-g20-vs-tesla-model-3-lr', 'index.html'), 350],
+    [path.join(DIST_DIR, 'tco', 'vw-golf-20-tdi', 'index.html'), 480],
+    [path.join(DIST_DIR, 'checklist', 'vw-golf-20-tdi', 'index.html'), 800],
+    [path.join(DIST_DIR, 'obd', 'vw-golf-20-tdi', 'p2002', 'index.html'), 480],
+  ];
+
+  for (const [filePath, minWords] of minWordExpectations) {
+    const { words } = countRootWords(filePath);
+    assert.ok(
+      words >= minWords,
+      `Expected >= ${minWords} prerendered words in ${filePath}, got ${words}`
+    );
+  }
+
+  // Mileage bracket pages must differentiate telemetry across 60k, 100k, and 150k miles
+  const b60 = countRootWords(path.join(DIST_DIR, 'risk-matrix', 'vw-golf-20-tdi', '60k-miles', 'index.html'));
+  const b100 = countRootWords(path.join(DIST_DIR, 'risk-matrix', 'vw-golf-20-tdi', '100k-miles', 'index.html'));
+  const b150 = countRootWords(path.join(DIST_DIR, 'risk-matrix', 'vw-golf-20-tdi', '150k-miles', 'index.html'));
+
+  assert.ok(b60.html.includes('At 60,000 miles'), '60k-miles page must evaluate at 60,000 miles');
+  assert.ok(b100.html.includes('At 100,000 miles'), '100k-miles page must evaluate at 100,000 miles');
+  assert.ok(b150.html.includes('At 150,000 miles'), '150k-miles page must evaluate at 150,000 miles');
+  assert.notEqual(b60.html, b150.html, '60k and 150k bracket pages must have distinct HTML');
+
+  // Compare pages must render a real side-by-side HTML table
+  const cmp = countRootWords(path.join(DIST_DIR, 'compare', 'bmw-330i-g20-vs-tesla-model-3-lr', 'index.html'));
+  assert.ok(cmp.html.includes('<table>') && cmp.html.includes('5-Year True Cost to Own (TCO)'), 'Compare page must prerender structured side-by-side comparison table');
+
+  // Guide pages must include table, checklist, and native <details> FAQ disclosures
+  const guide = countRootWords(path.join(DIST_DIR, 'guides', 'how-to-spot-odometer-rollback', 'index.html'));
+  assert.ok(guide.html.includes('<table>'), 'Prerendered guide must include comparison table');
+  assert.ok(guide.html.includes('<ol>'), 'Prerendered guide must include actionable checklist');
+  assert.ok(guide.html.includes('<details'), 'Prerendered guide must include native <details> FAQs');
+});
