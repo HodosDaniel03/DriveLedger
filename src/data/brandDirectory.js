@@ -145,7 +145,10 @@ export function computeBrandTelemetrySummary(brandEntryOrSlug) {
   const count = modelSummaries.length;
   const totalSum = modelSummaries.reduce((acc, m) => acc + m.total5YrTcoUsd, 0);
   const monthlySum = modelSummaries.reduce((acc, m) => acc + m.monthlyTcoUsd, 0);
+  const maintenance5YrSum = modelSummaries.reduce((acc, m) => acc + (m.maintenance5YrUsd || 0), 0);
   const sortedByCost = [...modelSummaries].sort((a, b) => a.total5YrTcoUsd - b.total5YrTcoUsd);
+  const avg5YrMaintenanceUsd = Math.round(maintenance5YrSum / count);
+  const avgAnnualMaintenanceUsd = Math.round(avg5YrMaintenanceUsd / 5);
 
   const summary = {
     brandName: brand.name,
@@ -154,6 +157,8 @@ export function computeBrandTelemetrySummary(brandEntryOrSlug) {
     powertrainCounts: brand.powertrainCounts,
     avg5YrTcoUsd: Math.round(totalSum / count),
     avgMonthlyTcoUsd: Math.round(monthlySum / count),
+    avg5YrMaintenanceUsd,
+    avgAnnualMaintenanceUsd,
     min5YrTcoUsd: sortedByCost[0].total5YrTcoUsd,
     max5YrTcoUsd: sortedByCost[count - 1].total5YrTcoUsd,
     lowestTcoModel: sortedByCost[0],

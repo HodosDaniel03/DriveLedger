@@ -2,6 +2,34 @@
 <html lang="en" class="bg-canvas dark:bg-slate-950">
 
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      wait_for_update: 500,
+    });
+    try {
+      var savedConsentRaw = localStorage.getItem('shiftmetric_cookie_consent');
+      if (savedConsentRaw) {
+        var savedConsent = JSON.parse(savedConsentRaw);
+        gtag('consent', 'update', {
+          analytics_storage: savedConsent && savedConsent.analytics ? 'granted' : 'denied',
+          ad_storage: savedConsent && savedConsent.advertising ? 'granted' : 'denied',
+          ad_user_data: savedConsent && savedConsent.advertising ? 'granted' : 'denied',
+          ad_personalization: savedConsent && savedConsent.advertising ? 'granted' : 'denied',
+        });
+      }
+    } catch (e) { }
+    gtag('js', new Date());
+    gtag('config', 'G-H29FZKM9HQ');
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H29FZKM9HQ"></script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6581535125716295" crossorigin="anonymous"></script>
   <script>
     window.__loadDriveLedgerAdSense = function () {};

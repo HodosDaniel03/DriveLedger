@@ -664,3 +664,43 @@ test('12. AdSense Content Depth: Core, Legal, Mileage Brackets, Comparisons & Gu
   assert.ok(guide.html.includes('<ol>'), 'Prerendered guide must include actionable checklist');
   assert.ok(guide.html.includes('<details'), 'Prerendered guide must include native <details> FAQs');
 });
+
+// ============================================================================
+// 13. CLOUDFLARE TRAILING SLASH, GA4 CONSENT MODE V2 & BRAND HUB SEO INVARIANTS
+// ============================================================================
+
+test('13. Redirect Fix, GA4 Consent Mode v2 & High-Impression Brand Hub SEO Invariants', () => {
+  const wranglerConfig = JSON.parse(
+    fs.readFileSync(path.join(ROOT_DIR, 'wrangler.jsonc'), 'utf8')
+  );
+  assert.equal(
+    wranglerConfig.assets?.html_handling,
+    'drop-trailing-slash',
+    'wrangler.jsonc must set assets.html_handling to "drop-trailing-slash" to prevent 307 canonical redirect loops'
+  );
+
+  const indexHtml = fs.readFileSync(path.join(ROOT_DIR, 'index.html'), 'utf8');
+  assert.ok(
+    indexHtml.includes('https://www.googletagmanager.com/gtag/js?id=G-H29FZKM9HQ'),
+    'index.html must include the GA4 gtag.js script for G-H29FZKM9HQ'
+  );
+  assert.ok(
+    indexHtml.includes("gtag('consent', 'default'"),
+    'index.html must initialize Google Consent Mode v2 defaults before loading gtag.js'
+  );
+
+  for (const slug of ['audi', 'chevrolet', 'land-rover']) {
+    const brandHtml = fs.readFileSync(
+      path.join(DIST_DIR, 'vehicles', slug, 'index.html'),
+      'utf8'
+    );
+    assert.ok(
+      brandHtml.includes('/yr') && brandHtml.includes('(2026)'),
+      `/vehicles/${slug} must include concrete annual maintenance cost and 2026 freshness in SEO metadata`
+    );
+    assert.ok(
+      brandHtml.includes('"@type":"FAQPage"') && brandHtml.includes('<table>'),
+      `/vehicles/${slug} must prerender maintenance breakdown table and FAQPage JSON-LD`
+    );
+  }
+});

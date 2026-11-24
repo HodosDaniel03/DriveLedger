@@ -27,6 +27,10 @@ export const ADSENSE_CONFIG = {
   },
 };
 
+export const ANALYTICS_CONFIG = {
+  ga4MeasurementId: 'G-H29FZKM9HQ',
+};
+
 export const CARVERTICAL_AFFILIATE_URL =
   'https://www.carvertical.deal/4CMF46B/5NWWWN/?source_id=AFF&sub1=mydriveledger';
 
@@ -102,8 +106,10 @@ export const FTC_PROXIMATE_DISCLOSURE =
 export const MONETIZATION_CONFIG = {
   ...SITE_METADATA,
   ...ADSENSE_CONFIG,
+  ...ANALYTICS_CONFIG,
   site: SITE_METADATA,
   adsense: ADSENSE_CONFIG,
+  analytics: ANALYTICS_CONFIG,
   affiliatePartners,
   carVertical: {
     affiliateUrl: CARVERTICAL_AFFILIATE_URL,

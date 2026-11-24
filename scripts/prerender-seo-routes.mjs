@@ -797,9 +797,13 @@ export function collectAllSeoRoutes(options = {}) {
   // 1b. Dedicated Brand Hub Pages (/vehicles/:brand, 35 routes)
   for (const brand of BRAND_DIRECTORY) {
     const brandTel = computeBrandTelemetrySummary(brand);
-    const modelWord = brand.modelCount === 1 ? 'Model' : 'Models';
-    const brandTitle = `${brand.name} Maintenance Cost, 5-Year TCO & Reliability (${brand.modelCount} ${modelWord}) | DriveLedger`;
-    const brandDesc = `Compare ${brand.name} 5-year True Cost to Own (avg $${brandTel.avg5YrTcoUsd.toLocaleString()}, $${brandTel.avgMonthlyTcoUsd}/mo), powertrain wear risks, and pre-purchase inspection checklists across ${brand.modelCount} benchmarked ${brand.name} models.`;
+    const topModelNames = brand.models
+      .slice(0, 4)
+      .map((m) => m.modelName || m.shortName || m.name)
+      .filter((val, idx, arr) => val && arr.indexOf(val) === idx)
+      .join(', ');
+    const brandTitle = `${brand.name} Maintenance Cost (2026): Avg $${brandTel.avgAnnualMaintenanceUsd.toLocaleString()}/yr & 5-Yr TCO | DriveLedger`;
+    const brandDesc = `2026 ${brand.name} maintenance costs average $${brandTel.avgAnnualMaintenanceUsd.toLocaleString()}/yr ($${brandTel.avg5YrMaintenanceUsd.toLocaleString()} over 5 yrs) with $${brandTel.avg5YrTcoUsd.toLocaleString()} avg 5-yr TCO. Compare ${topModelNames || `${brand.modelCount} models`}, known failure risks & free TCO calculator.`;
     const brandImage = resolvePrerenderVehiclePhotoUrl(brand.models[0]) || DEFAULT_OG_IMAGE;
 
     const brandModelsHtml = brandTel.modelSummaries
@@ -808,6 +812,37 @@ export function collectAllSeoRoutes(options = {}) {
           `<li><a href="/tco/${escapeHtml(m.preset.id)}">${escapeHtml(m.preset.name)} 5-Year TCO ($${m.total5YrTcoUsd.toLocaleString()})</a> · <a href="/risk-matrix/${escapeHtml(m.preset.id)}">Risk Matrix</a> · <a href="/checklist/${escapeHtml(m.preset.id)}">PPI Checklist</a></li>`
       )
       .join('');
+
+    const brandMaintRowsHtml = brandTel.modelSummaries
+      .map((m) => {
+        const annualMaint = Math.round((m.maintenance5YrUsd || 0) / 5);
+        return `<tr><td><a href="/tco/${escapeHtml(m.preset.id)}">${escapeHtml(m.preset.name)}</a></td><td>$${annualMaint.toLocaleString()}/yr</td><td>$${Math.round(m.maintenance5YrUsd || 0).toLocaleString()}</td><td>$${m.total5YrTcoUsd.toLocaleString()} ($${m.monthlyTcoUsd}/mo)</td><td>${escapeHtml(m.preset.criticalDefectTag || 'Scheduled Maintenance')}</td></tr>`;
+      })
+      .join('');
+
+    const brandFaqs = [
+      {
+        question: `How much does a ${brand.name} cost to maintain per year?`,
+        answer: `Across ${brand.modelCount} benchmarked ${brand.name} configurations in DriveLedger, scheduled maintenance and wear reserves average $${brandTel.avgAnnualMaintenanceUsd.toLocaleString()} per year ($${brandTel.avg5YrMaintenanceUsd.toLocaleString()} over 5 years), with total 5-year True Cost to Own averaging $${brandTel.avg5YrTcoUsd.toLocaleString()} ($${brandTel.avgMonthlyTcoUsd}/month).`,
+      },
+      {
+        question: `Which ${brand.name} model has the lowest 5-year ownership cost?`,
+        answer: `In our current catalog, the ${brandTel.lowestTcoModel.preset.name} posts the lowest 5-year TCO at $${brandTel.lowestTcoModel.total5YrTcoUsd.toLocaleString()} ($${brandTel.lowestTcoModel.monthlyTcoUsd}/month), compared to $${brandTel.highestTcoModel.total5YrTcoUsd.toLocaleString()} for the ${brandTel.highestTcoModel.preset.name}.`,
+      },
+      {
+        question: `What should used ${brand.name} buyers inspect before purchasing?`,
+        answer: `Verify full service receipts against model-specific watchpoints (${brandTel.modelSummaries
+          .slice(0, 3)
+          .map((m) => m.preset.criticalDefectTag)
+          .filter((v, i, a) => v && a.indexOf(v) === i)
+          .join(', ') || 'timing, cooling, and transmission service intervals'}), run a full OBD-II scan, and inspect wear horizons in each model's Maintenance Risk Matrix.`,
+      },
+    ];
+    const brandFaqsHtml = buildFaqDetailsHtml(
+      brandFaqs,
+      `brand-faq-${brand.slug}`,
+      `${brand.name} Maintenance Cost FAQs`
+    );
 
     const siblingBrandLinksHtml = BRAND_DIRECTORY.filter((b) => b.slug !== brand.slug)
       .map(
@@ -818,25 +853,37 @@ export function collectAllSeoRoutes(options = {}) {
 
     const brandJsonLd = {
       '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: `${brand.name} Maintenance Cost, 5-Year TCO & Reliability Profiles`,
-      description: brandDesc,
-      url: `${SITE_ORIGIN}/vehicles/${brand.slug}`,
-      numberOfItems: brand.modelCount,
-      about: {
-        '@type': 'Brand',
-        name: brand.name,
-      },
-      mainEntity: {
-        '@type': 'ItemList',
-        numberOfItems: brand.modelCount,
-        itemListElement: brandTel.modelSummaries.map((item, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          url: `${SITE_ORIGIN}/tco/${item.preset.id}`,
-          name: item.preset.name,
-        })),
-      },
+      '@graph': [
+        {
+          '@type': 'CollectionPage',
+          name: `${brand.name} Maintenance Cost, 5-Year TCO & Reliability Profiles`,
+          description: brandDesc,
+          url: `${SITE_ORIGIN}/vehicles/${brand.slug}`,
+          numberOfItems: brand.modelCount,
+          about: {
+            '@type': 'Brand',
+            name: brand.name,
+          },
+          mainEntity: {
+            '@type': 'ItemList',
+            numberOfItems: brand.modelCount,
+            itemListElement: brandTel.modelSummaries.map((item, idx) => ({
+              '@type': 'ListItem',
+              position: idx + 1,
+              url: `${SITE_ORIGIN}/tco/${item.preset.id}`,
+              name: item.preset.name,
+            })),
+          },
+        },
+        {
+          '@type': 'FAQPage',
+          mainEntity: brandFaqs.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer },
+          })),
+        },
+      ],
     };
 
     addRoute({
@@ -850,7 +897,7 @@ export function collectAllSeoRoutes(options = {}) {
         routePath: `/vehicles/${brand.slug}`,
         title: brandTitle,
         description: brandDesc,
-        belowFoldHtml: `<section aria-label="${escapeHtml(brand.name)} Ownership Summary"><h2>${escapeHtml(brand.name)} Ownership Summary</h2><dl><dt>Benchmarked Models</dt><dd>${brand.modelCount}</dd><dt>Average 5-Year TCO</dt><dd>$${brandTel.avg5YrTcoUsd.toLocaleString()} ($${brandTel.avgMonthlyTcoUsd}/mo)</dd><dt>5-Year TCO Range</dt><dd>$${brandTel.min5YrTcoUsd.toLocaleString()} – $${brandTel.max5YrTcoUsd.toLocaleString()}</dd></dl></section><section aria-label="${escapeHtml(brand.name)} Models"><h2>Benchmarked ${escapeHtml(brand.name)} Models</h2><ul>${brandModelsHtml}</ul></section><nav aria-label="Other Automotive Brands"><h2>Explore Other Manufacturers</h2><ul><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li>${siblingBrandLinksHtml}</ul></nav>`,
+        belowFoldHtml: `<section aria-label="${escapeHtml(brand.name)} Ownership Summary"><h2>${escapeHtml(brand.name)} Maintenance Cost &amp; Ownership Summary (2026)</h2><dl><dt>Average Annual Maintenance</dt><dd>$${brandTel.avgAnnualMaintenanceUsd.toLocaleString()}/yr ($${brandTel.avg5YrMaintenanceUsd.toLocaleString()} / 5 yrs)</dd><dt>Average 5-Year TCO</dt><dd>$${brandTel.avg5YrTcoUsd.toLocaleString()} ($${brandTel.avgMonthlyTcoUsd}/mo)</dd><dt>5-Year TCO Range</dt><dd>$${brandTel.min5YrTcoUsd.toLocaleString()} – $${brandTel.max5YrTcoUsd.toLocaleString()}</dd><dt>Benchmarked Models</dt><dd>${brand.modelCount}</dd></dl></section><section aria-label="${escapeHtml(brand.name)} Maintenance Cost Breakdown"><h2>${escapeHtml(brand.name)} Maintenance Cost &amp; 5-Year TCO by Model</h2><table><thead><tr><th>Model</th><th>Avg Annual Maint.</th><th>5-Yr Maintenance</th><th>5-Year TCO</th><th>Primary Mechanical Watchpoint</th></tr></thead><tbody>${brandMaintRowsHtml}</tbody></table></section><section aria-label="${escapeHtml(brand.name)} Models"><h2>Benchmarked ${escapeHtml(brand.name)} Calculators &amp; Checklists</h2><ul>${brandModelsHtml}</ul></section>${brandFaqsHtml}<nav aria-label="Other Automotive Brands"><h2>Explore Other Manufacturers</h2><ul><li><a href="/vehicles">All ${BRAND_DIRECTORY.length} Brands &amp; ${VEHICLE_PRESETS.length} Vehicles Directory</a></li>${siblingBrandLinksHtml}</ul></nav>`,
       }),
     });
   }
@@ -1242,8 +1289,8 @@ export function collectAllSeoRoutes(options = {}) {
     const codeLower = dossier.code.toLowerCase();
     const imageUrl = photoMap.get(preset.id) || DEFAULT_OG_IMAGE;
 
-    const title = `${preset.name} ${dossier.code} ${dossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
-    const description = `Diagnose ${dossier.code} (${dossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership ($${dealerEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) vs Independent ($${indEst.minTotalUsd.toLocaleString()}–$${indEst.maxTotalUsd.toLocaleString()}) vs DIY ($${diyEst.minTotalUsd.toLocaleString()}–$${diyEst.maxTotalUsd.toLocaleString()}) repair costs and live PID checks.`;
+    const title = `${preset.name} ${dossier.code} Repair Cost ($${indEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) & Fix Guide | DriveLedger`;
+    const description = `Fix ${dossier.code} (${dossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Independent ($${indEst.minTotalUsd.toLocaleString()}–$${indEst.maxTotalUsd.toLocaleString()}) vs Dealership ($${dealerEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) vs DIY ($${diyEst.minTotalUsd.toLocaleString()}–$${diyEst.maxTotalUsd.toLocaleString()}) repair costs (${minLabor}–${maxLabor}h labor) & live PID checks.`;
 
     const causesHtml = (dossier.rootCauses || [])
       .map(

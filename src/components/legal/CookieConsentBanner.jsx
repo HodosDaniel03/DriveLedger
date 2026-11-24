@@ -84,6 +84,14 @@ export function saveCookieConsentSelection(selection) {
     try {
       storage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(payload));
       if (typeof window !== 'undefined') {
+        if (typeof window.gtag === 'function') {
+          window.gtag('consent', 'update', {
+            analytics_storage: payload.analytics ? 'granted' : 'denied',
+            ad_storage: payload.advertising ? 'granted' : 'denied',
+            ad_user_data: payload.advertising ? 'granted' : 'denied',
+            ad_personalization: payload.advertising ? 'granted' : 'denied',
+          });
+        }
         if (typeof window.__loadDriveLedgerAdSense === 'function') {
           window.__loadDriveLedgerAdSense();
         } else if (!payload.advertising && typeof document !== 'undefined') {

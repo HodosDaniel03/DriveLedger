@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
-import { OBD_CODES } from '../../data/obdCodes';
+import { OBD_CODES, calculateObdWorkshopEstimate } from '../../data/obdCodes';
 import {
   MAINTENANCE_COMPONENTS,
   evaluateComponentHealth,
@@ -337,8 +337,11 @@ export default function DynamicSeoHead({
 
       if (isExplicitObdLanding && isVehicleSelected) {
         const canonicalPath = `/obd/${preset.id}/${codeLower}`;
-        const title = `${preset.name} ${obdDossier.code} ${obdDossier.title}: Repair Cost & Live PID Guide | DriveLedger`;
-        const description = `Diagnose ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Dealership vs Independent vs DIY repair costs ($${minParts}–$${maxParts} parts, ${minLabor}–${maxLabor}h labor) and run First-Principles OBD-II Live PID telemetry checks.`;
+        const diyEst = calculateObdWorkshopEstimate(obdDossier, 'diy', wearScale);
+        const indEst = calculateObdWorkshopEstimate(obdDossier, 'independent', wearScale);
+        const dealerEst = calculateObdWorkshopEstimate(obdDossier, 'dealership', wearScale);
+        const title = `${preset.name} ${obdDossier.code} Repair Cost ($${indEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) & Fix Guide | DriveLedger`;
+        const description = `Fix ${obdDossier.code} (${obdDossier.title}) on the ${preset.name} (${preset.engineCode}). Compare Independent ($${indEst.minTotalUsd.toLocaleString()}–$${indEst.maxTotalUsd.toLocaleString()}) vs Dealership ($${dealerEst.minTotalUsd.toLocaleString()}–$${dealerEst.maxTotalUsd.toLocaleString()}) vs DIY ($${diyEst.minTotalUsd.toLocaleString()}–$${diyEst.maxTotalUsd.toLocaleString()}) repair costs (${minLabor}–${maxLabor}h labor) & live PID checks.`;
         return withImage({
           title,
           description,
@@ -542,9 +545,13 @@ export default function DynamicSeoHead({
     if (activeTab === 'vehicles') {
       if (activeBrand && activeBrandTelemetry) {
         const canonicalPath = `/vehicles/${activeBrand.slug}`;
-        const modelWord = activeBrand.modelCount === 1 ? 'Model' : 'Models';
-        const title = `${activeBrand.name} Maintenance Cost, 5-Year TCO & Reliability (${activeBrand.modelCount} ${modelWord}) | DriveLedger`;
-        const description = `Compare ${activeBrand.name} 5-year True Cost to Own (avg $${activeBrandTelemetry.avg5YrTcoUsd.toLocaleString()}, $${activeBrandTelemetry.avgMonthlyTcoUsd}/mo), powertrain wear risks, and pre-purchase inspection checklists across ${activeBrand.modelCount} benchmarked ${activeBrand.name} models.`;
+        const topModelNames = activeBrand.models
+          .slice(0, 4)
+          .map((m) => m.modelName || m.shortName || m.name)
+          .filter((val, idx, arr) => val && arr.indexOf(val) === idx)
+          .join(', ');
+        const title = `${activeBrand.name} Maintenance Cost (2026): Avg $${activeBrandTelemetry.avgAnnualMaintenanceUsd.toLocaleString()}/yr & 5-Yr TCO | DriveLedger`;
+        const description = `2026 ${activeBrand.name} maintenance costs average $${activeBrandTelemetry.avgAnnualMaintenanceUsd.toLocaleString()}/yr ($${activeBrandTelemetry.avg5YrMaintenanceUsd.toLocaleString()} over 5 yrs) with $${activeBrandTelemetry.avg5YrTcoUsd.toLocaleString()} avg 5-yr TCO. Compare ${topModelNames || `${activeBrand.modelCount} models`}, known failure risks & free TCO calculator.`;
         const brandHeroImage =
           resolveVehiclePhotoUrl({ vehicle: activeBrand.models[0] }) || DEFAULT_OG_IMAGE;
         return withImage({
@@ -605,6 +612,8 @@ export default function DynamicSeoHead({
     });
   }, [isNotFound, currentPath, resolvedLegalKey, activeTab, activeGuideSlug, activeBrand, activeBrandTelemetry, preset, secondaryPreset, secondaryTelemetry, activeMileageBracket, obdDossier, telemetry, isVehicleSelected, hasSelectedObdCode, vehicleImageUrl]);
 
+  const lastTrackedPathRef = useRef(null);
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.title = seoMetadata.title;
@@ -619,6 +628,24 @@ export default function DynamicSeoHead({
       upsertMetaTag('name', 'twitter:description', seoMetadata.description);
       upsertMetaTag('name', 'twitter:image', seoMetadata.imageUrl || DEFAULT_OG_IMAGE);
       upsertCanonicalLink(seoMetadata.canonicalUrl);
+
+      // Track client-side SPA route transitions in GA4 without double-counting the initial page load
+      if (typeof window !== 'undefined') {
+        const currentPagePath = `${window.location?.pathname || seoMetadata.canonicalPath || '/'}${window.location?.search || ''}`;
+        if (lastTrackedPathRef.current === null) {
+          lastTrackedPathRef.current = currentPagePath;
+        } else if (
+          lastTrackedPathRef.current !== currentPagePath &&
+          typeof window.gtag === 'function'
+        ) {
+          lastTrackedPathRef.current = currentPagePath;
+          window.gtag('event', 'page_view', {
+            page_path: currentPagePath,
+            page_title: seoMetadata.title,
+            page_location: window.location?.href || seoMetadata.canonicalUrl,
+          });
+        }
+      }
 
       // Remove build-time static JSON-LD once React takes over structured data
       // so hydrated pages never emit duplicate FAQPage / Vehicle / HowTo schemas.

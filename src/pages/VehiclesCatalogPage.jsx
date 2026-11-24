@@ -124,11 +124,10 @@ export default function VehiclesCatalogPage({
               <span>{activeBrand.name} Reliability &amp; Ownership Hub</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-sans font-extrabold tracking-tight text-ink dark:text-zinc-50">
-              {activeBrand.name} Maintenance Cost, 5-Year TCO &amp; Reliability ({activeBrand.modelCount}{' '}
-              {activeBrand.modelCount === 1 ? 'Model' : 'Models'})
+              {activeBrand.name} Maintenance Cost, 5-Year TCO &amp; Reliability (2026)
             </h1>
             <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
-              Compare 5-year True Cost to Own (TCO), non-linear depreciation, powertrain wear schedules, and pre-purchase inspection checklists across all {activeBrand.modelCount} benchmarked {activeBrand.name} configurations in the DriveLedger telemetry catalog.
+              {activeBrand.name} maintenance costs average {formatCurrency(brandTelemetry.avgAnnualMaintenanceUsd)}/yr ({formatCurrency(brandTelemetry.avg5YrMaintenanceUsd)} over 5 years). Compare 5-year True Cost to Own (TCO), non-linear depreciation, powertrain wear schedules, and pre-purchase inspection checklists across all {activeBrand.modelCount} benchmarked {activeBrand.name} configurations.
             </p>
           </div>
 
