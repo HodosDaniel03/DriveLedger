@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   Calculator,
   Flame,
   Cpu,
   ChevronDown,
-  ChevronUp,
   ShieldCheck,
   X,
   Lock,
@@ -14,9 +13,22 @@ import {
   Sliders,
   Check,
 } from 'lucide-react';
-import { Collapse } from '../common/OdometerPrimitives';
+import { Card, PageHeader, Collapse } from '../common/OdometerPrimitives';
 import { FAQ_ITEMS } from '../../data/faqItems';
 export { FAQ_ITEMS };
+
+function isOutsidePanelRect(clientX, clientY, panelEl) {
+  if (!panelEl || typeof panelEl.getBoundingClientRect !== 'function' || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return true;
+  }
+  const rect = panelEl.getBoundingClientRect();
+  return (
+    clientX < rect.left ||
+    clientX > rect.right ||
+    clientY < rect.top ||
+    clientY > rect.bottom
+  );
+}
 
 export const LEGAL_MODAL_CONTENT = {
   privacy: {
@@ -95,51 +107,156 @@ export default function TechnicalMethodologyGuide({
   onOpenLegalModal,
   isHidden = false,
 }) {
-  const [openFaqIdx, setOpenFaqIdx] = useState(-1);
   const [openWhitePaper, setOpenWhitePaper] = useState(true);
   const [cookiePrefs, setCookiePrefs] = useState({
     analytics: true,
     contextualAds: true,
   });
+  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
+  const programmaticCloseCountRef = useRef(0);
 
   const activeModalData = activeLegalModal ? LEGAL_MODAL_CONTENT[activeLegalModal] : null;
   const HeadingTag = isHidden ? 'h2' : 'h1';
+
+  const closeDialogProgrammatically = (dialogEl) => {
+    if (!dialogEl) return;
+    if (!dialogEl.isConnected) {
+      programmaticCloseCountRef.current = 0;
+      try {
+        if (typeof dialogEl.close === 'function' && dialogEl.open) {
+          dialogEl.close();
+        }
+      } catch {
+        // Safe guard on detached dialog
+      }
+      return;
+    }
+    if (typeof dialogEl.close !== 'function' || !dialogEl.open) return;
+    const isNativeDialog =
+      typeof HTMLDialogElement !== 'undefined' && dialogEl instanceof HTMLDialogElement;
+    if (isNativeDialog) {
+      programmaticCloseCountRef.current += 1;
+    }
+    try {
+      dialogEl.close();
+    } catch {
+      if (isNativeDialog && programmaticCloseCountRef.current > 0) {
+        programmaticCloseCountRef.current -= 1;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const dialogEl = dialogRef.current;
+    if (!dialogEl) return undefined;
+
+    if (activeModalData) {
+      if (typeof dialogEl.showModal === 'function' && !dialogEl.open) {
+        try {
+          dialogEl.showModal();
+        } catch {
+          // Safe guard in mock DOM
+        }
+      }
+    } else {
+      closeDialogProgrammatically(dialogEl);
+    }
+    return () => {
+      closeDialogProgrammatically(dialogEl);
+    };
+  }, [activeModalData]);
+
+  useEffect(() => {
+    if (!activeModalData || typeof document === 'undefined' || typeof HTMLDialogElement === 'undefined') {
+      return undefined;
+    }
+    const dialogEl = dialogRef.current;
+    if (!dialogEl || typeof dialogEl.addEventListener !== 'function') return undefined;
+
+    let pressedOutside = false;
+    let suppressNextClick = false;
+
+    const handlePointerDown = (event) => {
+      pressedOutside =
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current);
+      suppressNextClick = !pressedOutside;
+    };
+
+    const handlePointerUp = (event) => {
+      if (
+        pressedOutside &&
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current)
+      ) {
+        suppressNextClick = true;
+        if (typeof onCloseLegalModal === 'function') onCloseLegalModal();
+      }
+      pressedOutside = false;
+    };
+
+    const handleDialogClick = (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (
+        event.target === dialogEl &&
+        !Number.isFinite(event.clientX) &&
+        typeof onCloseLegalModal === 'function'
+      ) {
+        onCloseLegalModal();
+      }
+    };
+
+    dialogEl.addEventListener('pointerdown', handlePointerDown);
+    dialogEl.addEventListener('pointerup', handlePointerUp);
+    dialogEl.addEventListener('click', handleDialogClick);
+    return () => {
+      if (typeof dialogEl.removeEventListener === 'function') {
+        dialogEl.removeEventListener('pointerdown', handlePointerDown);
+        dialogEl.removeEventListener('pointerup', handlePointerUp);
+        dialogEl.removeEventListener('click', handleDialogClick);
+      }
+    };
+  }, [activeModalData, onCloseLegalModal]);
+
+  if (!activeModalData) {
+    programmaticCloseCountRef.current = 0;
+  }
 
   return (
     <section
       id="methodology-guide"
       aria-label="Technical Engineering and Financial Methodology Guide"
-      className="mt-12 scroll-mt-28 lg:scroll-mt-32 space-y-10 border-t border-border pt-10"
+      className="scroll-mt-28 lg:scroll-mt-32 space-y-8"
     >
       {/* Section Header */}
-      <div className="max-w-4xl space-y-3">
-        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 text-[11px] font-sans font-medium">
-          <BookOpen className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-          <span>TECHNICAL WHITE PAPER &amp; MATHEMATICAL METHODOLOGY</span>
-        </div>
-        <HeadingTag className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-zinc-100">
-          First-Principles Automotive Financial Modeling, Thermodynamic Powertrain Wear &amp; Live OBD-II Telemetry
-        </HeadingTag>
-        <p className="text-sm text-body dark:text-zinc-300 leading-relaxed">
-          Engineering documentation governing our non-linear depreciation, thermodynamic wear, and OBD-II repair diagnostic engines.
-        </p>
-      </div>
+      <PageHeader
+        as={HeadingTag}
+        title="First-Principles Automotive Financial Modeling, Thermodynamic Powertrain Wear & Live OBD-II Telemetry"
+        subtitle="Engineering documentation governing our non-linear depreciation, thermodynamic wear, and OBD-II repair diagnostic engines."
+        className="max-w-4xl mb-0"
+      />
 
       {/* White Paper Sections Collapsible Trigger */}
-      <div className="pt-2">
+      <div>
         <button
           type="button"
           onClick={() => setOpenWhitePaper(!openWhitePaper)}
           aria-expanded={openWhitePaper}
-          className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer group"
+          className="min-h-[48px] w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-surface dark:bg-[#121215] border border-border/80 dark:border-zinc-800 shadow-card dark:shadow-none text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
         >
           <span className="flex items-center gap-2.5">
-            <BookOpen className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-            <span>How We Calculate This &amp; Engineering Methodology ▾</span>
+            <BookOpen className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+            <span>How We Calculate This &amp; Engineering Methodology</span>
           </span>
           <ChevronDown
+            aria-hidden="true"
             className={`w-5 h-5 text-muted dark:text-zinc-400 transition-transform duration-200 ${
-              openWhitePaper ? 'rotate-180 text-primary-600 dark:text-primary-400' : ''
+              openWhitePaper ? 'rotate-180 text-primary-600 dark:text-emerald-400' : ''
             }`}
           />
         </button>
@@ -157,9 +274,6 @@ export default function TechnicalMethodologyGuide({
                 <Calculator className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
-                  SECTION 01 · FINTECH MODELING
-                </span>
                 <h3 className="text-base font-bold text-ink dark:text-zinc-100">
                   Non-Linear Depreciation &amp; Capital Amortization
                 </h3>
@@ -213,9 +327,6 @@ export default function TechnicalMethodologyGuide({
                 <Flame className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
-                  SECTION 02 · TRIBOLOGY &amp; KINETICS
-                </span>
                 <h3 className="text-base font-bold text-ink dark:text-zinc-100">
                   Thermodynamic Short-Trip Wear Multipliers (1.35x–1.55x)
                 </h3>
@@ -269,9 +380,6 @@ export default function TechnicalMethodologyGuide({
                 <Cpu className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400 block">
-                  SECTION 03 · SAE J1979 DIAGNOSTICS
-                </span>
                 <h3 className="text-base font-bold text-ink dark:text-zinc-100">
                   First-Principles OBD-II Live PID Verification Workflows
                 </h3>
@@ -322,24 +430,23 @@ export default function TechnicalMethodologyGuide({
       </div>
 
       {/* Reference Engineering Benchmark Table */}
-      <div className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4 min-w-0 max-w-full overflow-hidden">
-        <details className="group cursor-pointer">
-          <summary className="flex flex-wrap items-center justify-between gap-2 select-none list-none [&::-webkit-details-marker]:hidden">
-            <div className="min-w-0">
-              <h3 className="text-base font-bold text-ink dark:text-zinc-100 flex items-center gap-2">
-                <span>Powertrain Preventative Service vs. OEM "Marketing Lifetime" Intervals</span>
-                <ChevronDown className="w-4 h-4 shrink-0 text-muted dark:text-zinc-400 group-open:rotate-180 transition-transform duration-200" />
-              </h3>
-              <p className="text-xs text-muted dark:text-zinc-400 mt-0.5">
-                Engineering safe intervals compiled across independent marque specialists (ZF, BorgWarner, Bosch, Luk/INA).
-              </p>
-            </div>
-            <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300">
-              STANDARD REFERENCE MATRIX
-            </span>
+      <Card className="p-4 sm:p-6 space-y-4 overflow-hidden">
+        <div>
+          <h3 className="text-base font-bold text-ink dark:text-zinc-100">
+            Powertrain Preventative Service vs. OEM &ldquo;Marketing Lifetime&rdquo; Intervals
+          </h3>
+          <p className="text-xs text-muted dark:text-zinc-400 mt-0.5">
+            Engineering safe intervals compiled across independent marque specialists (ZF, BorgWarner, Bosch, Luk/INA).
+          </p>
+        </div>
+
+        <details className="dl-disclosure group pt-2 border-t border-border/80 dark:border-zinc-800">
+          <summary className="min-h-[44px] py-2 flex items-center justify-between gap-3 cursor-pointer text-xs sm:text-sm font-semibold text-primary-600 dark:text-emerald-400 hover:underline">
+            <span>View reference interval comparison table</span>
+            <ChevronDown aria-hidden="true" className="w-4 h-4 shrink-0 text-muted dark:text-zinc-400 group-open:rotate-180 transition-transform duration-200" />
           </summary>
 
-          <div className="mt-4 pt-4 border-t border-border dark:border-zinc-800 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 cursor-default">
+          <div className="mt-3 pt-4 border-t border-border/80 dark:border-zinc-800 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 cursor-default">
             <table className="w-full text-left border-collapse text-xs min-w-[620px]">
               <thead>
                 <tr className="border-b border-border dark:border-zinc-800 text-[11px] uppercase tracking-wider text-muted dark:text-zinc-400 font-sans font-semibold">
@@ -407,59 +514,38 @@ export default function TechnicalMethodologyGuide({
             </table>
           </div>
         </details>
-      </div>
+      </Card>
     </div>
   </Collapse>
 
-      {/* Interactive FAQ Accordion */}
-      <div className="rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 p-4 sm:p-6 shadow-sm space-y-4 min-w-0 max-w-full overflow-hidden">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 block">
-              SCHEMA.ORG FAQPAGE STRUCTURED DATA
-            </span>
-            <h3 className="text-lg font-bold text-ink dark:text-zinc-100">
-              Frequently Asked Engineering &amp; TCO Questions
-            </h3>
-          </div>
-        </div>
+      {/* Native <details> FAQ Accordion */}
+      <Card className="p-4 sm:p-6 space-y-4 overflow-hidden">
+        <h3 className="text-lg font-bold text-ink dark:text-zinc-100">
+          Frequently Asked Engineering &amp; TCO Questions
+        </h3>
 
-        <div className="divide-y divide-border dark:divide-zinc-800 border-t border-border dark:border-zinc-800">
-          {FAQ_ITEMS.map((item, idx) => {
-            const isOpen = openFaqIdx === idx;
-            return (
-              <div key={idx} className="py-3">
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIdx(isOpen ? -1 : idx)}
-                  aria-expanded={isOpen}
-                  className="w-full min-h-[44px] flex items-center justify-between gap-4 text-left text-sm font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-150"
-                >
-                  <span>{item.question}</span>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0" />
-                  )}
-                </button>
-                {isOpen && (
-                  <p className="mt-2.5 text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed">
-                    {item.answer}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+        <div className="divide-y divide-border/80 dark:divide-zinc-800 border-t border-border/80 dark:border-zinc-800">
+          {FAQ_ITEMS.map((item, idx) => (
+            <details key={idx} className="dl-disclosure group py-1">
+              <summary className="w-full min-h-[44px] py-2.5 flex items-center justify-between gap-4 text-left text-sm font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors">
+                <span>{item.question}</span>
+                <ChevronDown aria-hidden="true" className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0 transition-transform duration-200 group-open:rotate-180 group-open:text-primary-600 dark:group-open:text-emerald-400" />
+              </summary>
+              <p className="pb-3 text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed max-w-[68ch] text-pretty">
+                {item.answer}
+              </p>
+            </details>
+          ))}
         </div>
-      </div>
+      </Card>
 
       {/* Partner & Affiliate Transparency Banner */}
       <div
         id="partner-disclosure-banner"
-        className="scroll-mt-28 lg:scroll-mt-32 rounded-2xl bg-surface-subtle dark:bg-zinc-900/60 border border-border dark:border-zinc-800 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted dark:text-zinc-400"
+        className="scroll-mt-28 lg:scroll-mt-32 rounded-2xl bg-surface-subtle dark:bg-[#121215] border border-border/80 dark:border-zinc-800 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-muted dark:text-zinc-400"
       >
         <div className="flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-score-good dark:text-emerald-400 shrink-0 mt-0.5" />
+          <ShieldCheck aria-hidden="true" className="w-4 h-4 text-score-good dark:text-emerald-400 shrink-0 mt-0.5" />
           <p>
             <strong className="text-ink dark:text-zinc-200">
               Advertising &amp; Partner Link Disclosure:{' '}
@@ -473,7 +559,7 @@ export default function TechnicalMethodologyGuide({
               key={key}
               type="button"
               onClick={() => onOpenLegalModal && onOpenLegalModal(key)}
-              className="min-h-[44px] sm:min-h-0 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-md bg-surface dark:bg-zinc-800 border border-border-strong dark:border-zinc-700 text-xs font-semibold text-ink dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-400 transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-[38px] px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border-strong dark:border-zinc-700 text-xs font-semibold text-ink dark:text-zinc-200 hover:border-primary-600 dark:hover:border-emerald-500 transition-colors duration-150 cursor-pointer"
             >
               {doc.title.split('&')[0].trim()}
             </button>
@@ -481,21 +567,31 @@ export default function TechnicalMethodologyGuide({
         </div>
       </div>
 
-      {/* Working Legal & Compliance Modal Dialog */}
+      {/* Native <dialog> Legal & Compliance Modal */}
       {activeModalData && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="legal-modal-title"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/40 dark:bg-black/60 backdrop-blur-sm"
+        <dialog
+          ref={dialogRef}
+          closedby="any"
+          aria-labelledby="methodology-legal-modal-title"
+          onClose={() => {
+            if (programmaticCloseCountRef.current > 0) {
+              programmaticCloseCountRef.current -= 1;
+              return;
+            }
+            if (typeof onCloseLegalModal === 'function') onCloseLegalModal();
+          }}
+          className="dl-bottom-sheet-dialog sm:items-center sm:justify-center sm:p-4 print:hidden"
         >
-          <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl overflow-hidden">
+          <div
+            ref={panelRef}
+            className="w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl overflow-hidden"
+          >
             <div className="px-4 sm:px-6 py-4 border-b border-border dark:border-zinc-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <activeModalData.icon className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />
+                <activeModalData.icon aria-hidden="true" className="w-5 h-5 text-primary-600 dark:text-emerald-400 shrink-0" />
                 <div className="min-w-0">
                   <h3
-                    id="legal-modal-title"
+                    id="methodology-legal-modal-title"
                     className="text-base font-bold text-ink dark:text-zinc-100 truncate"
                   >
                     {activeModalData.title}
@@ -509,9 +605,9 @@ export default function TechnicalMethodologyGuide({
                 type="button"
                 onClick={onCloseLegalModal}
                 aria-label="Close modal"
-                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-xl text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X aria-hidden="true" className="w-5 h-5" />
               </button>
             </div>
 
@@ -525,7 +621,7 @@ export default function TechnicalMethodologyGuide({
 
               {activeLegalModal === 'cookies' && (
                 <div className="pt-3 border-t border-border dark:border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-surface-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-surface-subtle dark:bg-zinc-900">
                     <div>
                       <span className="font-semibold text-ink dark:text-zinc-200 block">
                         Essential Telemetry &amp; Unit State Storage
@@ -534,12 +630,12 @@ export default function TechnicalMethodologyGuide({
                         Required for US/UK/EU unit conversion &amp; theme state
                       </span>
                     </div>
-                    <span className="text-xs font-sans font-bold text-success-text dark:text-emerald-400">
-                      ALWAYS ACTIVE
+                    <span className="text-xs font-sans font-bold text-score-good dark:text-emerald-400">
+                      Active
                     </span>
                   </div>
 
-                  <label className="flex items-center justify-between p-3 rounded-lg bg-surface-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 cursor-pointer">
+                  <label className="flex items-center justify-between p-3 rounded-xl bg-surface-subtle dark:bg-zinc-900 cursor-pointer">
                     <div>
                       <span className="font-semibold text-ink dark:text-zinc-200 block">
                         Contextual AdSense &amp; Partner Attribution
@@ -561,18 +657,18 @@ export default function TechnicalMethodologyGuide({
               )}
             </div>
 
-            <div className="px-6 py-3.5 bg-surface-subtle dark:bg-zinc-950 border-t border-border dark:border-zinc-800 flex items-center justify-end gap-2">
+            <div className="px-4 sm:px-6 py-3.5 bg-surface-subtle dark:bg-zinc-900/60 border-t border-border dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
               <button
                 type="button"
                 onClick={onCloseLegalModal}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-colors duration-150"
+                className="min-h-[44px] sm:min-h-[38px] inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs font-semibold transition-colors duration-150 cursor-pointer"
               >
-                <Check className="w-4 h-4" />
+                <Check aria-hidden="true" className="w-4 h-4" />
                 <span>Save &amp; Acknowledge</span>
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </section>
   );

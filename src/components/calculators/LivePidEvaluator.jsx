@@ -404,6 +404,55 @@ export function getPidsForCode(code) {
 }
 
 /**
+ * Evaluates cfg.evaluate(v) across [cfg.min, cfg.max] to produce accurate
+ * contiguous threshold segments (supporting ascending, descending, and 4/5-zone windowed PIDs).
+ */
+export function buildThresholdSegments(cfg) {
+  if (!cfg || typeof cfg.evaluate !== 'function') {
+    return [{ tone: 'good', startPct: 0, widthPct: 100 }];
+  }
+  const min = Number(cfg.min) || 0;
+  const max = Number(cfg.max) || 100;
+  const span = max - min;
+  if (span <= 0) {
+    return [{ tone: 'good', startPct: 0, widthPct: 100 }];
+  }
+
+  const sampleCount = 200;
+  const segments = [];
+  let prevTone = null;
+  let segStartIdx = 0;
+
+  for (let i = 0; i <= sampleCount; i += 1) {
+    const val = min + (span * i) / sampleCount;
+    const tone = cfg.evaluate(val);
+    if (prevTone === null) {
+      prevTone = tone;
+      segStartIdx = 0;
+    } else if (tone !== prevTone) {
+      const startPct = (segStartIdx / sampleCount) * 100;
+      const endPct = (i / sampleCount) * 100;
+      segments.push({
+        tone: prevTone,
+        startPct,
+        widthPct: endPct - startPct,
+      });
+      prevTone = tone;
+      segStartIdx = i;
+    }
+  }
+
+  const finalStartPct = (segStartIdx / sampleCount) * 100;
+  segments.push({
+    tone: prevTone || 'good',
+    startPct: finalStartPct,
+    widthPct: 100 - finalStartPct,
+  });
+
+  return segments;
+}
+
+/**
  * Computes the overall diagnostic verdict and narrowed repair cost range
  * based on individual PID evaluations and the active OBD dossier.
  */
@@ -614,16 +663,16 @@ export default function LivePidEvaluator({
     laborTierId,
   ]);
 
-  const STATUS_DOT = {
-    good: 'bg-emerald-500',
-    warn: 'bg-amber-500',
-    risk: 'bg-rose-500',
+  const SEGMENT_BAR_STYLES = {
+    good: 'bg-emerald-500/80 dark:bg-emerald-500/75',
+    warn: 'bg-amber-400/85 dark:bg-amber-500/80',
+    risk: 'bg-rose-500/85 dark:bg-rose-500/80',
   };
 
   const CALLOUT_STYLES = {
-    good: 'bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/70 text-emerald-950 dark:text-emerald-200',
-    warn: 'bg-amber-50/80 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/70 text-amber-950 dark:text-amber-200',
-    risk: 'bg-rose-50/80 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800/70 text-rose-950 dark:text-rose-200',
+    good: 'bg-emerald-50/65 border-l-emerald-600 dark:bg-emerald-950/30 dark:border-l-emerald-500 text-emerald-950 dark:text-emerald-200',
+    warn: 'bg-amber-50/70 border-l-amber-500 dark:bg-amber-950/30 dark:border-l-amber-500 text-amber-950 dark:text-amber-200',
+    risk: 'bg-rose-50/70 border-l-rose-600 dark:bg-rose-950/30 dark:border-l-rose-500 text-rose-950 dark:text-rose-200',
   };
 
   return (
@@ -632,25 +681,22 @@ export default function LivePidEvaluator({
       data-testid="live-pid-evaluator"
       className="mt-5 pt-5 border-t border-border/80 dark:border-zinc-800 space-y-5"
     >
-      {/* Header Row with Real-Time Verdict Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle dark:bg-zinc-950 p-4 rounded-xl border border-border/70 dark:border-zinc-800">
-        <div className="space-y-1">
+      {/* Flat Summary Header Strip */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle dark:bg-zinc-900/75 p-4 rounded-xl">
+        <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-            <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-ink dark:text-zinc-100">
-              Interactive Live OBD2 PID Evaluator (<span className="font-mono tabular-nums">{code}</span>)
+            <Sliders aria-hidden="true" className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+            <h4 className="text-sm font-semibold font-sans text-ink dark:text-zinc-100">
+              Live OBD-II PID Evaluator (<span className="font-mono tabular-nums">{code}</span>)
             </h4>
           </div>
-          <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-            Dial in your OBD-II scanner readings below to isolate sensor faults from costly hardware failures.
+          <p className="text-xs font-sans text-muted dark:text-zinc-400">
+            Dial in your OBD-II scanner readings below to separate sensor faults from hardware failures.
           </p>
         </div>
 
         {verdict.tone !== 'good' && (
-          <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
-            <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-muted dark:text-zinc-400">
-              Live Telemetry Verdict
-            </span>
+          <div className="shrink-0">
             <Pill tone={verdict.tone}>
               <span data-testid="pid-verdict-badge">{verdict.badgeLabel}</span>
             </Pill>
@@ -658,20 +704,20 @@ export default function LivePidEvaluator({
         )}
       </div>
 
-      {/* Quick Telemetry Scenario Presets */}
+      {/* Quick Telemetry Scenario Presets (>= 44px touch targets) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold">
-          Simulate Scanner Feed:
+        <span className="font-sans font-medium text-muted dark:text-zinc-400">
+          Simulate scanner feed:
         </span>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             id="pid-preset-good"
             onClick={() => applyScenario('good')}
-            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
+            className={`min-h-[44px] sm:min-h-[38px] px-3 py-2 rounded-xl font-sans font-medium border text-xs transition-colors cursor-pointer ${
               verdict.tone === 'good'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
+                ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-800 hover:bg-surface-subtle dark:hover:bg-zinc-900'
             }`}
           >
             Sensor Fault / Healthy Core
@@ -680,10 +726,10 @@ export default function LivePidEvaluator({
             type="button"
             id="pid-preset-warn"
             onClick={() => applyScenario('warn')}
-            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
+            className={`min-h-[44px] sm:min-h-[38px] px-3 py-2 rounded-xl font-sans font-medium border text-xs transition-colors cursor-pointer ${
               verdict.tone === 'warn'
-                ? 'bg-amber-500 text-zinc-950 border-amber-500 font-semibold shadow-sm'
-                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
+                ? 'bg-amber-500 text-zinc-950 border-amber-500 font-semibold'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-800 hover:bg-surface-subtle dark:hover:bg-zinc-900'
             }`}
           >
             Service / Regen Needed
@@ -692,10 +738,10 @@ export default function LivePidEvaluator({
             type="button"
             id="pid-preset-risk"
             onClick={() => applyScenario('risk')}
-            className={`px-2.5 py-1 rounded-lg font-sans font-medium border text-xs transition-colors ${
+            className={`min-h-[44px] sm:min-h-[38px] px-3 py-2 rounded-xl font-sans font-medium border text-xs transition-colors cursor-pointer ${
               verdict.tone === 'risk'
-                ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
+                ? 'bg-rose-600 text-white border-rose-600'
+                : 'bg-surface dark:bg-[#121215] text-body dark:text-zinc-300 border-border dark:border-zinc-800 hover:bg-surface-subtle dark:hover:bg-zinc-900'
             }`}
           >
             Clogged Core / Hardware Fail
@@ -703,31 +749,31 @@ export default function LivePidEvaluator({
           <button
             type="button"
             onClick={() => setPidValues(defaultMap)}
+            aria-label="Reset PIDs to baseline"
             title="Reset PIDs to baseline"
-            className="p-1.5 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 transition-colors"
+            className="min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] inline-flex items-center justify-center rounded-xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-900 transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw aria-hidden="true" className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Combined Slider + Synchronized Number Input Controls for Each PID */}
-      <div className="space-y-4">
-        {pidConfigs.map((cfg, idx) => {
+      {/* Hairline-Divided PID Controls + Visual 3-Zone Threshold Bars */}
+      <div className="divide-y divide-border/80 dark:divide-zinc-800 rounded-xl bg-surface-subtle/60 dark:bg-zinc-900/50 px-4">
+        {pidConfigs.map((cfg) => {
           const val = pidValues[cfg.id] ?? cfg.defaultValue;
           const clamped = Math.min(cfg.max, Math.max(cfg.min, Number(val) || cfg.min));
           const fill = cfg.max > cfg.min ? ((clamped - cfg.min) / (cfg.max - cfg.min)) * 100 : 0;
           const pidTone = cfg.evaluate(clamped);
           const pidToneLabel =
             pidTone === 'good' ? 'Normal' : pidTone === 'warn' ? 'Warning' : 'Critical';
+          const thresholdSegments = buildThresholdSegments(cfg);
+          const threshDescId = `pid-thresh-${cfg.id}`;
 
           return (
-            <div
-              key={cfg.id}
-              className="p-4 rounded-xl border border-border/70 dark:border-zinc-800 bg-surface dark:bg-zinc-900/90 space-y-2.5"
-            >
+            <div key={cfg.id} className="py-4 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <label
                     htmlFor={`pid-slider-${cfg.id}`}
                     className="font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100"
@@ -739,8 +785,8 @@ export default function LivePidEvaluator({
                   </Pill>
                 </div>
 
-                {/* Synchronized Number Input + Unit Badge */}
-                <div className="flex items-center gap-1.5">
+                {/* Synchronized Number Input + Unit Label (>= 44px mobile height) */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   <input
                     id={`pid-input-${cfg.id}`}
                     type="number"
@@ -750,7 +796,7 @@ export default function LivePidEvaluator({
                     value={val}
                     aria-label={`${cfg.label} numeric input`}
                     onChange={(e) => handlePidChange(cfg.id, e.target.value, cfg.min, cfg.max)}
-                    className="w-20 h-8 rounded-lg border border-border-strong dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-950 px-2 text-right font-mono text-xs sm:text-sm font-bold tabular-nums text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-none"
+                    className="w-24 min-h-[44px] sm:min-h-[38px] rounded-xl border border-border-strong dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 text-right font-mono text-base sm:text-sm font-bold tabular-nums text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30"
                   />
                   <span className="font-sans text-xs font-semibold text-muted dark:text-zinc-400 min-w-[2.25rem]">
                     {cfg.unit}
@@ -758,34 +804,72 @@ export default function LivePidEvaluator({
                 </div>
               </div>
 
-              {/* Range Slider */}
-              <input
-                id={`pid-slider-${cfg.id}`}
-                type="range"
-                min={cfg.min}
-                max={cfg.max}
-                step={cfg.step}
-                value={clamped}
-                onChange={(e) => handlePidChange(cfg.id, e.target.value, cfg.min, cfg.max)}
-                className="odo-range telemetry-slider w-full"
-                style={{ '--fill': `${fill}%` }}
-              />
+              {/* Range Slider + Visual 3-Zone Threshold Bar */}
+              <div className="space-y-1.5">
+                <input
+                  id={`pid-slider-${cfg.id}`}
+                  type="range"
+                  min={cfg.min}
+                  max={cfg.max}
+                  step={cfg.step}
+                  value={clamped}
+                  aria-valuetext={`${clamped} ${cfg.unit} (${pidToneLabel})`}
+                  aria-describedby={threshDescId}
+                  onChange={(e) => handlePidChange(cfg.id, e.target.value, cfg.min, cfg.max)}
+                  className="odo-range telemetry-slider w-full"
+                  style={{ '--fill': `${fill}%` }}
+                />
+
+                {/* Computed Normal / Warning / Critical Threshold Bar + Active Reading Marker */}
+                <div
+                  data-testid="pid-threshold-bar"
+                  role="meter"
+                  aria-label={`${cfg.label} threshold bar`}
+                  aria-valuemin={cfg.min}
+                  aria-valuemax={cfg.max}
+                  aria-valuenow={clamped}
+                  aria-valuetext={`${clamped} ${cfg.unit} (${pidToneLabel})`}
+                  className="relative py-0.5"
+                >
+                  <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface dark:bg-zinc-950">
+                    {thresholdSegments.map((seg, segIdx) => (
+                      <div
+                        key={`${cfg.id}-seg-${segIdx}`}
+                        style={{ width: `${seg.widthPct}%` }}
+                        className={`h-full border-r border-white/60 dark:border-zinc-950/70 last:border-r-0 ${
+                          SEGMENT_BAR_STYLES[seg.tone] || SEGMENT_BAR_STYLES.good
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span
+                    style={{ left: `clamp(3px, ${fill}%, calc(100% - 3px))` }}
+                    className="pointer-events-none absolute top-0 -translate-x-1/2 h-3 w-1 rounded-full bg-ink dark:bg-zinc-50 ring-2 ring-surface dark:ring-[#121215]"
+                  />
+                </div>
+              </div>
 
               {/* Threshold Legend Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-sans font-medium text-muted dark:text-zinc-400 pt-0.5">
-                <span className="inline-flex items-center gap-1">
-                  Normal: <span className="font-mono tabular-nums">{cfg.normalRangeLabel}</span>
+              <div
+                id={threshDescId}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs font-sans text-muted dark:text-zinc-400"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="w-2 h-2 rounded-full bg-emerald-500/85 shrink-0" />
+                  Normal: <span className="font-mono tabular-nums text-body dark:text-zinc-300">{cfg.normalRangeLabel}</span>
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  Warn: <span className="font-mono tabular-nums">{cfg.warnRangeLabel}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="w-2 h-2 rounded-full bg-amber-400/90 shrink-0" />
+                  Warning: <span className="font-mono tabular-nums text-body dark:text-zinc-300">{cfg.warnRangeLabel}</span>
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  Critical: <span className="font-mono tabular-nums">{cfg.critRangeLabel}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="w-2 h-2 rounded-full bg-rose-500/85 shrink-0" />
+                  Critical: <span className="font-mono tabular-nums text-body dark:text-zinc-300">{cfg.critRangeLabel}</span>
                 </span>
               </div>
 
               {cfg.hint && (
-                <p className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 leading-relaxed pt-0.5">
+                <p className="text-xs font-sans text-muted dark:text-zinc-400 leading-relaxed">
                   {cfg.hint}
                 </p>
               )}
@@ -794,27 +878,30 @@ export default function LivePidEvaluator({
         })}
       </div>
 
-      {/* Live Telemetry Cost Impact Callout */}
+      {/* Live Telemetry Cost Impact Callout (Calm Left-Accented Tint Strip) */}
       <div
         id="live-telemetry-cost-impact"
-        className={`rounded-xl border p-4 space-y-2.5 transition-colors ${CALLOUT_STYLES[verdict.tone]}`}
+        className={`rounded-xl border-l-4 p-4 space-y-2 transition-colors ${CALLOUT_STYLES[verdict.tone]}`}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {verdict.tone === 'good' ? (
-              <CircleCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <CircleCheck aria-hidden="true" className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             ) : verdict.tone === 'warn' ? (
-              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             ) : (
-              <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <ShieldAlert aria-hidden="true" className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
             )}
-            <span className="text-xs font-bold uppercase tracking-wider font-sans">
+            <span className="text-xs font-semibold font-sans">
               Live Telemetry Cost Impact
             </span>
           </div>
 
           <div className="font-sans text-sm sm:text-base font-bold" data-testid="telemetry-narrowed-cost">
-            Narrowed Estimate: <span className="font-mono tabular-nums">{formatCurrency(verdict.narrowedMinUsd)} – {formatCurrency(verdict.narrowedMaxUsd)}</span>
+            Narrowed Estimate:{' '}
+            <span className="font-mono tabular-nums">
+              {formatCurrency(verdict.narrowedMinUsd)} – {formatCurrency(verdict.narrowedMaxUsd)}
+            </span>
           </div>
         </div>
 
@@ -827,9 +914,11 @@ export default function LivePidEvaluator({
         </p>
 
         {verdict.savingsVsMaxUsd > 0 && verdict.tone !== 'risk' && (
-          <div className="pt-1.5 border-t border-current/15 flex items-center justify-between text-xs font-sans font-semibold">
+          <div className="pt-2 border-t border-current/15 flex items-center justify-between text-xs font-sans font-semibold">
             <span>Potential Unnecessary Assembly Savings:</span>
-            <span>Up to <span className="font-mono tabular-nums">{formatCurrency(verdict.savingsVsMaxUsd)}</span> saved</span>
+            <span>
+              Up to <span className="font-mono tabular-nums">{formatCurrency(verdict.savingsVsMaxUsd)}</span> saved
+            </span>
           </div>
         )}
       </div>

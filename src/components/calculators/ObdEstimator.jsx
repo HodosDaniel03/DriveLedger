@@ -1,5 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, CircleCheck, Filter, Wrench, Shield, ArrowRight, RotateCcw, Info, Terminal, AlertTriangle, ShieldAlert, Car, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Search,
+  CircleCheck,
+  ArrowRight,
+  RotateCcw,
+  AlertTriangle,
+  ShieldAlert,
+  Car,
+  ChevronDown,
+} from 'lucide-react';
 import {
   OBD_CODES,
   LABOR_RATE_TIERS,
@@ -9,15 +18,40 @@ import {
 import { VEHICLE_PRESETS } from '../../data/vehiclePresets';
 import { getHybridVehicleObdContext, isObdCompatibleWithVehicle } from '../../data/seoMatrixData';
 import { useUnits } from '../../context/UnitContext';
-import { Card, PageHeader, Pill, Segmented, SeverityGauge, TldrVerdictBox, RiskBadge, InfoTooltip, MobileStickySummaryBar, Collapse } from '../common/OdometerPrimitives';
+import {
+  Card,
+  PageHeader,
+  Pill,
+  Segmented,
+  InfoTooltip,
+  MobileStickySummaryBar,
+  Collapse,
+} from '../common/OdometerPrimitives';
 import { buildAffiliateUrl } from '../../config/monetizationConfig';
 import TopTabAffiliateBanner from '../monetization/TopTabAffiliateBanner';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import VehicleInternalLinks from '../seo/VehicleInternalLinks';
 import LivePidEvaluator from './LivePidEvaluator';
 import FixOrSellCalculator from './FixOrSellCalculator';
+import ObdVehiclePickerDialog from './obd/ObdVehiclePickerDialog';
+import ObdMobileBottomSheet from './obd/ObdMobileBottomSheet';
 
 const QUICK_CODES = ['P0420', 'P2002', 'P0171', 'P0300', 'P0299', 'P0401', 'P0128', 'P0700'];
+
+const OBD_QUICK_VEHICLES = [
+  { id: 'vw-golf-20-tdi', label: 'VW Golf 2.0 TDI' },
+  { id: 'ford-focus-ecoblue', label: 'Ford Focus EcoBlue' },
+  { id: 'toyota-camry-hybrid', label: 'Toyota Camry Hybrid' },
+  { id: 'bmw-320d-b47', label: 'BMW 320d B47' },
+  { id: 'tesla-model-3-lr', label: 'Tesla Model 3 LR' },
+];
+
+const OBD_DEEPDIVE_TABS = [
+  { id: 'causes', label: 'Root Causes' },
+  { id: 'telemetry', label: 'Live PID Check' },
+  { id: 'diy', label: 'DIY Inspection' },
+  { id: 'negotiation', label: 'Workshop Tips' },
+];
 
 const CODE_LABELS = {
   P0420: 'Catalytic converter',
@@ -94,6 +128,75 @@ export default function ObdEstimator({
   const [liveVerdict, setLiveVerdict] = useState(null);
   const [showLivePids, setShowLivePids] = useState(false);
   const [expandedCause, setExpandedCause] = useState(null);
+  const [activeDeepDiveTab, setActiveDeepDiveTab] = useState('causes');
+  const [showVehicleDialog, setShowVehicleDialog] = useState(false);
+  const [draftPresetId, setDraftPresetId] = useState('');
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const tabRefs = useRef({});
+  const panelRefs = useRef({});
+
+  // Synchronize hidden="until-found" fallback when onbeforematch is unsupported + register beforematch listener
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (typeof HTMLElement !== 'undefined' && !('onbeforematch' in HTMLElement.prototype)) {
+      for (const tab of OBD_DEEPDIVE_TABS) {
+        const panelEl = panelRefs.current[tab.id] || document.getElementById(`obd-panel-${tab.id}`);
+        if (!panelEl) continue;
+        if (tab.id === activeDeepDiveTab) {
+          if (typeof panelEl.removeAttribute === 'function') panelEl.removeAttribute('hidden');
+        } else if (typeof panelEl.setAttribute === 'function') {
+          panelEl.setAttribute('hidden', '');
+        }
+      }
+      return undefined;
+    }
+
+    const cleanups = [];
+    for (const tab of OBD_DEEPDIVE_TABS) {
+      const panelEl = panelRefs.current[tab.id];
+      if (!panelEl || typeof panelEl.addEventListener !== 'function') continue;
+      const handleBeforeMatch = () => setActiveDeepDiveTab(tab.id);
+      panelEl.addEventListener('beforematch', handleBeforeMatch);
+      cleanups.push(() => {
+        if (typeof panelEl.removeEventListener === 'function') {
+          panelEl.removeEventListener('beforematch', handleBeforeMatch);
+        }
+      });
+    }
+
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  }, [activeDeepDiveTab]);
+
+  useEffect(() => {
+    const activeTabEl = tabRefs.current[activeDeepDiveTab];
+    if (activeTabEl && typeof activeTabEl.scrollIntoView === 'function') {
+      try {
+        activeTabEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      } catch {
+        // Safe guard in older browsers / mock DOM
+      }
+    }
+  }, [activeDeepDiveTab]);
+
+  const handleDeepDiveTabKeyDown = (e, currentIndex) => {
+    let nextIndex = null;
+    if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % OBD_DEEPDIVE_TABS.length;
+    else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + OBD_DEEPDIVE_TABS.length) % OBD_DEEPDIVE_TABS.length;
+    else if (e.key === 'Home') nextIndex = 0;
+    else if (e.key === 'End') nextIndex = OBD_DEEPDIVE_TABS.length - 1;
+
+    if (nextIndex === null) return;
+    e.preventDefault();
+    const nextTab = OBD_DEEPDIVE_TABS[nextIndex];
+    setActiveDeepDiveTab(nextTab.id);
+    const nextBtn = tabRefs.current[nextTab.id];
+    if (nextBtn && typeof nextBtn.focus === 'function') {
+      nextBtn.focus();
+    }
+  };
 
   useEffect(() => {
     if (selectedPresetId === undefined) return;
@@ -139,6 +242,10 @@ export default function ObdEstimator({
 
   const activePreset = hybridContext ? hybridContext.preset : null;
   const isVehicleSelected = Boolean(activePreset);
+  const draftPreset = useMemo(
+    () => (draftPresetId ? VEHICLE_PRESETS.find((p) => p.id === draftPresetId) || null : null),
+    [draftPresetId]
+  );
   const activeDossier = useMemo(() => {
     if (hybridContext?.dossier) return hybridContext.dossier;
     const normalized = String(activeCodeId || 'P0420').toUpperCase();
@@ -150,11 +257,15 @@ export default function ObdEstimator({
     [activeDossier, activePreset]
   );
 
-  // Workshop cost estimate + DIY vs Dealership savings comparison (scaled by vehicle maintenanceWearFactor when selected)
+  // Workshop cost estimate + Independent/Dealership/DIY comparison (scaled by vehicle maintenanceWearFactor when selected)
   const est = useMemo(() => {
     return calculateObdWorkshopEstimate(activeDossier, laborTierId, { vehicle: activePreset || undefined });
   }, [activeDossier, laborTierId, activePreset]);
 
+  const independentEst = useMemo(
+    () => calculateObdWorkshopEstimate(activeDossier, 'independent', { vehicle: activePreset || undefined }),
+    [activeDossier, activePreset]
+  );
   const dealershipEst = useMemo(
     () => calculateObdWorkshopEstimate(activeDossier, 'dealership', { vehicle: activePreset || undefined }),
     [activeDossier, activePreset]
@@ -269,62 +380,41 @@ export default function ObdEstimator({
     });
   }, [activeDossier.code, activePreset?.name, region]);
 
-  const obdTldrFacts = useMemo(() => [
-    {
-      label: 'Estimated Workshop Cost',
-      value: `${formatCurrency(est.minTotalUsd)} – ${formatCurrency(est.maxTotalUsd)}`,
-      subtext: `Typical expected expense: ${formatCurrency(est.weightedExpectedUsd)} (${est.tierLabel}).`,
-      badge: (
-        <RiskBadge
-          level={est.weightedExpectedUsd > 1200 ? 'critical' : est.weightedExpectedUsd > 500 ? 'moderate' : 'low'}
-          label={est.tierLabel}
-        />
-      ),
-    },
-    {
-      label: 'Severity & Drivability',
-      value: activeDossier.severity?.includes('CRITICAL') ? 'Critical (Stop driving immediately)' : activeDossier.severity?.includes('HIGH') ? 'Moderate (Service within 1–2 weeks)' : 'Low (Safe for short trips)',
-      subtext: activeDossier.severity?.includes('CRITICAL')
-        ? activePreset?.isEv
-          ? 'Continued driving risks high-voltage isolation shutdown or power electronics damage!'
-          : 'Continued driving causes permanent engine or catalyst destruction!'
-        : activePreset?.isEv
-        ? 'Service promptly to safeguard high-voltage battery modules and charging electronics.'
-        : `Service promptly to protect ${codeSummary.subsystem} components and avoid secondary damage.`,
-      badge: (
-        <RiskBadge
-          level={activeDossier.severity?.includes('CRITICAL') ? 'critical' : activeDossier.severity?.includes('HIGH') ? 'moderate' : 'low'}
-          label={`DTC ${activeDossier.code}`}
-        />
-      ),
-    },
-    {
-      label: 'Most Common Culprit',
-      value: `${topRootCauses[0]?.cause || 'Sensor fault'} (${topRootCauses[0]?.probabilityPct || 0}%)`,
-      subtext: 'Do not replace expensive major components blindly: verify live PID readings first!',
-      badge: <RiskBadge level="low" label="Primary Suspect" />,
-    },
-  ], [est, formatCurrency, activeDossier, topRootCauses, activePreset, codeSummary]);
+  const activeSymptomObj = selectedSymptom
+    ? SYMPTOM_FILTERS.find((s) => s.id === selectedSymptom) || null
+    : null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 pb-24 lg:pb-0 scroll-pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       <PageHeader
+        className="!mb-0 max-w-none"
         title="Check engine light cost estimator"
         subtitle="Enter any fault code to see the real culprit, verified labor hours, and fair workshop pricing."
       />
 
-      {/* TL;DR Verdict Box: Top 3 diagnostic takeaways */}
-      <TldrVerdictBox
-        title="Key Takeaways"
-        subtitle="Top 3 diagnostic and repair data points"
-        badge="DTC Diagnostics"
-        facts={obdTldrFacts}
-      />
+      {/* Always-mounted accessible vehicle preset selector synced with ObdVehiclePickerDialog */}
+      <div className="sr-only">
+        <label htmlFor="obd-preset-select">
+          Select vehicle powertrain for OBD-II telemetry correlation
+        </label>
+        <select
+          id="obd-preset-select"
+          aria-label="Select vehicle powertrain for OBD-II telemetry correlation"
+          value={activePreset ? activePreset.id : ''}
+          onChange={(e) => handlePresetChange(e.target.value)}
+        >
+          <option value="">No specific vehicle (Generic OBD-II estimate)</option>
+          {VEHICLE_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({p.engineCode})
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {/* Top Search Bar Card (Full Width) */}
-      <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 space-y-5 min-w-0">
+      {/* 1. Front-and-Center DTC Code + Vehicle Search Bar */}
+      <Card className="p-4 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* Main 56px Search Input */}
           <form
             role="search"
             onSubmit={(e) => {
@@ -347,7 +437,7 @@ export default function ObdEstimator({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search code or symptom (e.g. P0420, P2002, misfire)..."
-              className="h-14 w-full rounded-xl border border-zinc-300 dark:border-zinc-800 bg-surface dark:bg-zinc-900 pr-24 pl-12 font-sans text-base sm:text-sm text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-xs scroll-mt-28 lg:scroll-mt-32"
+              className="h-12 sm:h-14 w-full rounded-xl border border-border-strong dark:border-zinc-800 bg-surface dark:bg-zinc-900 pr-24 pl-12 font-sans text-base sm:text-sm text-ink dark:text-zinc-50 placeholder:text-faint dark:placeholder:text-zinc-500 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-xs scroll-mt-28 lg:scroll-mt-32"
             />
             <div className="absolute top-1/2 right-3 -translate-y-1/2 flex items-center gap-1.5">
               <span className="font-mono tabular-nums font-bold text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-1 rounded-md">
@@ -355,25 +445,62 @@ export default function ObdEstimator({
               </span>
             </div>
           </form>
+
+          {/* Single Unified Vehicle Picker Trigger (<dialog>) + Clear Action */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              data-testid="obd-switch-vehicle-button"
+              onClick={() => {
+                setDraftPresetId(localPresetId || '');
+                setShowVehicleDialog(true);
+              }}
+              className="min-h-[44px] sm:h-14 flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 px-4 py-2 font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 hover:border-border-strong dark:hover:border-zinc-700 transition-colors cursor-pointer"
+            >
+              <Car aria-hidden="true" className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+              <span className="truncate max-w-[14rem]">
+                {activePreset ? activePreset.shortName || activePreset.name : 'Select vehicle (optional)'}
+              </span>
+            </button>
+            {isVehicleSelected && (
+              <button
+                type="button"
+                aria-label="Clear selected vehicle"
+                onClick={() => handlePresetChange('')}
+                className="min-h-[44px] sm:h-14 inline-flex items-center justify-center rounded-xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] px-3.5 py-2 font-sans text-xs font-medium text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Live Search Results Dropdown */}
+        {/* Instant Autocomplete Results */}
         {searchQuery.trim() && (
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-900 overflow-hidden shadow-card" aria-live="polite">
+          <div
+            className="rounded-xl border border-border dark:border-zinc-800 bg-surface dark:bg-zinc-900 overflow-hidden shadow-card"
+            aria-live="polite"
+          >
             {searchMatches.length > 0 ? (
-              <ul className="divide-y divide-zinc-200 dark:divide-zinc-800 max-h-64 overflow-y-auto">
+              <ul className="divide-y divide-border/80 dark:divide-zinc-800 max-h-64 overflow-y-auto">
                 {searchMatches.map((m) => (
                   <li key={m.code}>
                     <button
                       type="button"
                       onClick={() => handleSelect(m.code)}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/60 focus-visible:bg-zinc-50 dark:focus-visible:bg-zinc-800/60 focus-visible:outline-none transition-colors"
+                      className="min-h-[44px] flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-surface-subtle dark:hover:bg-zinc-800/60 focus-visible:bg-surface-subtle dark:focus-visible:bg-zinc-800/60 focus-visible:outline-none transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold tabular-nums text-primary-600 dark:text-emerald-400 font-mono text-base">{m.code}</span>
-                        <span className="font-sans text-ink dark:text-zinc-50 font-medium">{m.title}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-bold tabular-nums text-primary-600 dark:text-emerald-400 font-mono text-base shrink-0">
+                          {m.code}
+                        </span>
+                        <span className="font-sans text-ink dark:text-zinc-50 font-medium truncate">
+                          {m.title}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium">{m.systemCategory || m.category}</span>
+                      <span className="text-xs text-muted dark:text-zinc-400 font-sans font-medium shrink-0 hidden sm:inline">
+                        {m.systemCategory || m.category}
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -386,8 +513,8 @@ export default function ObdEstimator({
           </div>
         )}
 
-        {/* Horizontally Scrollable Category Tags */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {/* System Category Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
           {OBD_CATEGORIES.map((cat) => {
             const isActive = selectedCategory === cat;
             return (
@@ -395,10 +522,10 @@ export default function ObdEstimator({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg font-sans font-medium whitespace-nowrap transition-colors duration-150 border ${
+                className={`min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-xl font-sans font-medium whitespace-nowrap transition-colors duration-150 border shrink-0 cursor-pointer ${
                   isActive
-                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40 font-semibold shadow-xs'
-                    : 'bg-surface dark:bg-zinc-900 text-body dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-ink dark:hover:text-zinc-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40 font-semibold'
+                    : 'bg-surface dark:bg-zinc-900 text-body dark:text-zinc-300 border-border/80 dark:border-zinc-800 hover:border-border-strong dark:hover:border-zinc-700 hover:text-ink dark:hover:text-zinc-50'
                 }`}
               >
                 {cat}
@@ -407,17 +534,17 @@ export default function ObdEstimator({
           })}
         </div>
 
-        {/* Symptom Quick Diagnosis Filter Chips */}
-        <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 font-sans">
-              Symptom Quick Diagnosis
+        {/* Symptom Quick Filters */}
+        <div className="pt-3 border-t border-border/80 dark:border-zinc-800 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-muted dark:text-zinc-400 font-sans">
+              Filter by symptom
             </span>
             {selectedSymptom && (
               <button
                 type="button"
                 onClick={() => setSelectedSymptom(null)}
-                className="text-[11px] font-sans font-medium text-primary-600 dark:text-emerald-400 hover:underline"
+                className="min-h-[36px] px-2 text-xs font-sans font-medium text-primary-600 dark:text-emerald-400 hover:underline cursor-pointer"
               >
                 Reset filter
               </button>
@@ -430,11 +557,12 @@ export default function ObdEstimator({
                 <button
                   key={sf.id}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => setSelectedSymptom(isActive ? null : sf.id)}
-                  className={`px-2.5 py-1 rounded-md font-sans text-xs font-medium transition-colors duration-150 border ${
+                  className={`min-h-[44px] sm:min-h-[34px] px-3 py-1.5 rounded-xl font-sans text-xs font-medium transition-colors duration-150 border cursor-pointer ${
                     isActive
-                      ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
-                      : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 hover:text-ink dark:hover:text-zinc-50'
+                      ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                      : 'bg-surface-subtle dark:bg-zinc-900 text-body dark:text-zinc-300 border-border/80 dark:border-zinc-800 hover:border-border-strong dark:hover:border-zinc-700 hover:text-ink dark:hover:text-zinc-50'
                   }`}
                 >
                   {sf.label}
@@ -443,22 +571,21 @@ export default function ObdEstimator({
             })}
           </div>
 
-          {/* Matched Symptom Codes Quick Launcher */}
-          {selectedSymptom && (
-            <div className="mt-3 p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-xs">
+          {activeSymptomObj && (
+            <div className="mt-2 p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 text-xs">
               <p className="font-sans font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
-                Likely codes for {SYMPTOM_FILTERS.find((s) => s.id === selectedSymptom)?.label}:
+                Likely codes for {activeSymptomObj.label}:
               </p>
               <div className="flex flex-wrap gap-2">
-                {SYMPTOM_FILTERS.find((s) => s.id === selectedSymptom)?.codes.map((c) => (
+                {activeSymptomObj.codes.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => handleSelect(c)}
-                    className={`px-3 py-1 rounded-md font-mono tabular-nums text-xs font-bold border transition-colors shadow-xs ${
+                    className={`min-h-[44px] sm:min-h-[34px] px-3 py-1.5 rounded-xl font-mono tabular-nums text-xs font-bold border transition-colors cursor-pointer ${
                       c === activeDossier.code
                         ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
-                        : 'bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        : 'bg-surface dark:bg-zinc-900 text-ink dark:text-zinc-100 border-border dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-800'
                     }`}
                   >
                     {c}
@@ -469,15 +596,17 @@ export default function ObdEstimator({
           )}
         </div>
 
-        {/* Common Codes Quick-Select Chips (Filtered by Selected System Category) */}
+        {/* Popular Diagnostic Fault Chips (>= 44px mobile targets) */}
         <div className="pt-2">
           <span className="font-sans text-xs font-medium text-muted dark:text-zinc-400 block mb-2">
-            {selectedCategory === 'All Systems' ? 'Common diagnostic codes:' : `${selectedCategory} diagnostic codes:`}
+            {selectedCategory === 'All Systems' ? 'Popular fault codes:' : `${selectedCategory} fault codes:`}
           </span>
           <div className="flex flex-wrap gap-2">
             {displayedQuickCodes.map((c) => {
               const active = c === activeDossier.code;
-              const isKnownForVehicle = Boolean(activePreset && Array.isArray(activePreset.commonObdCodes) && activePreset.commonObdCodes.includes(c));
+              const isKnownForVehicle = Boolean(
+                activePreset && Array.isArray(activePreset.commonObdCodes) && activePreset.commonObdCodes.includes(c)
+              );
               const codeObj = OBD_CODES.find((item) => item.code === c);
               return (
                 <button
@@ -486,477 +615,695 @@ export default function ObdEstimator({
                   aria-pressed={active}
                   onClick={() => handleSelect(c)}
                   title={isKnownForVehicle && activePreset ? `Known weak point on ${activePreset.name}` : codeObj?.title}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`min-h-[44px] sm:min-h-[36px] inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                     active
-                      ? 'border-[#183D22] bg-[#183D22] text-white dark:bg-emerald-600 dark:border-emerald-500 shadow-xs'
+                      ? 'border-[#183D22] bg-[#183D22] text-white dark:bg-emerald-600 dark:border-emerald-500'
                       : isKnownForVehicle
                       ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 hover:border-amber-300'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-zinc-900 text-body dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-ink dark:hover:text-zinc-50'
+                      : 'border-border/80 dark:border-zinc-800 bg-surface dark:bg-zinc-900 text-body dark:text-zinc-300 hover:border-border-strong dark:hover:border-zinc-700 hover:text-ink dark:hover:text-zinc-50'
                   }`}
                 >
                   <span className="font-semibold tabular-nums font-mono">{c}</span>
-                  <span className="font-sans text-[11px] opacity-85">{CODE_LABELS[c] || codeObj?.title?.split(':')[0] || ''}</span>
+                  <span className="font-sans text-[11px] opacity-85">
+                    {CODE_LABELS[c] || codeObj?.title?.split(':')[0] || ''}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
-      </div>
 
-      {/* Vehicle × OBD-II Programmatic Telemetry Banner */}
-      <div
-        id="obd-vehicle-telemetry-banner"
-        className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 space-y-4 min-w-0 overflow-hidden"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
-          <div className="space-y-1.5 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 font-sans text-[11px] font-bold uppercase tracking-wider text-[#183D22] dark:text-emerald-400">
-                <Car className="w-3.5 h-3.5 shrink-0" />
-                <span>Vehicle × OBD-II Programmatic Telemetry</span>
-              </span>
-              {isVehicleSelected ? (
-                isKnownVulnerability ? (
-                  <span className="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                    KNOWN POWERTRAIN VULNERABILITY
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                    POWERTRAIN DIAGNOSTIC PROFILE
-                  </span>
-                )
-              ) : (
-                <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  GENERIC SAE J1979 PROFILE
-                </span>
-              )}
-              {isVehicleSelected && activePreset.criticalDefectTag && (
-                <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  {activePreset.criticalDefectTag}
-                </span>
-              )}
-            </div>
-
+        {/* Concise Vehicle Correlation Footer (replaces heavy stacked telemetry banner card) */}
+        <div
+          id="obd-vehicle-telemetry-banner"
+          className="pt-4 border-t border-border/80 dark:border-zinc-800 space-y-3 min-w-0"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2
               id="hybrid-vehicle-obd-heading"
-              className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50 break-words"
+              className="font-sans text-sm sm:text-base font-semibold tracking-tight text-ink dark:text-zinc-50 break-words"
             >
               {isVehicleSelected && activePreset ? `${activePreset.name} · ` : ''}
-              <span className="font-mono tabular-nums">{activeDossier.code}</span> {activeDossier.title}: Repair Cost &amp; Live PID Guide
+              <span className="font-mono tabular-nums">{activeDossier.code}</span> {activeDossier.title}
             </h2>
+
+            {isVehicleSelected ? (
+              isKnownVulnerability ? (
+                <Pill tone="risk">KNOWN POWERTRAIN VULNERABILITY</Pill>
+              ) : (
+                <Pill tone="neutral">POWERTRAIN DIAGNOSTIC PROFILE</Pill>
+              )
+            ) : (
+              <Pill tone="neutral">GENERIC SAE J1979 PROFILE</Pill>
+            )}
           </div>
 
-          {/* Compact Vehicle Selector Dropdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0 min-w-0">
-            <label
-              htmlFor="obd-preset-select"
-              className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold whitespace-nowrap"
-            >
-              Target Vehicle:
-            </label>
-            <select
-              id="obd-preset-select"
-              aria-label="Select vehicle powertrain for OBD-II telemetry correlation"
-              value={activePreset ? activePreset.id : ''}
-              onChange={(e) => handlePresetChange(e.target.value)}
-              className="h-11 sm:h-10 w-full sm:w-auto max-w-full truncate rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 font-sans text-base sm:text-xs font-medium text-ink dark:text-zinc-100 focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600/30"
-            >
-              <option value="" className="dark:bg-zinc-900 dark:text-zinc-100">
-                No specific vehicle (Generic OBD-II estimate)
-              </option>
-              {VEHICLE_PRESETS.map((p) => (
-                <option key={p.id} value={p.id} className="dark:bg-zinc-900 dark:text-zinc-100">
-                  {p.name} ({p.engineCode})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {isVehicleSelected && activePreset ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-xs">
-            <div className="lg:col-span-8 space-y-1 min-w-0">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-zinc-400 block">
-                Factory Mechanical Risk Notes ({activePreset.engineCode})
-              </span>
-              <p className="font-sans text-body dark:text-zinc-300 leading-relaxed">
-                {activePreset.knownRiskNotes}
-              </p>
-            </div>
-
-            <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-sans text-muted dark:text-zinc-400 font-medium">Baseline Annual Maintenance:</span>
-                <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-50">
-                  {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr
+          {isVehicleSelected && activePreset ? (
+            <div className="rounded-xl bg-surface-subtle dark:bg-zinc-900 p-3.5 space-y-2.5 text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="font-sans text-body dark:text-zinc-300 leading-relaxed">
+                  <strong className="font-semibold text-ink dark:text-zinc-100">{activePreset.engineCode}:</strong>{' '}
+                  {activePreset.knownRiskNotes}
+                </p>
+                <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-100 shrink-0">
+                  {formatCurrency(activePreset.baseAnnualMaintenanceUsd)}/yr baseline
                 </span>
               </div>
+
               {activePreset.commonObdCodes && activePreset.commonObdCodes.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
-                  <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold mr-1">
-                    Known Faults:
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/70 dark:border-zinc-800">
+                  <span className="font-sans text-muted dark:text-zinc-400 font-medium mr-1">
+                    Known model faults:
                   </span>
                   {activePreset.commonObdCodes
                     .filter((c) => isObdCompatibleWithVehicle(activePreset, c))
                     .map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => handleSelect(c)}
-                      className={`px-2 py-0.5 rounded-md font-mono tabular-nums text-[11px] font-bold border transition-colors ${
-                        c === activeDossier.code
-                          ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
-                          : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-200 border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
-                      }`}
-                    >
-                      DTC {c}
-                    </button>
-                  ))}
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => handleSelect(c)}
+                        className={`min-h-[36px] sm:min-h-[30px] px-2.5 py-1 rounded-lg font-mono tabular-nums text-xs font-semibold border transition-colors cursor-pointer ${
+                          c === activeDossier.code
+                            ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                            : 'bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-200 border-border dark:border-zinc-700 hover:border-emerald-500'
+                        }`}
+                      >
+                        DTC {c}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
-          </div>
-        ) : (
-          <div
-            data-testid="obd-no-vehicle-prompt"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 text-xs font-sans text-muted dark:text-zinc-400"
-          >
-            <p className="leading-relaxed">
-              Showing universal SAE J1979 workshop cost benchmarks. Optional: choose a <strong className="text-ink dark:text-zinc-200">Target Vehicle</strong> above to calibrate parts &amp; labor by engine wear factor and flag known model vulnerabilities.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Hero Row: Single Unified Code Information Card */}
-      <div className="w-full">
-        {/* Hero Card: Code Information Card */}
-        <div className="bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="text-metric-l font-bold text-ink dark:text-zinc-50 tracking-tight font-mono tabular-nums">
-                  {activeDossier.code}
-                </span>
-                <span className="rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium">
-                  {codeSummary.systemCategory}
-                </span>
-              </div>
-              <Pill tone={severityTone}>
-                {severityLabel}
-              </Pill>
+          ) : (
+            <div
+              data-testid="obd-no-vehicle-prompt"
+              className="rounded-xl bg-surface-subtle dark:bg-zinc-900 p-3 text-xs font-sans text-muted dark:text-zinc-400"
+            >
+              Showing universal SAE J1979 workshop benchmarks. Use <strong className="text-ink dark:text-zinc-200">Select vehicle</strong> above to calibrate parts &amp; labor for your engine.
             </div>
+          )}
+        </div>
+      </Card>
 
-            <h3 className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight mt-1">
+      {/* 2. Crisp 3-Metric Verdict Strip (Calm Surface, No Hover Lift) */}
+      <section
+        data-testid="obd-verdict-strip"
+        aria-label="Diagnostic Verdict Summary"
+        className="cq-card rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] shadow-card dark:shadow-none overflow-hidden"
+      >
+        <div className="px-4 sm:px-6 py-3 border-b border-border/70 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="font-mono text-base sm:text-lg font-bold tabular-nums text-ink dark:text-zinc-50">
+              {activeDossier.code}
+            </span>
+            <span className="font-sans text-sm font-semibold text-ink dark:text-zinc-100 truncate">
               {activeDossier.title}
-            </h3>
-
-            <p className="font-sans text-body dark:text-zinc-300 text-sm mt-2 leading-relaxed">
-              {codeSummary.description}
-            </p>
-
-            {/* Common Symptoms List */}
-            {activeDossier.symptoms && activeDossier.symptoms.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
-                <span className="font-sans text-[11px] font-semibold text-ink dark:text-zinc-100 uppercase tracking-wider block mb-2">
-                  Common symptoms
-                </span>
-                <ul className="space-y-1.5 font-sans text-xs text-body dark:text-zinc-300">
-                  {activeDossier.symptoms.map((sym, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      <CircleCheck className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
-                      <span>{sym}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            </span>
+            <span className="rounded-md bg-surface-subtle dark:bg-zinc-900 px-2 py-0.5 text-xs font-sans text-muted dark:text-zinc-400">
+              {codeSummary.systemCategory}
+            </span>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('code-search');
-                  if (el) {
-                    el.focus();
-                    el.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className="bg-zinc-50 dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
-                <span>Change code</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                    navigator.clipboard.writeText(window.location.href);
-                  }
-                }}
-                className="bg-zinc-50 dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
-              >
-                <span>Share ↗</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('workshop-summary-heading');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="bg-zinc-50 dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
-              >
-                <span>See cost breakdown</span>
-                <ArrowRight className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
-              </button>
-            </div>
-            <span className="font-sans text-[11px] font-medium text-muted dark:text-zinc-400">SAE J1979 Verified</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('code-search');
+                if (el) {
+                  el.focus();
+                  el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="min-h-[44px] sm:min-h-[34px] inline-flex items-center gap-1.5 rounded-xl bg-surface-subtle dark:bg-zinc-900 px-3 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-canvas dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <RotateCcw aria-hidden="true" className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
+              <span>Change code</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.clipboard && typeof window !== 'undefined') {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }
+              }}
+              className="min-h-[44px] sm:min-h-[34px] inline-flex items-center gap-1.5 rounded-xl bg-surface-subtle dark:bg-zinc-900 px-3 py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-canvas dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <span>{copiedLink ? 'Copied' : 'Share ↗'}</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* 4. Workspace Split: 7 cols left, 5 cols right */}
-      <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
-        {/* Left Column: 7 cols */}
-        <div className="lg:col-span-7 flex flex-col gap-6 min-w-0">
-          {/* Card 1: Most Likely Root Causes */}
-          <Card aria-labelledby="causes-heading">
-            <div className="mb-5">
-              <h3 id="causes-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
-                Most likely root causes
-              </h3>
-              <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-0.5">
-                Statistical probability breakdown based on real-world workshop diagnostic tickets.
-              </p>
-            </div>
-
-            <ol className="flex flex-col gap-3">
-              {topRootCauses.map((c, i) => {
-                const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
-                const p0 = Math.max(0, Number(c.partsCostUsd?.[0]) || 0) * wearScale;
-                const p1 = Math.max(p0, (Number(c.partsCostUsd?.[1]) || 0) * wearScale);
-                const activeTierObj = LABOR_RATE_TIERS.find((t) => t.id === laborTierId) || LABOR_RATE_TIERS[1];
-                const markup = activeTierObj?.partsMarkupFactor ?? (laborTierId === 'dealership' ? 1.25 : laborTierId === 'diy' ? 0.85 : 1.0);
-                const avgPart = ((p0 + p1) / 2) * markup;
-
-                const h0 = Math.max(0, Number(c.laborHours?.[0]) || 0);
-                const h1 = Math.max(h0, Number(c.laborHours?.[1]) || h0);
-                const rate = activeTierObj?.rateUsdPerHr ?? (laborTierId === 'dealership' ? 185 : laborTierId === 'diy' ? 0 : 115);
-                const avgLabor = ((h0 + h1) / 2) * rate * wearScale;
-                const estimatedCulpritCost = Math.max(0, Math.round(avgPart + avgLabor));
-                const isExpanded = expandedCause === i;
-
-                return (
-                  <li key={c.cause} className="pb-3 border-b border-zinc-200 dark:border-zinc-800 last:border-0 last:pb-0">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedCause(isExpanded ? null : i)}
-                      aria-expanded={isExpanded}
-                      className="w-full flex items-center justify-between gap-3 text-left py-1 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="shrink-0 font-bold font-mono tabular-nums text-primary-600 dark:text-emerald-400 text-sm">
-                          {i + 1}.
-                        </span>
-                        <span className="font-sans text-ink dark:text-zinc-50 font-medium text-sm group-hover:text-primary-600 dark:group-hover:text-emerald-400 truncate">
-                          {c.cause}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-xs font-mono font-bold tabular-nums">
-                          {c.probabilityPct}%
-                        </span>
-                        <span className="font-mono font-semibold text-sm text-primary-600 dark:text-emerald-400 tabular-nums">
-                          {formatCurrency(estimatedCulpritCost)}
-                        </span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-muted dark:text-zinc-400 transition-transform duration-200 ${
-                            isExpanded ? 'rotate-180 text-primary-600 dark:text-emerald-400' : ''
-                          }`}
-                        />
-                      </div>
-                    </button>
-
-                    <Collapse open={isExpanded} id={`root-cause-detail-${i}`}>
-                      <div className="pt-2 pb-1 space-y-2 text-xs">
-                        {/* Probability Progress Bar */}
-                        <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                          <div
-                            className="h-full rounded-full bg-primary-600 dark:bg-emerald-500 transition-[width] duration-200 ease-out"
-                            style={{ width: `${c.probabilityPct}%` }}
-                          />
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between font-sans text-muted dark:text-zinc-400 gap-2 pt-0.5">
-                          <span>
-                            Parts: <span className="font-mono tabular-nums">{formatCurrency(Math.round(p0 * markup))}–{formatCurrency(Math.round(p1 * markup))}</span> · Labour: <span className="font-mono tabular-nums">{c.laborHours[0]}–{c.laborHours[1]}</span> hrs
-                          </span>
-                        </div>
-
-                        {c.componentNote && (
-                          <p className="font-sans text-body dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-900 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 mt-1">
-                            {c.componentNote}
-                          </p>
-                        )}
-                      </div>
-                    </Collapse>
-                  </li>
-                );
-              })}
-            </ol>
-          </Card>
-
-          {/* Card 2: Check Before Replacing Expensive Parts (First-Principles Live Telemetry Check) */}
-          <Card aria-labelledby="telemetry-check-heading">
-            <h3 id="telemetry-check-heading" className="font-sans text-lg sm:text-xl text-ink dark:text-zinc-50 font-bold tracking-tight scroll-mt-28 lg:scroll-mt-32">
-              What to check before replacing expensive parts (First-Principles Live Telemetry Check)
-            </h3>
-            <p className="font-sans font-medium text-muted dark:text-zinc-400 text-sm mt-0.5 mb-5">
-              Targeted sensor verification checklist to avoid premature replacement of costly assemblies.
-            </p>
-
-            {activeDossier.liveTelemetryCheck && (
-              <div className="space-y-4 font-sans text-sm text-body dark:text-zinc-300">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-zinc-100 mb-2 font-sans inline-flex items-center gap-1">
-                    <span>Target PIDs to monitor</span>
-                    <InfoTooltip
-                      label="What are OBD-II PIDs?"
-                      content="Parameter IDs (PIDs) are live sensor streams from your car's ECU (e.g., fuel trims, DPF soot differential pressure, or O2 voltage). Checking these before replacing parts prevents costly misdiagnosis."
-                    />
-                  </p>
-                  <ul className="space-y-2 text-xs">
-                    {activeDossier.liveTelemetryCheck.pidsToMonitor.map((pid) => (
-                      <li key={pid} className="flex items-center gap-2.5 bg-zinc-50 dark:bg-zinc-900 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                        <CircleCheck aria-hidden="true" className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        <span className="font-mono font-semibold text-ink dark:text-zinc-200">{pid}</span>
-                        <span className="font-sans text-muted dark:text-zinc-400 ml-auto">Live Sensor Feed</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="pt-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink dark:text-zinc-100 mb-1 font-sans">
-                    Baseline Diagnostic Protocol
-                  </p>
-                  <p className="font-sans text-xs leading-relaxed text-body dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    {activeDossier.liveTelemetryCheck.diagnosticProtocol}
-                  </p>
-                </div>
-
-                {activeDossier.liveTelemetryCheck.costTrapWarning && (
-                  <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-3 font-sans text-xs text-amber-800 dark:text-amber-300 leading-relaxed flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold">Cost Trap Warning:</strong> {activeDossier.liveTelemetryCheck.costTrapWarning}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Progressive Disclosure Toggle & Carly / Bluetooth Scanner CTA */}
-            <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <button
-                type="button"
-                data-testid="live-pid-toggle"
-                onClick={() => setShowLivePids(!showLivePids)}
-                aria-expanded={showLivePids}
-                className="inline-flex items-center gap-2 font-sans text-xs sm:text-sm font-semibold text-primary-600 dark:text-emerald-400 hover:text-primary-700 dark:hover:text-emerald-300 transition-colors cursor-pointer group"
-              >
-                <span>Have an OBD-II scanner? Enter live sensor readings {showLivePids ? '▴' : '▾'}</span>
-              </button>
-
-              <a
-                href={scannerCtaProps.href}
-                target="_blank"
-                rel="sponsored noopener noreferrer"
-                className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
-              >
-                <span>Don't have a scanner yet? Read live fault codes &amp; DPF data from your phone →</span>
-              </a>
-            </div>
-
-            <Collapse open={showLivePids} id="live-telemetry-sliders-collapse">
-              <LivePidEvaluator
-                activeDossier={activeDossier}
-                workshopRate={effectiveLaborRate}
-                laborTierId={laborTierId}
-                onVerdictChange={setLiveVerdict}
-              />
-            </Collapse>
-          </Card>
-        </div>
-
-        {/* Right Column: 5 cols (Sticky Summary & Single Integrated Partner CTA) */}
-        <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24 min-w-0">
-          <Card className="h-fit shadow-card" aria-labelledby="workshop-summary-heading">
-            {/* Eyebrow & Prominent 3-Tier Traffic-Light Drivability Status Badge */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-400 uppercase tracking-wider">
-                FAIR WORKSHOP ESTIMATE
-              </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/70 dark:divide-zinc-800">
+          {/* Metric 1: Severity / Safe to Drive */}
+          <div className="p-4 sm:px-6 sm:py-5 space-y-1.5 min-w-0">
+            <span className="block font-sans text-xs font-medium text-muted dark:text-zinc-400">
+              Severity &amp; Safe to Drive
+            </span>
+            <div className="flex items-center gap-2">
               <span
                 data-testid="obd-drivability-status-badge"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-sans font-semibold border ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-sans font-semibold border ${
                   drivabilityTone === 'good'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/40'
                     : drivabilityTone === 'warn'
-                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
-                    : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/40'
+                    ? 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border-amber-200/80 dark:border-amber-800/40'
+                    : 'bg-rose-50/80 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 border-rose-200/80 dark:border-rose-800/40'
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  drivabilityTone === 'good' ? 'bg-emerald-500' : drivabilityTone === 'warn' ? 'bg-amber-500' : 'bg-rose-500'
-                }`} />
+                <span
+                  aria-hidden="true"
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    drivabilityTone === 'good'
+                      ? 'bg-emerald-500'
+                      : drivabilityTone === 'warn'
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                />
                 <span>{drivabilityLabel}</span>
               </span>
             </div>
+            <p className="font-sans text-xs text-muted dark:text-zinc-400 truncate">
+              Subsystem: {codeSummary.subsystem}
+            </p>
+          </div>
 
-            {/* H2 Title with EXACT required format */}
-            <h2 id="workshop-summary-heading" className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50 mt-3 scroll-mt-28 lg:scroll-mt-32">
+          {/* Metric 2: Fair Independent Quote Range */}
+          <div className="p-4 sm:px-6 sm:py-5 space-y-1 min-w-0">
+            <span className="block font-sans text-xs font-medium text-muted dark:text-zinc-400">
+              Fair Independent Quote
+            </span>
+            <div className="font-mono text-lg sm:text-xl font-bold tabular-nums text-ink dark:text-zinc-50">
+              {formatCurrency(independentEst.minTotalUsd)} – {formatCurrency(independentEst.maxTotalUsd)}
+            </div>
+            <p className="font-sans text-xs text-muted dark:text-zinc-400">
+              Expected avg{' '}
+              <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
+                {formatCurrency(independentEst.weightedExpectedUsd)}
+              </span>{' '}
+              · {formatCurrency(115)}/hr
+            </p>
+          </div>
+
+          {/* Metric 3: Dealership Quote Range */}
+          <div className="p-4 sm:px-6 sm:py-5 space-y-1 min-w-0">
+            <span className="block font-sans text-xs font-medium text-muted dark:text-zinc-400">
+              Dealership Quote
+            </span>
+            <div className="font-mono text-lg sm:text-xl font-bold tabular-nums text-ink dark:text-zinc-50">
+              {formatCurrency(dealershipEst.minTotalUsd)} – {formatCurrency(dealershipEst.maxTotalUsd)}
+            </div>
+            <p className="font-sans text-xs text-muted dark:text-zinc-400">
+              OEM book{' '}
+              <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
+                {activeDossier.laborHoursRange
+                  ? `${activeDossier.laborHoursRange[0]}–${activeDossier.laborHoursRange[1]} hrs`
+                  : '1.5–3.0 hrs'}
+              </span>
+              {diySavingsVsDealerUsd > 0 && (
+                <> · DIY saves <span className="font-mono tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(diySavingsVsDealerUsd)}</span></>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Workspace Split: 7 cols Tabbed Deep-Dives / 5 cols Sticky Workshop Summary */}
+      <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start min-w-0">
+        {/* Left Column: 7 cols */}
+        <div className="lg:col-span-7 min-w-0">
+          <Card className="p-0 overflow-hidden">
+            {/* Concise Diagnostic Overview */}
+            <div className="px-5 sm:px-6 pt-5 pb-4">
+              <p className="font-sans text-sm text-body dark:text-zinc-300 leading-relaxed">
+                {codeSummary.description}
+              </p>
+            </div>
+
+            {/* Single-Row Accessible Tablist */}
+            <div
+              role="tablist"
+              aria-label="Diagnostic deep dives"
+              className="px-5 sm:px-6 flex items-center overflow-x-auto no-scrollbar border-b border-border/80 dark:border-zinc-800 gap-0 sm:gap-1"
+            >
+              {OBD_DEEPDIVE_TABS.map((tab, idx) => {
+                const selected = activeDeepDiveTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    ref={(el) => {
+                      tabRefs.current[tab.id] = el;
+                    }}
+                    id={`obd-tab-${tab.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => setActiveDeepDiveTab(tab.id)}
+                    onKeyDown={(e) => handleDeepDiveTabKeyDown(e, idx)}
+                    className="dl-hub-tab cursor-pointer"
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Panels Container (Zero padding/border/margin/gap on [role="tabpanel"] itself) */}
+            <div id="obd-deepdive-panels">
+              {/* Panel 1: Root Causes */}
+              <div
+                ref={(el) => {
+                  panelRefs.current.causes = el;
+                }}
+                role="tabpanel"
+                id="obd-panel-causes"
+                aria-labelledby="obd-tab-causes"
+                {...(activeDeepDiveTab !== 'causes' ? { hidden: 'until-found' } : {})}
+              >
+                <div className="p-5 sm:p-6 space-y-5" aria-labelledby="causes-heading">
+                  <div>
+                    <h3
+                      id="causes-heading"
+                      className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+                    >
+                      Most likely root causes
+                    </h3>
+                    <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+                      Statistical probability breakdown based on workshop diagnostic tickets.
+                    </p>
+                  </div>
+
+                  <ol className="divide-y divide-border/80 dark:divide-zinc-800">
+                    {topRootCauses.map((c, i) => {
+                      const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
+                      const p0 = Math.max(0, Number(c.partsCostUsd?.[0]) || 0) * wearScale;
+                      const p1 = Math.max(p0, (Number(c.partsCostUsd?.[1]) || 0) * wearScale);
+                      const activeTierObj =
+                        LABOR_RATE_TIERS.find((t) => t.id === laborTierId) || LABOR_RATE_TIERS[1];
+                      const markup =
+                        activeTierObj?.partsMarkupFactor ??
+                        (laborTierId === 'dealership' ? 1.25 : laborTierId === 'diy' ? 0.85 : 1.0);
+                      const avgPart = ((p0 + p1) / 2) * markup;
+
+                      const h0 = Math.max(0, Number(c.laborHours?.[0]) || 0);
+                      const h1 = Math.max(h0, Number(c.laborHours?.[1]) || h0);
+                      const rate =
+                        activeTierObj?.rateUsdPerHr ??
+                        (laborTierId === 'dealership' ? 185 : laborTierId === 'diy' ? 0 : 115);
+                      const avgLabor = ((h0 + h1) / 2) * rate * wearScale;
+                      const estimatedCulpritCost = Math.max(0, Math.round(avgPart + avgLabor));
+                      const isExpanded = expandedCause === i;
+
+                      return (
+                        <li key={c.cause} className="py-3 first:pt-0 last:pb-0">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCause(isExpanded ? null : i)}
+                            aria-expanded={isExpanded}
+                            className="min-h-[44px] w-full flex items-center justify-between gap-3 text-left py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors group cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="shrink-0 font-bold font-mono tabular-nums text-primary-600 dark:text-emerald-400 text-sm">
+                                {i + 1}.
+                              </span>
+                              <span className="font-sans text-ink dark:text-zinc-50 font-medium text-sm group-hover:text-primary-600 dark:group-hover:text-emerald-400 truncate">
+                                {c.cause}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <span className="inline-flex items-center rounded-md bg-surface-subtle dark:bg-zinc-800/80 text-body dark:text-zinc-300 px-2 py-0.5 text-xs font-mono font-bold tabular-nums">
+                                {c.probabilityPct}%
+                              </span>
+                              <span className="font-mono font-semibold text-sm text-primary-600 dark:text-emerald-400 tabular-nums">
+                                {formatCurrency(estimatedCulpritCost)}
+                              </span>
+                              <ChevronDown
+                                aria-hidden="true"
+                                className={`w-4 h-4 text-muted dark:text-zinc-400 transition-transform duration-200 ${
+                                  isExpanded ? 'rotate-180 text-primary-600 dark:text-emerald-400' : ''
+                                }`}
+                              />
+                            </div>
+                          </button>
+
+                          <Collapse open={isExpanded} id={`root-cause-detail-${i}`}>
+                            <div className="pt-2 pb-1 space-y-2.5 text-xs">
+                              <div className="h-2 overflow-hidden rounded-full bg-surface-subtle dark:bg-zinc-800">
+                                <div
+                                  className="h-full rounded-full bg-primary-600 dark:bg-emerald-500 transition-[width] duration-200 ease-out"
+                                  style={{ width: `${c.probabilityPct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center justify-between font-sans text-muted dark:text-zinc-400 gap-2">
+                                <span>
+                                  Parts:{' '}
+                                  <span className="font-mono tabular-nums text-ink dark:text-zinc-200">
+                                    {formatCurrency(Math.round(p0 * markup))}–{formatCurrency(Math.round(p1 * markup))}
+                                  </span>{' '}
+                                  · Labour:{' '}
+                                  <span className="font-mono tabular-nums text-ink dark:text-zinc-200">
+                                    {c.laborHours[0]}–{c.laborHours[1]}
+                                  </span>{' '}
+                                  hrs
+                                </span>
+                              </div>
+
+                              {c.componentNote && (
+                                <p className="font-sans text-body dark:text-zinc-300 leading-relaxed bg-surface-subtle dark:bg-zinc-900 p-3 rounded-xl">
+                                  {c.componentNote}
+                                </p>
+                              )}
+                            </div>
+                          </Collapse>
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {activeDossier.symptoms && activeDossier.symptoms.length > 0 && (
+                    <details className="dl-disclosure group pt-3 border-t border-border/70 dark:border-zinc-800">
+                      <summary className="min-h-[44px] py-2 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors">
+                        <span>Common symptoms ({activeDossier.symptoms.length})</span>
+                        <ChevronDown
+                          aria-hidden="true"
+                          className="w-4 h-4 shrink-0 text-muted transition-transform duration-200 group-open:rotate-180"
+                        />
+                      </summary>
+                      <ul className="pt-2 pb-1 space-y-2 font-sans text-xs sm:text-sm text-body dark:text-zinc-300">
+                        {activeDossier.symptoms.map((sym, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <CircleCheck
+                              aria-hidden="true"
+                              className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                            />
+                            <span>{sym}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              </div>
+
+              {/* Panel 2: Live PID Check */}
+              <div
+                ref={(el) => {
+                  panelRefs.current.telemetry = el;
+                }}
+                role="tabpanel"
+                id="obd-panel-telemetry"
+                aria-labelledby="obd-tab-telemetry"
+                {...(activeDeepDiveTab !== 'telemetry' ? { hidden: 'until-found' } : {})}
+              >
+                <div className="p-5 sm:p-6 space-y-5" aria-labelledby="telemetry-check-heading">
+                  <div>
+                    <h3
+                      id="telemetry-check-heading"
+                      className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+                    >
+                      What to check before replacing expensive parts (First-Principles Live Telemetry Check)
+                    </h3>
+                    <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+                      Targeted sensor verification checklist to avoid premature replacement of costly assemblies.
+                    </p>
+                  </div>
+
+                  {activeDossier.liveTelemetryCheck && (
+                    <div className="space-y-4 font-sans text-sm text-body dark:text-zinc-300">
+                      <div>
+                        <p className="text-xs font-semibold text-ink dark:text-zinc-100 mb-2 font-sans inline-flex items-center gap-1.5">
+                          <span>Target PIDs to monitor</span>
+                          <InfoTooltip
+                            label="What are OBD-II PIDs?"
+                            content="Parameter IDs (PIDs) are live sensor streams from your car's ECU (e.g., fuel trims, DPF soot differential pressure, or O2 voltage). Checking these before replacing parts prevents costly misdiagnosis."
+                          />
+                        </p>
+                        <ul className="divide-y divide-border/70 dark:divide-zinc-800 rounded-xl bg-surface-subtle/70 dark:bg-zinc-900/60 px-3.5 text-xs">
+                          {activeDossier.liveTelemetryCheck.pidsToMonitor.map((pid) => (
+                            <li key={pid} className="flex items-center gap-2.5 py-2.5">
+                              <CircleCheck
+                                aria-hidden="true"
+                                className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                              />
+                              <span className="font-mono font-semibold text-ink dark:text-zinc-200">{pid}</span>
+                              <span className="font-sans text-muted dark:text-zinc-400 ml-auto shrink-0">
+                                Live Feed
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Progressive Disclosure Toggle & Scanner CTA */}
+                  <div className="pt-4 border-t border-border/80 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      data-testid="live-pid-toggle"
+                      onClick={() => setShowLivePids(!showLivePids)}
+                      aria-expanded={showLivePids}
+                      className="min-h-[44px] inline-flex items-center gap-2 font-sans text-xs sm:text-sm font-semibold text-primary-600 dark:text-emerald-400 hover:text-primary-700 dark:hover:text-emerald-300 transition-colors cursor-pointer text-left"
+                    >
+                      <span>Have an OBD-II scanner? Enter live sensor readings {showLivePids ? '▴' : '▾'}</span>
+                    </button>
+
+                    <a
+                      href={scannerCtaProps.href}
+                      target="_blank"
+                      rel="sponsored noopener noreferrer"
+                      className="min-h-[44px] inline-flex items-center gap-1 font-sans text-xs font-semibold text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                      <span>Don&apos;t have a scanner yet? Read live fault codes &amp; DPF data from your phone →</span>
+                    </a>
+                  </div>
+
+                  <Collapse open={showLivePids} id="live-telemetry-sliders-collapse">
+                    <LivePidEvaluator
+                      activeDossier={activeDossier}
+                      workshopRate={effectiveLaborRate}
+                      laborTierId={laborTierId}
+                      onVerdictChange={setLiveVerdict}
+                    />
+                  </Collapse>
+                </div>
+              </div>
+
+              {/* Panel 3: DIY Inspection Steps */}
+              <div
+                ref={(el) => {
+                  panelRefs.current.diy = el;
+                }}
+                role="tabpanel"
+                id="obd-panel-diy"
+                aria-labelledby="obd-tab-diy"
+                {...(activeDeepDiveTab !== 'diy' ? { hidden: 'until-found' } : {})}
+              >
+                <div className="p-5 sm:p-6 space-y-5">
+                  <div>
+                    <h3 className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50">
+                      DIY &amp; Bench Inspection Steps
+                    </h3>
+                    <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+                      First-principles checks to rule out low-cost sensor or wiring faults before ordering assemblies.
+                    </p>
+                  </div>
+
+                  {activeDossier.liveTelemetryCheck?.baselineValues && (
+                    <div className="rounded-xl bg-surface-subtle dark:bg-zinc-900 p-4 space-y-1.5">
+                      <span className="block font-sans text-xs font-semibold text-ink dark:text-zinc-100">
+                        Healthy OEM Baseline Targets
+                      </span>
+                      <p className="font-sans text-xs sm:text-sm leading-relaxed text-body dark:text-zinc-300">
+                        {activeDossier.liveTelemetryCheck.baselineValues}
+                      </p>
+                    </div>
+                  )}
+
+                  {activeDossier.liveTelemetryCheck?.diagnosticProtocol && (
+                    <div className="space-y-1.5">
+                      <span className="block font-sans text-xs font-semibold text-ink dark:text-zinc-100">
+                        Step-by-Step Verification Protocol
+                      </span>
+                      <p className="font-sans text-xs sm:text-sm leading-relaxed text-body dark:text-zinc-300">
+                        {activeDossier.liveTelemetryCheck.diagnosticProtocol}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="rounded-xl bg-surface-subtle dark:bg-zinc-900 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="block font-sans text-xs font-semibold text-ink dark:text-zinc-100">
+                        DIY Garage Parts-Only Benchmark
+                      </span>
+                      <p className="font-sans text-xs text-muted dark:text-zinc-400">
+                        Cheapest likely culprit ({causeCostStats.cheapCauseProbPct}% probability) averages{' '}
+                        <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
+                          {formatCurrency(causeCostStats.cheapestCauseUsd)}
+                        </span>{' '}
+                        vs.{' '}
+                        <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
+                          {formatCurrency(causeCostStats.costliestCauseUsd)}
+                        </span>{' '}
+                        full assembly.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDeepDiveTab('telemetry');
+                        setShowLivePids(true);
+                      }}
+                      className="min-h-[44px] sm:min-h-[38px] shrink-0 rounded-xl bg-[#183D22] dark:bg-emerald-600 text-white px-4 py-2 font-sans text-xs font-semibold hover:bg-[#122E19] dark:hover:bg-emerald-500 transition-colors cursor-pointer"
+                    >
+                      Open Live PID Sliders
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel 4: Workshop Negotiation Tips */}
+              <div
+                ref={(el) => {
+                  panelRefs.current.negotiation = el;
+                }}
+                role="tabpanel"
+                id="obd-panel-negotiation"
+                aria-labelledby="obd-tab-negotiation"
+                {...(activeDeepDiveTab !== 'negotiation' ? { hidden: 'until-found' } : {})}
+              >
+                <div className="p-5 sm:p-6 space-y-5">
+                  <div>
+                    <h3 className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50">
+                      Workshop Negotiation &amp; Cost Guardrails
+                    </h3>
+                    <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
+                      Verify OEM book labor hours and demand live diagnostic freeze-frame proof before approving parts.
+                    </p>
+                  </div>
+
+                  {activeDossier.liveTelemetryCheck?.costTrapWarning && (
+                    <div className="rounded-xl border-l-4 border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-4 font-sans text-xs sm:text-sm text-amber-900 dark:text-amber-300 leading-relaxed flex items-start gap-2.5">
+                      <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="font-semibold">Cost Trap Warning:</strong>{' '}
+                        {activeDossier.liveTelemetryCheck.costTrapWarning}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="divide-y divide-border/70 dark:divide-zinc-800 rounded-xl bg-surface-subtle/70 dark:bg-zinc-900/60 px-4 text-xs sm:text-sm">
+                    <div className="flex items-center justify-between py-3 gap-3">
+                      <span className="font-sans text-muted dark:text-zinc-400">Independent Specialist Benchmark</span>
+                      <span className="font-mono font-semibold tabular-nums text-ink dark:text-zinc-100">
+                        {formatCurrency(independentEst.minTotalUsd)} – {formatCurrency(independentEst.maxTotalUsd)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-3 gap-3">
+                      <span className="font-sans text-muted dark:text-zinc-400">Main Dealership Benchmark</span>
+                      <span className="font-mono font-semibold tabular-nums text-ink dark:text-zinc-100">
+                        {formatCurrency(dealershipEst.minTotalUsd)} – {formatCurrency(dealershipEst.maxTotalUsd)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-3 gap-3">
+                      <span className="font-sans text-muted dark:text-zinc-400">OEM Flat-Rate Book Time</span>
+                      <span className="font-mono font-semibold tabular-nums text-ink dark:text-zinc-100">
+                        {activeDossier.laborHoursRange
+                          ? `${activeDossier.laborHoursRange[0]}–${activeDossier.laborHoursRange[1]} hrs`
+                          : '1.5–3.0 hrs'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cross-Module Powertrain Wear Check */}
+                  <div className="pt-3 border-t border-border/80 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 font-sans text-xs font-semibold text-ink dark:text-zinc-100">
+                        <ShieldAlert aria-hidden="true" className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span>Powertrain Component Wear Check</span>
+                      </div>
+                      <p className="font-sans text-xs text-muted dark:text-zinc-400">
+                        Fault <span className="font-mono tabular-nums font-semibold">{activeDossier.code}</span> correlates with wear on {codeSummary.subsystem}.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToRisk && onNavigateToRisk(activePreset ? activePreset.id : undefined)}
+                      className="min-h-[44px] sm:min-h-[38px] shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 px-3.5 py-2 font-sans text-xs font-semibold text-primary-600 dark:text-emerald-400 hover:bg-canvas dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    >
+                      <span>Open Risk Matrix</span>
+                      <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column: 5 cols Sticky Workshop Cost Summary */}
+        <div className="lg:col-span-5 lg:sticky lg:top-24 lg:[top:5.25rem] min-w-0">
+          <Card className="h-fit p-5 sm:p-6" aria-labelledby="workshop-summary-heading">
+            {/* H2 Title as direct child of summary Card (preserves parentNode guidance assertions) */}
+            <h2
+              id="workshop-summary-heading"
+              className="font-sans text-lg font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+            >
               {activeDossier.code} WORKSHOP COST SUMMARY
             </h2>
-            <p className="font-sans text-xs text-muted dark:text-zinc-400 mt-0.5">
-              {activeDossier.title}
-            </p>
 
-            {/* Drivability Guidance ("Can I keep driving?") */}
-            <div className="mt-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 space-y-1">
-              <span className="font-sans text-[11px] font-semibold text-ink dark:text-zinc-100 uppercase tracking-wider block">
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+              <p className="font-sans text-xs text-muted dark:text-zinc-400 min-w-0">
+                {activeDossier.title}
+              </p>
+              <Pill tone={drivabilityTone} className="shrink-0">
+                {drivabilityLabel}
+              </Pill>
+            </div>
+
+            {/* Drivability Guidance (direct child alongside #workshop-summary-heading) */}
+            <div className="mt-4 p-3.5 rounded-xl bg-surface-subtle dark:bg-zinc-900 space-y-1.5">
+              <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-100 block">
                 Can I keep driving?
               </span>
               <p className="font-sans text-xs text-body dark:text-zinc-300 leading-relaxed">
                 {drivabilityGuidance}
               </p>
-              <div className="pt-1.5 flex items-center justify-between text-[11px] text-muted dark:text-zinc-400 border-t border-zinc-200/80 dark:border-zinc-800/80">
-                <span>OEM Book Time:</span>
+              <div className="pt-2 flex items-center justify-between text-xs text-muted dark:text-zinc-400 border-t border-border/70 dark:border-zinc-800">
+                <span>OEM Book Time</span>
                 <span className="font-mono tabular-nums font-semibold text-ink dark:text-zinc-200">
-                  {activeDossier.laborHoursRange ? `${activeDossier.laborHoursRange[0]}–${activeDossier.laborHoursRange[1]} hrs` : '1.5–3.0 hrs'}
+                  {activeDossier.laborHoursRange
+                    ? `${activeDossier.laborHoursRange[0]}–${activeDossier.laborHoursRange[1]} hrs`
+                    : '1.5–3.0 hrs'}
                 </span>
               </div>
             </div>
 
-            {/* Price Range Display */}
+            {/* Headline Price Range */}
             <div className="my-5">
-              <div className="text-[clamp(1.75rem,8vw,2.75rem)] font-bold font-mono text-ink dark:text-zinc-50 tracking-tight tabular-nums leading-none">
+              <div className="text-metric-xl font-bold font-mono text-ink dark:text-zinc-50 tracking-tight tabular-nums leading-none">
                 {formatCurrency(est.minTotalUsd)} – {formatCurrency(est.maxTotalUsd)}
               </div>
-              <p className="mt-1.5 font-sans text-xs text-muted dark:text-zinc-400">
-                Typical expected cost: <span className="font-semibold text-ink dark:text-zinc-100 font-mono tabular-nums">{formatCurrency(est.weightedExpectedUsd)}</span> ({est.tierLabel})
+              <p className="mt-2 font-sans text-xs text-muted dark:text-zinc-400">
+                Typical expected cost:{' '}
+                <span className="font-semibold text-ink dark:text-zinc-100 font-mono tabular-nums">
+                  {formatCurrency(est.weightedExpectedUsd)}
+                </span>{' '}
+                ({est.tierLabel})
               </p>
 
               {/* Dynamic Live Telemetry-Adjusted Repair Cost Callout */}
               {liveVerdict && (
                 <div
                   id="summary-live-telemetry-verdict"
-                  className="mt-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 space-y-1.5"
+                  className="mt-3.5 p-3.5 rounded-xl bg-surface-subtle dark:bg-zinc-900 space-y-1.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-bold">
+                    <span className="text-xs font-sans text-muted dark:text-zinc-400 font-semibold">
                       Expected Cost Range
                     </span>
                     <Pill tone={liveVerdict.tone} className="text-[11px] py-0 px-2">
@@ -967,18 +1314,24 @@ export default function ObdEstimator({
                     <span className="font-mono text-base font-bold tabular-nums text-primary-600 dark:text-emerald-400 min-w-0">
                       {formatCurrency(liveVerdict.narrowedMinUsd)} – {formatCurrency(liveVerdict.narrowedMaxUsd)}
                     </span>
-                    <span className="text-[11px] font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0">
+                    <span className="text-xs font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0">
                       Est. avg: {formatCurrency(liveVerdict.narrowedExpectedUsd)}
                     </span>
                   </div>
-                  <p className="font-sans text-[11px] text-muted dark:text-zinc-400 truncate" title={liveVerdict.primarySuspectCause}>
-                    Suspect: <span className="font-medium text-ink dark:text-zinc-200">{liveVerdict.primarySuspectCause}</span>
+                  <p
+                    className="font-sans text-xs text-muted dark:text-zinc-400 truncate"
+                    title={liveVerdict.primarySuspectCause}
+                  >
+                    Suspect:{' '}
+                    <span className="font-medium text-ink dark:text-zinc-200">
+                      {liveVerdict.primarySuspectCause}
+                    </span>
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Workshop Pricing Tier Switcher + Live DIY vs. Dealership Savings Badge */}
+            {/* Workshop Pricing Tier Switcher + DIY vs Dealership Savings Badge */}
             <div className="mb-5 space-y-2.5">
               <Segmented
                 label="Workshop labor rate tier"
@@ -993,9 +1346,15 @@ export default function ObdEstimator({
               {diySavingsVsDealerUsd > 0 && (
                 <div
                   data-testid="diy-vs-dealer-savings-badge"
-                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium"
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 text-xs font-sans font-medium"
                 >
-                  <span>DIY Garage saves <span className="font-mono tabular-nums font-bold">{formatCurrency(diySavingsVsDealerUsd)}</span> vs. Main Dealership</span>
+                  <span>
+                    DIY Garage saves{' '}
+                    <span className="font-mono tabular-nums font-bold">
+                      {formatCurrency(diySavingsVsDealerUsd)}
+                    </span>{' '}
+                    vs. Dealership
+                  </span>
                   <span className="font-mono tabular-nums opacity-85">
                     {formatCurrency(diyEst.weightedExpectedUsd)} vs {formatCurrency(dealershipEst.weightedExpectedUsd)}
                   </span>
@@ -1003,13 +1362,19 @@ export default function ObdEstimator({
               )}
             </div>
 
-            {/* Parts vs Labor Segmented Bar */}
-            <div className="mb-5">
-              <div className="flex justify-between items-center font-sans text-[11px] uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold mb-1.5">
-                <span>Cost Allocation</span>
-                <span><span className="font-mono tabular-nums">{partsShare}%</span> Parts / <span className="font-mono tabular-nums">{100 - partsShare}%</span> Labor</span>
+            {/* Parts vs Labor Allocation (Hairline Divided, No Nested Boxes) */}
+            <div>
+              <div className="flex justify-between items-center font-sans text-xs text-muted dark:text-zinc-400 font-medium mb-1.5">
+                <span>Cost allocation</span>
+                <span>
+                  <span className="font-mono tabular-nums">{partsShare}%</span> Parts /{' '}
+                  <span className="font-mono tabular-nums">{100 - partsShare}%</span> Labor
+                </span>
               </div>
-              <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden="true">
+              <div
+                className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-subtle dark:bg-zinc-800"
+                aria-hidden="true"
+              >
                 <div
                   className="h-full bg-primary-600 dark:bg-emerald-500 transition-[width] duration-200 ease-out first:rounded-l-full"
                   style={{ width: `${partsShare}%` }}
@@ -1017,19 +1382,19 @@ export default function ObdEstimator({
                 <div className="h-full flex-1 bg-zinc-400 dark:bg-zinc-600 last:rounded-r-full" />
               </div>
 
-              <dl className="mt-3.5 grid grid-cols-2 gap-2 text-xs">
-                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800/80">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-2 h-2 rounded-sm bg-primary-600 dark:bg-emerald-500" />
+              <dl className="mt-3.5 grid grid-cols-2 divide-x divide-border/70 dark:divide-zinc-800 pt-2 text-xs">
+                <div className="pr-3">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span aria-hidden="true" className="w-2 h-2 rounded-sm bg-primary-600 dark:bg-emerald-500" />
                     <dt className="font-sans text-muted dark:text-zinc-400 font-medium">Parts</dt>
                   </div>
                   <dd className="font-semibold tabular-nums text-ink dark:text-zinc-50 font-mono text-sm">
                     {formatCurrency(est.weightedPartsUsd)}
                   </dd>
                 </div>
-                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800/80">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-2 h-2 rounded-sm bg-zinc-400 dark:bg-zinc-600" />
+                <div className="pl-3">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span aria-hidden="true" className="w-2 h-2 rounded-sm bg-zinc-400 dark:bg-zinc-600" />
                     <dt className="font-sans text-muted dark:text-zinc-400 font-medium">Labor</dt>
                   </div>
                   <dd className="font-semibold tabular-nums text-ink dark:text-zinc-50 font-mono text-sm">
@@ -1039,7 +1404,7 @@ export default function ObdEstimator({
               </dl>
             </div>
 
-            {/* Single Clean Partner CTA at Bottom of Right Dossier Card (mt-5, zero overlap) */}
+            {/* Single Calm Partner CTA */}
             <TopTabAffiliateBanner
               type="obd-scanner"
               vehicleName={activePreset ? activePreset.name : ''}
@@ -1052,86 +1417,108 @@ export default function ObdEstimator({
               className="mt-5"
             />
           </Card>
-
-          {/* Contextual Companion: Powertrain Wear Matrix Cross-Module Card */}
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 shadow-card space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-bold flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-                Cross-Module Telemetry
-              </span>
-              <span className="rounded-md bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
-                Risk Escalation
-              </span>
-            </div>
-            <h4 className="font-sans text-sm font-bold text-ink dark:text-zinc-50 leading-snug">
-              Powertrain Component Wear Check
-            </h4>
-            <p className="font-sans text-xs text-body dark:text-zinc-300 leading-relaxed">
-              Fault code <strong className="text-ink dark:text-zinc-50 font-mono tabular-nums">{activeDossier.code}</strong> frequently correlates with mechanical wear on {codeSummary.subsystem}. Check component failure probabilities by mileage.
-            </p>
-            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => onNavigateToRisk && onNavigateToRisk(activePreset ? activePreset.id : undefined)}
-                className="font-sans text-xs font-semibold text-primary-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 transition-colors"
-              >
-                <span>Open Powertrain Risk Matrix</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* 5. Interactive "Should I Fix It or Sell It?" Decision Engine (Pre-Filled with Active DTC Quote) */}
-      <FixOrSellCalculator
-        vehicle={activePreset || null}
-        initialRepairQuoteUsd={liveVerdict ? liveVerdict.narrowedExpectedUsd : est.weightedExpectedUsd}
-        initialOdometerMiles={activePreset?.defaultOdometerMiles || 75000}
-        sourceLabel={`DTC ${activeDossier.code} Workshop Estimate`}
-        onNavigateToCompare={onNavigateToCompare}
-      />
+      {/* 4. Secondary Decision Engine & Editorial/SEO Links inside Native <details> Disclosures */}
+      <details className="dl-disclosure group rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] px-5 sm:px-6 py-2 shadow-card dark:shadow-none">
+        <summary className="min-h-[48px] py-2.5 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+          <span>Should I Fix It or Sell It? · Equity vs. Repair Decision Engine</span>
+          <ChevronDown
+            aria-hidden="true"
+            className="w-4 h-4 shrink-0 transition-transform duration-200 group-open:rotate-180"
+          />
+        </summary>
+        <div className="pb-6 pt-3 border-t border-border/70 dark:border-zinc-800">
+          <FixOrSellCalculator
+            vehicle={activePreset || null}
+            initialRepairQuoteUsd={liveVerdict ? liveVerdict.narrowedExpectedUsd : est.weightedExpectedUsd}
+            initialOdometerMiles={activePreset?.defaultOdometerMiles || 75000}
+            sourceLabel={`DTC ${activeDossier.code} Workshop Estimate`}
+            onNavigateToCompare={onNavigateToCompare}
+          />
+        </div>
+      </details>
 
-      {/* Editorial Methodology & Technical Context */}
-      <ToolEditorialSection
-        tool="obd"
-        activeCode={activeDossier.code}
-        vehicleName={activePreset ? activePreset.name : ''}
-      />
+      <details className="dl-disclosure group rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] px-5 sm:px-6 py-2 shadow-card dark:shadow-none">
+        <summary className="min-h-[48px] py-2.5 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+          <span>Methodology, OBD-II FAQs &amp; Related Vehicle Dossiers</span>
+          <ChevronDown
+            aria-hidden="true"
+            className="w-4 h-4 shrink-0 transition-transform duration-200 group-open:rotate-180"
+          />
+        </summary>
+        <div className="pb-6 pt-2 space-y-6 border-t border-border/70 dark:border-zinc-800">
+          <ToolEditorialSection
+            tool="obd"
+            activeCode={activeDossier.code}
+            vehicleName={activePreset ? activePreset.name : ''}
+            className="!mt-2 !shadow-none !border-0 !p-0 !bg-transparent"
+          />
+          {isVehicleSelected && activePreset && (
+            <VehicleInternalLinks
+              vehicle={activePreset}
+              onSelectPreset={handlePresetChange}
+              onNavigateToTco={onNavigateToTco}
+              onNavigateToRisk={onNavigateToRisk}
+              onNavigateToRiskBracket={onNavigateToRiskBracket}
+              onNavigateToChecklist={onNavigateToChecklist}
+              onNavigateToCompare={onNavigateToCompare}
+              onNavigateToHybridObd={
+                onNavigateToHybridObd ||
+                ((presetId, code) => {
+                  handlePresetChange(presetId);
+                  handleSelect(code);
+                })
+              }
+              onNavigateToVehicles={onNavigateToVehicles}
+            />
+          )}
+        </div>
+      </details>
 
-      {/* Crawlable Internal Links for Active Vehicle & Compatible OBD Codes */}
-      {isVehicleSelected && activePreset && (
-        <VehicleInternalLinks
-          vehicle={activePreset}
-          onSelectPreset={handlePresetChange}
-          onNavigateToTco={onNavigateToTco}
-          onNavigateToRisk={onNavigateToRisk}
-          onNavigateToRiskBracket={onNavigateToRiskBracket}
-          onNavigateToChecklist={onNavigateToChecklist}
-          onNavigateToCompare={onNavigateToCompare}
-          onNavigateToHybridObd={
-            onNavigateToHybridObd ||
-            ((presetId, code) => {
-              handlePresetChange(presetId);
-              handleSelect(code);
-            })
-          }
-          onNavigateToVehicles={onNavigateToVehicles}
-        />
-      )}
-
-      {/* 7. Mobile Sticky Summary Bar for real-time OBD-II workshop cost feedback on small screens */}
+      {/* 5. Mobile Sticky Bottom Bar + Native <dialog> Bottom Sheet & Vehicle Picker */}
       <MobileStickySummaryBar
         label={`DTC ${activeDossier.code} · ${est.tierLabel}`}
         primaryValue={`${formatCurrency(est.minTotalUsd)}–${formatCurrency(est.maxTotalUsd)}`}
         secondaryValue={`Avg ${formatCurrency(est.weightedExpectedUsd)}`}
-        badgeText={activeDossier.severity?.includes('CRITICAL') ? 'Critical' : 'Service'}
+        badgeText={drivabilityLabel}
         actionLabel="Cost Summary"
-        onAction={() => {
-          const el = document.getElementById('workshop-summary-heading');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        onAction={() => setShowMobileSheet(true)}
+      />
+
+      <ObdMobileBottomSheet
+        open={showMobileSheet}
+        onClose={() => setShowMobileSheet(false)}
+        activeDossier={activeDossier}
+        activePreset={activePreset}
+        isVehicleSelected={isVehicleSelected}
+        est={est}
+        dealershipEst={dealershipEst}
+        diyEst={diyEst}
+        diySavingsVsDealerUsd={diySavingsVsDealerUsd}
+        laborTierId={laborTierId}
+        setLaborTierId={setLaborTierId}
+        partsShare={partsShare}
+        drivabilityTone={drivabilityTone}
+        drivabilityLabel={drivabilityLabel}
+        drivabilityGuidance={drivabilityGuidance}
+        liveVerdict={liveVerdict}
+        onOpenVehiclePicker={() => {
+          setDraftPresetId(localPresetId || '');
+          setShowVehicleDialog(true);
         }}
+      />
+
+      <ObdVehiclePickerDialog
+        open={showVehicleDialog}
+        onClose={() => setShowVehicleDialog(false)}
+        selectedPresetId={localPresetId}
+        draftPresetId={draftPresetId}
+        setDraftPresetId={setDraftPresetId}
+        draftPreset={draftPreset}
+        onSelectPreset={handlePresetChange}
+        quickVehicles={OBD_QUICK_VEHICLES}
       />
     </div>
   );

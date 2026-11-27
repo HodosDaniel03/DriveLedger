@@ -947,19 +947,19 @@ function DriveLedgerWorkspace() {
       />
 
       {/* Main Content Container */}
-      <main className="w-full max-w-[1440px] mx-auto min-h-[85vh] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-28 lg:pb-16 space-y-10 sm:space-y-12">
+      <main className="w-full max-w-[1440px] mx-auto min-h-[85dvh] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-28 lg:pb-16 space-y-10 sm:space-y-12">
         {isNotFoundRoute ? (
           <section
             data-testid="not-found-view"
-            className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-5 shadow-sm"
+            className="rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-5 shadow-card dark:shadow-none"
           >
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 text-xs font-mono font-bold">
-              HTTP 404 · ROUTE NOT FOUND
+            <span className="inline-flex items-center px-3 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 text-xs font-mono font-semibold">
+              404 · Route not found
             </span>
-            <h1 className="text-2xl sm:text-3xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
+            <h1 className="text-h1 font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
               404 — Telemetry Route Not Found
             </h1>
-            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
+            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed max-w-[54ch] mx-auto">
               The vehicle configuration or diagnostic URL you requested could not be found in the DriveLedger catalog. Select one of our primary calculators below to continue.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -969,7 +969,7 @@ function DriveLedgerWorkspace() {
                   e.preventDefault();
                   handleSelectTab('overview');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-sans text-xs font-semibold shadow-xs transition-colors"
+                className="min-h-[44px] inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-sans text-xs font-semibold transition-colors"
               >
                 Return to Overview
               </a>
@@ -979,7 +979,7 @@ function DriveLedgerWorkspace() {
                   e.preventDefault();
                   handleSelectTab('tco');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+                className="min-h-[44px] inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-canvas dark:bg-zinc-900 dark:hover:bg-zinc-800 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-border/80 dark:border-zinc-700 transition-colors"
               >
                 5-Year TCO Calculator
               </a>
@@ -989,7 +989,7 @@ function DriveLedgerWorkspace() {
                   e.preventDefault();
                   handleSelectTab('risk');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+                className="min-h-[44px] inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-canvas dark:bg-zinc-900 dark:hover:bg-zinc-800 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-border/80 dark:border-zinc-700 transition-colors"
               >
                 Maintenance Risk Matrix
               </a>
@@ -999,7 +999,7 @@ function DriveLedgerWorkspace() {
                   e.preventDefault();
                   handleSelectTab('obd');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+                className="min-h-[44px] inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-canvas dark:bg-zinc-900 dark:hover:bg-zinc-800 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-border/80 dark:border-zinc-700 transition-colors"
               >
                 OBD-II Repair Estimator
               </a>
@@ -1009,7 +1009,7 @@ function DriveLedgerWorkspace() {
                   e.preventDefault();
                   handleNavigateToVehicles();
                 }}
-                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-zinc-200 dark:border-zinc-700 transition-colors"
+                className="min-h-[44px] inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-surface-subtle hover:bg-canvas dark:bg-zinc-900 dark:hover:bg-zinc-800 text-ink dark:text-zinc-100 font-sans text-xs font-semibold border border-border/80 dark:border-zinc-700 transition-colors"
               >
                 All 179+ Vehicles
               </a>
@@ -1171,7 +1171,7 @@ function DriveLedgerWorkspace() {
 
             {/* SUBPAGE: METHODOLOGY & WHITE PAPER */}
             {activeTab === 'methodology' && (
-              <TechnicalMethodologyGuide onOpenLegalModal={setActiveLegalModal} />
+              <TechnicalMethodologyGuide onOpenLegalModal={handleOpenLegalModal} />
             )}
 
             {/* SUBPAGE: DRIVER REVIEWS */}
@@ -1198,7 +1198,7 @@ function DriveLedgerWorkspace() {
 
             {/* TAB 8: STANDALONE CONTACT US PAGE */}
             {activeTab === 'contact' && (
-              <ContactPage onNavigateTab={handleSelectTab} />
+              <ContactPage onNavigateTab={handleSelectTab} onOpenLegalModal={handleOpenLegalModal} />
             )}
           </Suspense>
         </div>

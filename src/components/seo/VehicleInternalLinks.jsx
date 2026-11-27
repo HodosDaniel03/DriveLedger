@@ -82,14 +82,11 @@ export function VehicleInternalLinks({
     <nav
       aria-label={`${activeVehicle.name} Internal Telemetry Links`}
       data-testid="vehicle-internal-links"
-      className="mt-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-xs space-y-5 print:hidden"
+      className="mt-8 rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card dark:shadow-none space-y-5 print:hidden"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 dark:border-zinc-800 pb-3">
         <div>
-          <span className="text-[10px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 font-bold block">
-            Related Vehicle Telemetry &amp; Diagnostics
-          </span>
-          <h3 className="text-sm sm:text-base font-sans font-bold text-ink dark:text-zinc-100 mt-0.5">
+          <h3 className="text-sm sm:text-base font-sans font-bold text-ink dark:text-zinc-100">
             Explore All Reports for {activeVehicle.name}
           </h3>
         </div>
@@ -103,7 +100,7 @@ export function VehicleInternalLinks({
                   onNavigateToVehicles(activeBrandInfo.slug);
                 }
               }}
-              className="inline-flex items-center gap-1 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
+              className="min-h-[44px] inline-flex items-center gap-1 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
             >
               <span>All {activeBrandInfo.name} Models ({activeBrandInfo.modelCount})</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -117,7 +114,7 @@ export function VehicleInternalLinks({
                 onNavigateToVehicles();
               }
             }}
-            className="inline-flex items-center gap-1 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+            className="min-h-[44px] inline-flex items-center gap-1 py-2 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
           >
             <span>All {BRAND_DIRECTORY.length} Brands &amp; {VEHICLE_PRESETS.length} Models</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -127,12 +124,12 @@ export function VehicleInternalLinks({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-xs font-sans">
         {/* 1. Core Vehicle Dossiers */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 min-w-0">
           <div className="font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5">
-            <Calculator className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 shrink-0" />
+            <Calculator className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
             <span>Core Calculators</span>
           </div>
-          <ul className="space-y-1.5 text-body dark:text-zinc-300">
+          <ul className="space-y-0.5 text-body dark:text-zinc-300">
             <li>
               <a
                 href={`/tco/${activeVehicle.id}`}
@@ -143,9 +140,9 @@ export function VehicleInternalLinks({
                     onNavigateToTco(activeVehicle.id);
                   }
                 }}
-                className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline block truncate"
+                className="min-h-[44px] flex items-center py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
               >
-                {shortName} 5-Year TCO Calculator
+                <span className="truncate">{shortName} 5-Year TCO Calculator</span>
               </a>
             </li>
             <li>
@@ -158,9 +155,9 @@ export function VehicleInternalLinks({
                     onNavigateToRisk(activeVehicle);
                   }
                 }}
-                className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline block truncate"
+                className="min-h-[44px] flex items-center py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
               >
-                {shortName} Powertrain Risk Matrix
+                <span className="truncate">{shortName} Powertrain Risk Matrix</span>
               </a>
             </li>
             <li>
@@ -173,21 +170,21 @@ export function VehicleInternalLinks({
                     onNavigateToChecklist(activeVehicle.id);
                   }
                 }}
-                className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline block truncate"
+                className="min-h-[44px] flex items-center py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
               >
-                {shortName} Pre-Purchase Checklist (PPI)
+                <span className="truncate">{shortName} Pre-Purchase Checklist (PPI)</span>
               </a>
             </li>
           </ul>
         </div>
 
         {/* 2. Mileage Bracket Risk Dossiers */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 min-w-0">
           <div className="font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5">
             <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Mileage Risk Brackets</span>
           </div>
-          <ul className="space-y-1.5 text-body dark:text-zinc-300">
+          <ul className="space-y-0.5 text-body dark:text-zinc-300">
             {MILEAGE_BRACKETS.map((b) => (
               <li key={b.slug}>
                 <a
@@ -206,9 +203,9 @@ export function VehicleInternalLinks({
                       });
                     }
                   }}
-                  className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline block truncate"
+                  className="min-h-[44px] flex items-center py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
                 >
-                  {shortName} at {b.label}
+                  <span className="truncate">{shortName} at {b.label}</span>
                 </a>
               </li>
             ))}
@@ -216,12 +213,12 @@ export function VehicleInternalLinks({
         </div>
 
         {/* 3. Segment Rival Comparisons */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 min-w-0">
           <div className="font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5">
             <GitCompare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>Segment Rival Comparisons</span>
           </div>
-          <ul className="space-y-1.5 text-body dark:text-zinc-300">
+          <ul className="space-y-0.5 text-body dark:text-zinc-300">
             {compareLinks.map((pair) => (
               <li key={pair.key}>
                 <a
@@ -232,9 +229,9 @@ export function VehicleInternalLinks({
                       onNavigateToCompare(pair.idA, pair.idB);
                     }
                   }}
-                  className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline block truncate"
+                  className="min-h-[44px] flex items-center py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
                 >
-                  {pair.label}
+                  <span className="truncate">{pair.label}</span>
                 </a>
               </li>
             ))}
@@ -242,12 +239,12 @@ export function VehicleInternalLinks({
         </div>
 
         {/* 4. Compatible OBD-II Fault Dossiers */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 min-w-0">
           <div className="font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 shrink-0" />
+            <Cpu className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400 shrink-0" />
             <span>Common OBD-II Fault Codes</span>
           </div>
-          <ul className="space-y-1.5 text-body dark:text-zinc-300">
+          <ul className="space-y-0.5 text-body dark:text-zinc-300">
             {compatibleObdList.map((obd) => (
               <li key={obd.code}>
                 <a
@@ -262,9 +259,9 @@ export function VehicleInternalLinks({
                       onNavigateToObd(obd.code);
                     }
                   }}
-                  className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline flex items-center gap-1.5 truncate"
+                  className="min-h-[44px] flex items-center gap-1.5 py-1.5 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
                 >
-                  <span className="font-mono font-bold text-primary-600 dark:text-primary-400 shrink-0">
+                  <span className="font-mono font-bold text-primary-600 dark:text-emerald-400 shrink-0">
                     {obd.code}
                   </span>
                   <span className="truncate">{obd.title}</span>
@@ -302,12 +299,12 @@ export function BrandQuickJumpIndex({ onNavigateToVehicles }) {
     <nav
       aria-label="Browse Vehicles by Brand"
       data-testid="brand-quick-jump-index"
-      className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800"
+      className="space-y-3 pt-4 border-t border-border/80 dark:border-zinc-800"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-          <h3 className="text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-ink dark:text-zinc-100">
+          <Car className="w-4 h-4 text-primary-600 dark:text-emerald-400" />
+          <h3 className="text-sm font-sans font-semibold text-ink dark:text-zinc-100">
             Browse by Brand ({brandsSummary.length} Brands · {VEHICLE_PRESETS.length} Benchmarked Models)
           </h3>
         </div>
@@ -319,13 +316,13 @@ export function BrandQuickJumpIndex({ onNavigateToVehicles }) {
               onNavigateToVehicles();
             }
           }}
-          className="inline-flex items-center gap-1 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+          className="min-h-[44px] inline-flex items-center gap-1 py-2 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
         >
           <span>Open Full HTML Vehicle Directory</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </a>
       </div>
-      <ul className="flex flex-wrap gap-1.5 text-xs font-sans">
+      <ul className="flex flex-wrap gap-2 text-xs font-sans">
         {brandsSummary.map((b) => (
           <li key={b.slug}>
             <a
@@ -336,10 +333,10 @@ export function BrandQuickJumpIndex({ onNavigateToVehicles }) {
                   onNavigateToVehicles(b.slug);
                 }
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-border-strong dark:hover:border-zinc-700 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
             >
               <span className="font-medium">{b.name}</span>
-              <span className="text-[10px] font-mono tabular-nums text-muted dark:text-zinc-500">
+              <span className="text-[11px] font-mono tabular-nums text-muted dark:text-zinc-500">
                 {b.count}
               </span>
             </a>
@@ -396,26 +393,26 @@ export function BrandModelDirectory({
   return (
     <div
       data-testid="brand-model-directory"
-      className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800"
+      className="space-y-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-          <h2 className="text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-ink dark:text-zinc-100">
+          <Car className="w-4 h-4 text-primary-600 dark:text-emerald-400" />
+          <h2 className="text-base sm:text-lg font-sans font-bold text-ink dark:text-zinc-100">
             Complete Brand &amp; Model Telemetry Catalog ({brandsGroup.length} Brands · {matchedCount} Models)
           </h2>
         </div>
-        <span className="text-[11px] font-sans text-muted dark:text-zinc-400">
+        <span className="text-xs font-sans text-muted dark:text-zinc-400">
           Direct TCO, Risk Matrix &amp; PPI Index
         </span>
       </div>
 
       {brandsGroup.length === 0 ? (
-        <p className="text-sm text-muted dark:text-zinc-400 py-8 text-center">
+        <div className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-6 text-sm text-muted dark:text-zinc-400 text-center shadow-card dark:shadow-none">
           No vehicle configurations match your current filter. Try clearing the search box.
-        </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 text-xs font-sans">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 text-xs font-sans">
           {brandsGroup.map(([brandName, models]) => {
             const brandSlug = slugifyBrandName(brandName);
             return (
@@ -423,10 +420,10 @@ export function BrandModelDirectory({
                 key={brandName}
                 id={`brand-${brandSlug}`}
                 aria-label={`${brandName} vehicles`}
-                className="scroll-mt-28 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 space-y-2"
+                className="scroll-mt-28 rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 shadow-card dark:shadow-none space-y-3 min-w-0"
               >
-                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
-                  <h3 className="font-bold text-ink dark:text-zinc-100 text-xs">
+                <div className="flex items-center justify-between border-b border-border/70 dark:border-zinc-800 pb-2">
+                  <h3 className="font-bold text-ink dark:text-zinc-100 text-sm">
                     <a
                       href={`/vehicles/${brandSlug}`}
                       onClick={(e) => {
@@ -435,33 +432,20 @@ export function BrandModelDirectory({
                           onNavigateToBrand(brandSlug);
                         }
                       }}
-                      className="hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
+                      className="inline-flex items-center min-h-[44px] py-1 text-sm font-bold text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
                     >
                       {brandName}
                     </a>
                   </h3>
-                  <span className="text-[10px] font-mono tabular-nums text-muted dark:text-zinc-400">
+                  <span className="text-xs font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0">
                     {models.length} {models.length === 1 ? 'model' : 'models'}
                   </span>
                 </div>
-                <ul className="space-y-1.5">
-                  {models.map((car) => (
-                    <li key={car.id} className="flex items-center justify-between gap-2">
-                      <a
-                        href={`/tco/${car.id}`}
-                        onClick={(e) => {
-                          if (onNavigateToTco) {
-                            e.preventDefault();
-                            if (onSelectPreset) onSelectPreset(car.id);
-                            onNavigateToTco(car.id);
-                          }
-                        }}
-                        className="text-body dark:text-zinc-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline truncate"
-                        title={`${car.name} 5-Year True Cost to Own`}
-                      >
-                        {car.shortName || car.name}
-                      </a>
-                      <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono">
+                <ul className="divide-y divide-border/60 dark:divide-zinc-800/80">
+                  {models.map((car) => {
+                    const modelLabel = car.shortName || car.name;
+                    return (
+                      <li key={car.id} className="py-2.5 first:pt-0 last:pb-0 flex flex-col gap-1.5 min-w-0">
                         <a
                           href={`/tco/${car.id}`}
                           onClick={(e) => {
@@ -471,39 +455,57 @@ export function BrandModelDirectory({
                               onNavigateToTco(car.id);
                             }
                           }}
-                          className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-primary-700 dark:text-primary-400 hover:border-primary-500"
+                          className="min-h-[44px] inline-flex items-center text-sm font-medium text-body dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline truncate"
                         >
-                          TCO
+                          {modelLabel}
                         </a>
-                        <a
-                          href={`/risk-matrix/${car.id}`}
-                          onClick={(e) => {
-                            if (onNavigateToRisk) {
-                              e.preventDefault();
-                              if (onSelectPreset) onSelectPreset(car.id);
-                              onNavigateToRisk(car);
-                            }
-                          }}
-                          className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-amber-700 dark:text-amber-400 hover:border-amber-500"
-                        >
-                          Risk
-                        </a>
-                        <a
-                          href={`/checklist/${car.id}`}
-                          onClick={(e) => {
-                            if (onNavigateToChecklist) {
-                              e.preventDefault();
-                              if (onSelectPreset) onSelectPreset(car.id);
-                              onNavigateToChecklist(car.id);
-                            }
-                          }}
-                          className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 hover:border-emerald-500"
-                        >
-                          PPI
-                        </a>
-                      </div>
-                    </li>
-                  ))}
+                        <div className="grid grid-cols-3 gap-1.5 font-mono">
+                          <a
+                            href={`/tco/${car.id}`}
+                            aria-label={`TCO for ${modelLabel}`}
+                            onClick={(e) => {
+                              if (onNavigateToTco) {
+                                e.preventDefault();
+                                if (onSelectPreset) onSelectPreset(car.id);
+                                onNavigateToTco(car.id);
+                              }
+                            }}
+                            className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-xs font-sans font-semibold text-primary-700 dark:text-emerald-400 hover:border-border-strong dark:hover:border-zinc-600 transition-colors"
+                          >
+                            TCO
+                          </a>
+                          <a
+                            href={`/risk-matrix/${car.id}`}
+                            aria-label={`Risk matrix for ${modelLabel}`}
+                            onClick={(e) => {
+                              if (onNavigateToRisk) {
+                                e.preventDefault();
+                                if (onSelectPreset) onSelectPreset(car.id);
+                                onNavigateToRisk(car);
+                              }
+                            }}
+                            className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-xs font-sans font-semibold text-amber-700 dark:text-amber-400 hover:border-amber-500 transition-colors"
+                          >
+                            Risk
+                          </a>
+                          <a
+                            href={`/checklist/${car.id}`}
+                            aria-label={`Pre-purchase checklist for ${modelLabel}`}
+                            onClick={(e) => {
+                              if (onNavigateToChecklist) {
+                                e.preventDefault();
+                                if (onSelectPreset) onSelectPreset(car.id);
+                                onNavigateToChecklist(car.id);
+                              }
+                            }}
+                            className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-xs font-sans font-semibold text-emerald-700 dark:text-emerald-400 hover:border-emerald-500 transition-colors"
+                          >
+                            PPI
+                          </a>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             );

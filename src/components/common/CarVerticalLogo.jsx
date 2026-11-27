@@ -26,6 +26,8 @@ export default function CarVerticalLogo({
     <img
       src="/carvertical-logo.png"
       alt={alt}
+      width={144}
+      height={20}
       onError={() => setHasError(true)}
       className={effectiveImgClass}
       loading="lazy"
@@ -34,6 +36,8 @@ export default function CarVerticalLogo({
   ) : (
     <svg
       viewBox="0 0 160 28"
+      width={114}
+      height={20}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={effectiveImgClass}

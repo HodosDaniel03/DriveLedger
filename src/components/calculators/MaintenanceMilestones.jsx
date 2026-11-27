@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar, CheckCircle2, Clock, Wrench, AlertTriangle, ShieldCheck, AlertOctagon, Sparkles, Zap } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { CheckCircle2, AlertTriangle, ShieldCheck, ChevronDown } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage, MILESTONE_IMPACT_MAP } from '../../context/GarageContext';
 import { Card, Pill } from '../common/OdometerPrimitives';
@@ -294,11 +294,14 @@ export default function MaintenanceMilestones({
   powertrainType,
   drivingStyle = 'mixed',
   workshopTier = 'independent',
+  embedded = false,
+  className = '',
 }) {
   const { formatCurrency, formatDistance, distanceUnit } = useUnits();
   const garage = useGarage();
   const [localCompletedItems, setLocalCompletedItems] = useState({});
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'due' | 'upcoming'
+  const [openOverrides, setOpenOverrides] = useState({});
 
   const activePreset = vehicle || getPresetById(presetId);
   const resolvedPowertrain = powertrainType || (activePreset ? resolvePowertrainType(activePreset) : 'ICE_PETROL');
@@ -319,6 +322,10 @@ export default function MaintenanceMilestones({
   const activeMilestones = useMemo(() => {
     return getMilestonesForPowertrain(resolvedPowertrain);
   }, [resolvedPowertrain]);
+
+  useEffect(() => {
+    setOpenOverrides({});
+  }, [activeFilter, presetId, Math.floor(effectiveOdometerMiles / 15000)]);
 
   const completedItems = garage?.isProviderActive
     ? garage.getCompletedMilestones(presetId)
@@ -365,41 +372,55 @@ export default function MaintenanceMilestones({
     return true;
   });
 
+  const Shell = embedded ? 'section' : Card;
+  const shellProps = embedded
+    ? { className: `cq-card w-full max-w-full min-w-0 ${className}`, 'aria-labelledby': 'milestones-heading' }
+    : { className: `mt-8 ${className}`, 'aria-labelledby': 'milestones-heading' };
+
   return (
-    <Card className="mt-8 border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] shadow-sm" aria-labelledby="milestones-heading">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border dark:border-zinc-800">
-        <div>
+    <Shell {...shellProps}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-4 border-b border-border/80 dark:border-zinc-800">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 id="milestones-heading" className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100 scroll-mt-28 lg:scroll-mt-32">
               Manufacturer Maintenance Milestone Roadmap
             </h2>
-            <Pill tone={scheduleMode === 'oem' ? 'risk' : 'brand'}>
-              {scheduleMode === 'oem' ? 'OEM Marketing View' : 'Schedule Planner'}
-            </Pill>
-            {isEvVehicle && (
-              <Pill tone="good">
-                Pure EV · <span className="font-mono tabular-nums ml-1 mr-1">0</span> ICE Fluids
+            {scheduleMode === 'oem' && (
+              <Pill tone="risk">
+                OEM Marketing View
               </Pill>
             )}
-            {checkedCount > 0 && (
+            {checkedCount > 0 ? (
               <span
                 data-testid="milestone-live-credit-badge"
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50/80 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle2 aria-hidden="true" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>
                   <span className="font-mono tabular-nums">-{formatCurrency(totalRiskDeductedUsd)}</span> Risk Deducted · <span className="font-mono tabular-nums">+{totalPointsRestored}</span> pts Restored
                 </span>
               </span>
+            ) : (
+              isEvVehicle && scheduleMode !== 'oem' && (
+                <Pill tone="good">
+                  Pure EV · <span className="font-mono tabular-nums ml-1 mr-1">0</span> ICE Fluids
+                </Pill>
+              )
             )}
           </div>
-          <p className="mt-1 font-sans text-xs text-muted dark:text-zinc-400">
-            Interactive checklist of scheduled inspections based on current odometer (<span className="font-mono tabular-nums">{formatDistance(currentOdometerMiles)}</span>). Check off completed services to dynamically reduce risk exposure.
+          <p className="mt-1 font-sans text-xs text-muted dark:text-zinc-400 leading-relaxed">
+            Interactive checklist of scheduled inspections at{' '}
+            <span className="font-mono tabular-nums font-medium text-ink dark:text-zinc-200">{formatDistance(currentOdometerMiles)}</span>.
+            {isEvVehicle && checkedCount > 0 && (
+              <span className="ml-2 font-medium text-emerald-700 dark:text-emerald-400">
+                Pure EV · <span className="font-mono tabular-nums">0</span> ICE Fluids
+              </span>
+            )}
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+        {/* Filter Pills (>= 44px mobile tap target) */}
+        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto shrink-0">
           {[
             { id: 'all', label: 'All Milestones' },
             { id: 'due', label: 'Due / Overdue' },
@@ -408,196 +429,215 @@ export default function MaintenanceMilestones({
               label: distanceUnit === 'km' ? 'Next 50k km' : 'Next 30k mi',
               srHint: 'Next 30k',
             },
-          ].map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setActiveFilter(f.id)}
-              className={`px-3 py-1 text-xs rounded-lg font-sans font-semibold transition-colors duration-150 border ${
-                activeFilter === f.id
-                  ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                  : 'bg-surface-subtle text-muted border-border hover:border-border-strong hover:text-ink dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:text-zinc-100'
-              }`}
-            >
-              <span>{f.label}</span>
-              {f.srHint && <span className="sr-only"> ({f.srHint})</span>}
-            </button>
-          ))}
+          ].map((f) => {
+            const isActive = activeFilter === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => setActiveFilter(f.id)}
+                className={`min-h-[44px] sm:min-h-[38px] px-3.5 py-2 text-xs rounded-xl font-sans font-semibold transition-colors duration-150 border inline-flex items-center justify-center cursor-pointer ${
+                  isActive
+                    ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
+                    : 'bg-surface-subtle text-muted border-border hover:border-border-strong hover:text-ink dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:text-zinc-100'
+                }`}
+              >
+                <span>{f.label}</span>
+                {f.srHint && <span className="sr-only"> ({f.srHint})</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* OEM False Sense of Security Telemetry Warning Banner */}
+      {/* Calm Light/Dark OEM Telemetry Warning vs Preventative Strip */}
       {scheduleMode === 'oem' ? (
-        <div className="mt-5 rounded-2xl bg-amber-950 text-amber-100 p-5 border border-amber-600/40 shadow-sm">
-          <div className="flex items-start gap-3.5">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="mt-5 rounded-xl bg-amber-50/90 dark:bg-amber-950/35 text-amber-950 dark:text-amber-100 p-4 sm:p-5 border border-amber-200/90 dark:border-amber-800/50">
+          <div className="flex items-start gap-3">
+            <AlertTriangle aria-hidden="true" className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-sans text-sm font-bold text-amber-200 tracking-tight">
-                  Dealer Service Checklist: False Positive &amp; False Sense of Security
-                </h3>
-                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-sans font-medium border border-amber-400/30">
-                  OEM Telemetry Blindspot
-                </span>
-              </div>
-              <p className="mt-1.5 font-sans text-xs text-amber-100/90 leading-relaxed">
-                Dealership multi-point checklists prioritize superficial visual checks while omitting crucial thermodynamic wear items, such as <strong>transmission fluid changes ("sealed for life")</strong>, <strong>intake valve walnut decoking</strong>, and <strong>preventative timing assembly replacement</strong>. Vehicles stamped with "Full Dealer Service History" often suffer catastrophic gearbox, wet-belt, or valvetrain failures because factory schedules are tuned to minimize initial warranty-period fleet ownership figures rather than 150k+ mile mechanical longevity.
+              <h3 className="font-sans text-sm font-bold text-amber-950 dark:text-amber-200 tracking-tight">
+                Dealer Service Checklist: False Positive &amp; False Sense of Security
+              </h3>
+              <p className="mt-1.5 font-sans text-xs text-amber-900 dark:text-amber-100/90 leading-relaxed">
+                Dealership multi-point checklists prioritize superficial visual checks while omitting crucial thermodynamic wear items, such as <strong>transmission fluid changes (&quot;sealed for life&quot;)</strong>, <strong>intake valve walnut decoking</strong>, and <strong>preventative timing assembly replacement</strong>. Vehicles stamped with &quot;Full Dealer Service History&quot; often suffer catastrophic gearbox, wet-belt, or valvetrain failures because factory schedules are tuned to minimize initial warranty-period fleet ownership figures rather than 150k+ mile mechanical longevity.
               </p>
-              <div className="mt-2.5 flex items-center gap-2 text-[11px] font-sans font-medium text-amber-300">
-                <span>⚠️ Red strikethrough items below are omitted or deferred by OEM dealer schedules.</span>
-              </div>
+              <p className="mt-2 text-[11px] font-sans font-medium text-amber-800 dark:text-amber-300">
+                Strikethrough items below are omitted or deferred by OEM dealer schedules.
+              </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="mt-5 rounded-xl bg-surface-subtle dark:bg-zinc-800/70 p-3.5 border border-border/80 dark:border-zinc-700 flex items-center justify-between text-xs font-sans text-muted dark:text-zinc-300">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>
-              <strong>Engineering Preventative Protocol Active:</strong> Includes all mechanical failure prevention thresholds recommended by component manufacturers (ZF, BorgWarner, Bosch).
-            </span>
-          </div>
-          <span className="hidden sm:inline font-sans font-medium text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40">
-            Zero Omitted Items
+        <div className="mt-4 rounded-xl bg-surface-subtle/80 dark:bg-zinc-900/60 px-3.5 py-2.5 border border-border/60 dark:border-zinc-800 flex items-center gap-2 text-xs font-sans text-muted dark:text-zinc-300">
+          <ShieldCheck aria-hidden="true" className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>
+            <strong className="text-ink dark:text-zinc-100">Engineering Preventative Protocol Active:</strong> Includes all mechanical failure prevention thresholds recommended by component manufacturers (ZF, BorgWarner, Bosch).
           </span>
         </div>
       )}
 
-      {/* Roadmap Timeline */}
-      <div className="mt-6 space-y-6">
-        {filteredMilestones.map((m) => {
-          const isOverdue = effectiveOdometerMiles >= m.miles;
-          const isUpcoming = effectiveOdometerMiles < m.miles && m.miles - effectiveOdometerMiles <= 30000;
-          const allChecked = m.items.every((it) => !!completedItems[it.id]);
+      {/* Hairline-Divided Native <details> Milestone Groups */}
+      <div className="mt-5 divide-y divide-border/80 dark:divide-zinc-800 border-y border-border/80 dark:border-zinc-800">
+        {filteredMilestones.length === 0 ? (
+          <div className="py-6 text-center font-sans text-xs text-muted dark:text-zinc-400">
+            No milestone intervals match this filter at your current effective odometer.
+          </div>
+        ) : (
+          filteredMilestones.map((m) => {
+            const isOverdue = effectiveOdometerMiles >= m.miles;
+            const isUpcoming = effectiveOdometerMiles < m.miles && m.miles - effectiveOdometerMiles <= 30000;
+            const allChecked = m.items.every((it) => !!completedItems[it.id]);
+            const checkedInGroup = m.items.filter((it) => !!completedItems[it.id]).length;
+            const defaultOpen = activeFilter !== 'all' || isOverdue || isUpcoming;
+            const isGroupOpen = Object.prototype.hasOwnProperty.call(openOverrides, m.miles)
+              ? openOverrides[m.miles]
+              : defaultOpen;
 
-          let statusTone = 'neutral';
-          let statusLabel = 'Future Milestone';
-          if (allChecked) {
-            statusTone = 'good';
-            statusLabel = 'Completed';
-          } else if (isOverdue) {
-            statusTone = 'risk';
-            statusLabel = 'Action Required';
-          } else if (isUpcoming) {
-            statusTone = 'warn';
-            statusLabel = 'Approaching Soon';
-          }
+            let statusTone = 'neutral';
+            let statusLabel = 'Future Milestone';
+            if (allChecked) {
+              statusTone = 'good';
+              statusLabel = 'Completed';
+            } else if (isOverdue) {
+              statusTone = 'risk';
+              statusLabel = 'Action Required';
+            } else if (isUpcoming) {
+              statusTone = 'warn';
+              statusLabel = 'Approaching Soon';
+            }
 
-          return (
-            <div
-              key={m.miles}
-              className={`rounded-xl border p-4 transition-colors duration-150 ${
-                allChecked
-                  ? 'border-[#BFE8CF] bg-success-bg/40 dark:border-emerald-800/70 dark:bg-emerald-950/20'
-                  : isOverdue
-                  ? 'border-[#F7C1BB] bg-danger-bg/40 dark:border-red-800/70 dark:bg-red-950/20'
-                  : 'border-border bg-surface-subtle dark:border-zinc-800 dark:bg-zinc-800/50'
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/60 dark:border-zinc-700/60">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100">
-                    {formatDistance(m.miles)}
-                  </span>
-                  <span className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
-                    {distanceUnit === 'km'
-                      ? `· ${m.title.replace(/^\d[\d,]*\s*mi\s*\/\s*/i, '')}`
-                      : `· ${m.title}`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
-                    const indieEst = Math.round(m.costRangeUsd[0] * wearScale);
-                    const dealerEst = Math.round(m.costRangeUsd[1] * wearScale);
-                    return (
-                      <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-                        Est:{' '}
-                        <span className={workshopTier !== 'dealership' ? 'font-bold text-ink dark:text-zinc-100' : ''}>
-                          Indie <span className="font-mono tabular-nums">{formatCurrency(indieEst)}</span>
-                        </span>{' '}
-                        ·{' '}
-                        <span className={workshopTier === 'dealership' ? 'font-bold text-ink dark:text-zinc-100' : ''}>
-                          Dealer <span className="font-mono tabular-nums">{formatCurrency(dealerEst)}</span>
-                        </span>
+            const wearScale = Number(activePreset?.maintenanceWearFactor) || 1.0;
+            const indieEst = Math.round(m.costRangeUsd[0] * wearScale);
+            const dealerEst = Math.round(m.costRangeUsd[1] * wearScale);
+
+            return (
+              <details
+                key={m.miles}
+                className="dl-disclosure group"
+                open={isGroupOpen}
+                onToggle={(e) => {
+                  const nextOpen = Boolean(e.currentTarget?.open);
+                  setOpenOverrides((prev) => ({
+                    ...prev,
+                    [m.miles]: nextOpen,
+                  }));
+                }}
+              >
+                <summary
+                  className={`min-h-[48px] py-3.5 px-2 flex flex-wrap items-center justify-between gap-2 transition-colors ${
+                    allChecked
+                      ? 'bg-emerald-50/40 dark:bg-emerald-950/15'
+                      : isOverdue
+                      ? 'bg-rose-50/40 dark:bg-rose-950/15'
+                      : 'hover:bg-surface-subtle/60 dark:hover:bg-zinc-900/40'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    />
+                    <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100">
+                      {formatDistance(m.miles)}
+                    </span>
+                    <span className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
+                      {distanceUnit === 'km'
+                        ? `· ${m.title.replace(/^\d[\d,]*\s*mi\s*\/\s*/i, '')}`
+                        : `· ${m.title}`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
+                      Est:{' '}
+                      <span className={workshopTier !== 'dealership' ? 'font-semibold text-ink dark:text-zinc-100' : ''}>
+                        Indie <span className="font-mono tabular-nums">{formatCurrency(indieEst)}</span>
+                      </span>{' '}
+                      ·{' '}
+                      <span className={workshopTier === 'dealership' ? 'font-semibold text-ink dark:text-zinc-100' : ''}>
+                        Dealer <span className="font-mono tabular-nums">{formatCurrency(dealerEst)}</span>
                       </span>
-                    );
-                  })()}
-                  <Pill tone={statusTone} className="text-[11px] font-medium">
-                    {statusLabel}
-                  </Pill>
-                </div>
-              </div>
+                    </span>
+                    <span className="font-mono tabular-nums text-[11px] text-muted dark:text-zinc-400">
+                      {checkedInGroup}/{m.items.length}
+                    </span>
+                    <Pill tone={statusTone}>
+                      {statusLabel}
+                    </Pill>
+                  </div>
+                </summary>
 
-              {/* Checklist items */}
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {m.items.map((it) => {
-                  const checked = !!completedItems[it.id];
-                  const isOmittedByOem = scheduleMode === 'oem' && it.omittedByOem;
-                  const impact = MILESTONE_IMPACT_MAP[it.id] || EV_MILESTONE_IMPACT_MAP[it.id];
+                <div className="pb-4 pt-2 px-1 grid gap-1.5 sm:grid-cols-2">
+                  {m.items.map((it) => {
+                    const checked = !!completedItems[it.id];
+                    const isOmittedByOem = scheduleMode === 'oem' && it.omittedByOem;
+                    const impact = MILESTONE_IMPACT_MAP[it.id] || EV_MILESTONE_IMPACT_MAP[it.id];
 
-                  return (
-                    <label
-                      key={it.id}
-                      className={`flex items-start gap-2.5 cursor-pointer font-sans text-xs text-body dark:text-zinc-300 hover:text-ink dark:hover:text-zinc-100 select-none p-2 rounded-lg transition-colors ${
-                        isOmittedByOem
-                          ? 'bg-red-50/70 border border-red-200/80 dark:bg-red-950/40 dark:border-red-800/60'
-                          : checked
-                          ? 'bg-emerald-50/70 border border-emerald-200/80 dark:bg-emerald-950/30 dark:border-emerald-800/50'
-                          : 'hover:bg-surface/80 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleItem(it.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-border-strong text-primary-600 focus:ring-primary-600 cursor-pointer"
-                      />
-                      <div className="flex-1">
-                        {isOmittedByOem ? (
-                          <>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="line-through text-zinc-500 dark:text-zinc-400 font-medium decoration-red-600 decoration-2">
+                    return (
+                      <label
+                        key={it.id}
+                        className={`min-h-[44px] flex items-start gap-3 cursor-pointer font-sans text-xs text-body dark:text-zinc-300 hover:text-ink dark:hover:text-zinc-100 select-none p-2.5 rounded-xl transition-colors ${
+                          isOmittedByOem
+                            ? 'bg-rose-50/70 border border-rose-200/80 dark:bg-rose-950/30 dark:border-rose-800/50'
+                            : checked
+                            ? 'bg-emerald-50/60 border border-emerald-200/70 dark:bg-emerald-950/25 dark:border-emerald-800/40'
+                            : 'hover:bg-surface-subtle dark:hover:bg-zinc-900/60 border border-transparent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleItem(it.id)}
+                          className="mt-0.5 h-4 w-4 rounded border-border-strong text-[#183D22] focus:ring-[#183D22] dark:text-emerald-500 cursor-pointer shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          {isOmittedByOem ? (
+                            <>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="line-through text-zinc-500 dark:text-zinc-400 font-medium decoration-rose-600 decoration-2">
+                                  {it.name}
+                                </span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium font-sans bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/40">
+                                  [OMITTED / DEFERRED BY OEM]
+                                </span>
+                              </div>
+                              {it.oemOmissionReason && (
+                                <p className="text-[11px] text-rose-700 dark:text-rose-300 font-sans font-medium mt-1 leading-snug">
+                                  ↳ {it.oemOmissionReason}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <span className={checked ? 'line-through text-faint dark:text-zinc-500' : 'font-medium text-ink dark:text-zinc-200'}>
                                 {it.name}
                               </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium font-sans bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/40">
-                                [OMITTED / DEFERRED BY OEM]
-                              </span>
+                              {impact && (checked || impact.major) && (
+                                <span
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono tabular-nums font-semibold border ${
+                                    checked
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40'
+                                      : 'bg-surface-subtle text-muted border-border/80 dark:bg-zinc-800/80 dark:text-zinc-300 dark:border-zinc-700/60'
+                                  }`}
+                                >
+                                  {checked ? '✓ ' : ''}
+                                  -{formatCurrency(impact.creditUsd)} · +{impact.bonusPts} pts
+                                </span>
+                              )}
                             </div>
-                            {it.oemOmissionReason && (
-                              <p className="text-[11px] text-red-700 dark:text-red-300 font-sans font-medium mt-0.5 leading-tight">
-                                ↳ {it.oemOmissionReason}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <div className="flex flex-wrap items-center justify-between gap-1.5">
-                            <span className={checked ? 'line-through text-faint dark:text-zinc-500' : 'font-medium'}>
-                              {it.name}
-                            </span>
-                            {impact && (checked || impact.major) && (
-                              <span
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono tabular-nums font-semibold border ${
-                                  checked
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40'
-                                    : 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:border-zinc-700/60'
-                                }`}
-                              >
-                                {checked ? '✓ ' : ''}
-                                -{formatCurrency(impact.creditUsd)} · +{impact.bonusPts} pts
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })
+        )}
       </div>
-    </Card>
+    </Shell>
   );
 }

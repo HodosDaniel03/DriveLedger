@@ -95,27 +95,33 @@ export default function AffiliateCTA({
   return (
     <aside
       data-testid={`affiliate-cta-${offer.type}`}
-      className={`w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#121215] p-4 sm:p-5 print:hidden no-print ${className}`}
+      className={`w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-[#121215] p-4 sm:p-5 print:hidden no-print ${className}`}
       aria-label="Partner Recommendation"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="flex w-9 h-9 shrink-0 rounded-xl bg-white dark:bg-zinc-900 text-primary-600 dark:text-primary-400 border border-zinc-200 dark:border-zinc-800 items-center justify-center shadow-xs">
-            <IconComp className="w-4 h-4" />
+          <div className="flex w-9 h-9 shrink-0 rounded-xl bg-surface dark:bg-zinc-900 text-primary-600 dark:text-emerald-400 border border-border dark:border-zinc-800 items-center justify-center shadow-xs">
+            <IconComp className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-1.5">
               {stepLabel && (
-                <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
                   {stepLabel}
                 </span>
               )}
               <Pill tone="brand">
                 {offer.badge}
               </Pill>
-              <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60">
-                {offer.highlightBadge}
-              </span>
+              {stepLabel ? (
+                <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+                  · {offer.highlightBadge}
+                </span>
+              ) : (
+                <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-surface dark:bg-zinc-800/80 text-body dark:text-zinc-300 border border-border dark:border-zinc-700/60">
+                  {offer.highlightBadge}
+                </span>
+              )}
             </div>
             <h4 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50 leading-snug break-words">
               {headline}
@@ -133,15 +139,15 @@ export default function AffiliateCTA({
             href={targetHref}
             target={linkProps.target}
             rel={linkProps.rel}
-            className="group w-full sm:w-auto min-h-[44px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2.5 sm:py-2 text-xs font-sans font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98] shadow-sm"
+            className="group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-sans font-semibold text-white transition-[background-color,transform] duration-150 motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100 shadow-sm"
           >
             <span>{actionText}</span>
-            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 motion-reduce:transition-none group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" />
           </a>
           <span className="text-[10px] font-sans text-muted dark:text-zinc-400">
             {FTC_PROXIMATE_DISCLOSURE}
           </span>
-          <span className="text-[10px] font-sans font-medium text-faint dark:text-zinc-500">
+          <span className="text-[10px] font-sans font-medium text-muted dark:text-zinc-400">
             {offer.partnerName} ({offer.region})
           </span>
         </div>

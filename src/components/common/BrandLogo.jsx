@@ -3,27 +3,43 @@ import React, { useState } from 'react';
 const SIZE_MAP = {
   xs: {
     icon: 'w-7 h-[18px]',
+    svgWidth: 28,
+    svgHeight: 18,
     text: 'text-sm',
     gap: 'gap-1.5',
     img: 'h-6 w-auto',
+    imgWidth: 120,
+    imgHeight: 24,
   },
   sm: {
     icon: 'w-8 h-5',
+    svgWidth: 32,
+    svgHeight: 20,
     text: 'text-base',
     gap: 'gap-2',
     img: 'h-7 w-auto',
+    imgWidth: 140,
+    imgHeight: 28,
   },
   md: {
     icon: 'w-9 h-[23px] sm:w-10 sm:h-[25px]',
+    svgWidth: 40,
+    svgHeight: 25,
     text: 'text-base sm:text-lg',
     gap: 'gap-2 sm:gap-2.5',
     img: 'h-7 sm:h-8 w-auto',
+    imgWidth: 160,
+    imgHeight: 32,
   },
   lg: {
     icon: 'w-12 h-[30px]',
+    svgWidth: 48,
+    svgHeight: 30,
     text: 'text-xl sm:text-2xl',
     gap: 'gap-2.5',
     img: 'h-9 sm:h-10 w-auto',
+    imgWidth: 200,
+    imgHeight: 40,
   },
 };
 
@@ -60,6 +76,8 @@ export default function BrandLogo({
         <img
           src={imgSrc}
           alt="DriveLedger"
+          width={scale.imgWidth}
+          height={scale.imgHeight}
           onError={() => setImgError(true)}
           className={`${scale.img} object-contain shrink-0`}
         />
@@ -75,6 +93,8 @@ export default function BrandLogo({
     >
       <svg
         viewBox="0 0 64 40"
+        width={scale.svgWidth}
+        height={scale.svgHeight}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
@@ -113,7 +133,7 @@ export default function BrandLogo({
           <span className="text-[#0F172A] dark:text-[#F8FAFC] print:text-[#0F172A]">
             Drive
           </span>
-          <span className="text-[#10B981]">Ledger</span>
+          <span className="text-[#047857] dark:text-[#10B981]">Ledger</span>
         </span>
       ) : (
         <span className="sr-only">DriveLedger</span>

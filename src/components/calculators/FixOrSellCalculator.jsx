@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wrench, Scale, ChevronDown, ArrowRight, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { Scale, ChevronDown, ArrowRight, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useUnits } from '../../context/UnitContext';
-import { Card, RiskBadge, Collapse } from '../common/OdometerPrimitives';
+import { Card, RiskBadge } from '../common/OdometerPrimitives';
 import {
   evaluateFixOrSellDecision,
   estimateMileageAdjustedMarketValue,
@@ -85,24 +85,22 @@ export default function FixOrSellCalculator({
     <Card
       id="fix-or-sell-calculator"
       data-testid="fix-or-sell-calculator"
-      className="rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] shadow-card p-5 sm:p-6 space-y-5 print:hidden"
+      className="p-5 sm:p-6 space-y-6 print:hidden"
       aria-labelledby="fix-or-sell-heading"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-primary-50 dark:bg-primary-950/60 p-2.5 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800">
-            <Scale className="w-5 h-5" />
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/80 dark:border-zinc-800">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="rounded-xl bg-surface-subtle dark:bg-emerald-950/50 p-2.5 text-[#183D22] dark:text-emerald-400 shrink-0">
+            <Scale aria-hidden="true" className="w-5 h-5" />
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 id="fix-or-sell-heading" className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100">
-                Should I Fix It or Sell It?
-              </h3>
-              <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300">
-                4-Factor Economic Verdict
-              </span>
-            </div>
-            <p className="font-sans font-medium text-xs text-muted dark:text-zinc-400 mt-0.5">
+          <div className="min-w-0">
+            <h3
+              id="fix-or-sell-heading"
+              className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-50"
+            >
+              Should I Fix It or Sell It?
+            </h3>
+            <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 mt-0.5">
               Compare your {sourceLabel.toLowerCase()} against vehicle equity, cascading wear, and replacement costs.
             </p>
           </div>
@@ -112,24 +110,27 @@ export default function FixOrSellCalculator({
             type="button"
             onClick={onClose}
             aria-label="Close Fix or Sell calculator"
-            className="rounded-lg p-1.5 text-muted hover:bg-surface-subtle hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-xl text-muted hover:bg-surface-subtle hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X aria-hidden="true" className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: 3 Core Inputs + Progressive Disclosure */}
-        <div className="lg:col-span-6 space-y-4">
-          {/* Core 1: Repair Quote */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Left (58%): 3 Primary Controls + Native <details> Secondary Drawer */}
+        <div className="lg:col-span-7 space-y-5 min-w-0">
+          {/* Primary 1: Repair Quote */}
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <label htmlFor="fix-sell-repair-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
+              <label
+                htmlFor="fix-sell-repair-input"
+                className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300"
+              >
                 Workshop repair quote
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
-                <span>{currencySymbol}</span>
+              <div className="inline-flex min-h-[38px] items-center gap-1 font-mono font-semibold text-base sm:text-sm text-ink dark:text-zinc-50 tabular-nums bg-surface-subtle dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-border dark:border-zinc-800 focus-within:border-[#183D22] dark:focus-within:border-emerald-500">
+                <span className="text-muted dark:text-zinc-400">{currencySymbol}</span>
                 <input
                   id="fix-sell-repair-input"
                   type="number"
@@ -140,7 +141,7 @@ export default function FixOrSellCalculator({
                   onChange={(e) =>
                     setRepairQuoteUsd(convertRegionToUsd(Math.max(0, Number(e.target.value) || 0)))
                   }
-                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono tabular-nums"
                 />
               </div>
             </div>
@@ -159,14 +160,17 @@ export default function FixOrSellCalculator({
             />
           </div>
 
-          {/* Core 2: Running Market Value */}
-          <div>
+          {/* Primary 2: Repaired Running Market Value */}
+          <div className="pt-4 border-t border-border/60 dark:border-zinc-800/80">
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <label htmlFor="fix-sell-market-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
+              <label
+                htmlFor="fix-sell-market-input"
+                className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300"
+              >
                 Repaired running market value
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
-                <span>{currencySymbol}</span>
+              <div className="inline-flex min-h-[38px] items-center gap-1 font-mono font-semibold text-base sm:text-sm text-ink dark:text-zinc-50 tabular-nums bg-surface-subtle dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-border dark:border-zinc-800 focus-within:border-[#183D22] dark:focus-within:border-emerald-500">
+                <span className="text-muted dark:text-zinc-400">{currencySymbol}</span>
                 <input
                   id="fix-sell-market-input"
                   type="number"
@@ -177,7 +181,7 @@ export default function FixOrSellCalculator({
                   onChange={(e) =>
                     setMarketValueUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
                   }
-                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono tabular-nums"
                 />
               </div>
             </div>
@@ -196,13 +200,16 @@ export default function FixOrSellCalculator({
             />
           </div>
 
-          {/* Core 3: Current Odometer */}
-          <div>
+          {/* Primary 3: Current Odometer */}
+          <div className="pt-4 border-t border-border/60 dark:border-zinc-800/80">
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <label htmlFor="fix-sell-odo-input" className="font-sans text-xs font-semibold text-body dark:text-zinc-300">
+              <label
+                htmlFor="fix-sell-odo-input"
+                className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300"
+              >
                 Current odometer
               </label>
-              <div className="flex items-center gap-1 font-mono font-bold text-base sm:text-sm text-ink dark:text-zinc-100 tabular-nums bg-canvas dark:bg-zinc-800 px-2.5 py-1 sm:py-0.5 rounded-md border border-border dark:border-zinc-700">
+              <div className="inline-flex min-h-[38px] items-center gap-1.5 font-mono font-semibold text-base sm:text-sm text-ink dark:text-zinc-50 tabular-nums bg-surface-subtle dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-border dark:border-zinc-800 focus-within:border-[#183D22] dark:focus-within:border-emerald-500">
                 <input
                   id="fix-sell-odo-input"
                   type="number"
@@ -215,9 +222,9 @@ export default function FixOrSellCalculator({
                     setOdometerMiles(nextMiles);
                     setMarketValueUsd(estimateMileageAdjustedMarketValue(vehicle, nextMiles));
                   }}
-                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono"
+                  className="w-24 sm:w-20 text-right text-base sm:text-sm bg-transparent outline-none font-mono tabular-nums"
                 />
-                <span className="font-sans text-xs text-muted">{distanceUnit}</span>
+                <span className="font-sans text-xs text-muted dark:text-zinc-400">{distanceUnit}</span>
               </div>
             </div>
             <input
@@ -239,85 +246,89 @@ export default function FixOrSellCalculator({
             />
           </div>
 
-          {/* Progressive Disclosure: Secondary Assumptions */}
-          <div className="pt-2 border-t border-border/60 dark:border-zinc-800">
-            <button
-              type="button"
-              aria-expanded={customOpen}
-              onClick={() => setCustomOpen((o) => !o)}
-              className="flex w-full min-h-[48px] items-center justify-between gap-3 text-left font-sans text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline py-1.5"
-            >
-              <span className="min-w-0 flex-1 leading-snug">Customize assumptions (as-is broken value &amp; replacement budget)</span>
+          {/* Progressive Disclosure: Native <details> Secondary Assumptions */}
+          <details
+            className="dl-disclosure group border-t border-border/80 dark:border-zinc-800 pt-1"
+            open={customOpen}
+            onToggle={(e) => setCustomOpen(Boolean(e.currentTarget?.open))}
+          >
+            <summary className="min-h-[48px] py-3 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors">
+              <span>Fine-tune assumptions (as-is value &amp; replacement budget)</span>
               <ChevronDown
-                className={`w-4 h-4 shrink-0 transition-transform duration-200 ${customOpen ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+                className="w-4 h-4 shrink-0 text-muted dark:text-zinc-400 transition-transform duration-200 group-open:rotate-180"
               />
-            </button>
-            <Collapse open={customOpen}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
-                <div>
-                  <label htmlFor="fix-sell-broken-input" className="font-sans text-[11px] font-medium text-muted block mb-1">
-                    As-is broken sale value ({currencySymbol})
-                  </label>
-                  <input
-                    id="fix-sell-broken-input"
-                    type="number"
-                    min={0}
-                    step={200}
-                    value={displayBroken}
-                    onChange={(e) =>
-                      setCustomBrokenValUsd(convertRegionToUsd(Math.max(0, Number(e.target.value) || 0)))
-                    }
-                    className="w-full h-11 sm:h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-base sm:text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="fix-sell-replace-input" className="font-sans text-[11px] font-medium text-muted block mb-1">
-                    Replacement car budget ({currencySymbol})
-                  </label>
-                  <input
-                    id="fix-sell-replace-input"
-                    type="number"
-                    min={3000}
-                    step={500}
-                    value={displayReplacement}
-                    onChange={(e) =>
-                      setReplacementBudgetUsd(convertRegionToUsd(Math.max(3000, Number(e.target.value) || 3000)))
-                    }
-                    className="w-full h-11 sm:h-9 rounded-xl border border-border dark:border-zinc-700 bg-canvas dark:bg-zinc-800 px-3 text-base sm:text-xs font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-primary-600"
-                  />
-                </div>
+            </summary>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 pb-2">
+              <div>
+                <label
+                  htmlFor="fix-sell-broken-input"
+                  className="font-sans text-xs font-medium text-body dark:text-zinc-300 block mb-1.5"
+                >
+                  As-is broken sale value ({currencySymbol})
+                </label>
+                <input
+                  id="fix-sell-broken-input"
+                  type="number"
+                  min={0}
+                  step={200}
+                  value={displayBroken}
+                  onChange={(e) =>
+                    setCustomBrokenValUsd(convertRegionToUsd(Math.max(0, Number(e.target.value) || 0)))
+                  }
+                  className="w-full min-h-[44px] rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 px-3 text-base sm:text-sm font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] dark:focus:border-emerald-500"
+                />
               </div>
-            </Collapse>
-          </div>
+              <div>
+                <label
+                  htmlFor="fix-sell-replace-input"
+                  className="font-sans text-xs font-medium text-body dark:text-zinc-300 block mb-1.5"
+                >
+                  Replacement car budget ({currencySymbol})
+                </label>
+                <input
+                  id="fix-sell-replace-input"
+                  type="number"
+                  min={3000}
+                  step={500}
+                  value={displayReplacement}
+                  onChange={(e) =>
+                    setReplacementBudgetUsd(convertRegionToUsd(Math.max(3000, Number(e.target.value) || 3000)))
+                  }
+                  className="w-full min-h-[44px] rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 px-3 text-base sm:text-sm font-mono font-semibold tabular-nums text-ink dark:text-zinc-100 outline-none focus:border-[#183D22] dark:focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </details>
         </div>
 
-        {/* Right: Live Decision Verdict Card */}
-        <div className="lg:col-span-6 rounded-2xl border border-border dark:border-zinc-800 bg-canvas dark:bg-zinc-950/70 p-4 sm:p-5 space-y-4 min-w-0">
+        {/* Right (42%): Sticky Calm Verdict Surface (Hairline Dividers, Zero Nested Border Boxes) */}
+        <div className="lg:col-span-5 lg:sticky lg:top-24 lg:[top:5.25rem] rounded-2xl bg-surface-subtle dark:bg-zinc-900/80 p-5 space-y-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-muted dark:text-zinc-400">
-              Algorithmic Recommendation
+            <span className="font-sans text-xs font-semibold text-muted dark:text-zinc-400">
+              Economic verdict
             </span>
             <RiskBadge level={decision.tone} label={decision.badgeLabel} />
           </div>
 
-          <div>
-            <h4
-              data-testid="fix-or-sell-verdict-headline"
-              className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-100"
-            >
-              {decision.headline}
-            </h4>
-          </div>
+          <h4
+            data-testid="fix-or-sell-verdict-headline"
+            className="font-sans text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50"
+          >
+            {decision.headline}
+          </h4>
 
           {/* Repair-to-Value Ratio Bar */}
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
-              <span className="font-sans font-medium text-muted dark:text-zinc-400">Repair-to-Value Ratio (RVR)</span>
+              <span className="font-sans font-medium text-muted dark:text-zinc-400">
+                Repair-to-Value Ratio (RVR)
+              </span>
               <span className="font-mono font-bold tabular-nums text-ink dark:text-zinc-100">
                 {decision.rvrPct}% ({formatCurrency(decision.repairQuoteUsd)} / {formatCurrency(decision.resolvedMarketValueUsd)})
               </span>
             </div>
-            <div className="h-2.5 w-full rounded-full bg-border dark:bg-zinc-800 overflow-hidden relative">
+            <div className="h-2 w-full rounded-full bg-border dark:bg-zinc-800 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-200 ${
                   decision.tone === 'low'
@@ -329,44 +340,50 @@ export default function FixOrSellCalculator({
                 style={{ width: `${Math.min(100, Math.max(3, decision.rvrPct))}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] font-sans font-medium text-faint">
-              <span><span className="font-mono tabular-nums">0%</span> (Keep)</span>
-              <span><span className="font-mono tabular-nums">35%</span> (Caution)</span>
-              <span><span className="font-mono tabular-nums">60%+</span> (Sell As-Is)</span>
+            <div className="flex justify-between text-[11px] font-sans text-faint dark:text-zinc-500">
+              <span><span className="font-mono tabular-nums">0%</span> Keep</span>
+              <span><span className="font-mono tabular-nums">35%</span> Caution</span>
+              <span><span className="font-mono tabular-nums">60%+</span> Sell</span>
             </div>
           </div>
 
-          {/* 3 Financial Pillars Grid */}
-          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-1 items-stretch">
-            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-              <span className="block text-xs font-sans font-medium text-muted truncate">Net Equity</span>
-              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
+          {/* Hairline-Divided 3 Financial Pillars */}
+          <div className="grid grid-cols-3 divide-x divide-border/80 dark:divide-zinc-800 py-3.5 border-y border-border/80 dark:border-zinc-800">
+            <div className="pr-2 min-w-0">
+              <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 truncate">
+                Net equity
+              </span>
+              <span className="mt-0.5 block text-sm sm:text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 truncate">
                 {decision.netEquityGainUsd >= 0 ? '+' : ''}
                 {formatCurrency(decision.netEquityGainUsd)}
               </span>
             </div>
-            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-              <span className="block text-xs font-sans font-medium text-muted truncate">Yr-1 New Car Hit</span>
-              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
+            <div className="px-2 min-w-0">
+              <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 truncate">
+                Yr-1 switch hit
+              </span>
+              <span className="mt-0.5 block text-sm sm:text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 truncate">
                 {formatCurrency(decision.annualReplacementSunkCostUsd)}/yr
               </span>
             </div>
-            <div className="h-full rounded-xl bg-surface dark:bg-[#121215] p-2.5 border border-border/70 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-              <span className="block text-xs font-sans font-medium text-muted truncate">+{distanceUnit === 'km' ? '24k km' : '15k mi'} Wear Risk</span>
-              <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 leading-tight">
+            <div className="pl-2 min-w-0">
+              <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 truncate">
+                +{distanceUnit === 'km' ? '24k km' : '15k mi'} risk
+              </span>
+              <span className="mt-0.5 block text-sm sm:text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 truncate">
                 {formatCurrency(decision.cascadingExposureUsd)}
               </span>
             </div>
           </div>
 
-          {/* Concise 3-Bullet Action Summary */}
-          <ul className="space-y-1.5 font-sans text-xs text-body dark:text-zinc-300 pt-1">
+          {/* 3-Bullet Action Summary */}
+          <ul className="space-y-1.5 font-sans text-xs text-body dark:text-zinc-300">
             {decision.bullets.map((b) => (
-              <li key={b} className="flex items-start gap-2">
+              <li key={b} className="flex items-start gap-2 leading-relaxed">
                 {decision.tone === 'critical' ? (
-                  <AlertTriangle className="w-3.5 h-3.5 text-score-poor shrink-0 mt-0.5" />
+                  <AlertTriangle aria-hidden="true" className="w-3.5 h-3.5 text-score-poor shrink-0 mt-0.5" />
                 ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-score-good shrink-0 mt-0.5" />
+                  <CheckCircle2 aria-hidden="true" className="w-3.5 h-3.5 text-score-good shrink-0 mt-0.5" />
                 )}
                 <span>{b}</span>
               </li>
@@ -374,17 +391,18 @@ export default function FixOrSellCalculator({
           </ul>
 
           {onNavigateToCompare && (
-            <div className="pt-2 border-t border-border/60 dark:border-zinc-800 flex items-center justify-between">
-              <span className="text-[11px] text-muted font-sans font-medium">
-                {vehicle?.shortName || vehicle?.name || 'Generic Vehicle'} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
+            <div className="pt-3 border-t border-border/80 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-muted dark:text-zinc-400 font-sans">
+                {vehicle?.shortName || vehicle?.name || 'Generic Vehicle'} ·{' '}
+                <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span>
               </span>
               <button
                 type="button"
                 onClick={() => onNavigateToCompare(vehicle?.id)}
-                className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                className="min-h-[44px] sm:min-h-[32px] inline-flex items-center gap-1 font-sans text-xs font-semibold text-[#183D22] dark:text-emerald-400 hover:underline cursor-pointer"
               >
                 <span>Compare Replacement Cars</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
               </button>
             </div>
           )}

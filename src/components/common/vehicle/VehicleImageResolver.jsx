@@ -450,10 +450,11 @@ export default function VehicleImageResolver({
   }, [vehicle, imageUrl, cdnTemplate, mapLookup.isExactMapMatch, mapLookup.key]);
 
   const bodyLabel = getArchetypeLabel(bodyArchetype);
+  const fetchPriority = variant === 'hero' || variant === 'showcase' ? 'high' : 'auto';
 
   return (
     <div
-      className={`relative aspect-[16/9] w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 select-none ${className}`}
+      className={`relative aspect-[16/9] w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-surface-subtle dark:bg-zinc-900 select-none ${className}`}
       data-testid="vehicle-image-resolver"
       data-tier={mapLookup.isExactMapMatch ? 'tier-1-photo' : 'tier-2-wiki-fallback'}
       data-archetype={bodyArchetype}
@@ -462,8 +463,10 @@ export default function VehicleImageResolver({
         <img
           src={activeSrc}
           alt={vehicle?.name || 'Vehicle'}
+          width={960}
+          height={540}
           loading={variant === 'hero' || variant === 'showcase' ? 'eager' : 'lazy'}
-          fetchPriority={variant === 'hero' || variant === 'showcase' ? 'high' : 'auto'}
+          {...{ fetchpriority: fetchPriority }}
           onError={() => {
             if (activeSrc !== fallbackSegmentUrl) {
               setActiveSrc(fallbackSegmentUrl);
@@ -471,16 +474,16 @@ export default function VehicleImageResolver({
               setImgFailed(true);
             }
           }}
-          className={`w-full h-full object-cover object-center transition-transform duration-300 ease-out ${
-            interactive ? 'group-hover:scale-[1.03]' : ''
+          className={`w-full h-full object-cover object-center transition-transform duration-300 ease-out motion-reduce:transition-none ${
+            interactive ? 'group-hover:scale-[1.03] motion-reduce:group-hover:scale-100' : ''
           }`}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 p-4 text-center">
-          <span className="font-sans text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle dark:bg-zinc-900 text-muted dark:text-zinc-400 p-4 text-center">
+          <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
             {vehicle?.shortName || vehicle?.name || 'Vehicle'}
           </span>
-          <span className="font-sans text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+          <span className="font-sans text-[11px] text-muted dark:text-zinc-400 mt-0.5">
             {bodyLabel}
           </span>
         </div>

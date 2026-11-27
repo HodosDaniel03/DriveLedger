@@ -3,9 +3,10 @@ import { RotateCcw } from 'lucide-react';
 import VehicleImageResolver, { derivePowertrainMicroBadge } from './VehicleImageResolver.jsx';
 import { resolveBodyArchetype } from './vehicleArchetypes.js';
 import { useUnits } from '../../../context/UnitContext.jsx';
+import { scrollElementIntoView } from '../../../utils/scroll.js';
 
 const NEUTRAL_TAG_CLASS =
-  'rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium whitespace-nowrap';
+  'rounded-md bg-surface-subtle dark:bg-zinc-800/80 text-body dark:text-zinc-300 px-2 py-0.5 text-[11px] font-sans font-medium whitespace-nowrap';
 
 function buildSingleRowMicroTags(vehicle, bodyArchetype, formatEfficiency) {
   const { transmissionTag } = derivePowertrainMicroBadge(vehicle);
@@ -38,6 +39,8 @@ function buildSingleRowMicroTags(vehicle, bodyArchetype, formatEfficiency) {
 export default function VehicleVisualCard({
   vehicle = {},
   variant = 'hero',
+  interactive = false,
+  embedded = false,
   onChangeVehicle,
   onShareReport,
   actionButtons,
@@ -55,8 +58,8 @@ export default function VehicleVisualCard({
   if (variant === 'compact') {
     return (
       <div className={`space-y-3 ${className}`} id={id}>
-        <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200/80 dark:border-zinc-800 group">
-          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive showOverlays={false} />
+        <div className="rounded-xl overflow-hidden bg-surface-subtle dark:bg-zinc-900 aspect-[16/9] relative group">
+          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive={interactive} showOverlays={false} />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -70,14 +73,18 @@ export default function VehicleVisualCard({
     );
   }
 
+  const shellClass = embedded
+    ? 'rounded-xl bg-surface-subtle/70 dark:bg-zinc-900/60 shadow-none'
+    : 'rounded-2xl border border-border dark:border-zinc-800 shadow-card bg-surface dark:bg-[#121215]';
+
   // =========================================================================
   // VARIANT: SHOWCASE (HeroVehicleFinder on Home Tab)
   // =========================================================================
   if (variant === 'showcase') {
     return (
-      <div className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm bg-surface dark:bg-[#121215] p-4 sm:p-5 space-y-4 min-w-0 max-w-full overflow-hidden ${className}`} id={id}>
+      <div className={`${shellClass} p-4 sm:p-5 space-y-4 min-w-0 max-w-full overflow-hidden ${className}`} id={id}>
         {/* Header with Vehicle Title & Price */}
-        <div className="flex items-start justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
+        <div className="flex items-start justify-between gap-3 pb-3 border-b border-border dark:border-zinc-800 min-w-0">
           <div className="min-w-0">
             <h3 className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-50 truncate">
               {vehicle.name}
@@ -94,8 +101,8 @@ export default function VehicleVisualCard({
         </div>
 
         {/* Real Vehicle Studio Photo Frame */}
-        <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 aspect-[16/9] relative border border-zinc-200/80 dark:border-zinc-800 group">
-          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive showOverlays={false} />
+        <div className="rounded-xl overflow-hidden bg-surface-subtle dark:bg-zinc-900 aspect-[16/9] relative group">
+          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive={interactive} showOverlays={false} />
         </div>
 
         {/* Single Row of max 4 Neutral Micro-Tags */}
@@ -111,7 +118,7 @@ export default function VehicleVisualCard({
         {secondaryMetrics ? (
           secondaryMetrics
         ) : (
-          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 text-center text-xs">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 p-2.5 rounded-xl bg-surface-subtle dark:bg-zinc-900 text-center text-xs">
             <div className="min-w-0">
               <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Baseline Odo</span>
               <strong className="font-mono tabular-nums text-ink dark:text-zinc-50 text-base font-bold">
@@ -127,7 +134,7 @@ export default function VehicleVisualCard({
             <div className="min-w-0">
               <span className="font-sans font-medium text-xs text-muted dark:text-zinc-400 block truncate">Wear Rate</span>
               <strong className={`font-mono tabular-nums text-base font-bold ${
-                (vehicle.maintenanceWearFactor || 1.0) > 1.3 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                (vehicle.maintenanceWearFactor || 1.0) > 1.3 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'
               }`}>
                 {(vehicle.maintenanceWearFactor || 1.0).toFixed(2)}x
               </strong>
@@ -147,12 +154,16 @@ export default function VehicleVisualCard({
   return (
     <div
       id={id}
-      className={`bg-surface dark:bg-[#121215] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-card p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover hover:-translate-y-0.5 ${className}`}
+      className={`${shellClass} p-4 sm:p-6 flex flex-col justify-between min-w-0 max-w-full overflow-hidden ${
+        interactive && !embedded
+          ? 'cursor-pointer transition-[transform,box-shadow] duration-200 ease-out motion-reduce:transition-none hover:shadow-card-hover hover:-translate-y-0.5 motion-reduce:hover:translate-y-0'
+          : ''
+      } ${className}`}
     >
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-5 items-start min-w-0">
         {/* Real Vehicle Photo Left (sm:col-span-5) */}
-        <div className="sm:col-span-5 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200/80 dark:border-zinc-800 group">
-          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive showOverlays={false} />
+        <div className="sm:col-span-5 aspect-[16/9] w-full overflow-hidden rounded-xl bg-surface-subtle dark:bg-zinc-900 relative group">
+          <VehicleImageResolver vehicle={vehicle} variant={variant} interactive={interactive} showOverlays={false} />
         </div>
 
         {/* Vehicle Specs Right (sm:col-span-7) */}
@@ -184,7 +195,7 @@ export default function VehicleVisualCard({
       </div>
 
       {/* Action Row */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mt-5 pt-4 border-t border-zinc-200/80 dark:border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mt-5 pt-4 border-t border-border/80 dark:border-zinc-800">
         <div className="flex flex-wrap items-center gap-2">
           {actionButtons ? (
             actionButtons
@@ -195,13 +206,13 @@ export default function VehicleVisualCard({
                 onClick={
                   onChangeVehicle ||
                   (() => {
-                    const el = document.getElementById('vehicle-heading');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    const el = typeof document !== 'undefined' ? document.getElementById('vehicle-heading') : null;
+                    if (el) scrollElementIntoView(el, { behavior: 'smooth' });
                   })
                 }
-                className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
+                className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-border-strong dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
+                <RotateCcw className="w-3.5 h-3.5 text-muted dark:text-zinc-400" aria-hidden="true" />
                 <span>Change vehicle</span>
               </button>
 
@@ -209,7 +220,7 @@ export default function VehicleVisualCard({
                 <button
                   type="button"
                   onClick={onShareReport}
-                  className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
+                  className="min-h-[44px] sm:min-h-0 bg-surface dark:bg-zinc-900 shadow-xs rounded-lg px-3.5 py-2 sm:py-1.5 font-sans text-xs font-medium text-ink dark:text-zinc-200 hover:bg-surface-subtle dark:hover:bg-zinc-800 border border-border-strong dark:border-zinc-800 transition-colors duration-150 inline-flex items-center gap-1.5"
                 >
                   <span>Share report ↗</span>
                 </button>

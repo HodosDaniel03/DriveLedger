@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-canvas dark:bg-slate-950">
+<html lang="en" class="bg-canvas dark:bg-[#09090B]">
 
 <head>
   <script>
@@ -36,6 +36,7 @@
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>DriveLedger | Independent Car Ownership Cost, Reliability &amp; OBD-II Platform</title>
   <meta name="description"
     content="Calculate real 5-year car ownership costs, depreciation curves, mileage failure risks, and fair OBD-II workshop repair prices across 179+ models." />
@@ -79,7 +80,7 @@
     }
     [data-prerendered="true"] {
       display: block;
-      min-height: 100vh;
+      min-height: 100dvh;
       box-sizing: border-box;
       color: #3A403B;
     }
@@ -137,6 +138,9 @@
       color: #F8FAFC;
     }
     [data-prerendered="true"] .dl-pr-wordmark-accent {
+      color: #047857;
+    }
+    html.dark [data-prerendered="true"] .dl-pr-wordmark-accent {
       color: #10B981;
     }
     [data-prerendered="true"] .dl-pr-nav-list {
@@ -177,7 +181,7 @@
     }
     html.dark [data-prerendered="true"] .dl-pr-pill-active,
     html.dark [data-prerendered="true"] .dl-pr-pill-active:hover {
-      background-color: #059669;
+      background-color: #047857;
       color: #FFFFFF;
     }
     [data-prerendered="true"] .dl-pr-header-pill {
@@ -202,7 +206,7 @@
       max-width: 1440px;
       margin: 0 auto;
       padding: 1.5rem 1rem 3rem;
-      min-height: calc(100vh - 3.5rem);
+      min-height: calc(100dvh - 3.5rem);
       display: flex;
       flex-direction: column;
       gap: 2rem;
@@ -237,7 +241,7 @@
       color: #D4D4D8;
     }
     [data-prerendered="true"] .dl-pr-hero h1 {
-      font-size: clamp(1.875rem, 4vw, 3rem);
+      font-size: clamp(1.875rem, 1.35rem + 2vw, 3rem);
       line-height: 1.15;
       letter-spacing: -0.025em;
       font-weight: 700;
@@ -255,7 +259,7 @@
       color: #10B981;
     }
     [data-prerendered="true"] .dl-pr-sub {
-      font-size: clamp(0.875rem, 1.5vw, 1.125rem);
+      font-size: clamp(0.875rem, 0.85rem + 0.5vw, 1.125rem);
       line-height: 1.6;
       color: #3A403B;
       margin: 0 auto 1.75rem;
@@ -282,7 +286,7 @@
       border-color: #27272A;
     }
     [data-prerendered="true"] .dl-pr-search-text {
-      color: #8A8F89;
+      color: #636A63;
       font-size: 0.875rem;
       text-align: left;
       overflow: hidden;
@@ -290,7 +294,7 @@
       white-space: nowrap;
     }
     html.dark [data-prerendered="true"] .dl-pr-search-text {
-      color: #71717A;
+      color: #94949E;
     }
     [data-prerendered="true"] .dl-pr-search-cta {
       background-color: #183D22;
@@ -303,7 +307,7 @@
       flex-shrink: 0;
     }
     html.dark [data-prerendered="true"] .dl-pr-search-cta {
-      background-color: #059669;
+      background-color: #047857;
     }
     [data-prerendered="true"] .dl-pr-quick-links {
       max-width: 48rem;
@@ -551,7 +555,7 @@
       [data-prerendered="true"] .dl-pr-header-pill { display: inline-flex; }
       [data-prerendered="true"] .dl-pr-viewport {
         padding: 2rem 2.5rem 4rem;
-        min-height: calc(100vh - 4rem);
+        min-height: calc(100dvh - 4rem);
       }
       [data-prerendered="true"] .dl-pr-hero { padding: 3rem 3rem; }
       [data-prerendered="true"] .dl-pr-below-fold { padding: 0 2.5rem 4rem; }
@@ -565,7 +569,7 @@
 </head>
 
 <body
-  class="bg-canvas font-body text-body antialiased selection:bg-primary-100 selection:text-primary-800 dark:bg-slate-950 dark:text-slate-300">
+  class="bg-canvas font-body text-body antialiased selection:bg-primary-100 selection:text-primary-800 dark:bg-[#09090B] dark:text-zinc-300">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Share2,
   CheckSquare,
@@ -85,6 +85,19 @@ function computeFallbackTco(vehicle, odometerMiles) {
   });
 }
 
+function isOutsidePanelRect(clientX, clientY, panelEl) {
+  if (!panelEl || typeof panelEl.getBoundingClientRect !== 'function' || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return true;
+  }
+  const rect = panelEl.getBoundingClientRect();
+  return (
+    clientX < rect.left ||
+    clientX > rect.right ||
+    clientY < rect.top ||
+    clientY > rect.bottom
+  );
+}
+
 export default function ForumShareModal({
   isOpen = true,
   onClose,
@@ -109,6 +122,115 @@ export default function ForumShareModal({
   const [activeFormat, setActiveFormat] = useState('quick');
   const [copiedMain, setCopiedMain] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
+  const programmaticCloseCountRef = useRef(0);
+
+  const closeDialogProgrammatically = (dialogEl) => {
+    if (!dialogEl) return;
+    if (!dialogEl.isConnected) {
+      programmaticCloseCountRef.current = 0;
+      try {
+        if (typeof dialogEl.close === 'function' && dialogEl.open) {
+          dialogEl.close();
+        }
+      } catch {
+        // Safe guard on detached dialog
+      }
+      return;
+    }
+    if (typeof dialogEl.close !== 'function' || !dialogEl.open) return;
+    const isNativeDialog =
+      typeof HTMLDialogElement !== 'undefined' && dialogEl instanceof HTMLDialogElement;
+    if (isNativeDialog) {
+      programmaticCloseCountRef.current += 1;
+    }
+    try {
+      dialogEl.close();
+    } catch {
+      if (isNativeDialog && programmaticCloseCountRef.current > 0) {
+        programmaticCloseCountRef.current -= 1;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const dialogEl = dialogRef.current;
+    if (!dialogEl) return undefined;
+
+    if (isOpen) {
+      if (typeof dialogEl.showModal === 'function' && !dialogEl.open) {
+        try {
+          dialogEl.showModal();
+        } catch {
+          // Safe guard in mock DOM or already-open state
+        }
+      }
+    } else {
+      closeDialogProgrammatically(dialogEl);
+    }
+    return () => {
+      closeDialogProgrammatically(dialogEl);
+    };
+  }, [isOpen]);
+
+  // Light-dismiss for full-viewport <dialog> overlays (supplements closedby="any" Esc/back-gesture)
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined' || typeof HTMLDialogElement === 'undefined') {
+      return undefined;
+    }
+
+    const dialogEl = dialogRef.current;
+    if (!dialogEl || typeof dialogEl.addEventListener !== 'function') return undefined;
+
+    let pressedOutside = false;
+    let suppressNextClick = false;
+
+    const handlePointerDown = (event) => {
+      pressedOutside =
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current);
+      suppressNextClick = !pressedOutside;
+    };
+
+    const handlePointerUp = (event) => {
+      if (
+        pressedOutside &&
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current)
+      ) {
+        suppressNextClick = true;
+        if (typeof onClose === 'function') onClose();
+      }
+      pressedOutside = false;
+    };
+
+    const handleDialogClick = (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (
+        event.target === dialogEl &&
+        !Number.isFinite(event.clientX) &&
+        typeof onClose === 'function'
+      ) {
+        onClose();
+      }
+    };
+
+    dialogEl.addEventListener('pointerdown', handlePointerDown);
+    dialogEl.addEventListener('pointerup', handlePointerUp);
+    dialogEl.addEventListener('click', handleDialogClick);
+    return () => {
+      if (typeof dialogEl.removeEventListener === 'function') {
+        dialogEl.removeEventListener('pointerdown', handlePointerDown);
+        dialogEl.removeEventListener('pointerup', handlePointerUp);
+        dialogEl.removeEventListener('click', handleDialogClick);
+      }
+    };
+  }, [isOpen, onClose]);
 
   const resolvedVehicle = useMemo(
     () => vehicle || VEHICLE_PRESETS[0],
@@ -378,7 +500,10 @@ export default function ForumShareModal({
     leaseSummaryNote,
   ]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    programmaticCloseCountRef.current = 0;
+    return null;
+  }
 
   const activeSnippetText = snippets[activeFormat] || snippets.quick;
 
@@ -395,22 +520,35 @@ export default function ForumShareModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Share Telemetry Card for Reddit & Enthusiast Forums"
+    <dialog
+      ref={dialogRef}
+      closedby="any"
+      aria-labelledby="forum-share-modal-title"
       data-testid="forum-share-modal"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm"
+      onClose={() => {
+        if (programmaticCloseCountRef.current > 0) {
+          programmaticCloseCountRef.current -= 1;
+          return;
+        }
+        if (typeof onClose === 'function') onClose();
+      }}
+      className="dl-bottom-sheet-dialog sm:items-center sm:justify-center sm:p-4 print:hidden"
     >
-      <div className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-4 sm:p-6 shadow-2xl space-y-5">
+      <div
+        ref={panelRef}
+        className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-4 sm:p-6 shadow-2xl space-y-5"
+      >
         {/* Modal Header */}
         <div className="flex items-start justify-between gap-3 border-b border-border dark:border-zinc-800 pb-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Share2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-              <h2 className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-100">
+              <Share2 className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+              <h1
+                id="forum-share-modal-title"
+                className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-100"
+              >
                 Share for Reddit &amp; Enthusiast Forums
-              </h2>
+              </h1>
               <Pill tone="brand">
                 1-Click Embed
               </Pill>
@@ -425,7 +563,7 @@ export default function ForumShareModal({
             aria-label="Close share modal"
             className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg p-2 text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -433,22 +571,19 @@ export default function ForumShareModal({
         <div className="rounded-xl bg-[#18181B] text-white p-4 border border-zinc-800 shadow-inner space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span className="text-[10px] font-sans uppercase tracking-wider text-primary-400 font-bold">
-                DriveLedger Telemetry Snapshot
-              </span>
-              <h3 className="font-sans text-sm sm:text-base font-bold text-white leading-snug">
+              <h2 className="font-sans text-sm sm:text-base font-bold text-white leading-snug">
                 {resolvedVehicle.name}
-              </h3>
+              </h2>
             </div>
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 border border-amber-400/40 px-2.5 py-0.5 text-[11px] font-sans font-medium text-amber-300">
-              <ShieldAlert className="w-3 h-3" />
+              <ShieldAlert className="w-3 h-3" aria-hidden="true" />
               {criticalDefectTag}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
-              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
+              <span className="text-[11px] font-sans font-medium text-zinc-400 block">
                 5-Yr TCO
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-white tabular-nums">
@@ -456,24 +591,24 @@ export default function ForumShareModal({
               </span>
             </div>
             <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
-              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
+              <span className="text-[11px] font-sans font-medium text-zinc-400 block">
                 Monthly Cost
               </span>
-              <span className="text-sm sm:text-base font-mono font-bold text-primary-400 tabular-nums">
+              <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 tabular-nums">
                 {monthlyFormatted}/mo
               </span>
             </div>
             <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
-              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
+              <span className="text-[11px] font-sans font-medium text-zinc-400 block">
                 Reliability
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 tabular-nums inline-flex items-center gap-1">
-                <Gauge className="w-3.5 h-3.5" />
+                <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
                 {score}/100
               </span>
             </div>
             <div className="rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5">
-              <span className="text-[10px] font-sans font-medium uppercase text-zinc-400 block">
+              <span className="text-[11px] font-sans font-medium text-zinc-400 block">
                 12-Mo Reserve
               </span>
               <span className="text-sm sm:text-base font-mono font-bold text-amber-300 tabular-nums">
@@ -506,20 +641,21 @@ export default function ForumShareModal({
                   }}
                   className={`flex items-center gap-2.5 rounded-xl p-3 text-left font-sans transition-colors duration-150 border ${
                     isSelected
-                      ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                      ? 'bg-primary-600 text-white border-primary-600 dark:bg-emerald-700 dark:border-emerald-600 shadow-sm'
                       : 'bg-surface-subtle dark:bg-zinc-800 text-ink dark:text-zinc-100 border-border dark:border-zinc-700 hover:border-border-strong'
                   }`}
                 >
                   <Icon
+                    aria-hidden="true"
                     className={`w-4 h-4 shrink-0 ${
-                      isSelected ? 'text-white' : 'text-primary-600 dark:text-primary-400'
+                      isSelected ? 'text-white' : 'text-primary-600 dark:text-emerald-400'
                     }`}
                   />
                   <div className="min-w-0">
                     <div className="text-xs font-bold truncate">{tab.label}</div>
                     <div
                       className={`text-[10px] truncate ${
-                        isSelected ? 'text-white/80' : 'text-muted dark:text-zinc-400'
+                        isSelected ? 'text-white' : 'text-muted dark:text-zinc-400'
                       }`}
                     >
                       {tab.subtitle}
@@ -533,28 +669,28 @@ export default function ForumShareModal({
 
         {/* Live Preview Box */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-sans text-muted dark:text-zinc-400 font-semibold">
               Live Embed Preview ({FORMAT_TABS.find((t) => t.id === activeFormat)?.label})
             </span>
             <button
               type="button"
               data-testid="copy-share-snippet-btn"
               onClick={() => copyTextSafe(activeSnippetText, setCopiedMain)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 font-sans text-xs font-semibold transition-colors duration-150 shadow-sm ${
+              className={`min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 font-sans text-xs font-semibold transition-colors duration-150 shadow-sm ${
                 copiedMain
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-primary-600 hover:bg-primary-700 text-white'
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white'
               }`}
             >
               {copiedMain ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Copied to Clipboard ✓</span>
                 </>
               ) : (
                 <>
-                  <CheckSquare className="w-3.5 h-3.5" />
+                  <CheckSquare className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Copy to Clipboard</span>
                 </>
               )}
@@ -564,7 +700,7 @@ export default function ForumShareModal({
           {activeFormat === 'badge' && (
             <div
               data-testid="embed-badge-visual-preview"
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-canvas dark:bg-zinc-900/70 p-3 flex flex-wrap items-center justify-between gap-2"
+              className="rounded-xl border border-border dark:border-zinc-800 bg-canvas dark:bg-zinc-900/70 p-3 flex flex-wrap items-center justify-between gap-2"
             >
               <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-[#121215] text-[#F7F7F4] border border-zinc-800 text-xs font-sans shadow-xs">
                 <strong className="text-emerald-400 font-mono tabular-nums">
@@ -575,7 +711,7 @@ export default function ForumShareModal({
                   <strong className="font-mono tabular-nums">{tcoFormatted}</strong> ({monthlyFormatted}/mo · {costPerUnitFormatted}/{distanceUnit})
                 </span>
               </div>
-              <span className="text-[10px] font-sans text-muted dark:text-zinc-400">
+              <span className="text-[11px] font-sans text-muted dark:text-zinc-400">
                 Includes HTML, Inline SVG &amp; Markdown formats
               </span>
             </div>
@@ -583,7 +719,7 @@ export default function ForumShareModal({
 
           <pre
             data-testid="forum-share-preview"
-            className="w-full rounded-xl bg-surface-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 p-3.5 text-xs font-sans text-ink dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap break-words max-h-56 leading-relaxed select-all"
+            className="w-full rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border dark:border-zinc-800 p-3.5 text-xs font-mono text-ink dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap break-words max-h-56 leading-relaxed select-all"
           >
             {activeSnippetText}
           </pre>
@@ -592,10 +728,10 @@ export default function ForumShareModal({
         {/* Direct Deep-Link URL Bar */}
         <div className="pt-2 border-t border-border dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 min-w-0 flex-1 rounded-xl bg-surface-subtle dark:bg-zinc-800/80 border border-border dark:border-zinc-700 px-3 py-2">
-            <ExternalLink className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0" />
+            <ExternalLink className="w-4 h-4 text-muted dark:text-zinc-400 shrink-0" aria-hidden="true" />
             <span
               data-testid="forum-share-deep-link"
-              className="text-xs font-sans text-muted dark:text-zinc-300 truncate"
+              className="text-xs font-mono text-muted dark:text-zinc-300 truncate"
             >
               {shareUrl}
             </span>
@@ -606,16 +742,16 @@ export default function ForumShareModal({
               type="button"
               data-testid="copy-direct-url-btn"
               onClick={() => copyTextSafe(shareUrl, setCopiedUrl)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-surface dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-xl bg-surface dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-ink dark:text-zinc-100 border border-border-strong dark:border-zinc-700 hover:bg-surface-subtle dark:hover:bg-zinc-700 transition-colors duration-150"
             >
               {copiedUrl ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                   <span>URL Copied ✓</span>
                 </>
               ) : (
                 <>
-                  <ExternalLink className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                  <ExternalLink className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400" aria-hidden="true" />
                   <span>Copy Direct URL</span>
                 </>
               )}
@@ -624,13 +760,13 @@ export default function ForumShareModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-surface-subtle dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-muted hover:text-ink dark:text-zinc-300 dark:hover:text-white transition-colors"
+              className="min-h-[44px] sm:min-h-0 rounded-xl bg-surface-subtle dark:bg-zinc-800 px-3.5 py-2 text-xs font-semibold text-muted hover:text-ink dark:text-zinc-300 dark:hover:text-white transition-colors"
             >
               Done
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

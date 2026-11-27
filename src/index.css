@@ -4,8 +4,16 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   html {
-    scroll-padding-top: 5rem;
+    scroll-padding-top: 4.5rem;
   }
 
   html,
@@ -13,12 +21,45 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
     background-color: #F7F7F4;
     color: #141A15;
-    scroll-behavior: smooth;
     letter-spacing: -0.01em;
     line-height: 1.5;
-    overflow-x: hidden;
     overflow-x: clip;
     max-width: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html,
+    body {
+      scroll-behavior: smooth;
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid #183D22;
+    outline-offset: 2px;
+  }
+
+  html.dark :focus-visible {
+    outline-color: #34D399;
+  }
+
+  .dl-focus-group:focus-within:has(> input:focus-visible, > select:focus-visible) {
+    outline: 2px solid #183D22;
+    outline-offset: 2px;
+  }
+
+  html.dark .dl-focus-group:focus-within:has(> input:focus-visible, > select:focus-visible) {
+    outline-color: #34D399;
+  }
+
+  @media (forced-colors: active) {
+    :focus-visible,
+    .odo-range:focus-visible,
+    input[type='range'].telemetry-slider:focus-visible,
+    :focus-within:has(> input:focus-visible, > select:focus-visible) {
+      outline: 2px solid Highlight !important;
+      outline-offset: 2px;
+    }
   }
 
   img,
@@ -69,12 +110,12 @@
   }
 
   .safe-area-x {
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
+    padding-inline-start: env(safe-area-inset-left, 0px);
+    padding-inline-end: env(safe-area-inset-right, 0px);
   }
 
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-block-end: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -89,7 +130,7 @@
     border-color: #27272A;
   }
   html.dark .border-border-strong {
-    border-color: #3F3F46;
+    border-color: #666670;
   }
   html.dark .text-ink {
     color: #FAFAFA;
@@ -101,14 +142,294 @@
     color: #A1A1AA;
   }
   html.dark .text-faint {
-    color: #71717A;
+    color: #94949E;
   }
   html.dark .bg-canvas {
     background-color: #09090B;
   }
 }
 
-/* Fluid Precision Range Sliders (Benchmark Forest Green #183D22 & Track #E6E6E1) */
+/* ==========================================================================
+   Native Modal <dialog> Scroll Containment & Top-Layer Drawers (dvh / dvw)
+   ========================================================================== */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(9, 9, 11, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+dialog.dl-drawer-dialog[open] {
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0 !important;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  justify-content: flex-end;
+}
+
+dialog.dl-bottom-sheet-dialog[open] {
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0 !important;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* ==========================================================================
+   Native Popover API + @oddbird/popover-polyfill + CSS Anchor Positioning
+   ========================================================================== */
+@supports not selector(:popover-open) {
+  [popover]:not(.\:popover-open) {
+    display: none;
+  }
+}
+
+.dl-nav-popover {
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text-ink);
+  border-radius: 0.875rem;
+  box-shadow: 0 12px 32px rgba(20, 26, 21, 0.11), 0 2px 6px rgba(20, 26, 21, 0.05);
+  max-block-size: calc(100dvh - 4.75rem);
+  max-inline-size: calc(100dvw - 1.5rem);
+  height: auto;
+  overflow-y: auto;
+}
+
+html.dark .dl-nav-popover {
+  background-color: #121215;
+  border-color: #27272A;
+  color: #FAFAFA;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.dl-nav-popover:not(:is(:popover-open, .\:popover-open)) {
+  display: none;
+}
+
+.dl-nav-popover:is(:popover-open, .\:popover-open) {
+  display: block;
+}
+
+@supports (position-area: block-end) {
+  [popover].dl-nav-popover {
+    inset: auto;
+    margin: 0;
+    margin-block-start: 0.5rem;
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+
+@supports not (position-area: block-end) {
+  [popover].dl-nav-popover {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+  }
+}
+
+/* ==========================================================================
+   Navigation Current-Page Indicator (>= 3:1 non-color contrast, forced-colors safe)
+   ========================================================================== */
+.dl-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.25rem;
+  padding-inline: 0.6875rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #525852;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.dl-nav-link:hover {
+  color: #141A15;
+  background-color: rgba(20, 26, 21, 0.045);
+}
+
+html.dark .dl-nav-link {
+  color: #A1A1AA;
+}
+
+html.dark .dl-nav-link:hover {
+  color: #FAFAFA;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dl-nav-link[aria-current="page"] {
+  color: #183D22;
+  font-weight: 600;
+  background-color: rgba(24, 61, 34, 0.06);
+}
+
+html.dark .dl-nav-link[aria-current="page"] {
+  color: #34D399;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.dl-nav-link[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0.5rem;
+  inset-block-end: 0;
+  border-block-end: 2.5px solid #183D22;
+  border-radius: 2px;
+}
+
+html.dark .dl-nav-link[aria-current="page"]::after {
+  border-block-end-color: #10B981;
+}
+
+/* ==========================================================================
+   Accessible Tablist Underline Indicator (no dimension shift on selection)
+   ========================================================================== */
+.dl-hub-tab {
+  position: relative;
+  flex: none;
+  min-block-size: 2.75rem;
+  padding-inline: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 150ms ease;
+  scroll-snap-align: start;
+}
+
+.dl-hub-tab:hover {
+  color: var(--text-ink);
+}
+
+.dl-hub-tab[aria-selected="true"] {
+  color: var(--accent-indicator);
+}
+
+.dl-hub-tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  border-block-end: 2.5px solid currentColor;
+}
+
+/* ==========================================================================
+   Component-Driven Container Queries (@container)
+   ========================================================================== */
+.cq-card {
+  container-type: inline-size;
+}
+
+.cq-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .cq-metrics-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@supports (container-type: inline-size) {
+  @media (min-width: 480px) {
+    .cq-metrics-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  @container (min-width: 260px) {
+    .cq-metrics-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
+
+.cq-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .cq-actions-row {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@supports (container-type: inline-size) {
+  @media (min-width: 480px) {
+    .cq-actions-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+  @container (min-width: 280px) {
+    .cq-actions-row {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+}
+
+/* ==========================================================================
+   Native <details> Accordions & Progressive ::details-content Animation
+   ========================================================================== */
+details.dl-disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.dl-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.dl-disclosure::details-content {
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  contain: layout;
+}
+
+details.dl-disclosure:not([open])::details-content {
+  block-size: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  details.dl-disclosure::details-content {
+    transition: block-size 0.22s ease-out, content-visibility 0.22s ease-out;
+    transition-behavior: allow-discrete;
+  }
+}
+
+/* ==========================================================================
+   Fluid Precision Range Sliders (Forest Green #183D22 & Track #E6E6E1)
+   ========================================================================== */
 .odo-range,
 input[type='range'].telemetry-slider {
   -webkit-appearance: none;
@@ -118,8 +439,18 @@ input[type='range'].telemetry-slider {
   border-radius: 9999px;
   background: linear-gradient(to right, #183D22 0%, #183D22 var(--fill, 50%), #E6E6E1 var(--fill, 50%), #E6E6E1 100%);
   cursor: pointer;
-  outline: none;
   transition: background 150ms ease-out;
+}
+
+.odo-range:focus-visible,
+input[type='range'].telemetry-slider:focus-visible {
+  outline: 2px solid #183D22;
+  outline-offset: 4px;
+}
+
+html.dark .odo-range:focus-visible,
+html.dark input[type='range'].telemetry-slider:focus-visible {
+  outline-color: #34D399;
 }
 
 .odo-range::-webkit-slider-thumb,
@@ -176,7 +507,7 @@ input[type='range'].telemetry-slider:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 5px rgba(24, 61, 34, 0.18);
 }
 
-/* Dark Mode Sliders (True Carbon Zinc Track & Emerald Precision Accent) */
+/* Dark Mode Sliders */
 html.dark .odo-range,
 html.dark input[type='range'].telemetry-slider {
   background: linear-gradient(to right, #10B981 0%, #10B981 var(--fill, 50%), #27272A var(--fill, 50%), #27272A 100%);
@@ -243,7 +574,6 @@ html.dark input[type='range'].telemetry-slider:focus-visible::-moz-range-thumb {
   background: rgba(113, 113, 122, 0.45);
 }
 
-/* Dark scrollbars */
 html.dark ::-webkit-scrollbar-thumb {
   background: rgba(161, 161, 170, 0.25);
 }
@@ -269,14 +599,54 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in {
+    animation: fadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    opacity: 1;
+    animation: none;
+  }
+
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+
+  .odo-range,
+  input[type='range'].telemetry-slider,
+  .odo-range::-webkit-slider-thumb,
+  input[type='range'].telemetry-slider::-webkit-slider-thumb,
+  .odo-range::-moz-range-thumb,
+  input[type='range'].telemetry-slider::-moz-range-thumb {
+    transition: none !important;
+  }
+
+  .odo-range::-webkit-slider-thumb:hover,
+  input[type='range'].telemetry-slider::-webkit-slider-thumb:hover,
+  .odo-range:active::-webkit-slider-thumb,
+  input[type='range'].telemetry-slider:active::-webkit-slider-thumb,
+  .odo-range::-moz-range-thumb:hover,
+  input[type='range'].telemetry-slider::-moz-range-thumb:hover,
+  html.dark .odo-range::-webkit-slider-thumb:hover,
+  html.dark input[type='range'].telemetry-slider::-webkit-slider-thumb:hover,
+  html.dark .odo-range:active::-webkit-slider-thumb,
+  html.dark input[type='range'].telemetry-slider:active::-webkit-slider-thumb,
+  html.dark .odo-range::-moz-range-thumb:hover,
+  html.dark input[type='range'].telemetry-slider::-moz-range-thumb:hover {
+    transform: none !important;
+  }
 }
 
 /* Print-Friendly Executive Dossier Stylesheet */
 @media print {
   html,
-  body {
+  body,
+  html.dark,
+  html.dark body {
     background-color: #ffffff !important;
     color: #09090b !important;
     font-size: 12pt;
@@ -291,6 +661,43 @@ html.dark ::-webkit-scrollbar-thumb:hover {
     display: none !important;
   }
 
+  dialog::backdrop {
+    display: none !important;
+  }
+
+  dialog.dl-printable-dialog[open] {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #09090b !important;
+  }
+
+  html.dark dialog.dl-printable-dialog[open],
+  dialog.dl-printable-dialog[open],
+  html.dark dialog.dl-printable-dialog[open] > div,
+  dialog.dl-printable-dialog[open] > div,
+  html.dark #printable-dossier,
+  #printable-dossier {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #09090b !important;
+  }
+
+  html.dark #printable-dossier *,
+  #printable-dossier * {
+    color: #09090b !important;
+    background-color: transparent !important;
+    border-color: rgba(9, 9, 11, 0.28) !important;
+  }
+
   #printable-dossier,
   #printable-checklist {
     page-break-inside: avoid;
@@ -299,7 +706,15 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* Google AdSense Zero-Placeholder Compliance (Under-Review & Unfilled Suppression) */
+/* Native Select Reset */
+select.dl-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+
+/* Google AdSense Zero-Placeholder Compliance */
 ins.adsbygoogle[data-ad-status="unfilled"],
 div:has(> ins.adsbygoogle[data-ad-status="unfilled"]),
 div:has(ins.adsbygoogle[data-ad-status="unfilled"]),

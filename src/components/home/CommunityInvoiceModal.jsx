@@ -1,14 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   X,
-  ShieldCheck,
   FileText,
   Wrench,
   Landmark,
   Gauge,
   DollarSign,
   CheckCircle2,
-  AlertTriangle,
   TrendingDown,
   TrendingUp,
   Sparkles,
@@ -185,6 +183,19 @@ export function calculateInvoiceAuditStats({
   };
 }
 
+function isOutsidePanelRect(clientX, clientY, panelEl) {
+  if (!panelEl || typeof panelEl.getBoundingClientRect !== 'function' || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return true;
+  }
+  const rect = panelEl.getBoundingClientRect();
+  return (
+    clientX < rect.left ||
+    clientX > rect.right ||
+    clientY < rect.top ||
+    clientY > rect.bottom
+  );
+}
+
 export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmitted }) {
   const {
     currencySymbol,
@@ -203,6 +214,115 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
   const [ownerName, setOwnerName] = useState('');
   const [ownerNote, setOwnerNote] = useState('');
   const [submittedAudit, setSubmittedAudit] = useState(null);
+  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
+  const programmaticCloseCountRef = useRef(0);
+
+  const closeDialogProgrammatically = (dialogEl) => {
+    if (!dialogEl) return;
+    if (!dialogEl.isConnected) {
+      programmaticCloseCountRef.current = 0;
+      try {
+        if (typeof dialogEl.close === 'function' && dialogEl.open) {
+          dialogEl.close();
+        }
+      } catch {
+        // Safe guard on detached dialog
+      }
+      return;
+    }
+    if (typeof dialogEl.close !== 'function' || !dialogEl.open) return;
+    const isNativeDialog =
+      typeof HTMLDialogElement !== 'undefined' && dialogEl instanceof HTMLDialogElement;
+    if (isNativeDialog) {
+      programmaticCloseCountRef.current += 1;
+    }
+    try {
+      dialogEl.close();
+    } catch {
+      if (isNativeDialog && programmaticCloseCountRef.current > 0) {
+        programmaticCloseCountRef.current -= 1;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const dialogEl = dialogRef.current;
+    if (!dialogEl) return undefined;
+
+    if (isOpen) {
+      if (typeof dialogEl.showModal === 'function' && !dialogEl.open) {
+        try {
+          dialogEl.showModal();
+        } catch {
+          // Safe guard in mock DOM or already-open state
+        }
+      }
+    } else {
+      closeDialogProgrammatically(dialogEl);
+    }
+    return () => {
+      closeDialogProgrammatically(dialogEl);
+    };
+  }, [isOpen]);
+
+  // Light-dismiss for full-viewport <dialog> overlays (supplements closedby="any" Esc/back-gesture)
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined' || typeof HTMLDialogElement === 'undefined') {
+      return undefined;
+    }
+
+    const dialogEl = dialogRef.current;
+    if (!dialogEl || typeof dialogEl.addEventListener !== 'function') return undefined;
+
+    let pressedOutside = false;
+    let suppressNextClick = false;
+
+    const handlePointerDown = (event) => {
+      pressedOutside =
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current);
+      suppressNextClick = !pressedOutside;
+    };
+
+    const handlePointerUp = (event) => {
+      if (
+        pressedOutside &&
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current)
+      ) {
+        suppressNextClick = true;
+        if (typeof onClose === 'function') onClose();
+      }
+      pressedOutside = false;
+    };
+
+    const handleDialogClick = (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (
+        event.target === dialogEl &&
+        !Number.isFinite(event.clientX) &&
+        typeof onClose === 'function'
+      ) {
+        onClose();
+      }
+    };
+
+    dialogEl.addEventListener('pointerdown', handlePointerDown);
+    dialogEl.addEventListener('pointerup', handlePointerUp);
+    dialogEl.addEventListener('click', handleDialogClick);
+    return () => {
+      if (typeof dialogEl.removeEventListener === 'function') {
+        dialogEl.removeEventListener('pointerdown', handlePointerDown);
+        dialogEl.removeEventListener('pointerup', handlePointerUp);
+        dialogEl.removeEventListener('click', handleDialogClick);
+      }
+    };
+  }, [isOpen, onClose]);
 
   const selectedPreset = useMemo(() => {
     if (!selectedPresetId || selectedPresetId === 'custom') return null;
@@ -218,7 +338,10 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
     });
   }, [assemblyLabel, workshopTier, invoiceAmount, selectedPreset, convertRegionToUsd]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    programmaticCloseCountRef.current = 0;
+    return null;
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -282,38 +405,45 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
   const activeStats = submittedAudit ? submittedAudit.stats : liveAuditPreview;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/70 backdrop-blur-sm animate-fade-in"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      closedby="any"
       aria-labelledby="community-invoice-modal-title"
+      onClose={() => {
+        if (programmaticCloseCountRef.current > 0) {
+          programmaticCloseCountRef.current -= 1;
+          return;
+        }
+        if (typeof onClose === 'function') onClose();
+      }}
+      className="dl-bottom-sheet-dialog sm:items-center sm:justify-center sm:p-4 print:hidden"
     >
-      <div className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl text-ink dark:text-zinc-100">
+      <div
+        ref={panelRef}
+        className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-2xl text-ink dark:text-zinc-100"
+      >
         {/* Top Modal Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-6 py-4 bg-surface/95 dark:bg-zinc-900/95 backdrop-blur border-b border-border dark:border-zinc-800">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
-              <FileText className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-emerald-950/60 border border-primary-100 dark:border-emerald-800 flex items-center justify-center text-primary-600 dark:text-emerald-400 shrink-0">
+              <FileText className="w-4 h-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <span className="font-sans text-[10px] uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold block">
-                WORKSHOP QUOTE BENCHMARK
-              </span>
-              <h2
+              <h1
                 id="community-invoice-modal-title"
                 className="text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-100 truncate"
               >
                 Compare Your Workshop Quote &amp; Price Spread
-              </h2>
+              </h1>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-subtle dark:hover:bg-zinc-800 transition-colors shrink-0"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-muted dark:text-zinc-400 hover:text-ink dark:hover:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -322,20 +452,20 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
           {submittedAudit && (
             <div
               data-testid="invoice-audit-result"
-              className="p-5 rounded-xl bg-zinc-50 dark:bg-zinc-950/90 border-2 border-primary-500/40 dark:border-primary-500/50 space-y-4 shadow-sm"
+              className="p-5 rounded-xl bg-surface-subtle dark:bg-[#09090B] border-2 border-primary-600/40 dark:border-emerald-500/50 space-y-4 shadow-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>SAVED LOCALLY IN YOUR BROWSER</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Saved locally in your browser</span>
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-md text-[11px] font-sans font-medium border ${
                     activeStats.verdictTone === 'positive'
                       ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
                       : activeStats.verdictTone === 'warning'
-                      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
-                      : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60'
+                      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
+                      : 'bg-surface dark:bg-zinc-800/80 text-body dark:text-zinc-300 border-border dark:border-zinc-700/60'
                   }`}
                 >
                   {activeStats.ordinalPercentile} Percentile - {activeStats.verdictBadge}
@@ -345,9 +475,9 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               {/* Dynamic Callout Headline */}
               <div className="p-3.5 rounded-lg bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 flex items-start gap-3">
                 {activeStats.isBelowAvg ? (
-                  <TrendingDown className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <TrendingDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
                 ) : (
-                  <TrendingUp className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <TrendingUp className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
                 )}
                 <div className="space-y-1">
                   <p className="text-xs sm:text-sm font-semibold text-ink dark:text-zinc-100 leading-relaxed">
@@ -373,7 +503,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
                 <div className="relative h-9 pt-3">
                   {/* Track Background */}
-                  <div className="h-3 w-full rounded-full bg-gradient-to-r from-emerald-500/30 via-primary-500/30 to-rose-500/40 dark:from-emerald-500/25 dark:via-primary-500/25 dark:to-rose-500/35 border border-border dark:border-zinc-800 relative">
+                  <div className="h-3 w-full rounded-full bg-gradient-to-r from-emerald-500/30 via-amber-500/25 to-rose-500/40 dark:from-emerald-500/25 dark:via-amber-500/20 dark:to-rose-500/35 border border-border dark:border-zinc-800 relative">
                     {/* P10 Marker */}
                     <div
                       className="absolute top-0 bottom-0 w-0.5 bg-zinc-400 dark:bg-zinc-500"
@@ -395,12 +525,12 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
                     {/* User Invoice Pin */}
                     <div
-                      className="absolute -top-2.5 -translate-x-1/2 flex flex-col items-center transition-[left] duration-300 ease-out"
+                      className="absolute -top-2.5 -translate-x-1/2 flex flex-col items-center transition-[left] duration-300 ease-out motion-reduce:transition-none"
                       style={{ left: `${activeStats.pinPositionPct}%` }}
                     >
                       <div
                         className={`px-1.5 py-0.5 rounded text-[10px] font-mono tabular-nums font-bold text-white shadow ${
-                          activeStats.isBelowAvg ? 'bg-emerald-600' : 'bg-amber-600'
+                          activeStats.isBelowAvg ? 'bg-emerald-700' : 'bg-amber-700'
                         }`}
                       >
                         {formatCurrency(activeStats.paid)}
@@ -418,7 +548,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 <div className="grid grid-cols-3 text-[11px] font-sans mt-2 pt-2 border-t border-border/60 dark:border-zinc-800">
                   <div>
                     <span className="text-muted dark:text-zinc-400 block">P10 (Low)</span>
-                    <span className="font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span className="font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-400">
                       {formatCurrency(activeStats.p10)}
                     </span>
                   </div>
@@ -430,7 +560,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   </div>
                   <div className="text-right">
                     <span className="text-muted dark:text-zinc-400 block">P90 (High)</span>
-                    <span className="font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
+                    <span className="font-bold font-mono tabular-nums text-rose-700 dark:text-rose-400">
                       {formatCurrency(activeStats.p90)}
                     </span>
                   </div>
@@ -441,15 +571,15 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+                  className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Compare Another Workshop Quote</span>
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                  className="min-h-[44px] sm:min-h-0 px-4 py-2 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white transition-colors"
                 >
                   Done &amp; View Saved Notes
                 </button>
@@ -464,7 +594,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div className="sm:col-span-2">
                 <label
                   htmlFor="invoice-vehicle-select"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Vehicle Model &amp; Powertrain
                 </label>
@@ -473,7 +603,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   required
                   value={selectedPresetId}
                   onChange={(e) => setSelectedPresetId(e.target.value)}
-                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm text-ink dark:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400"
                 >
                   <option value="">Select a vehicle model...</option>
                   {VEHICLE_PRESETS.map((preset) => (
@@ -489,7 +619,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="invoice-custom-vehicle"
-                    className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                    className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                   >
                     Custom Vehicle Make, Model &amp; Engine
                   </label>
@@ -500,7 +630,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     placeholder="e.g. Volvo XC60 B5 AWD Mild Hybrid"
                     value={customVehicleName}
                     onChange={(e) => setCustomVehicleName(e.target.value)}
-                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm text-ink dark:text-zinc-100"
                   />
                 </div>
               )}
@@ -509,7 +639,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div className="sm:col-span-2">
                 <label
                   htmlFor="invoice-assembly-select"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Repaired Assembly / Service Benchmark
                 </label>
@@ -518,7 +648,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     id="invoice-assembly-select"
                     value={assemblyLabel}
                     onChange={(e) => setAssemblyLabel(e.target.value)}
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm text-ink dark:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400"
                   >
                     {REPAIRED_ASSEMBLIES.map((item) => (
                       <option key={item.id} value={item.label}>
@@ -531,23 +661,24 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
               {/* Workshop Tier */}
               <div className="sm:col-span-2">
-                <span className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5">
+                <span className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5">
                   Workshop Tier
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
+                    aria-pressed={workshopTier === 'independent'}
                     onClick={() => setWorkshopTier('independent')}
-                    className={`p-3 rounded-xl border text-left transition-colors duration-150 flex items-center gap-2.5 ${
+                    className={`min-h-[44px] p-3 rounded-xl border text-left transition-colors duration-150 flex items-center gap-2.5 ${
                       workshopTier === 'independent'
-                        ? 'bg-primary-50 dark:bg-primary-950/70 border-primary-500 text-ink dark:text-zinc-100 shadow-sm'
-                        : 'bg-subtle dark:bg-zinc-950 border-border dark:border-zinc-800 text-muted dark:text-zinc-400 hover:border-zinc-400'
+                        ? 'bg-primary-50 dark:bg-emerald-950/60 border-primary-600 dark:border-emerald-500 text-ink dark:text-zinc-100 shadow-sm'
+                        : 'bg-surface-subtle dark:bg-[#09090B] border-border-strong dark:border-zinc-800 text-muted dark:text-zinc-400 hover:border-ink/40 dark:hover:border-zinc-600'
                     }`}
                   >
-                    <Wrench className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
+                    <Wrench className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                     <div>
                       <div className="text-xs font-bold">Independent Specialist</div>
-                      <div className="text-[10px] font-sans opacity-80">
+                      <div className={`text-[11px] font-sans ${workshopTier === 'independent' ? 'text-body dark:text-zinc-300' : 'text-muted dark:text-zinc-400'}`}>
                         OEM Parts · Specialist Labor
                       </div>
                     </div>
@@ -555,17 +686,18 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
 
                   <button
                     type="button"
+                    aria-pressed={workshopTier === 'dealership'}
                     onClick={() => setWorkshopTier('dealership')}
-                    className={`p-3 rounded-xl border text-left transition-colors duration-150 flex items-center gap-2.5 ${
+                    className={`min-h-[44px] p-3 rounded-xl border text-left transition-colors duration-150 flex items-center gap-2.5 ${
                       workshopTier === 'dealership'
-                        ? 'bg-primary-50 dark:bg-primary-950/70 border-primary-500 text-ink dark:text-zinc-100 shadow-sm'
-                        : 'bg-subtle dark:bg-zinc-950 border-border dark:border-zinc-800 text-muted dark:text-zinc-400 hover:border-zinc-400'
+                        ? 'bg-primary-50 dark:bg-emerald-950/60 border-primary-600 dark:border-emerald-500 text-ink dark:text-zinc-100 shadow-sm'
+                        : 'bg-surface-subtle dark:bg-[#09090B] border-border-strong dark:border-zinc-800 text-muted dark:text-zinc-400 hover:border-ink/40 dark:hover:border-zinc-600'
                     }`}
                   >
-                    <Landmark className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
+                    <Landmark className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                     <div>
                       <div className="text-xs font-bold">Franchise Dealership</div>
-                      <div className="text-[10px] font-sans opacity-80">
+                      <div className={`text-[11px] font-sans ${workshopTier === 'dealership' ? 'text-body dark:text-zinc-300' : 'text-muted dark:text-zinc-400'}`}>
                         Main Dealer Service Desk
                       </div>
                     </div>
@@ -577,12 +709,12 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div>
                 <label
                   htmlFor="invoice-amount-input"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Invoice Amount Paid ({currencySymbol})
                 </label>
                 <div className="relative">
-                  <DollarSign className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <DollarSign className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
                   <input
                     id="invoice-amount-input"
                     type="number"
@@ -592,7 +724,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     required
                     value={invoiceAmount}
                     onChange={(e) => setInvoiceAmount(e.target.value)}
-                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400"
                   />
                 </div>
               </div>
@@ -601,12 +733,12 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div>
                 <label
                   htmlFor="invoice-odometer-input"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Odometer Reading ({distanceUnit})
                 </label>
                 <div className="relative">
-                  <Gauge className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Gauge className="w-4 h-4 text-muted dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
                   <input
                     id="invoice-odometer-input"
                     type="number"
@@ -616,7 +748,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                     required
                     value={odometerMiles}
                     onChange={(e) => setOdometerMiles(e.target.value)}
-                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm font-mono tabular-nums text-ink dark:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400"
                   />
                 </div>
               </div>
@@ -625,7 +757,7 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <div>
                 <label
                   htmlFor="invoice-driver-name"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Your Name or Initials (Optional)
                 </label>
@@ -635,14 +767,14 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   placeholder="e.g. Alex M. (or leave blank)"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
+                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm text-ink dark:text-zinc-100"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="invoice-owner-note"
-                  className="block text-xs font-sans font-semibold uppercase tracking-wider text-muted dark:text-zinc-300 mb-1.5"
+                  className="block text-xs font-sans font-semibold text-body dark:text-zinc-300 mb-1.5"
                 >
                   Repair / Parts Note (Optional)
                 </label>
@@ -652,19 +784,19 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
                   placeholder="e.g. Replaced OEM Pierburg pump + Continental belt"
                   value={ownerNote}
                   onChange={(e) => setOwnerNote(e.target.value)}
-                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-subtle dark:bg-zinc-950 border border-border dark:border-zinc-800 text-base sm:text-sm text-ink dark:text-zinc-100"
+                  className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-subtle dark:bg-[#09090B] border border-border-strong dark:border-border-strong text-base sm:text-sm text-ink dark:text-zinc-100"
                 />
               </div>
             </div>
 
             {/* Live Pre-Submission Statistical Benchmark Bar */}
             {!submittedAudit && (
-              <div className="p-4 rounded-xl bg-subtle/70 dark:bg-zinc-950/70 border border-border dark:border-zinc-800 space-y-2.5">
-                <div className="flex items-center justify-between text-xs font-sans">
+              <div className="p-4 rounded-xl bg-surface-subtle/70 dark:bg-[#09090B]/70 border border-border dark:border-zinc-800 space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-sans gap-2">
                   <span className="text-muted dark:text-zinc-400">
                     Live Benchmark Preview ({workshopTier === 'dealership' ? 'Dealership' : 'Specialist'}):
                   </span>
-                  <span className="font-bold text-primary-600 dark:text-primary-400">
+                  <span className="font-bold text-primary-600 dark:text-emerald-400">
                     {liveAuditPreview.ordinalPercentile} Percentile ({liveAuditPreview.verdictBadge})
                   </span>
                 </div>
@@ -683,21 +815,21 @@ export default function CommunityInvoiceModal({ isOpen, onClose, onInvoiceSubmit
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-muted dark:text-zinc-300 hover:bg-subtle dark:hover:bg-zinc-800 transition-colors"
+                className="min-h-[44px] sm:min-h-0 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-muted dark:text-zinc-300 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors"
               >
                 Close
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 text-white shadow-sm flex items-center gap-2 transition-colors duration-150"
+                className="min-h-[44px] sm:min-h-0 px-5 py-2.5 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white shadow-sm flex items-center gap-2 transition-colors duration-150"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Compare &amp; Save Locally</span>
               </button>
             </div>
           </form>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

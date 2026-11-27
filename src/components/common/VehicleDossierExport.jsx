@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Printer,
   X,
   CheckCircle2,
-  AlertTriangle,
   ShieldCheck,
   CheckSquare,
   DollarSign,
@@ -97,6 +96,19 @@ const DEFAULT_INSPECTION_CHECKLIST = [
   },
 ];
 
+function isOutsidePanelRect(clientX, clientY, panelEl) {
+  if (!panelEl || typeof panelEl.getBoundingClientRect !== 'function' || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return true;
+  }
+  const rect = panelEl.getBoundingClientRect();
+  return (
+    clientX < rect.left ||
+    clientX > rect.right ||
+    clientY < rect.top ||
+    clientY > rect.bottom
+  );
+}
+
 export default function VehicleDossierExport({
   vehicle,
   tco,
@@ -115,6 +127,111 @@ export default function VehicleDossierExport({
   const isPureEv = isPureElectric(vehicle);
   const activeChecklist = isPureEv ? EV_INSPECTION_CHECKLIST : DEFAULT_INSPECTION_CHECKLIST;
   const [checkedItems, setCheckedItems] = useState({});
+  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
+  const programmaticCloseCountRef = useRef(0);
+
+  const closeDialogProgrammatically = (dialogEl) => {
+    if (!dialogEl) return;
+    if (!dialogEl.isConnected) {
+      programmaticCloseCountRef.current = 0;
+      try {
+        if (typeof dialogEl.close === 'function' && dialogEl.open) {
+          dialogEl.close();
+        }
+      } catch {
+        // Safe guard on detached dialog
+      }
+      return;
+    }
+    if (typeof dialogEl.close !== 'function' || !dialogEl.open) return;
+    const isNativeDialog =
+      typeof HTMLDialogElement !== 'undefined' && dialogEl instanceof HTMLDialogElement;
+    if (isNativeDialog) {
+      programmaticCloseCountRef.current += 1;
+    }
+    try {
+      dialogEl.close();
+    } catch {
+      if (isNativeDialog && programmaticCloseCountRef.current > 0) {
+        programmaticCloseCountRef.current -= 1;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const dialogEl = dialogRef.current;
+    if (!dialogEl) return undefined;
+
+    if (typeof dialogEl.showModal === 'function' && !dialogEl.open) {
+      try {
+        dialogEl.showModal();
+      } catch {
+        // Safe guard in mock DOM or already-open state
+      }
+    }
+    return () => {
+      closeDialogProgrammatically(dialogEl);
+    };
+  }, []);
+
+  // Light-dismiss for full-viewport <dialog> overlays (supplements closedby="any" Esc/back-gesture)
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof HTMLDialogElement === 'undefined') {
+      return undefined;
+    }
+
+    const dialogEl = dialogRef.current;
+    if (!dialogEl || typeof dialogEl.addEventListener !== 'function') return undefined;
+
+    let pressedOutside = false;
+    let suppressNextClick = false;
+
+    const handlePointerDown = (event) => {
+      pressedOutside =
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current);
+      suppressNextClick = !pressedOutside;
+    };
+
+    const handlePointerUp = (event) => {
+      if (
+        pressedOutside &&
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current)
+      ) {
+        suppressNextClick = true;
+        if (typeof onClose === 'function') onClose();
+      }
+      pressedOutside = false;
+    };
+
+    const handleDialogClick = (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (
+        event.target === dialogEl &&
+        !Number.isFinite(event.clientX) &&
+        typeof onClose === 'function'
+      ) {
+        onClose();
+      }
+    };
+
+    dialogEl.addEventListener('pointerdown', handlePointerDown);
+    dialogEl.addEventListener('pointerup', handlePointerUp);
+    dialogEl.addEventListener('click', handleDialogClick);
+    return () => {
+      if (typeof dialogEl.removeEventListener === 'function') {
+        dialogEl.removeEventListener('pointerdown', handlePointerDown);
+        dialogEl.removeEventListener('pointerup', handlePointerUp);
+        dialogEl.removeEventListener('click', handleDialogClick);
+      }
+    };
+  }, [onClose]);
 
   const handlePrint = () => {
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
@@ -293,19 +410,29 @@ export default function VehicleDossierExport({
 
   const scoreToneClass =
     resolvedReliabilityScore >= 75
-      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+      ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
       : resolvedReliabilityScore >= 50
-        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-        : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30';
+        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30'
+        : 'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Buyer's Inspection & Telemetry Dossier Export"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-ink/60 backdrop-blur-sm print:static print:inset-auto print:p-0 print:bg-white print:backdrop-none print:z-auto print:overflow-visible"
+    <dialog
+      ref={dialogRef}
+      closedby="any"
+      aria-labelledby="dossier-modal-title"
+      onClose={() => {
+        if (programmaticCloseCountRef.current > 0) {
+          programmaticCloseCountRef.current -= 1;
+          return;
+        }
+        if (typeof onClose === 'function') onClose();
+      }}
+      className="dl-bottom-sheet-dialog dl-printable-dialog sm:items-center sm:justify-center sm:p-4"
     >
-      <div className="relative w-full max-w-4xl rounded-t-2xl sm:rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-4 sm:p-7 shadow-2xl max-h-[92dvh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:shadow-none print:border-0 print:w-full print:max-w-none print:bg-white print:text-black">
+      <div
+        ref={panelRef}
+        className="relative w-full max-w-4xl rounded-t-2xl sm:rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] text-ink dark:text-zinc-100 p-4 sm:p-7 shadow-2xl max-h-[92dvh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:shadow-none print:border-0 print:w-full print:max-w-none print:bg-white print:text-black"
+      >
         {/* Top Action & Mode Switcher Bar (hidden in print) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-border dark:border-zinc-800 print:hidden">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
@@ -327,11 +454,11 @@ export default function VehicleDossierExport({
                 onClick={() => setActiveMode('negotiation')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-sans text-xs font-semibold transition-colors duration-150 ${
                   activeMode === 'negotiation'
-                    ? 'bg-primary-600 text-white shadow-sm'
+                    ? 'bg-primary-600 dark:bg-emerald-700 text-white shadow-sm'
                     : 'text-muted dark:text-zinc-300 hover:text-ink dark:hover:text-white'
                 }`}
               >
-                <CheckSquare className="w-3.5 h-3.5 shrink-0" />
+                <CheckSquare className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                 <span>Buyer&apos;s Inspection &amp; Negotiation Sheet</span>
               </button>
               <button
@@ -341,11 +468,11 @@ export default function VehicleDossierExport({
                 onClick={() => setActiveMode('dossier')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-sans text-xs font-semibold transition-colors duration-150 ${
                   activeMode === 'dossier'
-                    ? 'bg-primary-600 text-white shadow-sm'
+                    ? 'bg-primary-600 dark:bg-emerald-700 text-white shadow-sm'
                     : 'text-muted dark:text-zinc-300 hover:text-ink dark:hover:text-white'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <FileText className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                 <span>Full Telemetry Dossier</span>
               </button>
             </div>
@@ -355,9 +482,9 @@ export default function VehicleDossierExport({
             <button
               type="button"
               onClick={handlePrint}
-              className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 font-sans text-xs font-semibold text-white hover:bg-primary-700 shadow-sm transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 px-4 py-2 font-sans text-xs font-semibold text-white shadow-sm transition-colors duration-150"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4" aria-hidden="true" />
               <span>Print / Save PDF</span>
             </button>
             <button
@@ -366,7 +493,7 @@ export default function VehicleDossierExport({
               className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg p-2 text-muted dark:text-zinc-400 hover:bg-surface-subtle dark:hover:bg-zinc-800 hover:text-ink dark:hover:text-white transition-colors"
               aria-label="Close dossier"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -377,18 +504,16 @@ export default function VehicleDossierExport({
           className="mt-5 space-y-5 text-ink dark:text-zinc-100 print:mt-0 print:space-y-3 print:text-black print:bg-white"
         >
           {/* Shared Vehicle Summary Header, Odometer & Reliability Score (0-100) Badge */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b-2 border-primary-600 print:pb-2.5 print:border-black">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b-2 border-primary-600 dark:border-emerald-600 print:pb-2.5 print:border-black">
             <div>
               <BrandLogo size="sm" className="mb-1.5" />
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[11px] font-sans uppercase tracking-widest text-primary-600 dark:text-primary-400 print:text-black font-bold">
-                  DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT
-                </p>
-                <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/40 print:text-black print:bg-transparent">
-                  DRIVELEDGER TELEMETRY DOSSIER
-                </span>
-              </div>
-              <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 print:text-black mt-1">
+              <p className="text-[11px] font-sans tracking-wide text-primary-600 dark:text-emerald-400 print:text-black font-bold">
+                DRIVELEDGER AUTOMOTIVE TELEMETRY REPORT
+              </p>
+              <h1
+                id="dossier-modal-title"
+                className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 print:text-black mt-1"
+              >
                 {vehicle?.name || 'Automotive Inspection Report'}
               </h1>
               <p className="text-xs text-muted dark:text-zinc-400 print:text-black/80 mt-0.5 font-sans font-medium">
@@ -404,9 +529,9 @@ export default function VehicleDossierExport({
               <div
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-sans ${scoreToneClass} print:border-black print:text-black print:bg-transparent`}
               >
-                <Gauge className="w-4 h-4 shrink-0" />
+                <Gauge className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <div className="text-left sm:text-right">
-                  <span className="block text-[10px] font-medium uppercase tracking-wider opacity-80">
+                  <span className="block text-[11px] font-medium">
                     Reliability Score
                   </span>
                   <span className="text-sm font-mono font-bold tabular-nums">
@@ -435,9 +560,9 @@ export default function VehicleDossierExport({
           >
             {/* Price Negotiation & Immediate Risk Deduction Table */}
             <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between mb-2.5 gap-2">
+                <h2 className="text-xs sm:text-sm font-bold font-sans text-primary-600 dark:text-emerald-400 print:text-black flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Price Negotiation &amp; Immediate Risk Deduction Table</span>
                 </h2>
                 <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
@@ -449,11 +574,11 @@ export default function VehicleDossierExport({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs font-sans">
                     <thead>
-                      <tr className="border-b border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/80 print:bg-transparent text-[11px] font-sans font-semibold uppercase text-muted dark:text-zinc-300 print:text-black">
-                        <th className="py-2.5 px-3">Component / Assembly</th>
-                        <th className="py-2.5 px-3">Risk Status</th>
-                        <th className="py-2.5 px-3 text-right">Est. Repair Range</th>
-                        <th className="py-2.5 px-3 text-right">Negotiation Deduction</th>
+                      <tr className="border-b border-border dark:border-zinc-800 print:border-black/30 bg-surface-subtle dark:bg-zinc-800/80 print:bg-transparent text-[11px] font-sans font-semibold text-muted dark:text-zinc-300 print:text-black">
+                        <th scope="col" className="py-2.5 px-3">Component / Assembly</th>
+                        <th scope="col" className="py-2.5 px-3">Risk Status</th>
+                        <th scope="col" className="py-2.5 px-3 text-right">Est. Repair Range</th>
+                        <th scope="col" className="py-2.5 px-3 text-right">Negotiation Deduction</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border dark:divide-zinc-800 print:divide-black/20">
@@ -476,7 +601,7 @@ export default function VehicleDossierExport({
                                 row.status === 'CRITICAL'
                                   ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
                                   : row.status === 'WARNING'
-                                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+                                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
                                     : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
                               } print:border-black print:text-black print:bg-transparent`}
                             >
@@ -486,7 +611,7 @@ export default function VehicleDossierExport({
                           <td className="py-2.5 px-3 text-right font-mono tabular-nums text-body dark:text-zinc-300 print:text-black">
                             {formatCurrency(row.minCostUsd)} – {formatCurrency(row.maxCostUsd)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400 print:text-black">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold tabular-nums text-rose-700 dark:text-rose-400 print:text-black">
                             -{formatCurrency(row.deductionUsd)}
                           </td>
                         </tr>
@@ -498,7 +623,7 @@ export default function VehicleDossierExport({
                 {/* Offer Summary Bar */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-surface-subtle dark:bg-zinc-800/90 print:bg-transparent border-t border-border dark:border-zinc-700 print:border-black">
                   <div className="rounded-lg border border-border dark:border-zinc-700 print:border-black/40 bg-surface dark:bg-[#121215] print:bg-white p-2.5">
-                    <p className="text-[10px] font-sans font-medium uppercase text-muted dark:text-zinc-400 print:text-black">
+                    <p className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
                       Seller Asking / Reference Price
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black mt-0.5">
@@ -506,15 +631,15 @@ export default function VehicleDossierExport({
                     </p>
                   </div>
                   <div className="rounded-lg border border-rose-500/30 dark:border-rose-500/40 print:border-black/40 bg-rose-500/5 dark:bg-rose-950/30 print:bg-white p-2.5">
-                    <p className="text-[10px] font-sans uppercase text-rose-700 dark:text-rose-300 print:text-black font-semibold">
+                    <p className="text-[11px] font-sans text-rose-700 dark:text-rose-300 print:text-black font-semibold">
                       Recommended Price Negotiation Deduction ({currencySymbol})
                     </p>
-                    <p className="text-base font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 print:text-black mt-0.5">
+                    <p className="text-base font-bold font-mono tabular-nums text-rose-700 dark:text-rose-400 print:text-black mt-0.5">
                       -{formatCurrency(negotiationAnalysis.recommendedDeductionUsd)}
                     </p>
                   </div>
                   <div className="rounded-lg border border-emerald-500/40 dark:border-emerald-500/40 print:border-black bg-emerald-500/10 dark:bg-emerald-950/30 print:bg-white p-2.5">
-                    <p className="text-[10px] font-sans uppercase text-emerald-800 dark:text-emerald-300 print:text-black font-semibold">
+                    <p className="text-[11px] font-sans text-emerald-800 dark:text-emerald-300 print:text-black font-semibold">
                       Target Walk-Away / Fair Offer Price ({currencySymbol})
                     </p>
                     <p className="text-base font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300 print:text-black mt-0.5">
@@ -527,12 +652,12 @@ export default function VehicleDossierExport({
 
             {/* On-Site Physical & OBD2 Pre-Purchase Inspection Checklist */}
             <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black flex items-center gap-1.5">
-                  <CheckSquare className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between mb-2.5 gap-2">
+                <h2 className="text-xs sm:text-sm font-bold font-sans text-primary-600 dark:text-emerald-400 print:text-black flex items-center gap-1.5">
+                  <CheckSquare className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>On-Site Physical &amp; OBD2 Pre-Purchase Inspection Checklist</span>
                 </h2>
-                <span className="text-[11px] font-sans font-semibold text-primary-600 dark:text-primary-400 print:text-black">
+                <span className="text-[11px] font-sans font-semibold text-primary-600 dark:text-emerald-400 print:text-black">
                   <span className="font-mono tabular-nums">{checkedCount}/{activeChecklist.length}</span> Verified
                 </span>
               </div>
@@ -551,7 +676,7 @@ export default function VehicleDossierExport({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleChecklistItem(item.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-border dark:border-zinc-600 text-primary-600 focus:ring-primary-500 print:border-black"
+                        className="mt-0.5 h-4 w-4 rounded border-border-strong dark:border-zinc-600 accent-primary-600 dark:accent-emerald-500 text-primary-600 print:border-black"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -564,7 +689,7 @@ export default function VehicleDossierExport({
                           >
                             {item.label}
                           </span>
-                          <span className="text-[10px] font-sans font-medium uppercase px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/30 print:text-black print:bg-transparent">
+                          <span className="text-[10px] font-sans font-medium px-2 py-0.5 rounded-md bg-surface-subtle dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700 print:border-black/30 print:text-black print:bg-transparent">
                             {item.tag}
                           </span>
                         </div>
@@ -591,7 +716,7 @@ export default function VehicleDossierExport({
           >
             {/* Section 1: Financial Ownership Summary */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs sm:text-sm font-bold font-sans text-primary-600 dark:text-emerald-400 print:text-black mb-3">
                 1. {resolvedTco.yearlySchedule?.length || 5}-Year True Cost of Ownership Projections ({resolvedTco.yearlySchedule?.length || 5}-Year TCO Projections)
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-sans">
@@ -626,7 +751,7 @@ export default function VehicleDossierExport({
                   <p className="text-[11px] text-muted dark:text-zinc-400 print:text-black">
                     {resolvedTco.financeType === 'lease' && resolvedTco.leaseDetails ? 'Lease Residual' : 'Residual Retention'}
                   </p>
-                  <p className="text-lg font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400 print:text-black mt-0.5">
+                  <p className="text-lg font-bold font-mono tabular-nums text-primary-700 dark:text-emerald-400 print:text-black mt-0.5">
                     {resolvedTco.financeType === 'lease' && resolvedTco.leaseDetails
                       ? `${resolvedTco.leaseDetails.residualPct}%`
                       : `${resolvedTco.finalRetentionPct || 48}%`}
@@ -651,7 +776,7 @@ export default function VehicleDossierExport({
 
             {/* Section 2: Mechanical Wear & Maintenance Reserve */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs sm:text-sm font-bold font-sans text-primary-600 dark:text-emerald-400 print:text-black mb-3">
                 2. Mechanical Wear &amp; Maintenance Reserve (12-Month Maintenance Reserve &amp; Critical Known Defects)
               </h2>
               <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 p-4 bg-surface-subtle dark:bg-zinc-800/70 print:bg-white space-y-3 font-sans">
@@ -686,33 +811,33 @@ export default function VehicleDossierExport({
 
             {/* Section 3: Diagnostic Telemetry Protocol & Known Faults */}
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider font-sans text-primary-600 dark:text-primary-400 print:text-black mb-3">
+              <h2 className="text-xs sm:text-sm font-bold font-sans text-primary-600 dark:text-emerald-400 print:text-black mb-3">
                 3. Master Diagnostic Verification Protocol
               </h2>
               <div className="rounded-xl border border-border dark:border-zinc-800 print:border-black/30 p-4 space-y-2 text-xs font-sans bg-surface dark:bg-[#121215] print:bg-white">
-                <div className="flex items-center justify-between py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
+                <div className="flex items-center justify-between gap-3 py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
                   <span className="text-body dark:text-zinc-300 print:text-black">
                     Common Marque OBD-II Codes to Scan:
                   </span>
-                  <span className="font-mono tabular-nums font-semibold text-primary-600 dark:text-primary-400 print:text-black">
+                  <span className="font-mono tabular-nums font-semibold text-primary-600 dark:text-emerald-400 print:text-black">
                     {(vehicle?.commonObdCodes || ['P0420', 'P2002', 'P0171']).join(' · ')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
+                <div className="flex items-center justify-between gap-3 py-1 border-b border-border dark:border-zinc-800 print:border-black/20">
                   <span className="text-body dark:text-zinc-300 print:text-black">
                     Live Sensor PIDs to Monitor:
                   </span>
-                  <span className="font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
+                  <span className="font-sans font-medium text-muted dark:text-zinc-400 print:text-black text-right">
                     {isPureEv
                       ? 'BMS SoH %, Cell Voltage Delta (mV), HV Isolation Resistance, Chiller Valve, OBC Current'
                       : 'MAF, Boost Pressure, DPF Delta-P, Fuel Rail Pressure, STFT/LTFT'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-1">
+                <div className="flex items-center justify-between gap-3 py-1">
                   <span className="text-body dark:text-zinc-300 print:text-black">
                     Odometer Rollback Inspection:
                   </span>
-                  <span className="font-sans text-success-text dark:text-emerald-400 print:text-black font-semibold">
+                  <span className="font-sans text-success-text dark:text-emerald-400 print:text-black font-semibold text-right">
                     {isPureEv
                       ? 'Cross-verify BMS cumulative kWh throughput & ABS logs vs cluster odometer'
                       : 'Cross-verify ECU hours vs transmission control module log'}
@@ -725,8 +850,8 @@ export default function VehicleDossierExport({
           {/* Shared Master Inspector & Buyer Sign-Off Footer */}
           <div className="pt-3 border-t border-border dark:border-zinc-800 print:border-black grid grid-cols-2 gap-6 text-xs font-sans">
             <div>
-              <p className="text-faint dark:text-zinc-400 print:text-black uppercase tracking-wider text-[10px]">
-                INSPECTION TECHNICIAN / BUYER SIGN-OFF
+              <p className="text-muted dark:text-zinc-400 print:text-black font-medium text-[11px]">
+                Inspection Technician / Buyer Sign-Off
               </p>
               <div className="mt-3 border-b border-border dark:border-zinc-700 print:border-black h-5"></div>
               <p className="mt-1 text-muted dark:text-zinc-400 print:text-black">
@@ -734,12 +859,12 @@ export default function VehicleDossierExport({
               </p>
             </div>
             <div>
-              <p className="text-faint dark:text-zinc-400 print:text-black uppercase tracking-wider text-[10px]">
-                VERIFICATION STATUS
+              <p className="text-muted dark:text-zinc-400 print:text-black font-medium text-[11px]">
+                Verification Status
               </p>
               <div className="mt-2.5 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 text-success-text dark:text-emerald-400 print:text-black font-bold">
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                   TELEMETRY VERIFIED
                 </span>
               </div>
@@ -750,6 +875,6 @@ export default function VehicleDossierExport({
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

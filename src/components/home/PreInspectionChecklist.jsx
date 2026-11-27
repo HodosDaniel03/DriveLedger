@@ -1,18 +1,17 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
-  Clock,
   ArrowRight,
   Share2,
   Printer,
   Check,
-  AlertTriangle,
   RotateCcw,
   Car,
-  DollarSign,
+  ChevronDown,
+  FileText,
 } from 'lucide-react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import { useUnits } from '../../context/UnitContext';
-import { RiskBadge } from '../common/OdometerPrimitives';
+import { Card } from '../common/OdometerPrimitives';
 import { generatePpiChecklist } from '../../data/breakEvenAndPpi.js';
 import {
   MAINTENANCE_COMPONENTS,
@@ -22,153 +21,51 @@ import {
 } from '../../data/maintenanceData.js';
 import { estimateMileageAdjustedMarketValue } from '../../data/fixOrSellEngine.js';
 import VinCheckBanner from '../monetization/VinCheckBanner';
-import AffiliateCTA from '../monetization/AffiliateCTA';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
 import VehicleInternalLinks from '../seo/VehicleInternalLinks';
 import VehicleSelect from '../common/VehicleSelect';
+import VehicleVisualCard from '../common/vehicle/VehicleVisualCard.jsx';
+import {
+  PPI_POPULAR_SHORTCUTS,
+  sanitizeStep,
+  groupStepsByStage,
+} from './ppi/ppiStages.js';
+import PpiStickyBar from './ppi/PpiStickyBar.jsx';
+import PpiStageGroup from './ppi/PpiStageGroup.jsx';
+import PpiVehiclePickerDialog from './ppi/PpiVehiclePickerDialog.jsx';
+import PpiSummaryDialog from './ppi/PpiSummaryDialog.jsx';
 
 export { generatePpiChecklist };
 
-const STANDARD_STEP_TRANSLATIONS = {
-  'step-obd-scan': {
-    title: 'OBD-II DTC & Freeze Frame Live Data Scan',
-    focus: 'Scan active, stored, and pending DTCs. Verify distance traveled since codes were cleared.',
-    inspectionMethod: 'Connect OBD2 scanner: if distance since DTC clear is under 50 km (30 mi), fault codes may have been cleared right before arrival.',
-    riskLabel: 'Critical / Mandatory',
-    timeEst: '~20 mins',
-    keyPids: 'Mode 03 (DTC), Mode 07 (Pending), PID 0x31 (Distance since clear)',
-  },
-  'step-cold-start': {
-    title: 'Cold Start, Blowby & Oil Filler Cap Pressure Test',
-    focus: 'Start engine strictly cold. Inspect exhaust smoke color and listen for idle valvetrain rattle.',
-    inspectionMethod: 'Check engine block temperature (must not be warm). With engine idling, loosen oil cap: gentle vacuum is normal, excessive smoke indicates blowby.',
-    riskLabel: 'Moderate / Important',
-    timeEst: '~15 mins',
-    keyPids: 'Coolant Temp PID 0x05, Oil Pressure PID',
-  },
-  'step-ev-hv-battery': {
-    title: 'HV Battery State of Health (SoH %) & Cell Delta-V Load Test',
-    focus: 'Read BMS State of Health (SoH %), total DC fast-charge vs AC charge counter, and cell voltage imbalance (mV delta) under load.',
-    inspectionMethod: 'Query BMS via OBD2 at <30% SoC under acceleration: cell delta-V must remain <25 mV with zero HV isolation fault history.',
-    riskLabel: 'Critical / HV Battery',
-    timeEst: '~20 mins',
-    keyPids: 'BMS SoH %, Min/Max Cell Voltage Delta (mV), HV Isolation Resistance (kOhm)',
-  },
-  'step-body-chassis': {
-    title: 'Body Paint Thickness & Structural Damage Screening',
-    focus: 'Measure paint depth across panels (factory: 80–140 µm). Inspect A/B/C pillar spot welds and trunk floor.',
-    inspectionMethod: 'Measure pillars and sills (>200 µm indicates respray, >450 µm indicates body filler). Verify matching date stamps on all glass and headlights.',
-    riskLabel: 'Critical / Resale Value',
-    timeEst: '~20 mins',
-    keyPids: 'Digital Coating Gauge, Glass DOT Date Codes',
-  },
-  'step-transmission-driveline': {
-    title: 'Transmission Shift Quality & Clutch Slip Road Test',
-    focus: 'Verify smooth gear engagement, low-speed creep, and absence of metallic clunking on engine shutdown.',
-    inspectionMethod: 'On test drive, apply full throttle from 1,500 RPM in 4th gear: if engine revs spike without vehicle acceleration, the clutch is slipping. Listen for flywheel chatter at shutdown.',
-    riskLabel: 'Critical / High Repair Cost',
-    timeEst: '~25 mins',
-    keyPids: 'TCU Clutch Slip PID, Mechatronics Line Pressure Target',
-  },
-  'step-ev-charging-driveline': {
-    title: 'On-Board Charger (OBC / ICCU), DC Fast-Charge & Reduction Gear Check',
-    focus: 'Test both Level 2 AC charging phases and CCS/NACS DC fast-charging handshake. Listen for drive unit bearing whine under regen.',
-    inspectionMethod: 'Verify AC charging reaches full rated kW across all phases, test heat pump cabin heating & battery chiller valve actuation, and check reduction gear backlash.',
-    riskLabel: 'Critical / Charging & Drive Unit',
-    timeEst: '~25 mins',
-    keyPids: 'OBC Phase Current, DC-DC 12V Charging Voltage (>13.8V), Inverter & Chiller Temp',
-  },
-  'step-undercarriage-brakes': {
-    title: 'Suspension Bushings, Damper Seepage & Rotor Edge Lip',
-    focus: 'Check uneven tire shoulder wear, shock absorber oil seepage, and brake rotor edge wear.',
-    inspectionMethod: 'Turn wheels to inspect tread depth and shoulder wear. Perform firm straight-line braking test: vehicle must track straight without pedal pulsation.',
-    riskLabel: 'Moderate / Chassis',
-    timeEst: '~15 mins',
-    keyPids: 'Brake Fluid Boiling Tester, Alignment Symmetry',
-  },
-};
-
-function parseRepairRangeUsd(estSavingStr, riskLevel) {
-  const raw = String(estSavingStr || '');
-  const isEur = raw.includes('€') || /eur/i.test(raw);
-  const matches = raw.match(/\d[\d,]*/g);
-  if (matches && matches.length >= 2) {
-    const low = Number(matches[0].replace(/,/g, '')) || 400;
-    const high = Number(matches[1].replace(/,/g, '')) || 1400;
-    const factor = isEur ? 1 / 0.92 : 1.0;
-    const minUsd = Math.round(low * factor);
-    const maxUsd = Math.round(Math.max(low, high) * factor);
-    return {
-      minUsd,
-      maxUsd,
-      midpointUsd: Math.round((minUsd + maxUsd) / 2),
-    };
-  }
-  const fallbackMid = riskLevel === 'critical' ? 1250 : 650;
-  return {
-    minUsd: Math.round(fallbackMid * 0.6),
-    maxUsd: Math.round(fallbackMid * 1.4),
-    midpointUsd: fallbackMid,
-  };
+function resolveValidPreset(id) {
+  return id && VEHICLE_PRESETS.some((p) => p.id === id) ? getPresetById(id) : null;
 }
 
-function sanitizeStep(step) {
-  const baseStep = STANDARD_STEP_TRANSLATIONS[step.id]
-    ? { ...step, ...STANDARD_STEP_TRANSLATIONS[step.id] }
-    : (() => {
-        const stepId = step.id || '';
-        let method = 'Physical inspection and diagnostic trouble code scan recommended.';
-        if (stepId.includes('wet-belt')) {
-          method = 'Inspect oil filler neck to examine timing belt for cracking or delamination.';
-        } else if (stepId.includes('cp4')) {
-          method = 'Inspect high-pressure fuel pump and filter housing for metal debris.';
-        } else if (stepId.includes('iccu')) {
-          method = 'Test 12V auxiliary battery resting voltage and verify AC charging port operation.';
-        } else if (stepId.includes('timing')) {
-          method = 'Listen during the first 5 seconds of cold start for timing chain chatter.';
-        }
-
-        const riskLabel =
-          step.riskLevel === 'critical'
-            ? 'Critical Risk'
-            : step.riskLevel === 'low'
-            ? 'Low Risk'
-            : 'Moderate Risk';
-
-        const toAscii = (str) =>
-          str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
-
-        let title = toAscii(step.title || 'Mechanical Inspection');
-        title = title.replace(/\([^)]*fault[^)]*\)/gi, '').trim();
-
-        let focus = toAscii(step.focus || '');
-        if (focus.includes('|')) {
-          const parts = focus.split('|');
-          const s1 = parts[0].replace(/^[^:]*:\s*/, '').trim();
-          const s2 = parts[1] ? parts[1].replace(/^[^:]*:\s*/, '').trim() : '';
-          focus = `Symptoms: ${s1}${s2 ? ` | Prevention: ${s2}` : ''}`;
-        }
-
-        const keyPids = toAscii(step.keyPids || 'OBD Diagnostic Scan & Visual Check');
-
-        return {
-          ...step,
-          title,
-          timeEst: '~15-20 mins',
-          riskLabel,
-          focus,
-          inspectionMethod: method,
-          keyPids,
-        };
-      })();
-
-  const range = parseRepairRangeUsd(baseStep.estSaving, baseStep.riskLevel);
-  return {
-    ...baseStep,
-    minRepairUsd: range.minUsd,
-    maxRepairUsd: range.maxUsd,
-    deductionUsd: range.midpointUsd,
-  };
+function parseInitialStatusFromUrl() {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  const map = {};
+  const flaggedParam = params.get('flagged');
+  if (flaggedParam) {
+    flaggedParam
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((id) => {
+        map[id] = 'flag';
+      });
+  }
+  const naParam = params.get('na');
+  if (naParam) {
+    naParam
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((id) => {
+        if (!map[id]) map[id] = 'na';
+      });
+  }
+  return map;
 }
 
 export default function PreInspectionChecklist({
@@ -198,14 +95,11 @@ export default function PreInspectionChecklist({
     convertRegionToUsd,
   } = useUnits();
 
-  const resolveValidPreset = (id) =>
-    id && VEHICLE_PRESETS.some((p) => p.id === id) ? getPresetById(id) : null;
-
   const [selectedPreset, setSelectedPreset] = useState(() =>
     hasSelectedVehicle ? resolveValidPreset(presetId) : null
   );
   const [draftPresetId, setDraftPresetId] = useState(() =>
-    hasSelectedVehicle && presetId && VEHICLE_PRESETS.some((p) => p.id === presetId) ? presetId : null
+    hasSelectedVehicle && resolveValidPreset(presetId) ? presetId : null
   );
   const draftPreset = useMemo(() => resolveValidPreset(draftPresetId), [draftPresetId]);
   const isVehicleSelected = Boolean(selectedPreset);
@@ -232,35 +126,66 @@ export default function PreInspectionChecklist({
     );
   });
 
-  // Verified OK state vs Flagged Defect state
-  const [checkedIds, setCheckedIds] = useState({});
-  const [flaggedDefectIds, setFlaggedDefectIds] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const flaggedParam = params.get('flagged');
-      if (flaggedParam) {
-        const map = {};
-        flaggedParam
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .forEach((id) => {
-            map[id] = true;
-          });
-        return map;
-      }
-    }
-    return {};
-  });
+  // Draft input strings so clearing #ppi-asking-price / #ppi-odometer-input mid-edit doesn't snap back
+  const [priceDraft, setPriceDraft] = useState(null);
+  const [odoDraft, setOdoDraft] = useState(null);
+
+  // Unified mutually exclusive step statuses: { [stepId]: 'pass' | 'flag' | 'na' }
+  const [stepStatuses, setStepStatuses] = useState(parseInitialStatusFromUrl);
+
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [showSwitchCarModal, setShowSwitchCarModal] = useState(false);
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
+
+  const copyTimerRef = useRef(null);
+  const stageDetailsRefs = useRef({});
+  const initialMountPresetRef = useRef(selectedPreset?.id || null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  const registerStageDetailsRef = useCallback((stageId, el) => {
+    if (el) {
+      stageDetailsRefs.current[stageId] = el;
+    } else {
+      delete stageDetailsRefs.current[stageId];
+    }
+  }, []);
+
+  const expandAllStagesForPrint = useCallback(() => {
+    Object.values(stageDetailsRefs.current).forEach((el) => {
+      if (el && typeof el === 'object' && 'open' in el) {
+        el.open = true;
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+      return undefined;
+    }
+    const handleBeforePrint = () => {
+      expandAllStagesForPrint();
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => {
+      if (typeof window.removeEventListener === 'function') {
+        window.removeEventListener('beforeprint', handleBeforePrint);
+      }
+    };
+  }, [expandAllStagesForPrint]);
 
   const applySelectedVehicle = (nextPresetId) => {
     const p = resolveValidPreset(nextPresetId);
+    setPriceDraft(null);
+    setOdoDraft(null);
     if (!p) {
       setSelectedPreset(null);
       setDraftPresetId(null);
-      setCheckedIds({});
-      setFlaggedDefectIds({});
+      setStepStatuses({});
       if (onSelectPreset) onSelectPreset(null);
       return;
     }
@@ -269,8 +194,7 @@ export default function PreInspectionChecklist({
     const nextOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
     setOdometerMiles(nextOdo);
     setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, nextOdo));
-    setCheckedIds({});
-    setFlaggedDefectIds({});
+    setStepStatuses({});
     if (onSelectPreset) onSelectPreset(p.id);
   };
 
@@ -280,20 +204,36 @@ export default function PreInspectionChecklist({
       if (selectedPreset !== null) {
         setSelectedPreset(null);
         setDraftPresetId(null);
-        setCheckedIds({});
-        setFlaggedDefectIds({});
+        setStepStatuses({});
+        setPriceDraft(null);
+        setOdoDraft(null);
       }
       return;
     }
     const p = resolveValidPreset(presetId);
-    if (p && p.id !== selectedPreset?.id) {
+    if (!p) {
+      if (selectedPreset !== null) {
+        setSelectedPreset(null);
+        setDraftPresetId(null);
+        setStepStatuses({});
+        setPriceDraft(null);
+        setOdoDraft(null);
+      }
+      return;
+    }
+    if (p.id !== selectedPreset?.id) {
+      const isInitialHydratedMatch = initialMountPresetRef.current === p.id;
+      initialMountPresetRef.current = null;
       setSelectedPreset(p);
       setDraftPresetId(p.id);
-      const defaultOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
-      setOdometerMiles(defaultOdo);
-      setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, defaultOdo));
-      setCheckedIds({});
-      setFlaggedDefectIds({});
+      setPriceDraft(null);
+      setOdoDraft(null);
+      if (!isInitialHydratedMatch) {
+        const defaultOdo = Math.max(35000, Number(p.defaultOdometerMiles) || 65000);
+        setOdometerMiles(defaultOdo);
+        setAskingPriceUsd(estimateMileageAdjustedMarketValue(p, defaultOdo));
+        setStepStatuses({});
+      }
     }
   }, [presetId, hasSelectedVehicle]);
 
@@ -305,28 +245,32 @@ export default function PreInspectionChecklist({
     return raw.map(sanitizeStep);
   }, [selectedPreset, odometerKm]);
 
-  // Toggle Verified OK
-  const toggleStep = (id) => {
-    setCheckedIds((prev) => {
-      const next = !prev[id];
-      if (next) {
-        setFlaggedDefectIds((f) => ({ ...f, [id]: false }));
-      }
-      return { ...prev, [id]: next };
-    });
-  };
+  const isEv = useMemo(
+    () =>
+      Boolean(
+        selectedPreset &&
+          (isPureElectric(resolvePowertrainType(selectedPreset)) || selectedPreset.isEv)
+      ),
+    [selectedPreset]
+  );
 
-  // Toggle Flagged Defect (adds 100% repair midpoint to negotiation deduction!)
-  const toggleDefectFlag = (e, id) => {
+  const stageGroups = useMemo(
+    () => groupStepsByStage(inspectionSteps, isEv),
+    [inspectionSteps, isEv]
+  );
+
+  const handleSetStepStatus = useCallback((id, targetStatus, e) => {
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    setFlaggedDefectIds((prev) => {
-      const next = !prev[id];
-      if (next) {
-        setCheckedIds((c) => ({ ...c, [id]: false }));
+    setStepStatuses((prev) => {
+      const next = { ...prev };
+      if (next[id] === targetStatus) {
+        delete next[id];
+      } else {
+        next[id] = targetStatus;
       }
-      return { ...prev, [id]: next };
+      return next;
     });
-  };
+  }, []);
 
   // Compute upcoming wear reserve exposure at current odometer (50% negotiation weight)
   const wearExposure = useMemo(() => {
@@ -334,9 +278,9 @@ export default function PreInspectionChecklist({
       return { scheduledWearDeductionUsd: 0, serviceReserve12MoUsd: 0 };
     }
     const pType = resolvePowertrainType(selectedPreset);
-    const isEv = isPureElectric(pType);
+    const ev = isPureElectric(pType);
     const relevant = MAINTENANCE_COMPONENTS.filter((comp) =>
-      isEv
+      ev
         ? comp.applicablePowertrains.includes('ev')
         : comp.applicablePowertrains.includes(selectedPreset.powertrain || 'diesel')
     );
@@ -373,9 +317,9 @@ export default function PreInspectionChecklist({
     };
   }, [selectedPreset, odometerMiles]);
 
-  // Live Negotiation Battlecard Calculations
+  // Live Negotiation Battlecard Calculations (N/A excluded from defect deductions)
   const negotiationTargets = useMemo(() => {
-    const flaggedSteps = inspectionSteps.filter((s) => Boolean(flaggedDefectIds[s.id]));
+    const flaggedSteps = inspectionSteps.filter((s) => stepStatuses[s.id] === 'flag');
     const flaggedDefectsUsd = flaggedSteps.reduce((sum, s) => sum + (s.deductionUsd || 0), 0);
     const wearReserveDeductionUsd = wearExposure.scheduledWearDeductionUsd;
     const totalDeductionUsd = flaggedDefectsUsd + wearReserveDeductionUsd;
@@ -398,11 +342,10 @@ export default function PreInspectionChecklist({
       recommendedOpeningOfferUsd,
       walkAwayCeilingUsd,
     };
-  }, [inspectionSteps, flaggedDefectIds, wearExposure, askingPriceUsd]);
+  }, [inspectionSteps, stepStatuses, wearExposure, askingPriceUsd]);
 
-  const reviewedCount = inspectionSteps.filter(
-    (s) => Boolean(checkedIds[s.id]) || Boolean(flaggedDefectIds[s.id])
-  ).length;
+  const reviewedCount = inspectionSteps.filter((s) => Boolean(stepStatuses[s.id])).length;
+  const naCount = inspectionSteps.filter((s) => stepStatuses[s.id] === 'na').length;
   const totalCount = inspectionSteps.length;
   const progressPct = totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0;
 
@@ -413,13 +356,30 @@ export default function PreInspectionChecklist({
     if (!selectedPreset) return;
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mydriveledger.com';
-      const activeFlagged = Object.keys(flaggedDefectIds).filter((k) => flaggedDefectIds[k]);
-      const flaggedQuery = activeFlagged.length > 0 ? `&flagged=${encodeURIComponent(activeFlagged.join(','))}` : '';
-      const shareUrl = `${origin}/checklist/${encodeURIComponent(selectedPreset.id)}?odo=${Math.round(odometerMiles)}&price=${Math.round(askingPriceUsd)}&reg=${encodeURIComponent(region || 'US')}${flaggedQuery}`;
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      const activeFlagged = Object.keys(stepStatuses).filter((k) => stepStatuses[k] === 'flag');
+      const activeNa = Object.keys(stepStatuses).filter((k) => stepStatuses[k] === 'na');
+      const flaggedQuery =
+        activeFlagged.length > 0 ? `&flagged=${encodeURIComponent(activeFlagged.join(','))}` : '';
+      const naQuery = activeNa.length > 0 ? `&na=${encodeURIComponent(activeNa.join(','))}` : '';
+      const shareUrl = `${origin}/checklist/${encodeURIComponent(selectedPreset.id)}?odo=${Math.round(odometerMiles)}&price=${Math.round(askingPriceUsd)}&reg=${encodeURIComponent(region || 'US')}${flaggedQuery}${naQuery}`;
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         navigator.clipboard.writeText(shareUrl);
         setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 3000);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopyFeedback(false), 3000);
+      } else if (typeof document !== 'undefined' && document.body && typeof document.execCommand === 'function') {
+        const temp = document.createElement('textarea');
+        temp.value = shareUrl;
+        temp.setAttribute('readonly', '');
+        temp.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+        document.body.append(temp);
+        temp.select();
+        document.execCommand('copy');
+        temp.remove();
+        setCopyFeedback(true);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopyFeedback(false), 3000);
       }
     } catch {
       // Fallback
@@ -428,74 +388,62 @@ export default function PreInspectionChecklist({
 
   const handlePrint = () => {
     if (!selectedPreset) return;
+    expandAllStagesForPrint();
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
       window.print();
     }
   };
 
   const handleResetChecklist = () => {
-    setCheckedIds({});
-    setFlaggedDefectIds({});
+    setStepStatuses({});
   };
+
+  const HeadingTag = standalone ? 'h1' : 'h2';
 
   return (
     <section
       id="printable-checklist"
-      className="p-4 sm:p-8 rounded-2xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-sm space-y-6 min-w-0 max-w-full overflow-hidden"
+      className="space-y-6 pb-24 lg:pb-0 scroll-pb-[calc(5rem+env(safe-area-inset-bottom,0px))] min-w-0 max-w-full overflow-x-clip"
     >
-      {/* Header and Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border dark:border-zinc-800 print:border-b-2 print:border-black min-w-0">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-sans text-[11px] uppercase tracking-widest text-primary-600 dark:text-primary-400 font-bold block print:text-black">
-              Pre-Purchase Inspection &amp; Negotiation Battlecard
-            </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-sans font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 print:hidden">
-              Live Offer Calculator
-            </span>
-          </div>
-          {standalone ? (
-            <h1 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-              {isVehicleSelected
-                ? `${selectedPreset.name} | Field Inspection Checklist`
-                : 'Pre-Purchase Inspection (PPI) | Field Inspection Checklist'}
-            </h1>
-          ) : (
-            <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1 print:text-black break-words">
-              {isVehicleSelected
-                ? `${selectedPreset.name} | Field Inspection Checklist`
-                : 'Pre-Purchase Inspection (PPI) | Field Inspection Checklist'}
-            </h2>
-          )}
-          <p className="text-xs text-muted dark:text-zinc-400 mt-0.5 font-sans font-medium print:text-zinc-700 break-words">
+      {/* Clean Page Header (No Decorative Micro-Eyebrow or Extra Status Badges) */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-border/80 dark:border-zinc-800 print:border-b-2 print:border-black min-w-0">
+        <div className="min-w-0 max-w-2xl">
+          <HeadingTag className="font-sans text-h1 font-bold tracking-tight text-ink dark:text-zinc-50 print:text-black break-words">
+            {isVehicleSelected
+              ? `${selectedPreset.name} | Field Inspection Checklist`
+              : 'Pre-Purchase Inspection (PPI) | Field Inspection Checklist'}
+          </HeadingTag>
+          <p className="text-xs sm:text-sm text-body dark:text-zinc-400 mt-1.5 font-sans print:text-zinc-700 break-words">
             {isVehicleSelected ? (
               <>
-                {selectedPreset.engineCode} · {selectedPreset.fuelType} · <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
+                {selectedPreset.engineCode} · {selectedPreset.fuelType} ·{' '}
+                <span className="font-mono tabular-nums">{formatDistance(odometerMiles)}</span> · Asking{' '}
+                <span className="font-mono tabular-nums">{formatCurrency(askingPriceUsd)}</span>
               </>
             ) : (
-              'Select a vehicle model below to generate an engine-specific field inspection checklist, known defect warnings, and a live negotiation battlecard.'
+              'Select a vehicle model to generate an engine-specific field inspection checklist, known defect warnings, and a live negotiation offer.'
             )}
           </p>
         </div>
 
-        {/* Toolbar Buttons (Hidden during Print) */}
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
+        {/* Toolbar Actions (Max 1 Primary CTA) */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
           {isVehicleSelected && (
             <>
               <button
                 type="button"
                 onClick={handleShareLink}
-                className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+                className="min-h-[44px] sm:min-h-[38px] px-3.5 py-2 rounded-xl font-sans text-xs font-medium bg-surface dark:bg-zinc-900 hover:bg-surface-subtle dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Share state as URL link"
               >
                 {copyFeedback ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">Link copied!</span>
+                    <Check aria-hidden="true" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Link copied!</span>
                   </>
                 ) : (
                   <>
-                    <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                    <Share2 aria-hidden="true" className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
                     <span>Share link</span>
                   </>
                 )}
@@ -504,11 +452,21 @@ export default function PreInspectionChecklist({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-surface dark:hover:bg-zinc-700 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 flex items-center gap-1.5 shadow-sm transition-colors duration-150"
-                title="Print or save Negotiation Battlecard as PDF"
+                className="min-h-[44px] sm:min-h-[38px] px-3.5 py-2 rounded-xl font-sans text-xs font-medium bg-surface dark:bg-zinc-900 hover:bg-surface-subtle dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Print checklist as PDF"
               >
-                <Printer className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                <span>Print Negotiation Battlecard</span>
+                <Printer aria-hidden="true" className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
+                <span>Print</span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="ppi-open-summary-button"
+                onClick={() => setShowSummaryDialog(true)}
+                className="min-h-[44px] sm:min-h-[38px] px-4 py-2 rounded-xl font-sans text-xs font-semibold bg-[#183D22] hover:bg-[#122E19] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileText aria-hidden="true" className="w-3.5 h-3.5" />
+                <span>Generate Printable / Negotiation Summary</span>
               </button>
             </>
           )}
@@ -517,96 +475,38 @@ export default function PreInspectionChecklist({
             <button
               type="button"
               onClick={() => onNavigateToObd()}
-              className="min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-lg font-sans text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white flex items-center gap-1.5 shadow-sm transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-[38px] px-3.5 py-2 rounded-xl font-sans text-xs font-medium bg-surface dark:bg-zinc-900 hover:bg-surface-subtle dark:hover:bg-zinc-800 text-ink dark:text-zinc-200 border border-border dark:border-zinc-700 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>OBD2 Code Lookup</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Vehicle Preset, Asking Price & Odometer Quick Selector (compact bar when selected; accessible select when empty) */}
-      <div
-        className={
-          isVehicleSelected
-            ? 'flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-subtle dark:bg-zinc-800/60 border border-border dark:border-zinc-800 print:hidden min-w-0'
-            : 'sr-only'
-        }
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 min-w-0 w-full sm:w-auto">
-          <label htmlFor="ppi-vehicle-select" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200 flex items-center gap-1.5 shrink-0">
-            <Car className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-            <span>Vehicle:</span>
-          </label>
-          <select
-            id="ppi-vehicle-select"
-            value={selectedPreset ? selectedPreset.id : ''}
-            onChange={(e) => applySelectedVehicle(e.target.value)}
-            aria-label="Select vehicle model"
-            className="w-full sm:max-w-[280px] min-h-[44px] sm:min-h-0 truncate font-sans text-base sm:text-xs font-medium rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-3 py-2 sm:py-1.5 text-ink dark:text-zinc-100 focus:outline-none focus:border-primary-600 shadow-sm"
-          >
-            <option value="">Select a vehicle model...</option>
-            {VEHICLE_PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.fuelType} · {p.engineCode})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {isVehicleSelected && (
-          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="flex items-center justify-between sm:justify-start gap-2">
-              <label htmlFor="ppi-asking-price" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
-                Asking Price:
-              </label>
-              <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
-                <span className="text-xs font-mono text-muted mr-1">{currencySymbol}</span>
-                <input
-                  id="ppi-asking-price"
-                  type="number"
-                  min="500"
-                  max="250000"
-                  step="250"
-                  value={displayAskingPrice}
-                  onChange={(e) =>
-                    setAskingPriceUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)))
-                  }
-                  className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between sm:justify-start gap-2">
-              <label htmlFor="ppi-odometer-input" className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
-                Odometer:
-              </label>
-              <div className="flex items-center min-h-[44px] sm:min-h-0 rounded-lg border border-border dark:border-zinc-700 bg-surface dark:bg-[#121215] px-2.5 py-1.5 sm:py-1">
-                <input
-                  id="ppi-odometer-input"
-                  type="number"
-                  min="0"
-                  max="600000"
-                  step="2500"
-                  value={displayOdo}
-                  onChange={(e) =>
-                    setOdometerMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)))
-                  }
-                  className="w-24 sm:w-20 text-base sm:text-xs font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-100 outline-none"
-                />
-                <span className="text-xs font-sans text-muted ml-1">{distanceUnit}</span>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Persistent Accessible Vehicle Select (Always mounted for DOM sync & test compatibility) */}
+      <div className="sr-only">
+        <label htmlFor="ppi-vehicle-select">Select vehicle model</label>
+        <select
+          id="ppi-vehicle-select"
+          value={selectedPreset ? selectedPreset.id : ''}
+          onChange={(e) => applySelectedVehicle(e.target.value)}
+          aria-label="Select vehicle model"
+        >
+          <option value="">Select a vehicle model...</option>
+          {VEHICLE_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({p.fuelType} · {p.engineCode})
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Empty-State Inline Vehicle Picker when no vehicle is selected */}
+      {/* Unselected Empty-State Picker */}
       {!isVehicleSelected && (
-        <div
+        <Card
           data-testid="ppi-empty-vehicle-picker"
-          className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 print:hidden"
+          className="bg-surface-subtle/80 dark:bg-zinc-900/60 space-y-4 print:hidden"
         >
           <VehicleSelect
             selectedPresetId={draftPresetId}
@@ -617,13 +517,19 @@ export default function PreInspectionChecklist({
             selectDropdownId="ppi-preset-sync"
           />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border/70 dark:border-zinc-800">
             <div className="min-w-0">
               <span className="block text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
                 {draftPreset ? 'Selected from dropdown:' : 'No vehicle selected yet:'}
               </span>
-              <span className={`block font-sans text-xs sm:text-sm ${draftPreset ? 'font-semibold text-ink dark:text-zinc-100 truncate' : 'font-medium text-muted dark:text-zinc-400'}`}>
-                {draftPreset ? draftPreset.name : 'Search 179+ models above, use Make/Model/Engine, or pick a popular model below'}
+              <span
+                className={`block font-sans text-xs sm:text-sm ${
+                  draftPreset ? 'font-semibold text-ink dark:text-zinc-100 truncate' : 'text-muted dark:text-zinc-400'
+                }`}
+              >
+                {draftPreset
+                  ? draftPreset.name
+                  : 'Search 179+ models above, use Make/Model/Engine, or pick a popular model below'}
               </span>
             </div>
             <button
@@ -631,37 +537,130 @@ export default function PreInspectionChecklist({
               data-testid="ppi-apply-vehicle-button"
               disabled={!draftPreset}
               onClick={() => draftPreset && applySelectedVehicle(draftPreset.id)}
-              className={`min-h-[42px] rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shrink-0 ${
+              className={`min-h-[44px] rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2 shrink-0 ${
                 draftPreset
-                  ? 'bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs cursor-pointer'
-                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+                  ? 'bg-[#183D22] text-white hover:bg-[#122E19] dark:bg-emerald-600 dark:hover:bg-emerald-500 cursor-pointer'
+                  : 'bg-border dark:bg-zinc-800 text-muted dark:text-zinc-500 cursor-not-allowed'
               }`}
             >
-              <Car className="w-4 h-4 shrink-0" />
+              <Car aria-hidden="true" className="w-4 h-4 shrink-0" />
               <span>Generate PPI Checklist</span>
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/70">
-            <span className="text-[11px] font-sans font-semibold text-muted dark:text-zinc-400 mr-1">
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/60 dark:border-zinc-800/70">
+            <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 mr-1">
               Popular:
             </span>
-            {[
-              { id: 'vw-golf-20-tdi', label: 'VW Golf TDI' },
-              { id: 'toyota-corolla-18-hybrid', label: 'Corolla Hybrid' },
-              { id: 'toyota-camry-hybrid', label: 'Camry Hybrid' },
-              { id: 'tesla-model-3-lr', label: 'Model 3' },
-              { id: 'bmw-320d-b47', label: 'BMW 320d' },
-            ].map((item) => (
+            {PPI_POPULAR_SHORTCUTS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => applySelectedVehicle(item.id)}
-                className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-sans font-medium text-zinc-700 dark:text-zinc-200 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-700 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                className="min-h-[44px] sm:min-h-[34px] px-3 py-1 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-xs font-sans font-medium text-body dark:text-zinc-200 hover:border-primary-600 dark:hover:border-emerald-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
               >
                 {item.label}
               </button>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Selected Vehicle Summary & Field Parameters (Asking Price + Odometer) */}
+      {isVehicleSelected && selectedPreset && (
+        <div className="space-y-4 print:hidden">
+          <VehicleVisualCard
+            vehicle={selectedPreset}
+            variant="hero"
+            className="!p-4 sm:!p-5 !shadow-none bg-surface dark:bg-[#121215] border-border/80 dark:border-zinc-800 rounded-2xl hover:!translate-y-0 hover:!shadow-none"
+            actionButtons={
+              <div className="flex flex-wrap items-center justify-between w-full gap-3">
+                <button
+                  type="button"
+                  data-testid="ppi-switch-car-button"
+                  onClick={() => {
+                    setDraftPresetId(selectedPreset.id);
+                    setShowSwitchCarModal(true);
+                  }}
+                  className="min-h-[44px] sm:min-h-[38px] bg-[#183D22] text-white hover:bg-[#122E19] dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-xl px-4 py-2 font-sans text-xs sm:text-sm font-semibold transition-colors inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <RotateCcw aria-hidden="true" className="w-3.5 h-3.5" />
+                  <span>Switch Car</span>
+                </button>
+
+                {onNavigateToTco && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToTco()}
+                    className="min-h-[44px] sm:min-h-[38px] bg-surface-subtle dark:bg-zinc-900 rounded-xl px-3.5 py-2 font-sans text-xs sm:text-sm font-medium text-ink dark:text-zinc-200 hover:bg-canvas dark:hover:bg-zinc-800 border border-border dark:border-zinc-700 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>5-Year TCO Estimate</span>
+                    <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 text-muted dark:text-zinc-400" />
+                  </button>
+                )}
+              </div>
+            }
+          />
+
+          {/* Compact Parameters Strip (Asking Price + Odometer) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 shadow-card">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="ppi-asking-price" className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300">
+                Seller Asking Price
+              </label>
+              <div className="flex items-center min-h-[44px] rounded-xl border border-border dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-900 px-3 py-1.5 focus-within:border-[#183D22] dark:focus-within:border-emerald-500">
+                <span className="text-xs font-mono text-muted dark:text-zinc-400 mr-1.5">{currencySymbol}</span>
+                <input
+                  id="ppi-asking-price"
+                  type="number"
+                  min="500"
+                  max="250000"
+                  step="250"
+                  value={priceDraft !== null ? priceDraft : displayAskingPrice}
+                  onFocus={() => setPriceDraft(String(displayAskingPrice))}
+                  onBlur={() => setPriceDraft(null)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setPriceDraft(raw);
+                    if (raw === '') return;
+                    const parsed = Number(raw);
+                    if (Number.isFinite(parsed)) {
+                      setAskingPriceUsd(convertRegionToUsd(Math.max(500, parsed)));
+                    }
+                  }}
+                  className="w-28 text-base sm:text-sm font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-50 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="ppi-odometer-input" className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300">
+                Current Odometer
+              </label>
+              <div className="flex items-center min-h-[44px] rounded-xl border border-border dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-900 px-3 py-1.5 focus-within:border-[#183D22] dark:focus-within:border-emerald-500">
+                <input
+                  id="ppi-odometer-input"
+                  type="number"
+                  min="0"
+                  max="600000"
+                  step="2500"
+                  value={odoDraft !== null ? odoDraft : displayOdo}
+                  onFocus={() => setOdoDraft(String(displayOdo))}
+                  onBlur={() => setOdoDraft(null)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setOdoDraft(raw);
+                    if (raw === '') return;
+                    const parsed = Number(raw);
+                    if (Number.isFinite(parsed)) {
+                      setOdometerMiles(convertRegionToMiles(Math.max(0, parsed)));
+                    }
+                  }}
+                  className="w-28 text-base sm:text-sm font-mono tabular-nums font-bold text-right bg-transparent text-ink dark:text-zinc-50 outline-none"
+                />
+                <span className="text-xs font-sans text-muted dark:text-zinc-400 ml-1.5">{distanceUnit}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -675,291 +674,219 @@ export default function PreInspectionChecklist({
       />
 
       {isVehicleSelected && selectedPreset && (
-      <>
+        <>
+          {/* Sticky Desktop Top + Mobile Bottom Progress & Leverage Bar */}
+          <PpiStickyBar
+            reviewedCount={reviewedCount}
+            totalCount={totalCount}
+            progressPct={progressPct}
+            flaggedCount={negotiationTargets.flaggedSteps.length}
+            naCount={naCount}
+            totalDeductionUsd={negotiationTargets.totalDeductionUsd}
+            recommendedOpeningOfferUsd={negotiationTargets.recommendedOpeningOfferUsd}
+            formatCurrency={formatCurrency}
+            onReset={handleResetChecklist}
+            onOpenSummary={() => setShowSummaryDialog(true)}
+          />
 
-      {/* Interactive Progress & Live Negotiation Strip */}
-      <div className="p-4 rounded-xl bg-primary-50/50 dark:bg-zinc-800/40 border border-primary-100 dark:border-zinc-800 print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center font-bold font-mono tabular-nums text-sm shrink-0">
-            {progressPct}%
-          </div>
-          <div>
-            <div className="font-sans text-xs font-bold text-ink dark:text-zinc-100">
-              Reviewed: <span className="font-mono tabular-nums">{reviewedCount} / {totalCount}</span> points · <span className="font-mono tabular-nums">{negotiationTargets.flaggedSteps.length}</span> defects flagged
-            </div>
-            <p className="font-sans text-[11px] text-muted dark:text-zinc-400">
-              Click a row to mark Verified OK, or click &ldquo;Flag Defect&rdquo; to deduct repair cost from your opening offer.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {reviewedCount > 0 && (
-            <button
-              type="button"
-              onClick={handleResetChecklist}
-              className="px-3 py-1 text-[11px] font-sans font-semibold text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-1 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Printable Sheet Header (VISIBLE ONLY IN PRINT) */}
-      <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
-              DriveLedger | Pre-Purchase Inspection &amp; Negotiation Battlecard
-            </p>
-            <p className="font-sans text-sm text-gray-700 mt-1">
-              Vehicle: <strong>{selectedPreset.name}</strong> · Engine: <strong>{selectedPreset.engineCode}</strong> · Powertrain: <strong>{selectedPreset.fuelType}</strong>
-            </p>
-            <p className="font-sans text-sm text-gray-700">
-              Odometer: <strong>{formatDistance(odometerMiles)}</strong> · Asking Price: <strong>{formatCurrency(askingPriceUsd)}</strong> · Date: <strong>{new Date().toLocaleDateString('en-US')}</strong>
-            </p>
-          </div>
-          <div className="text-right text-xs text-gray-500 font-sans">
-            mydriveledger.com/checklist
-          </div>
-        </div>
-      </div>
-
-      {/* Checklist Items List */}
-      <div className="space-y-3.5">
-        {inspectionSteps.map((s, index) => {
-          const isChecked = Boolean(checkedIds[s.id]);
-          const isFlagged = Boolean(flaggedDefectIds[s.id]);
-          return (
-            <div
-              key={s.id}
-              onClick={() => toggleStep(s.id)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer select-none print:cursor-default print:border-gray-400 print:bg-white ${
-                isFlagged
-                  ? 'bg-danger-bg/60 dark:bg-rose-950/30 border-[#F5C2C7] dark:border-rose-800'
-                  : isChecked
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
-                  : 'bg-surface-subtle dark:bg-zinc-800/70 border-border dark:border-zinc-700 hover:border-primary-600/50 dark:hover:border-zinc-600'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
-                <div className="mt-0.5 shrink-0">
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors print:border-2 print:border-black print:bg-white ${
-                      isFlagged
-                        ? 'bg-score-poor text-white'
-                        : isChecked
-                        ? 'bg-emerald-600 text-white'
-                        : 'border-2 border-border-strong dark:border-zinc-600 bg-surface dark:bg-[#121215] text-transparent hover:border-primary-600'
-                    }`}
-                  >
-                    {isFlagged ? (
-                      <AlertTriangle className="w-3.5 h-3.5 print:hidden" />
-                    ) : (
-                      <Check className={`w-4 h-4 print:hidden ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono tabular-nums font-bold text-xs text-muted dark:text-zinc-400">
-                        #{index + 1}
-                      </span>
-                      <h3
-                        className={`font-sans text-sm font-bold tracking-tight print:text-black ${
-                          isChecked
-                            ? 'line-through text-muted dark:text-zinc-400'
-                            : 'text-ink dark:text-zinc-100'
-                        }`}
-                      >
-                        {s.title}
-                      </h3>
-                      {s.isModelSpecific && (
-                        <span className="px-2 py-0.5 rounded-md text-[11px] font-medium font-sans bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 print:text-black print:border-black">
-                          Known Model Flaw
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 font-sans text-[11px] print:text-black">
-                      <span className="font-semibold text-primary-600 dark:text-primary-400 print:text-black">
-                        Exposure: <span className="font-mono tabular-nums">{formatCurrency(s.minRepairUsd)}–{formatCurrency(s.maxRepairUsd)}</span>
-                      </span>
-                      <RiskBadge level={s.riskLevel} label={s.riskLabel} />
-                      <button
-                        type="button"
-                        data-testid={`flag-defect-${s.id}`}
-                        onClick={(e) => toggleDefectFlag(e, s.id)}
-                        className={`print:hidden px-2.5 py-0.5 rounded-md text-[11px] font-sans font-semibold border transition-colors ${
-                          isFlagged
-                            ? 'bg-score-poor text-white border-score-poor shadow-xs'
-                            : 'bg-surface dark:bg-[#121215] text-danger-text dark:text-rose-300 border-[#F5C2C7] dark:border-rose-800 hover:bg-danger-bg'
-                        }`}
-                      >
-                        {isFlagged ? (
-                          <>Defect Flagged (<span className="font-mono tabular-nums">-{formatCurrency(s.deductionUsd)}</span>)</>
-                        ) : (
-                          <>Flag Defect (<span className="font-mono tabular-nums">-{formatCurrency(s.deductionUsd)}</span>)</>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-body dark:text-zinc-300 mb-1.5 leading-relaxed font-sans print:text-black">
-                    {s.focus}
-                  </p>
-
-                  <div className="p-2.5 rounded-lg bg-surface dark:bg-zinc-900/90 border border-border/80 dark:border-zinc-700/80 text-xs text-ink dark:text-zinc-200 leading-normal font-sans mb-2 print:border-gray-300 print:bg-gray-50 print:text-black">
-                    <strong>Inspection procedure:</strong> {s.inspectionMethod}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-sans font-medium text-muted dark:text-zinc-400 print:text-gray-700">
-                    <span>{s.keyPids}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-muted dark:text-zinc-400" />
-                      {s.timeEst}
-                    </span>
-                  </div>
-                </div>
+          {/* Printable Sheet Header (VISIBLE ONLY IN PRINT) */}
+          <div className="hidden print:block border-b-2 border-black pb-4 mb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-sans text-2xl font-bold uppercase tracking-tight text-black">
+                  DriveLedger | Pre-Purchase Inspection &amp; Negotiation Battlecard
+                </p>
+                <p className="font-sans text-sm text-gray-700 mt-1">
+                  Vehicle: <strong>{selectedPreset.name}</strong> · Engine: <strong>{selectedPreset.engineCode}</strong> · Powertrain: <strong>{selectedPreset.fuelType}</strong>
+                </p>
+                <p className="font-sans text-sm text-gray-700">
+                  Odometer: <strong>{formatDistance(odometerMiles)}</strong> · Asking Price: <strong>{formatCurrency(askingPriceUsd)}</strong> · Date: <strong>{new Date().toLocaleDateString('en-US')}</strong>
+                </p>
+              </div>
+              <div className="text-right text-xs text-gray-500 font-sans">
+                mydriveledger.com/checklist
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Live On-Site Negotiation Battlecard Summary (Visible On Screen AND in Print!) */}
-      <div
-        id="negotiation-battlecard-summary"
-        data-testid="negotiation-battlecard-summary"
-        className="rounded-2xl border-2 border-primary-600/30 dark:border-primary-500/40 bg-canvas dark:bg-zinc-950/80 p-5 space-y-4 print:border-black print:bg-white page-break-inside-avoid"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border dark:border-zinc-800 print:border-black">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-primary-600 dark:text-primary-400 print:text-black" />
-            <h3 className="font-sans text-sm sm:text-base font-bold tracking-tight text-ink dark:text-zinc-100 print:text-black">
-              Live Used-Car Negotiation Battlecard
+          {/* 4 Collapsible Inspection Stages */}
+          <div aria-label="Pre-purchase inspection stages" className="space-y-4">
+            {stageGroups.map((stage) => (
+              <PpiStageGroup
+                key={stage.id}
+                stage={stage}
+                stepStatuses={stepStatuses}
+                onSetStatus={handleSetStepStatus}
+                formatCurrency={formatCurrency}
+                registerDetailsRef={registerStageDetailsRef}
+              />
+            ))}
+          </div>
+
+          {/* Inline Negotiation Battlecard Summary (Mounted on Screen AND Print) */}
+          <Card
+            id="negotiation-battlecard-summary"
+            data-testid="negotiation-battlecard-summary"
+            className="scroll-mt-40 space-y-4 print:border-black print:bg-white print:shadow-none page-break-inside-avoid"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/80 dark:border-zinc-800 print:border-black">
+              <div>
+                <h2 className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-50 print:text-black">
+                  Live Used-Car Negotiation Battlecard
+                </h2>
+                <p className="font-sans text-xs text-muted dark:text-zinc-400 print:text-black">
+                  <span className="font-mono tabular-nums">100%</span> defect deduction +{' '}
+                  <span className="font-mono tabular-nums">50%</span> due-milestone reserve
+                </p>
+              </div>
+
+              <button
+                type="button"
+                data-testid="battlecard-open-summary-button"
+                onClick={() => setShowSummaryDialog(true)}
+                className="scroll-mt-40 min-h-[44px] sm:min-h-[38px] px-4 py-2 rounded-xl bg-[#183D22] hover:bg-[#122E19] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-sans text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer print:hidden"
+              >
+                <FileText aria-hidden="true" className="w-3.5 h-3.5" />
+                <span>Open Negotiation &amp; Print Summary</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border/70 dark:divide-zinc-800 rounded-xl bg-surface-subtle/70 dark:bg-zinc-900/60 border border-border/70 dark:border-zinc-800 print:border-gray-400 print:bg-white">
+              <div className="p-3.5">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400 print:text-gray-600">
+                  Seller Asking Price
+                </span>
+                <span className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black">
+                  {formatCurrency(askingPriceUsd)}
+                </span>
+              </div>
+
+              <div className="p-3.5">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400 print:text-gray-600">
+                  Flagged + Wear Deductions
+                </span>
+                <span
+                  data-testid="battlecard-total-deduction"
+                  className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-danger-text dark:text-rose-400 print:text-black"
+                >
+                  -{formatCurrency(negotiationTargets.totalDeductionUsd)}
+                </span>
+                <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 mt-0.5">
+                  <span className="font-mono tabular-nums">{negotiationTargets.flaggedSteps.length}</span> defects (
+                  <span className="font-mono tabular-nums">-{formatCurrency(negotiationTargets.flaggedDefectsUsd)}</span>) · Wear (
+                  <span className="font-mono tabular-nums">-{formatCurrency(negotiationTargets.wearReserveDeductionUsd)}</span>)
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-[#183D22]/5 dark:bg-emerald-950/25 print:bg-white">
+                <span className="block font-sans text-xs font-medium text-[#183D22] dark:text-emerald-400 print:text-gray-700">
+                  Recommended Opening Offer
+                </span>
+                <span
+                  data-testid="battlecard-opening-offer"
+                  className="mt-1 block text-lg sm:text-xl font-bold font-mono tabular-nums text-[#183D22] dark:text-emerald-300 print:text-black"
+                >
+                  {formatCurrency(negotiationTargets.recommendedOpeningOfferUsd)}
+                </span>
+              </div>
+
+              <div className="p-3.5">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400 print:text-gray-600">
+                  Firm Walk-Away Ceiling
+                </span>
+                <span
+                  data-testid="battlecard-walkaway-ceiling"
+                  className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black"
+                >
+                  {formatCurrency(negotiationTargets.walkAwayCeilingUsd)}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Printable Notes & Signature Section (VISIBLE ONLY IN PRINT) */}
+          <div className="hidden print:block pt-6 border-t-2 border-black mt-8 page-break-inside-avoid">
+            <h3 className="text-sm font-bold uppercase text-black mb-2">
+              On-Site Observations, Defects &amp; Negotiation Points (Written Notes):
             </h3>
-          </div>
-          <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400 print:text-black">
-            <span className="font-mono tabular-nums">100%</span> defect deduction + <span className="font-mono tabular-nums">50%</span> due-milestone reserve
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-surface dark:bg-[#121215] p-3 border border-border dark:border-zinc-800 print:border-gray-400">
-            <span className="block text-[10px] font-sans font-medium uppercase text-muted print:text-gray-600">
-              Seller Asking Price
-            </span>
-            <span className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black">
-              {formatCurrency(askingPriceUsd)}
-            </span>
+            <div className="border border-gray-400 rounded h-28 w-full p-2 text-xs text-gray-500 mb-6">
+              Notes: ....................................................................................................................................................................
+            </div>
+            <div className="grid grid-cols-2 gap-8 text-xs text-black">
+              <div>
+                <p>Inspector / Buyer Signature: ___________________________</p>
+              </div>
+              <div className="text-right">
+                <p>Seller / Dealer Acknowledgment: ___________________________</p>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-xl bg-surface dark:bg-[#121215] p-3 border border-border dark:border-zinc-800 print:border-gray-400">
-            <span className="block text-[10px] font-sans font-medium uppercase text-muted print:text-gray-600">
-              Flagged + Wear Deductions
-            </span>
-            <span
-              data-testid="battlecard-total-deduction"
-              className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-danger-text dark:text-rose-400 print:text-black"
-            >
-              -{formatCurrency(negotiationTargets.totalDeductionUsd)}
-            </span>
-            <span className="block text-[10px] font-sans font-medium text-muted">
-              <span className="font-mono tabular-nums">{negotiationTargets.flaggedSteps.length}</span> defects (<span className="font-mono tabular-nums">-{formatCurrency(negotiationTargets.flaggedDefectsUsd)}</span>) · Wear (<span className="font-mono tabular-nums">-{formatCurrency(negotiationTargets.wearReserveDeductionUsd)}</span>)
-            </span>
-          </div>
+          {/* Native <dialog> Modals */}
+          <PpiVehiclePickerDialog
+            open={showSwitchCarModal}
+            onClose={() => {
+              setShowSwitchCarModal(false);
+              setDraftPresetId(selectedPreset.id);
+            }}
+            selectedPresetId={selectedPreset.id}
+            draftPresetId={draftPresetId}
+            setDraftPresetId={setDraftPresetId}
+            draftPreset={draftPreset}
+            onSelectPreset={(id) => applySelectedVehicle(id)}
+          />
 
-          <div className="rounded-xl bg-primary-600 text-white p-3 shadow-xs print:bg-white print:text-black print:border-2 print:border-black">
-            <span className="block text-[10px] font-sans font-medium uppercase text-white/80 print:text-gray-700">
-              Recommended Opening Offer
-            </span>
-            <span
-              data-testid="battlecard-opening-offer"
-              className="mt-1 block text-lg sm:text-xl font-bold font-mono tabular-nums"
-            >
-              {formatCurrency(negotiationTargets.recommendedOpeningOfferUsd)}
-            </span>
-          </div>
+          <PpiSummaryDialog
+            open={showSummaryDialog}
+            onClose={() => setShowSummaryDialog(false)}
+            vehicle={selectedPreset}
+            askingPriceUsd={askingPriceUsd}
+            odometerMiles={odometerMiles}
+            negotiationTargets={negotiationTargets}
+            reviewedCount={reviewedCount}
+            totalCount={totalCount}
+            naCount={naCount}
+            formatCurrency={formatCurrency}
+            formatDistance={formatDistance}
+            onShareLink={handleShareLink}
+            copyFeedback={copyFeedback}
+            onPrint={handlePrint}
+          />
+        </>
+      )}
 
-          <div className="rounded-xl bg-surface dark:bg-[#121215] p-3 border border-border dark:border-zinc-800 print:border-gray-400">
-            <span className="block text-[10px] font-sans font-medium uppercase text-muted print:text-gray-600">
-              Firm Walk-Away Ceiling
-            </span>
-            <span
-              data-testid="battlecard-walkaway-ceiling"
-              className="mt-1 block text-base sm:text-lg font-bold font-mono tabular-nums text-ink dark:text-zinc-100 print:text-black"
-            >
-              {formatCurrency(negotiationTargets.walkAwayCeilingUsd)}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Tucked Crawlable & Find-in-Page Searchable Editorial Methodology + Internal Links */}
+      <details className="dl-disclosure group rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface dark:bg-[#121215] px-5 sm:px-6 py-2 shadow-card print:hidden">
+        <summary className="min-h-[48px] py-2.5 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+          <span>Inspection Methodology, Negotiation Guide &amp; Related Models</span>
+          <ChevronDown
+            aria-hidden="true"
+            className="w-4 h-4 shrink-0 transition-transform duration-200 group-open:rotate-180"
+          />
+        </summary>
+        <div className="pb-6 pt-2 space-y-6 border-t border-border/70 dark:border-zinc-800">
+          <ToolEditorialSection
+            tool="checklist"
+            vehicleName={isVehicleSelected && selectedPreset ? selectedPreset.name : ''}
+            className="!mt-2 !shadow-none !border-0 !p-0 !bg-transparent"
+          />
 
-      {/* Printable Notes & Signature Section (VISIBLE ONLY IN PRINT) */}
-      <div className="hidden print:block pt-6 border-t-2 border-black mt-8 page-break-inside-avoid">
-        <h3 className="text-sm font-bold uppercase text-black mb-2">
-          On-Site Observations, Defects &amp; Negotiation Points (Written Notes):
-        </h3>
-        <div className="border border-gray-400 rounded h-28 w-full p-2 text-xs text-gray-500 mb-6">
-          Notes: ....................................................................................................................................................................
-        </div>
-        <div className="grid grid-cols-2 gap-8 text-xs text-black">
-          <div>
-            <p>Inspector / Buyer Signature: ___________________________</p>
-          </div>
-          <div className="text-right">
-            <p>Seller / Dealer Acknowledgment: ___________________________</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Footer Bar (Hidden in print) */}
-      <div className="pt-4 border-t border-border dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted dark:text-zinc-400 print:hidden">
-        <p>
-          Tip: Flag discovered defects on-site, then tap <strong>Print Negotiation Battlecard</strong> to present an itemized offer.
-        </p>
-        <div className="flex items-center gap-3 shrink-0">
-          {onNavigateToTco && (
-            <button
-              type="button"
-              onClick={() => onNavigateToTco()}
-              className="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1"
-            >
-              <span>5-Year TCO Estimate</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+          {isVehicleSelected && selectedPreset && (
+            <VehicleInternalLinks
+              vehicle={selectedPreset}
+              onSelectPreset={(id) => applySelectedVehicle(id)}
+              onNavigateToTco={onNavigateToTco}
+              onNavigateToRisk={onNavigateToRisk}
+              onNavigateToRiskBracket={onNavigateToRiskBracket}
+              onNavigateToChecklist={onNavigateToChecklist}
+              onNavigateToHybridObd={onNavigateToHybridObd}
+              onNavigateToObd={onNavigateToObd}
+              onNavigateToCompare={onNavigateToCompare}
+              onNavigateToVehicles={onNavigateToVehicles}
+            />
           )}
         </div>
-      </div>
-      </>
-      )}
-
-      {/* Rich Editorial Methodology & Tips (Hidden in print) */}
-      <ToolEditorialSection
-        tool="checklist"
-        vehicleName={isVehicleSelected && selectedPreset ? selectedPreset.name : ''}
-        className="print:hidden"
-      />
-
-      {isVehicleSelected && selectedPreset && (
-        <VehicleInternalLinks
-          vehicle={selectedPreset}
-          onSelectPreset={(id) => applySelectedVehicle(id)}
-          onNavigateToTco={onNavigateToTco}
-          onNavigateToRisk={onNavigateToRisk}
-          onNavigateToRiskBracket={onNavigateToRiskBracket}
-          onNavigateToChecklist={onNavigateToChecklist}
-          onNavigateToHybridObd={onNavigateToHybridObd}
-          onNavigateToObd={onNavigateToObd}
-          onNavigateToCompare={onNavigateToCompare}
-          onNavigateToVehicles={onNavigateToVehicles}
-        />
-      )}
+      </details>
     </section>
   );
 }

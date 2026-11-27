@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ChevronDown, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import { ArrowRight, ChevronDown, Info, X } from 'lucide-react';
 
-export function Card({ className = '', children, ...props }) {
+export function Card({ className = '', interactive = false, children, ...props }) {
+  const isInteractive = Boolean(interactive || props.onClick);
   return (
     <section
-      className={`w-full max-w-full min-w-0 rounded-2xl border border-border/70 bg-surface p-4 shadow-card transition-[transform,box-shadow] duration-200 ease-out sm:hover:shadow-card-hover sm:hover:-translate-y-0.5 sm:p-6 dark:bg-[#121215] dark:border-zinc-800 dark:shadow-none ${className}`}
+      data-interactive={isInteractive ? 'true' : undefined}
+      className={`cq-card w-full max-w-full min-w-0 rounded-2xl border border-border/80 bg-surface p-5 sm:p-6 shadow-card dark:bg-[#121215] dark:border-zinc-800/90 dark:shadow-none ${
+        isInteractive
+          ? 'cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:transition-none sm:hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 sm:hover:shadow-card-hover hover:border-border-strong dark:hover:border-zinc-700'
+          : ''
+      } ${className}`}
       {...props}
     >
       {children}
@@ -15,22 +21,24 @@ export function Card({ className = '', children, ...props }) {
 export function PageHeader({ title, subtitle, className = '', as: HeadingTag = 'h1' }) {
   return (
     <header className={`mb-6 max-w-2xl ${className}`}>
-      <HeadingTag className="font-sans text-balance text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-ink dark:text-zinc-50">
+      <HeadingTag className="font-sans text-balance text-h1 font-bold tracking-tight text-ink dark:text-zinc-50">
         {title}
       </HeadingTag>
-      <p className="mt-2 font-sans font-medium text-pretty text-sm sm:text-base leading-relaxed text-body dark:text-zinc-400">
-        {subtitle}
-      </p>
+      {subtitle && (
+        <p className="mt-2 max-w-[62ch] font-sans text-pretty text-sm sm:text-base leading-relaxed text-body dark:text-zinc-400">
+          {subtitle}
+        </p>
+      )}
     </header>
   );
 }
 
 const PILL_STYLES = {
-  good: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40',
-  warn: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40',
-  risk: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40',
-  neutral: 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60',
-  brand: 'bg-primary-600 text-white border border-primary-700 dark:bg-primary-600 dark:text-white',
+  good: 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40',
+  warn: 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/40',
+  risk: 'bg-rose-50/80 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/40',
+  neutral: 'bg-surface-subtle dark:bg-zinc-800/70 text-body dark:text-zinc-300 border border-border/80 dark:border-zinc-700/60',
+  brand: 'bg-primary-600 text-white border border-primary-700 dark:bg-emerald-700 dark:border-emerald-600 dark:text-white',
 };
 
 function extractNodeText(node) {
@@ -47,18 +55,13 @@ export function Pill({ tone = 'neutral', children, className = '' }) {
     .replace(/^[●•\s]+/, '')
     .trim()
     .toLowerCase();
-  if (
-    normalizedText === 'calculated' ||
-    normalizedText === 'live' ||
-    normalizedText === 'verified oem baseline' ||
-    normalizedText === 'telemetry preset benchmark' ||
-    normalizedText === 'normal / sensor fault likely'
-  ) {
+  // TODO(M2): Remove once M2 guards ObdEstimator.jsx:1299 with liveVerdict.tone !== 'good'
+  if (normalizedText === 'normal / sensor fault likely') {
     return null;
   }
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-sans font-medium whitespace-nowrap transition-colors duration-200 ${PILL_STYLES[tone] || PILL_STYLES.neutral} ${className}`}
+      className={`inline-flex min-h-[22px] shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] leading-snug font-sans font-medium whitespace-nowrap transition-colors duration-150 ${PILL_STYLES[tone] || PILL_STYLES.neutral} ${className}`}
     >
       {children}
     </span>
@@ -82,27 +85,29 @@ export function RangeSlider({
   const fill = max > min ? ((clamped - min) / (max - min)) * 100 : 0;
   return (
     <div className={className}>
-      <div className="mb-2.5 flex items-baseline justify-between gap-4">
+      <div className="mb-1.5 flex items-baseline justify-between gap-4">
         <label htmlFor={id} className="font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300">
           {label}
         </label>
-        <span className="font-mono text-sm sm:text-base font-semibold bg-surface-subtle text-ink dark:bg-zinc-900 dark:text-zinc-50 px-2.5 py-0.5 rounded-md tabular-nums border border-border/50 dark:border-zinc-800">
+        <span className="font-mono text-sm sm:text-base font-semibold text-ink dark:text-zinc-50 tabular-nums">
           {display}
         </span>
       </div>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={clamped}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="odo-range telemetry-slider"
-        style={{ '--fill': `${fill}%` }}
-      />
+      <div className="flex min-h-[36px] items-center">
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={clamped}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="odo-range telemetry-slider"
+          style={{ '--fill': `${fill}%` }}
+        />
+      </div>
       {(minLabel || maxLabel) && (
-        <div className="mt-1.5 flex justify-between text-xs tabular-nums text-faint dark:text-zinc-500 font-sans font-medium">
+        <div className="mt-0.5 flex justify-between text-xs tabular-nums text-faint font-sans">
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
@@ -116,7 +121,7 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
     <fieldset className={`w-full max-w-full min-w-0 [min-inline-size:0] ${className}`}>
       {label && <legend className="mb-2 font-sans text-xs sm:text-sm font-medium text-body dark:text-zinc-300">{label}</legend>}
       <div
-        className="w-full min-w-0 grid gap-1 rounded-xl border border-border bg-surface-subtle dark:bg-zinc-900 dark:border-zinc-800 p-1"
+        className="w-full min-w-0 grid gap-1 rounded-xl bg-surface-subtle dark:bg-zinc-900 p-1"
         style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       >
         {options.map((o) => {
@@ -127,9 +132,9 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
               type="button"
               aria-pressed={active}
               onClick={() => onChange(o.value)}
-              className={`min-h-[44px] min-w-0 flex flex-col items-center justify-center rounded-lg px-1.5 sm:px-2 py-1.5 text-center font-sans text-xs sm:text-sm leading-tight font-medium text-balance transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+              className={`min-h-[44px] min-w-0 flex flex-col items-center justify-center rounded-lg px-2 py-1.5 text-center font-sans text-xs sm:text-sm leading-tight font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400 ${
                 active
-                  ? 'bg-surface text-ink font-semibold shadow-sm border border-border/50 dark:bg-zinc-800 dark:text-zinc-50 dark:border-zinc-700'
+                  ? 'bg-surface text-ink font-semibold shadow-sm dark:bg-zinc-800 dark:text-zinc-50'
                   : 'text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
@@ -137,7 +142,7 @@ export function Segmented({ label, value, options, onChange, className = '' }) {
               {o.hint && (
                 <span
                   className={`mt-0.5 text-[10px] sm:text-[11px] font-normal tabular-nums font-sans max-w-full leading-tight ${
-                    active ? 'text-primary-700 dark:text-emerald-400 font-semibold' : 'text-faint dark:text-zinc-500'
+                    active ? 'text-primary-700 dark:text-emerald-400 font-medium' : 'text-faint'
                   }`}
                 >
                   {o.hint}
@@ -165,7 +170,7 @@ export function SelectField({ label, value, options, onChange, id, disabled = fa
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 min-h-[44px] w-full cursor-pointer appearance-none truncate rounded-xl border border-border bg-surface pr-9 pl-3 font-sans text-base sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-border-strong focus-visible:border-primary-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600/30 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 dark:border-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-700"
+          className="min-h-[44px] w-full cursor-pointer truncate rounded-xl border border-border-strong bg-surface py-2 px-3 font-sans text-base sm:text-sm font-medium text-ink transition-colors duration-150 hover:border-ink/40 focus-visible:border-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-600 dark:bg-zinc-900 dark:border-border-strong dark:text-zinc-100 dark:hover:border-zinc-500 dark:focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value} className="dark:bg-zinc-900 dark:text-zinc-100">
@@ -173,10 +178,6 @@ export function SelectField({ label, value, options, onChange, id, disabled = fa
             </option>
           ))}
         </select>
-        <ChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-3 w-4 h-4 -translate-y-1/2 text-muted dark:text-zinc-400"
-        />
       </div>
     </div>
   );
@@ -201,7 +202,7 @@ export function FormattedNumericInput({
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700/80 shadow-2xs focus-within:border-[#183D22] focus-within:ring-2 focus-within:ring-[#183D22]/15 dark:focus-within:border-emerald-500 transition-colors ${className}`}
+      className={`dl-focus-group inline-flex min-h-[38px] items-center gap-1.5 bg-surface-subtle dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-border-strong dark:border-border-strong focus-within:border-[#183D22] focus-within:ring-2 focus-within:ring-[#183D22]/15 dark:focus-within:border-emerald-500 transition-colors ${className}`}
     >
       {prefix && (
         <span className="font-mono text-sm sm:text-base font-semibold text-muted dark:text-zinc-400 select-none">
@@ -235,7 +236,7 @@ export function FormattedNumericInput({
         className={inputClassName}
       />
       {unitLabel && (
-        <span className="font-sans text-[11px] font-semibold text-muted dark:text-zinc-300 bg-zinc-200/70 dark:bg-zinc-800 px-1.5 py-0.5 rounded select-none shrink-0">
+        <span className="font-sans text-[11px] font-medium text-muted dark:text-zinc-400 select-none shrink-0">
           {unitLabel}
         </span>
       )}
@@ -253,7 +254,7 @@ export function NumberField({ label, value, decimals = 0, suffix = '', onCommit,
           {label}
         </label>
       )}
-      <div className="flex h-11 min-h-[44px] items-center rounded-xl border border-border bg-surface px-3 transition-colors duration-150 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-600/10 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/80 dark:focus-within:border-emerald-500">
+      <div className="dl-focus-group flex min-h-[44px] items-center rounded-xl border border-border-strong bg-surface px-3 transition-colors duration-150 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-600/10 dark:bg-zinc-900 dark:border-border-strong dark:focus-within:border-emerald-500">
         <input
           id={id}
           inputMode="decimal"
@@ -281,7 +282,11 @@ export function Collapse({ open, id, children, className = '', searchable = fals
   const useUntilFound = Boolean(searchable && !open && supportsUntilFound);
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el =
+      containerRef.current ||
+      (id && typeof document !== 'undefined' && typeof document.getElementById === 'function'
+        ? document.getElementById(id)
+        : null);
     if (!searchable || !el || typeof el.addEventListener !== 'function') return undefined;
     if (!supportsUntilFound) {
       if (el.hasAttribute && el.hasAttribute('hidden')) {
@@ -300,15 +305,21 @@ export function Collapse({ open, id, children, className = '', searchable = fals
         el.removeEventListener('beforematch', handleBeforeMatch);
       }
     };
-  }, [searchable, supportsUntilFound, onBeforeMatch]);
+  }, [id, searchable, supportsUntilFound, onBeforeMatch]);
 
   return (
     <div
       ref={containerRef}
       id={id}
       {...(useUntilFound ? { hidden: 'until-found' } : {})}
-      className={`transition-[max-height,opacity] duration-300 ease-out overflow-hidden ${
-        open ? 'max-h-[1400px] opacity-100' : useUntilFound ? '' : 'max-h-0 opacity-0 pointer-events-none'
+      className={`transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none overflow-hidden ${
+        searchable && !supportsUntilFound
+          ? 'max-h-none opacity-100'
+          : open
+            ? 'max-h-[1600px] opacity-100'
+            : useUntilFound
+              ? ''
+              : 'max-h-0 opacity-0 pointer-events-none'
       } ${className}`}
     >
       <div className="pt-2">{children}</div>
@@ -316,11 +327,211 @@ export function Collapse({ open, id, children, className = '', searchable = fals
   );
 }
 
+function isOutsidePanelRect(clientX, clientY, panelEl) {
+  if (!panelEl || typeof panelEl.getBoundingClientRect !== 'function' || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+    return true;
+  }
+  const rect = panelEl.getBoundingClientRect();
+  return (
+    clientX < rect.left ||
+    clientX > rect.right ||
+    clientY < rect.top ||
+    clientY > rect.bottom
+  );
+}
+
+export function Drawer({
+  open = false,
+  onClose,
+  id,
+  title,
+  ariaLabel,
+  placement = 'right',
+  keepMounted = false,
+  className = '',
+  children,
+}) {
+  const generatedId = useId();
+  const dialogId = id || `drawer-${generatedId.replace(/:/g, '')}`;
+  const titleId = `${dialogId}-title`;
+  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
+  const programmaticCloseCountRef = useRef(0);
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  const closeDialogProgrammatically = (dialogEl) => {
+    if (!dialogEl) return;
+    if (!dialogEl.isConnected) {
+      programmaticCloseCountRef.current = 0;
+      try {
+        if (typeof dialogEl.close === 'function' && dialogEl.open) {
+          dialogEl.close();
+        }
+      } catch {
+        // Safe guard on detached dialog
+      }
+      return;
+    }
+    if (typeof dialogEl.close !== 'function' || !dialogEl.open) return;
+    const isNativeDialog =
+      typeof HTMLDialogElement !== 'undefined' && dialogEl instanceof HTMLDialogElement;
+    if (isNativeDialog) {
+      programmaticCloseCountRef.current += 1;
+    }
+    try {
+      dialogEl.close();
+    } catch {
+      if (isNativeDialog && programmaticCloseCountRef.current > 0) {
+        programmaticCloseCountRef.current -= 1;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const dialogEl =
+      dialogRef.current ||
+      (typeof document.getElementById === 'function' ? document.getElementById(dialogId) : null);
+    if (!dialogEl) return undefined;
+
+    if (open) {
+      if (typeof dialogEl.showModal === 'function' && !dialogEl.open) {
+        try {
+          dialogEl.showModal();
+        } catch {
+          // Safe guard if already open or in headless environment
+        }
+      }
+    } else {
+      closeDialogProgrammatically(dialogEl);
+    }
+    return () => {
+      closeDialogProgrammatically(dialogEl);
+    };
+  }, [open, dialogId]);
+
+  // Light-dismiss for full-viewport <dialog> overlays (supplements closedby="any" Esc/back-gesture)
+  useEffect(() => {
+    if (!open || typeof document === 'undefined' || typeof HTMLDialogElement === 'undefined') {
+      return undefined;
+    }
+
+    const dialogEl =
+      dialogRef.current ||
+      (typeof document.getElementById === 'function' ? document.getElementById(dialogId) : null);
+    if (!dialogEl || typeof dialogEl.addEventListener !== 'function') return undefined;
+
+    let pressedOutside = false;
+    let suppressNextClick = false;
+
+    const handlePointerDown = (event) => {
+      pressedOutside =
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current);
+      suppressNextClick = !pressedOutside;
+    };
+
+    const handlePointerUp = (event) => {
+      if (
+        pressedOutside &&
+        event.target === dialogEl &&
+        isOutsidePanelRect(event.clientX, event.clientY, panelRef.current)
+      ) {
+        suppressNextClick = true;
+        if (typeof onClose === 'function') onClose();
+      }
+      pressedOutside = false;
+    };
+
+    const handleDialogClick = (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (
+        event.target === dialogEl &&
+        !Number.isFinite(event.clientX) &&
+        typeof onClose === 'function'
+      ) {
+        onClose();
+      }
+    };
+
+    dialogEl.addEventListener('pointerdown', handlePointerDown);
+    dialogEl.addEventListener('pointerup', handlePointerUp);
+    dialogEl.addEventListener('click', handleDialogClick);
+    return () => {
+      if (typeof dialogEl.removeEventListener === 'function') {
+        dialogEl.removeEventListener('pointerdown', handlePointerDown);
+        dialogEl.removeEventListener('pointerup', handlePointerUp);
+        dialogEl.removeEventListener('click', handleDialogClick);
+      }
+    };
+  }, [open, dialogId, onClose]);
+
+  if (!open && !keepMounted) {
+    programmaticCloseCountRef.current = 0;
+    return null;
+  }
+
+  const isBottom = placement === 'bottom';
+
+  return (
+    <dialog
+      ref={dialogRef}
+      id={dialogId}
+      closedby="any"
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={!title ? ariaLabel || 'Drawer panel' : undefined}
+      onClose={() => {
+        if (programmaticCloseCountRef.current > 0) {
+          programmaticCloseCountRef.current -= 1;
+          return;
+        }
+        if (!openRef.current) return;
+        if (typeof onClose === 'function') onClose();
+      }}
+      className={`${isBottom ? 'dl-bottom-sheet-dialog' : 'dl-drawer-dialog'} ${className}`}
+    >
+      <div
+        ref={panelRef}
+        className={
+          isBottom
+            ? 'w-full max-w-2xl max-h-[88dvh] rounded-t-2xl bg-surface dark:bg-[#121215] border-t border-x border-border dark:border-zinc-800 shadow-xl overflow-y-auto p-5 safe-area-bottom'
+            : 'ml-auto w-[min(23rem,88dvw)] h-[100dvh] bg-surface dark:bg-[#121215] border-l border-border dark:border-zinc-800 shadow-xl overflow-y-auto p-4 sm:p-5 safe-area-bottom'
+        }
+      >
+        {title && (
+          <div className="flex items-center justify-between gap-3 pb-3.5 mb-4 border-b border-border dark:border-zinc-800">
+            <h2 id={titleId} className="font-sans text-base font-semibold tracking-tight text-ink dark:text-zinc-50">
+              {title}
+            </h2>
+            <button
+              type="button"
+              onClick={() => onClose && onClose()}
+              aria-label="Close panel"
+              className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-xl text-muted hover:text-ink hover:bg-surface-subtle dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+            >
+              <X aria-hidden="true" className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
+    </dialog>
+  );
+}
+
+export function BottomSheet(props) {
+  return <Drawer placement="bottom" {...props} />;
+}
+
 export function PartnerCard({ text, cta, href, badge = 'Partner link', className = '' }) {
   const cleanCta = typeof cta === 'string' ? cta.replace(/\s*→\s*$/, '').trim() : cta;
   return (
-    <aside className={`rounded-xl border border-border bg-surface-subtle p-4 transition-[transform,box-shadow] duration-200 ease-out hover:shadow-md dark:bg-zinc-900 dark:border-zinc-800 ${className}`}>
-      <span className="bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium rounded-md inline-block mb-2">
+    <aside className={`rounded-xl border border-border bg-surface-subtle p-4 dark:bg-zinc-900 dark:border-zinc-800 ${className}`}>
+      <span className="bg-surface dark:bg-zinc-800 text-muted dark:text-zinc-300 border border-border dark:border-zinc-700/60 px-2 py-0.5 text-[11px] font-sans font-medium rounded-md inline-block mb-2">
         {badge}
       </span>
       <div className="flex items-start gap-3">
@@ -335,16 +546,16 @@ export function PartnerCard({ text, cta, href, badge = 'Partner link', className
         href={href}
         target="_blank"
         rel="sponsored noopener noreferrer"
-        className="w-full text-center mt-3 py-2 bg-surface shadow-sm rounded-lg font-sans text-xs font-semibold text-ink hover:bg-surface-subtle border border-border-strong transition-colors duration-150 inline-flex items-center justify-center gap-1.5 active:scale-[0.98] dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 dark:border-zinc-700"
+        className="w-full min-h-[40px] text-center mt-3 py-2 bg-surface shadow-sm rounded-lg font-sans text-xs font-semibold text-ink hover:bg-surface-subtle border border-border-strong transition-colors duration-150 inline-flex items-center justify-center gap-1.5 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 dark:border-zinc-700"
       >
         <span>{cleanCta}</span>
-        <ArrowRight aria-hidden="true" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 text-primary-600 dark:text-emerald-400" />
+        <ArrowRight aria-hidden="true" className="w-4 h-4 text-primary-600 dark:text-emerald-400" />
       </a>
     </aside>
   );
 }
 
-export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', size = 144, inverted = false, className = '' }) {
+export function RadialScoreGauge({ score = 72, size = 144, inverted = false, className = '' }) {
   const clamped = Math.min(100, Math.max(0, Math.round(score)));
   const tone = clamped >= 70 ? 'good' : clamped >= 40 ? 'fair' : 'poor';
   const color = tone === 'good' ? '#10B981' : tone === 'fair' ? '#F59E0B' : '#F04438';
@@ -365,7 +576,7 @@ export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', 
     : tone === 'good'
     ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
     : tone === 'fair'
-    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
     : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40';
 
   const strokeWidth = 11;
@@ -387,7 +598,7 @@ export function RadialScoreGauge({ score = 72, label = 'Ownership Value Score', 
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="transition-[stroke-dashoffset] duration-700 ease-out"
+          className="transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -414,13 +625,12 @@ export function SeverityGauge({ severity = 'MODERATE', size = 144, className = '
     isCritical
       ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
       : isModerate
-      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
       : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40';
 
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }}>
       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-        {/* Low Arc */}
         <circle
           cx="60" cy="60" r="48" fill="none"
           stroke={tier === 'low' ? '#12A150' : '#E4E8EE'}
@@ -430,7 +640,6 @@ export function SeverityGauge({ severity = 'MODERATE', size = 144, className = '
           strokeDashoffset="0"
           strokeLinecap="round"
         />
-        {/* Moderate Arc */}
         <circle
           cx="60" cy="60" r="48" fill="none"
           stroke={tier === 'moderate' ? '#F2B705' : '#E4E8EE'}
@@ -440,7 +649,6 @@ export function SeverityGauge({ severity = 'MODERATE', size = 144, className = '
           strokeDashoffset="-100"
           strokeLinecap="round"
         />
-        {/* Critical Arc */}
         <circle
           cx="60" cy="60" r="48" fill="none"
           stroke={tier === 'critical' ? '#F04438' : '#E4E8EE'}
@@ -462,29 +670,18 @@ export function SeverityGauge({ severity = 'MODERATE', size = 144, className = '
 }
 
 export function RiskBadge({ level = 'low', label, className = '' }) {
-  const normalizedLabel = String(label || '').trim().toLowerCase();
-  if (
-    normalizedLabel === 'calculated' ||
-    normalizedLabel === 'live' ||
-    normalizedLabel === 'verified oem baseline' ||
-    normalizedLabel === 'telemetry preset benchmark' ||
-    normalizedLabel === 'normal / sensor fault likely'
-  ) {
-    return null;
-  }
-
   const normalized = String(level).toLowerCase();
   const isCritical = normalized.includes('crit');
   const isModerate = normalized.includes('mod') || normalized.includes('warn') || normalized.includes('med');
   const isNeutral = normalized.includes('neutral');
 
   const toneClass = isCritical
-    ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
+    ? 'bg-rose-50/80 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/40'
     : isModerate
-    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+    ? 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/40'
     : isNeutral
-    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60'
-    : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40';
+    ? 'bg-surface-subtle dark:bg-zinc-800/80 text-body dark:text-zinc-300 border border-border/80 dark:border-zinc-700/60'
+    : 'bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40';
 
   const defaultText = isCritical
     ? 'Critical'
@@ -494,7 +691,7 @@ export function RiskBadge({ level = 'low', label, className = '' }) {
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-sans font-medium tracking-tight ${toneClass} ${className}`}
+      className={`inline-flex min-h-[22px] shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] leading-snug font-sans font-medium tracking-tight ${toneClass} ${className}`}
     >
       <span>{label || defaultText}</span>
     </span>
@@ -511,33 +708,33 @@ export function TldrVerdictBox({
   return (
     <div
       data-testid="tldr-verdict-box"
-      className={`rounded-2xl border border-zinc-200 bg-surface dark:bg-[#121215] dark:border-zinc-800 p-4 sm:p-5 shadow-sm space-y-3.5 ${className}`}
+      className={`cq-card rounded-2xl border border-border/80 bg-surface dark:bg-[#121215] dark:border-zinc-800 p-4 sm:p-5 shadow-card ${className}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/70 dark:border-zinc-800">
         <div className="flex items-center gap-2">
-          <h3 className="font-sans text-xs sm:text-sm font-bold uppercase tracking-tight text-ink dark:text-zinc-50">
+          <h3 className="font-sans text-xs sm:text-sm font-semibold tracking-tight text-ink dark:text-zinc-50">
             {title}
           </h3>
           {badge && (
-            <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
+            <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40 px-2 py-0.5 text-[11px] font-sans font-medium">
               {badge}
             </span>
           )}
         </div>
-        <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
+        <span className="text-xs font-sans text-muted dark:text-zinc-400">
           {subtitle}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/70 dark:divide-zinc-800 pt-3">
         {facts.map((fact, idx) => (
           <div
             key={idx}
-            className="min-w-0 overflow-hidden p-3.5 rounded-xl bg-surface-subtle/60 dark:bg-zinc-900 border border-border/80 dark:border-zinc-800/80 flex flex-col justify-between shadow-xs transition-colors"
+            className="min-w-0 py-3 first:pt-0 last:pb-0 md:py-0 md:px-4 md:first:pl-0 md:last:pr-0 flex flex-col justify-between"
           >
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5 min-w-0">
-                <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold truncate">
+              <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1 min-w-0">
+                <span className="text-xs font-sans text-muted dark:text-zinc-400 font-medium truncate">
                   {fact.label}
                 </span>
                 {fact.badge}
@@ -547,7 +744,7 @@ export function TldrVerdictBox({
               </div>
             </div>
             {fact.subtext && (
-              <p className="mt-2 pt-2 border-t border-border/50 dark:border-zinc-800/80 text-xs text-muted dark:text-zinc-400 leading-relaxed font-sans font-medium line-clamp-2">
+              <p className="mt-1.5 text-xs text-muted dark:text-zinc-400 leading-relaxed font-sans line-clamp-2">
                 {fact.subtext}
               </p>
             )}
@@ -576,9 +773,9 @@ export function InfoTooltip({ term, explanation, label, content, className = '' 
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 focus:outline-none transition-colors cursor-help"
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:focus-visible:outline-emerald-400 transition-colors cursor-help"
       >
-        <Info className="w-3.5 h-3.5" />
+        <Info aria-hidden="true" className="w-3.5 h-3.5" />
       </button>
       {open && (
         <span
@@ -609,15 +806,15 @@ export function MobileStickySummaryBar({
   return (
     <div
       data-testid="mobile-sticky-summary-bar"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-2xl flex items-center justify-between gap-3 safe-area-x"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border dark:border-zinc-800 bg-surface/95 dark:bg-zinc-950/95 backdrop-blur-md px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] shadow-lg flex items-center justify-between gap-3 safe-area-x"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 font-semibold truncate">
+          <span className="text-[11px] font-sans text-muted dark:text-zinc-400 font-medium truncate">
             {resolvedLabel}
           </span>
           {badge || (badgeText && (
-            <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.2 text-[10px] font-sans font-semibold shrink-0">
+            <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50 px-1.5 py-0.5 text-[10px] font-sans font-semibold shrink-0">
               {badgeText}
             </span>
           ))}
@@ -637,7 +834,7 @@ export function MobileStickySummaryBar({
         <button
           type="button"
           onClick={onAction}
-          className="min-h-[44px] shrink-0 rounded-lg bg-[#183D22] dark:bg-emerald-600 text-white px-3.5 py-2 font-sans text-xs font-semibold shadow-xs active:scale-95 transition-transform"
+          className="min-h-[44px] shrink-0 rounded-xl bg-[#183D22] hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white px-4 py-2 font-sans text-xs font-semibold transition-colors"
         >
           {actionLabel}
         </button>
@@ -645,7 +842,3 @@ export function MobileStickySummaryBar({
     </div>
   );
 }
-
-
-
-

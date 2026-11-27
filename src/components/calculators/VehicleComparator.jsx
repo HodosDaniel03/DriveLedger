@@ -1,21 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   GitCompare,
-  TrendingDown,
-  TrendingUp,
-  Check,
   ArrowRight,
   X,
-  ShieldCheck,
-  AlertTriangle,
-  Wrench,
-  Zap,
-  Fuel,
   Car,
   ChevronDown,
-  ChevronUp,
-  Clock,
-  Sparkles,
 } from 'lucide-react';
 import { VEHICLE_PRESETS, getPresetById } from '../../data/vehiclePresets';
 import {
@@ -29,11 +18,13 @@ import {
 import { findEngineVariant, getKnownIssuesForVehicle } from '../../data/vehicles/index.js';
 import { useUnits } from '../../context/UnitContext';
 import { useGarage } from '../../context/GarageContext';
-import { Card, Pill, TldrVerdictBox, RiskBadge } from '../common/OdometerPrimitives';
-import VehicleImageResolver from '../common/vehicle/VehicleImageResolver.jsx';
+import { Card, RiskBadge } from '../common/OdometerPrimitives';
 import VinCheckBanner from '../monetization/VinCheckBanner';
-import AffiliateCTA from '../monetization/AffiliateCTA';
 import ToolEditorialSection from '../seo/ToolEditorialSection';
+import ComparatorStickyBar from './comparator/ComparatorStickyBar';
+import ComparatorBreakdownTab from './comparator/ComparatorBreakdownTab';
+import ComparatorCurveTab from './comparator/ComparatorCurveTab';
+import ComparatorRisksTab from './comparator/ComparatorRisksTab';
 import { computeBreakEvenTrajectory } from '../../data/breakEvenAndPpi.js';
 
 export { computeBreakEvenTrajectory };
@@ -50,7 +41,10 @@ export function computeReliabilityAndRisk(
   annualDistanceMiles = 12000
 ) {
   const safePreset = preset || VEHICLE_PRESETS[0];
-  const physicalOdometerMiles = Math.max(0, Number(odoMiles) >= 0 ? Number(odoMiles) : (safePreset.defaultOdometerMiles || 62000));
+  const physicalOdometerMiles = Math.max(
+    0,
+    Number(odoMiles) >= 0 ? Number(odoMiles) : safePreset.defaultOdometerMiles || 62000
+  );
   const oilIntervalId = schedMode === 'oem' ? 'extended' : 'standard';
 
   const relevant = filterComponentsForPowertrain(MAINTENANCE_COMPONENTS, safePreset);
@@ -111,6 +105,12 @@ export function computeReliabilityAndRisk(
   };
 }
 
+const COMPARATOR_TABS = [
+  { id: 'breakdown', label: 'Cost Breakdown' },
+  { id: 'curve', label: '5-Year Curve' },
+  { id: 'risks', label: 'Known Risks & Reliability' },
+];
+
 export default function VehicleComparator({
   primaryPresetId,
   hasSelectedVehicle = Boolean(primaryPresetId),
@@ -137,21 +137,10 @@ export default function VehicleComparator({
   onSelectSecondaryPreset,
   onNavigateToTco,
   onNavigateToRisk,
-  onNavigateToChecklist,
   onNavigateToVehicles,
   standalone = false,
 }) {
-  const {
-    currencySymbol,
-    formatCurrency,
-    formatDistance,
-    region,
-    distanceUnit,
-    convertUsdToRegion,
-    convertRegionToUsd,
-    convertMilesToRegion,
-    convertRegionToMiles,
-  } = useUnits();
+  const { formatCurrency, formatDistance, region, distanceUnit } = useUnits();
   const garage = useGarage();
 
   const resolveValidId = (id) =>
@@ -169,7 +158,6 @@ export default function VehicleComparator({
     if (validSecondary && validSecondary !== initialPresetAId) {
       return validSecondary;
     }
-    // In inline drawer mode where Vehicle A is already selected, pre-populate a contrasting counterpart
     if (!standalone && initialPresetAId) {
       const carA = getPresetById(initialPresetAId);
       if (initialPresetAId === 'toyota-camry-hybrid') return 'ford-focus-ecoblue';
@@ -180,11 +168,12 @@ export default function VehicleComparator({
     return null;
   });
 
-  // Editable custom listing price & odometer overrides for Vehicle A and Vehicle B
   const [customPriceAUsd, setCustomPriceAUsd] = useState(null);
   const [customOdoAMiles, setCustomOdoAMiles] = useState(null);
   const [customPriceBUsd, setCustomPriceBUsd] = useState(null);
   const [customOdoBMiles, setCustomOdoBMiles] = useState(null);
+  const [activeCompTab, setActiveCompTab] = useState('breakdown');
+  const panelsContainerRef = useRef(null);
 
   const updateVehicleA = (nextAId) => {
     const cleanA = resolveValidId(nextAId);
@@ -206,8 +195,7 @@ export default function VehicleComparator({
     }
   };
 
-  // Keep Vehicle A in sync if prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (primaryPresetId === undefined) return;
     const nextA = hasSelectedVehicle ? resolveValidId(primaryPresetId) : null;
     if (nextA !== activePresetAId) {
@@ -217,8 +205,7 @@ export default function VehicleComparator({
     }
   }, [primaryPresetId, hasSelectedVehicle]);
 
-  // Keep Vehicle B in sync if secondaryPresetId prop changes (e.g. /compare/:carA-vs-:carB route)
-  React.useEffect(() => {
+  useEffect(() => {
     if (secondaryPresetId === undefined) return;
     const validB = resolveValidId(secondaryPresetId);
     if (!validB) {
@@ -236,8 +223,7 @@ export default function VehicleComparator({
     }
   }, [secondaryPresetId, activePresetAId, standalone]);
 
-  // Prevent Vehicle B from ever being identical to Vehicle A when both are selected
-  React.useEffect(() => {
+  useEffect(() => {
     if (activePresetAId && vehicleBId && vehicleBId === activePresetAId) {
       setVehicleBId(null);
       if (typeof onSelectSecondaryPreset === 'function') {
@@ -252,30 +238,81 @@ export default function VehicleComparator({
   );
   const hasBothVehicles = Boolean(vehicleA && vehicleB);
 
-  // Telemetry parameters for Vehicle A & Vehicle B
+  // Sync hidden="until-found" attribute & beforematch listener on comparison tab panels
+  useEffect(() => {
+    if (!hasBothVehicles || typeof document === 'undefined') return undefined;
+    const container =
+      panelsContainerRef.current ||
+      (typeof document.getElementById === 'function' ? document.getElementById('comparator-tab-panels') : null);
+    if (!container || typeof container.querySelectorAll !== 'function') return undefined;
+
+    const supportsUntilFound =
+      typeof HTMLElement !== 'undefined' && 'onbeforematch' in HTMLElement.prototype;
+
+    const panels = container.querySelectorAll('[role="tabpanel"]');
+    panels.forEach((panel) => {
+      const tabId = panel.getAttribute('data-tab-id');
+      if (tabId === activeCompTab) {
+        panel.removeAttribute('hidden');
+      } else {
+        panel.setAttribute('hidden', supportsUntilFound ? 'until-found' : '');
+      }
+    });
+
+    if (!supportsUntilFound || typeof container.addEventListener !== 'function') return undefined;
+
+    const handleBeforeMatch = (event) => {
+      let node = event.target;
+      while (node && node !== container) {
+        if (node.getAttribute && node.getAttribute('role') === 'tabpanel') {
+          const matchedTab = node.getAttribute('data-tab-id');
+          if (matchedTab) setActiveCompTab(matchedTab);
+          break;
+        }
+        node = node.parentNode;
+      }
+    };
+
+    container.addEventListener('beforematch', handleBeforeMatch);
+    return () => {
+      if (typeof container.removeEventListener === 'function') {
+        container.removeEventListener('beforematch', handleBeforeMatch);
+      }
+    };
+  }, [hasBothVehicles, activeCompTab]);
+
   const resolvedPrimaryPrice = primaryPurchasePriceUsd ?? primaryPriceUsd;
   const resolvedAnnualMiles = Number(primaryAnnualMiles) > 0 ? Number(primaryAnnualMiles) : annualDistanceMiles;
   const basePriceA = vehicleA
-    ? (Number(resolvedPrimaryPrice) > 0 ? Number(resolvedPrimaryPrice) : vehicleA.purchasePriceUsd)
+    ? Number(resolvedPrimaryPrice) > 0
+      ? Number(resolvedPrimaryPrice)
+      : vehicleA.purchasePriceUsd
     : 0;
   const baseOdoA = vehicleA
-    ? (standalone && customOdoAMiles === null
-        ? (vehicleA.defaultOdometerMiles || 62000)
-        : Number(primaryOdometerMiles) >= 0
-        ? Number(primaryOdometerMiles)
-        : (vehicleA.defaultOdometerMiles || 62000))
+    ? standalone && customOdoAMiles === null
+      ? vehicleA.defaultOdometerMiles || 62000
+      : Number(primaryOdometerMiles) >= 0
+      ? Number(primaryOdometerMiles)
+      : vehicleA.defaultOdometerMiles || 62000
     : 0;
 
   const priceA = customPriceAUsd !== null ? customPriceAUsd : basePriceA;
   const odoA = customOdoAMiles !== null ? customOdoAMiles : baseOdoA;
   const priceB = vehicleB ? (customPriceBUsd !== null ? customPriceBUsd : vehicleB.purchasePriceUsd) : 0;
-  const odoB = vehicleB ? (customOdoBMiles !== null ? customOdoBMiles : (vehicleB.defaultOdometerMiles || 58000)) : 0;
+  const odoB = vehicleB ? (customOdoBMiles !== null ? customOdoBMiles : vehicleB.defaultOdometerMiles || 58000) : 0;
 
   const mpgA = vehicleA ? (Number(primaryMpgUs) > 0 ? Number(primaryMpgUs) : vehicleA.mpgUs) : 32;
-  const fuelPriceA = vehicleA ? (Number(primaryFuelPriceUsdGal) > 0 ? Number(primaryFuelPriceUsdGal) : vehicleA.defaultFuelPriceUsdGal) : 3.65;
-  const insuranceA = vehicleA ? (Number(primaryInsuranceUsd) >= 0 ? Number(primaryInsuranceUsd) : vehicleA.annualInsuranceUsd) : 1400;
+  const fuelPriceA = vehicleA
+    ? Number(primaryFuelPriceUsdGal) > 0
+      ? Number(primaryFuelPriceUsdGal)
+      : vehicleA.defaultFuelPriceUsdGal
+    : 3.65;
+  const insuranceA = vehicleA
+    ? Number(primaryInsuranceUsd) >= 0
+      ? Number(primaryInsuranceUsd)
+      : vehicleA.annualInsuranceUsd
+    : 1400;
 
-  // Calculate TCO projections for both vehicles
   const tcoA = useMemo(() => {
     if (!vehicleA) return null;
     if (
@@ -302,7 +339,7 @@ export default function VehicleComparator({
       maintenanceWearFactor: vehicleA.maintenanceWearFactor,
       financeType,
       downPaymentPct,
-      aprPct: aprPct,
+      aprPct,
       loanTermMonths,
       horizonYears,
       residualCurve10Yr: vehicleA.residualCurve10Yr,
@@ -343,14 +380,13 @@ export default function VehicleComparator({
       maintenanceWearFactor: vehicleB.maintenanceWearFactor,
       financeType,
       downPaymentPct,
-      aprPct: aprPct,
+      aprPct,
       loanTermMonths,
       horizonYears,
       residualCurve10Yr: vehicleB.residualCurve10Yr,
     });
   }, [vehicleB, priceB, odoB, resolvedAnnualMiles, horizonYears, financeType, downPaymentPct, aprPct, loanTermMonths]);
 
-  // Compute Break-even Trajectory across mileage using live custom prices & odometers
   const breakEvenTrajectory = useMemo(() => {
     if (!vehicleA || !vehicleB) return null;
     return computeBreakEvenTrajectory(
@@ -362,9 +398,6 @@ export default function VehicleComparator({
       }
     );
   }, [vehicleA, vehicleB, priceA, odoA, priceB, odoB, horizonYears, resolvedAnnualMiles]);
-
-  // Known Issues comparison for Vehicle A and Vehicle B at active odometer
-  const currentKm = Math.round(odoA * 1.609344);
 
   const knownIssuesA = useMemo(() => {
     if (!vehicleA) return [];
@@ -382,31 +415,27 @@ export default function VehicleComparator({
       : getKnownIssuesForVehicle({ brandId: vehicleB.brand, modelId: vehicleB.modelName });
   }, [vehicleB]);
 
-  // Calculate Mechanical Reliability & 12-Month Repair Risk Exposure for both vehicles
   const riskA = useMemo(
-    () => (vehicleA ? computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles) : null),
+    () =>
+      vehicleA
+        ? computeReliabilityAndRisk(vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles)
+        : null,
     [vehicleA, odoA, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
   const riskB = useMemo(
-    () => (vehicleB ? computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles) : null),
+    () =>
+      vehicleB
+        ? computeReliabilityAndRisk(vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles)
+        : null,
     [vehicleB, odoB, scheduleMode, urbanTripSharePct, workshopTier, resolvedAnnualMiles]
   );
 
-  // Financial & Mechanical Deltas
   const monthlySavingsB = hasBothVehicles && tcoA && tcoB ? tcoA.monthlyEconomicCostUsd - tcoB.monthlyEconomicCostUsd : 0;
   const monthlyCostDeltaB = hasBothVehicles && tcoA && tcoB ? tcoB.monthlyEconomicCostUsd - tcoA.monthlyEconomicCostUsd : 0;
   const total5YrSavingsB = hasBothVehicles && tcoA && tcoB ? tcoA.totalEconomicCostUsd - tcoB.totalEconomicCostUsd : 0;
-  const fuelDiffMonthly = hasBothVehicles && tcoA && tcoB ? Math.round((tcoA.totalFuelUsd - tcoB.totalFuelUsd) / (horizonYears * 12)) : 0;
   const depreciationDiffTotal = hasBothVehicles && tcoA && tcoB ? tcoA.totalDepreciationUsd - tcoB.totalDepreciationUsd : 0;
   const maintenanceDiffTotal = hasBothVehicles && tcoA && tcoB ? tcoA.totalMaintenanceUsd - tcoB.totalMaintenanceUsd : 0;
-
-  // Reliability & Repair Risk Deltas
-  const reliabilityDeltaB = hasBothVehicles && riskA && riskB ? riskB.reliabilityScore - riskA.reliabilityScore : 0;
-  const riskExposureDeltaB = hasBothVehicles && riskA && riskB ? riskB.serviceReserveUsd - riskA.serviceReserveUsd : 0;
-  const alertCountA = riskA ? riskA.criticalCount + riskA.warningCount : 0;
-  const alertCountB = riskB ? riskB.criticalCount + riskB.warningCount : 0;
-  const alertDeltaB = alertCountB - alertCountA;
 
   const handlePromoteVehicleB = () => {
     if (!activePresetAId || !vehicleBId) return;
@@ -437,155 +466,102 @@ export default function VehicleComparator({
     { label: 'Family Hybrid vs Kia EV6', idA: 'toyota-corolla-18-hybrid', idB: 'kia-ev6-long-range' },
   ];
 
-  const comparatorTldrFacts = useMemo(() => {
-    if (!hasBothVehicles || !vehicleA || !vehicleB || !riskA || !riskB || !breakEvenTrajectory) {
-      return [];
+  const handleTabKeyDown = (e, idx) => {
+    let nextIdx = null;
+    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % COMPARATOR_TABS.length;
+    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + COMPARATOR_TABS.length) % COMPARATOR_TABS.length;
+    else if (e.key === 'Home') nextIdx = 0;
+    else if (e.key === 'End') nextIdx = COMPARATOR_TABS.length - 1;
+
+    if (nextIdx !== null) {
+      e.preventDefault();
+      const targetTab = COMPARATOR_TABS[nextIdx];
+      setActiveCompTab(targetTab.id);
+      if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+        const btn = document.getElementById(`comp-tab-${targetTab.id}`);
+        if (btn && typeof btn.focus === 'function') {
+          btn.focus();
+          if (typeof btn.scrollIntoView === 'function') {
+            btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }
+        }
+      }
     }
-    return [
-      {
-        label: '5-Year Cost Differential',
-        value: monthlySavingsB >= 0
-          ? `${vehicleB.name} is cheaper`
-          : `${vehicleA.name} is cheaper`,
-        subtext: `Monthly delta: ${formatCurrency(Math.abs(monthlySavingsB))}/mo · 5-yr net difference: ${formatCurrency(Math.abs(total5YrSavingsB))}.`,
-        badge: (
-          <RiskBadge
-            level={Math.abs(monthlySavingsB) > 100 ? 'low' : 'moderate'}
-            label="Winner · Lower TCO"
-          />
-        ),
-      },
-      {
-        label: 'Break-Even Payback Distance',
-        value: breakEvenTrajectory.status === 'crossover'
-          ? `${(region === 'EU' ? breakEvenTrajectory.breakEvenKm : breakEvenTrajectory.breakEvenMiles).toLocaleString()} ${distanceUnit} (${breakEvenTrajectory.breakEvenYears} yrs)`
-          : breakEvenTrajectory.status === 'b_always_cheaper'
-          ? `${vehicleB.name} cheaper from mile zero`
-          : `${vehicleA.name} cheaper across all miles`,
-        subtext: breakEvenTrajectory.status === 'crossover'
-          ? 'Lower running costs offset upfront premium at this distance.'
-          : 'No crossover point within analyzed mileage range.',
-        badge: (
-          <RiskBadge
-            level={breakEvenTrajectory.status === 'crossover' && breakEvenTrajectory.breakEvenYears <= 4 ? 'low' : 'moderate'}
-            label={breakEvenTrajectory.status === 'crossover' ? `${breakEvenTrajectory.breakEvenYears}-Yr Payback` : 'Dominant Choice'}
-          />
-        ),
-      },
-      {
-        label: 'Reliability Risk & Service Buffer',
-        value: `${formatCurrency(riskA.serviceReserveUsd)} vs ${formatCurrency(riskB.serviceReserveUsd)}`,
-        subtext: riskExposureDeltaB <= 0
-          ? `${vehicleB.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`
-          : `${vehicleA.name} requires ${formatCurrency(Math.abs(riskExposureDeltaB))} lower service buffer.`,
-        badge: (
-          <RiskBadge
-            level={Math.abs(riskExposureDeltaB) > 600 ? 'critical' : 'low'}
-            label={riskExposureDeltaB <= 0 ? 'B Lower Service' : 'A Lower Service'}
-          />
-        ),
-      },
-    ];
-  }, [hasBothVehicles, monthlySavingsB, total5YrSavingsB, vehicleA, vehicleB, formatCurrency, riskA, riskB, riskExposureDeltaB, breakEvenTrajectory, region, distanceUnit]);
+  };
 
-  // SVG Chart Dimensions & Scales
-  const svgWidth = 620;
-  const svgHeight = 230;
-  const padding = { top: 28, right: 24, bottom: 34, left: 24 };
-  const graphWidth = svgWidth - padding.left - padding.right;
-  const graphHeight = svgHeight - padding.top - padding.bottom;
+  const bIsWinner = monthlySavingsB >= 0;
+  const winnerVehicle = hasBothVehicles ? (bIsWinner ? vehicleB : vehicleA) : null;
 
-  const points = breakEvenTrajectory?.points || [];
-  const maxDist = points.length > 0 ? points[points.length - 1].distMiles : 1;
-  const maxCost = points.length > 0
-    ? Math.max(...points.map((p) => p.costA), ...points.map((p) => p.costB)) * 1.08
-    : 1;
-  const minCost = points.length > 0
-    ? Math.min(...points.map((p) => p.costA), ...points.map((p) => p.costB)) * 0.85
-    : 0;
-  const costRange = Math.max(1, maxCost - minCost);
-
-  const getX = (distMiles) => padding.left + (distMiles / Math.max(1, maxDist)) * graphWidth;
-  const getY = (cost) => padding.top + graphHeight - ((cost - minCost) / costRange) * graphHeight;
-
-  const pathD_A = points
-    .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.distMiles).toFixed(1)} ${getY(p.costA).toFixed(1)}`)
-    .join(' ');
-
-  const pathD_B = points
-    .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(p.distMiles).toFixed(1)} ${getY(p.costB).toFixed(1)}`)
-    .join(' ');
-
-  // User current 5-year point X coordinate (clamped to stay inside plot area)
-  const userX = breakEvenTrajectory ? getX(Math.min(maxDist, breakEvenTrajectory.user5YrMiles)) : padding.left;
-  const userLabelAnchor = userX > svgWidth * 0.6 ? 'end' : userX < svgWidth * 0.4 ? 'start' : 'middle';
-  const userLabelX = Math.max(padding.left + 4, Math.min(svgWidth - padding.right - 4, userX));
-
-  // Break-even X coordinate if crossover exists
-  const crossX = breakEvenTrajectory?.breakEvenMiles ? getX(Math.min(maxDist, breakEvenTrajectory.breakEvenMiles)) : null;
+  const breakEvenPlainLabel = useMemo(() => {
+    if (!breakEvenTrajectory || !vehicleA || !vehicleB) return '-';
+    if (breakEvenTrajectory.status === 'crossover') {
+      const distVal = (region === 'EU' ? breakEvenTrajectory.breakEvenKm : breakEvenTrajectory.breakEvenMiles).toLocaleString();
+      return `Year ${Math.max(1, Math.ceil(breakEvenTrajectory.breakEvenYears))} (${breakEvenTrajectory.breakEvenYears} yrs · ${distVal} ${distanceUnit})`;
+    }
+    if (breakEvenTrajectory.status === 'b_always_cheaper') {
+      return `Year 1 · Immediate (${vehicleB.shortName || vehicleB.name})`;
+    }
+    return `Year 1 · Immediate (${vehicleA.shortName || vehicleA.name})`;
+  }, [breakEvenTrajectory, vehicleA, vehicleB, region, distanceUnit]);
 
   return (
     <Card
-      className="border border-primary-100 dark:border-zinc-800 bg-surface dark:bg-[#121215] shadow-card space-y-6"
+      className="p-4 sm:p-6 space-y-5 sm:space-y-6"
       aria-labelledby="comparator-heading"
     >
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border dark:border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border/80 dark:border-zinc-800">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="rounded-xl bg-primary-50 dark:bg-primary-950/60 p-2.5 text-primary-600 dark:text-primary-400">
-            <GitCompare className="w-5 h-5" />
+          <div className="rounded-xl bg-surface-subtle dark:bg-emerald-950/50 p-2.5 text-[#183D22] dark:text-emerald-400 shrink-0">
+            <GitCompare aria-hidden="true" className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             {standalone ? (
-              <h1 id="comparator-heading" className="text-lg sm:text-2xl font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
+              <h1
+                id="comparator-heading"
+                className="font-sans text-h2 font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+              >
                 {hasBothVehicles
                   ? `${vehicleA.shortName || vehicleA.name} vs ${vehicleB.shortName || vehicleB.name} · Dual-Vehicle Side-by-Side Comparison`
                   : 'Dual-Vehicle Side-by-Side Comparison'}
               </h1>
             ) : (
-              <h2 id="comparator-heading" className="text-base sm:text-lg font-sans font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32">
+              <h2
+                id="comparator-heading"
+                className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+              >
                 Dual-Vehicle Side-by-Side Comparison
               </h2>
             )}
-            <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
+            <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-0.5">
               {hasBothVehicles
-                ? '5-year TCO comparison, dynamic break-even crossover trajectory, and odometer-calibrated known flaws.'
-                : 'Select two vehicles below to compare 5-year TCO, break-even crossover trajectory, and odometer-calibrated known flaws.'}
+                ? '5-year total cost delta, break-even trajectory, and odometer-calibrated reliability.'
+                : 'Select two vehicles below to compare 5-year cost, break-even mileage, and known flaws.'}
             </p>
           </div>
         </div>
-        {onClose && (
+        {onClose && !standalone && (
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted dark:text-zinc-400 hover:bg-surface-subtle dark:hover:bg-zinc-900 hover:text-ink dark:hover:text-zinc-50 transition-colors"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-xl text-muted dark:text-zinc-400 hover:bg-surface-subtle dark:hover:bg-zinc-900 hover:text-ink dark:hover:text-zinc-50 transition-colors cursor-pointer"
             aria-label="Close comparison drawer"
           >
-            <X className="w-5 h-5" />
+            <X aria-hidden="true" className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Comparison Summary Box (only when both vehicles selected) */}
-      {hasBothVehicles && (
-        <TldrVerdictBox
-          title="Comparison Summary"
-          subtitle="3 key comparative metrics at a glance (zero fluff)"
-          badge="Decision Balance"
-          facts={comparatorTldrFacts}
-        />
-      )}
-
-      {/* My Garage Multi-Vehicle Comparison Strip (when 2+ cars saved) */}
+      {/* Garage Pair Shortcut (when 2+ vehicles saved) */}
       {garage?.savedVehicles && garage.savedVehicles.length >= 2 && (
         <div
           data-testid="garage-comparison-strip"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 px-4 py-2.5 text-xs font-sans"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-subtle dark:bg-emerald-950/25 border border-border/80 dark:border-emerald-800/40 px-4 py-2.5 text-xs font-sans"
         >
           <div className="flex items-center gap-2 text-ink dark:text-zinc-50">
-            <Car className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+            <Car aria-hidden="true" className="w-4 h-4 text-[#183D22] dark:text-emerald-400 shrink-0" />
             <span>
-              <strong>My Garage ({garage.savedVehicles.length} saved):</strong> Compare your top 2 parked candidates side-by-side.
+              <strong>My Garage ({garage.savedVehicles.length} saved):</strong> Compare your top 2 parked candidates.
             </span>
           </div>
           <button
@@ -606,17 +582,17 @@ export default function VehicleComparator({
                 if (typeof onSelectSecondaryPreset === 'function') onSelectSecondaryPreset(second.presetId);
               }
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-[11px] font-sans font-semibold text-white hover:bg-primary-700 transition-colors"
+            className="min-h-[44px] sm:min-h-[34px] inline-flex items-center gap-1.5 rounded-xl bg-[#183D22] dark:bg-emerald-600 px-3.5 py-1.5 text-xs font-sans font-semibold text-white hover:bg-[#122E19] dark:hover:bg-emerald-500 transition-colors cursor-pointer"
           >
             <span>Load My Garage Pair</span>
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Popular Preset Pairs Buttons */}
+      {/* Popular Matchup Chips */}
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <span className="text-[11px] font-sans font-semibold text-muted dark:text-zinc-400 mr-1">
+        <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mr-1">
           Popular matchups:
         </span>
         {quickBenchmarkPairs.map((p) => (
@@ -630,731 +606,248 @@ export default function VehicleComparator({
               if (onApplyPreset) onApplyPreset(p.idA);
               updateVehicleB(p.idB);
             }}
-            className="px-2.5 py-1 rounded-md font-sans text-[11px] font-medium transition-colors duration-150 border bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-primary-600 dark:hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400"
+            className="min-h-[44px] sm:min-h-[32px] px-3 py-1 rounded-xl font-sans text-xs font-medium transition-colors border bg-surface-subtle dark:bg-zinc-900 text-body dark:text-zinc-300 border-border/80 dark:border-zinc-800 hover:border-[#183D22] dark:hover:border-emerald-500 hover:text-ink dark:hover:text-zinc-50 cursor-pointer"
           >
             {p.label}
           </button>
         ))}
       </div>
 
-      {/* Dual Vehicle Studio Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Vehicle A */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-4 sm:p-5 flex flex-col justify-between min-w-0 overflow-hidden">
-          <div className="min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
-              <Pill tone="neutral" className="shrink-0 self-start sm:self-auto">
-                VEHICLE A (Current)
-              </Pill>
-              <select
-                value={activePresetAId || ''}
-                onChange={(e) => updateVehicleA(e.target.value)}
-                aria-label="Select primary vehicle"
-                className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
-              >
-                <option value="">Select Vehicle A...</option>
-                {VEHICLE_PRESETS.filter((p) => p.id !== vehicleBId).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.fuelType})
-                  </option>
-                ))}
-              </select>
-            </div>
-            {vehicleA && tcoA && riskA ? (
-              <>
-                <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleA.name}>
-                  {vehicleA.name}
-                </h3>
-                <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
-                  Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceA)}</span> · {vehicleA.powerHp ? `${vehicleA.powerHp} HP` : ''} · {vehicleA.engineCode}
-                </p>
-
-                {/* Inline Listing Price & Odometer Overrides for Vehicle A */}
-                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                    <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
-                    <input
-                      data-testid="comparator-price-a"
-                      type="number"
-                      min={500}
-                      max={250000}
-                      step={500}
-                      value={Math.round(convertUsdToRegion(priceA))}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        setCustomPriceAUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
-                      }}
-                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                    <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
-                    <input
-                      data-testid="comparator-odo-a"
-                      type="number"
-                      min={0}
-                      max={500000}
-                      step={1000}
-                      value={Math.round(convertMilesToRegion(odoA))}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        setCustomOdoAMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
-                      }}
-                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
-                  <VehicleImageResolver vehicle={vehicleA} variant="compact" className="w-full h-full" interactive />
-                </div>
-              </>
-            ) : (
-              <div
-                data-testid="comparator-empty-card-a"
-                className="mt-4 py-10 px-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/70 dark:bg-[#121215]/60 text-center space-y-2"
-              >
-                <Car className="w-7 h-7 text-zinc-400 dark:text-zinc-500 mx-auto" />
-                <p className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
-                  Choose Vehicle A
-                </p>
-                <p className="font-sans text-xs text-muted dark:text-zinc-400 max-w-xs mx-auto">
-                  Select a model from the dropdown above or pick a popular matchup to start comparing.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {vehicleA && tcoA && riskA && (
-            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3 min-w-0">
-              <div>
-                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
-                <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-ink dark:text-zinc-50">
-                  {formatCurrency(tcoA.monthlyEconomicCostUsd)}
-                  <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
-                </p>
-                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
-                  <span className="font-mono tabular-nums">{formatCurrency(tcoA.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoA)}</span>)
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800/80 items-stretch">
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
-                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    {riskA.reliabilityScore}/100
-                  </span>
-                </div>
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
-                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    {formatCurrency(riskA.serviceReserveUsd)}
-                  </span>
-                </div>
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
-                  <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    <span>{knownIssuesA.length}</span>
-                    <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Vehicle B */}
-        <div className="rounded-xl border-2 border-primary-600/30 dark:border-primary-500/40 bg-primary-50/20 dark:bg-zinc-900/80 p-4 sm:p-5 flex flex-col justify-between min-w-0 overflow-hidden">
-          <div className="min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
-              <Pill tone="brand" className="shrink-0 self-start sm:self-auto">
-                VEHICLE B (Counterpart)
-              </Pill>
-              <select
-                value={vehicleBId || ''}
-                onChange={(e) => updateVehicleB(e.target.value)}
-                aria-label="Select comparison vehicle"
-                className="w-full sm:w-auto min-w-0 flex-1 sm:max-w-[240px] min-h-[44px] sm:min-h-0 truncate text-base sm:text-xs font-sans font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-2.5 py-2 sm:py-1 text-ink dark:text-zinc-50 focus:outline-none focus:border-primary-600"
-              >
-                <option value="">Select Vehicle B...</option>
-                {VEHICLE_PRESETS.filter((p) => p.id !== activePresetAId).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.fuelType})
-                  </option>
-                ))}
-              </select>
-            </div>
-            {vehicleB && tcoB && riskB ? (
-              <>
-                <h3 className="mt-2 text-base font-sans font-bold tracking-tight text-ink dark:text-zinc-50 truncate" title={vehicleB.name}>
-                  {vehicleB.name}
-                </h3>
-                <p className="text-xs text-muted dark:text-zinc-400 font-sans font-medium break-words">
-                  Purchase Price: <span className="font-mono tabular-nums">{formatCurrency(priceB)}</span> · {vehicleB.powerHp ? `${vehicleB.powerHp} HP` : ''} · {vehicleB.engineCode}
-                </p>
-
-                {/* Inline Listing Price & Odometer Overrides for Vehicle B */}
-                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                    <span className="text-muted dark:text-zinc-400 shrink-0">Price ({currencySymbol})</span>
-                    <input
-                      data-testid="comparator-price-b"
-                      type="number"
-                      min={500}
-                      max={250000}
-                      step={500}
-                      value={Math.round(convertUsdToRegion(priceB))}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        setCustomPriceBUsd(convertRegionToUsd(Math.max(500, Number(e.target.value) || 500)));
-                      }}
-                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-2 min-h-[44px] sm:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121215] px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs sm:text-[11px] font-sans font-medium min-w-0">
-                    <span className="text-muted dark:text-zinc-400 shrink-0">Odo ({distanceUnit})</span>
-                    <input
-                      data-testid="comparator-odo-b"
-                      type="number"
-                      min={0}
-                      max={500000}
-                      step={1000}
-                      value={Math.round(convertMilesToRegion(odoB))}
-                      onChange={(e) => {
-                        if (e.target.value === '') return;
-                        setCustomOdoBMiles(convertRegionToMiles(Math.max(0, Number(e.target.value) || 0)));
-                      }}
-                      className="w-28 sm:w-20 min-w-0 text-right text-base sm:text-xs bg-transparent outline-none font-mono font-semibold text-ink dark:text-zinc-50 tabular-nums"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-3 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 relative border border-zinc-200 dark:border-zinc-800 group">
-                  <VehicleImageResolver vehicle={vehicleB} variant="compact" className="w-full h-full" interactive />
-                </div>
-              </>
-            ) : (
-              <div
-                data-testid="comparator-empty-card-b"
-                className="mt-4 py-10 px-4 rounded-xl border border-dashed border-primary-300/70 dark:border-primary-800/60 bg-white/70 dark:bg-[#121215]/60 text-center space-y-2"
-              >
-                <GitCompare className="w-7 h-7 text-primary-600/70 dark:text-emerald-400/70 mx-auto" />
-                <p className="font-sans text-sm font-semibold text-ink dark:text-zinc-100">
-                  Choose Vehicle B
-                </p>
-                <p className="font-sans text-xs text-muted dark:text-zinc-400 max-w-xs mx-auto">
-                  Pick a second vehicle above to unlock the 5-year cost delta, break-even trajectory, and known flaws comparison.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {vehicleB && tcoB && riskB && (
-            <div className="mt-4 pt-3 border-t border-primary-100 dark:border-zinc-800 space-y-3 min-w-0">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400">Monthly True Operating Cost</p>
-                  {hasBothVehicles && (
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tabular-nums border ${
-                        monthlyCostDeltaB <= 0
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
-                          : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
-                      }`}
-                    >
-                      {monthlyCostDeltaB <= 0
-                        ? `-${formatCurrency(Math.abs(monthlyCostDeltaB))}/mo`
-                        : `+${formatCurrency(monthlyCostDeltaB)}/mo`}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-3xl font-bold font-mono tabular-nums text-primary-700 dark:text-primary-400">
-                  {formatCurrency(tcoB.monthlyEconomicCostUsd)}
-                  <span className="text-sm font-normal text-muted dark:text-zinc-400 font-sans">/mo</span>
-                </p>
-                <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-1">
-                  <span className="font-mono tabular-nums">{formatCurrency(tcoB.totalEconomicCostUsd)}</span> over 5 yrs (at <span className="font-mono tabular-nums">{formatDistance(odoB)}</span>)
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 pt-3 border-t border-primary-100/80 dark:border-zinc-800/80 items-stretch">
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Reliability</span>
-                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    {riskB.reliabilityScore}/100
-                  </span>
-                </div>
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Service Risk</span>
-                  <span className="mt-1 block text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    {formatCurrency(riskB.serviceReserveUsd)}
-                  </span>
-                </div>
-                <div className="h-full rounded-lg bg-white dark:bg-[#121215] p-2 sm:p-2.5 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between min-w-0">
-                  <span className="block text-xs font-sans font-medium text-muted dark:text-zinc-400 leading-tight">Known Flaws</span>
-                  <span className="mt-1 flex flex-wrap items-baseline gap-x-1 text-base font-bold font-mono tabular-nums text-ink dark:text-zinc-50 leading-tight">
-                    <span>{knownIssuesB.length}</span>
-                    <span className="text-[11px] font-sans font-medium text-muted dark:text-zinc-400">documented</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Compact Sticky Horizontal A vs B Selector Bar */}
+      <ComparatorStickyBar
+        standalone={standalone}
+        activePresetAId={activePresetAId}
+        vehicleBId={vehicleBId}
+        vehicleA={vehicleA}
+        vehicleB={vehicleB}
+        priceA={priceA}
+        odoA={odoA}
+        priceB={priceB}
+        odoB={odoB}
+        updateVehicleA={updateVehicleA}
+        updateVehicleB={updateVehicleB}
+        setCustomPriceAUsd={setCustomPriceAUsd}
+        setCustomOdoAMiles={setCustomOdoAMiles}
+        setCustomPriceBUsd={setCustomPriceBUsd}
+        setCustomOdoBMiles={setCustomOdoBMiles}
+        hasBothVehicles={hasBothVehicles}
+        onSwapVehicles={handlePromoteVehicleB}
+      />
 
       {!hasBothVehicles ? (
         <div
           data-testid="comparator-empty-state"
-          className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-900/40 p-6 sm:p-8 text-center space-y-2.5"
+          className="rounded-2xl bg-surface-subtle/80 dark:bg-zinc-900/50 border border-dashed border-border dark:border-zinc-800 p-6 sm:p-8 text-center space-y-2"
         >
           <p className="font-sans text-sm sm:text-base font-bold text-ink dark:text-zinc-100">
             Select both Vehicle A and Vehicle B to run the side-by-side comparison
           </p>
           <p className="font-sans text-xs sm:text-sm text-muted dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
-            Once two models are selected, DriveLedger computes the 5-year TCO differential, break-even crossover mileage chart, known powertrain defects, and line-by-line cost breakdown.
+            Once two models are selected, DriveLedger computes the 5-year TCO differential, break-even crossover curve, and known powertrain vulnerabilities.
           </p>
         </div>
       ) : (
-      <>
-
-      {/* Break-Even Crossover Interactive SVG Graph */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800 min-w-0">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-              <h3 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-                5-Year Break-Even Crossover Trajectory
-              </h3>
-            </div>
-            <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">
-              Cumulative total cost of ownership by distance traveled (Purchase + Depreciation + Fuel + Maintenance)
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 text-xs font-sans font-medium min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shrink-0" />
-              <span className="text-muted dark:text-zinc-400 truncate" title={vehicleA.name}>{vehicleA.name}</span>
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shrink-0" />
-              <span className="text-muted dark:text-zinc-400 truncate" title={vehicleB.name}>{vehicleB.name}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Responsive SVG Chart */}
-        <div className="w-full overflow-hidden">
-          <svg
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            width="100%"
-            preserveAspectRatio="xMidYMid meet"
-            className="w-full h-[220px] sm:h-[250px] text-xs font-sans select-none block"
+        <>
+          {/* Winner Verdict Banner First in Plain Numbers (5-Yr Total Delta, Monthly Delta, Break-Even Year) */}
+          <div
+            data-testid="tldr-verdict-box"
+            className="cq-card rounded-2xl bg-surface-subtle dark:bg-zinc-900/80 border border-border/80 dark:border-zinc-800 p-5 space-y-4"
           >
-            {/* Grid lines and X labels */}
-            {points.map((p, idx) => {
-              const x = getX(p.distMiles);
-              const isFirst = idx === 0;
-              const isLast = idx === points.length - 1;
-              const showMobileTick = idx % 2 === 0 || isLast;
-              return (
-                <g key={p.distMiles}>
-                  <line
-                    x1={x}
-                    y1={padding.top}
-                    x2={x}
-                    y2={padding.top + graphHeight}
-                    stroke="currentColor"
-                    className="text-zinc-200 dark:text-zinc-800"
-                    strokeDasharray="2,3"
-                  />
-                  <text
-                    x={x}
-                    y={svgHeight - 8}
-                    textAnchor={isFirst ? 'start' : isLast ? 'end' : 'middle'}
-                    fill="currentColor"
-                    className={`text-muted dark:text-zinc-400 text-[11px] sm:text-[10px] font-mono tabular-nums ${
-                      showMobileTick ? '' : 'hidden sm:inline'
-                    }`}
-                  >
-                    {region === 'EU' ? `${Math.round(p.distKm / 1000)}k km` : `${Math.round(p.distMiles / 1000)}k mi`}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* User current 5-year distance vertical marker */}
-            <line
-              x1={userX}
-              y1={padding.top}
-              x2={userX}
-              y2={padding.top + graphHeight}
-              stroke="#F59E0B"
-              strokeWidth="2"
-              strokeDasharray="4,4"
-            />
-            <text
-              x={userLabelX}
-              y={padding.top - 8}
-              textAnchor={userLabelAnchor}
-              fill="#D97706"
-              className="font-bold text-[11px] sm:text-[10px] font-sans"
-            >
-              Your 5-Year Distance ({formatDistance(breakEvenTrajectory.user5YrMiles)})
-            </text>
-
-            {/* Vehicle A Line (Blue) */}
-            <path
-              d={pathD_A}
-              fill="none"
-              stroke="#3B82F6"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-
-            {/* Vehicle B Line (Emerald) */}
-            <path
-              d={pathD_B}
-              fill="none"
-              stroke="#10B981"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-
-            {/* Break-even Crossover Point Marker */}
-            {crossX && breakEvenTrajectory.breakEvenMiles <= maxDist && (
-              <g>
-                <circle
-                  cx={crossX}
-                  cy={getY(
-                    points[0].costA +
-                      ((points[points.length - 1].costA - points[0].costA) *
-                        breakEvenTrajectory.breakEvenMiles) /
-                        maxDist
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/80 dark:border-zinc-800">
+              <div className="min-w-0">
+                <h3 className="font-sans text-base sm:text-lg font-bold tracking-tight text-ink dark:text-zinc-50">
+                  {Math.abs(total5YrSavingsB) < 50 ? (
+                    `Cost parity over ${horizonYears} years`
+                  ) : (
+                    <>
+                      {winnerVehicle.name} saves{' '}
+                      <span className="font-mono tabular-nums text-[#183D22] dark:text-emerald-400">
+                        {formatCurrency(Math.abs(total5YrSavingsB))}
+                      </span>{' '}
+                      over {horizonYears} years
+                    </>
                   )}
-                  r="6"
-                  fill="#10B981"
-                  stroke="#ffffff"
-                  strokeWidth="2"
+                </h3>
+                <p className="font-sans text-xs text-muted dark:text-zinc-400 mt-0.5">
+                  Plain-number verdict across depreciation, fuel/charging, insurance, and maintenance.
+                </p>
+              </div>
+              <RiskBadge level="low" label="Winner · Lower TCO" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/80 dark:divide-zinc-800">
+              <div className="py-2.5 first:pt-0 sm:py-0 sm:pr-4 min-w-0">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400">
+                  {horizonYears}-year total delta
+                </span>
+                <span className="mt-0.5 block font-mono text-xl sm:text-2xl font-bold tabular-nums whitespace-nowrap text-ink dark:text-zinc-50">
+                  -{formatCurrency(Math.abs(total5YrSavingsB))}
+                </span>
+                <span className="mt-0.5 block font-mono text-[11px] tabular-nums text-muted dark:text-zinc-400 truncate">
+                  {formatCurrency(tcoA.totalEconomicCostUsd)} vs {formatCurrency(tcoB.totalEconomicCostUsd)}
+                </span>
+              </div>
+
+              <div className="py-2.5 sm:py-0 sm:px-4 min-w-0">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400">
+                  Monthly delta
+                </span>
+                <span className="mt-0.5 block font-mono text-xl sm:text-2xl font-bold tabular-nums whitespace-nowrap text-[#183D22] dark:text-emerald-400">
+                  -{formatCurrency(Math.abs(monthlySavingsB))}/mo
+                </span>
+                <span className="mt-0.5 block font-mono text-[11px] tabular-nums text-muted dark:text-zinc-400 truncate">
+                  {formatCurrency(tcoA.monthlyEconomicCostUsd)}/mo vs {formatCurrency(tcoB.monthlyEconomicCostUsd)}/mo
+                </span>
+              </div>
+
+              <div className="py-2.5 last:pb-0 sm:py-0 sm:pl-4 min-w-0">
+                <span className="block font-sans text-xs text-muted dark:text-zinc-400">
+                  Break-even horizon
+                </span>
+                <span className="mt-0.5 block font-mono text-base sm:text-lg font-bold tabular-nums text-ink dark:text-zinc-50 truncate">
+                  {breakEvenPlainLabel}
+                </span>
+                <span className="mt-0.5 block font-sans text-[11px] text-muted dark:text-zinc-400 truncate">
+                  Service buffer: {formatCurrency(riskA.serviceReserveUsd)} vs {formatCurrency(riskB.serviceReserveUsd)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Progressive Comparison Tabs ("Cost Breakdown", "5-Year Curve", "Known Risks & Reliability") */}
+          <div>
+            <div
+              role="tablist"
+              aria-label="Detailed vehicle comparison views"
+              className="flex items-center overflow-x-auto no-scrollbar border-b border-border/80 dark:border-zinc-800 gap-0 sm:gap-1"
+            >
+              {COMPARATOR_TABS.map((tab, idx) => {
+                const selected = activeCompTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`comp-tab-${tab.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => setActiveCompTab(tab.id)}
+                    onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                    className="dl-hub-tab !px-2 sm:!px-3.5 !text-[11.5px] sm:!text-[13px] cursor-pointer"
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Panels Container (Zero gap & zero padding/border on [role="tabpanel"] for hidden="until-found") */}
+            <div ref={panelsContainerRef} id="comparator-tab-panels">
+              <div
+                role="tabpanel"
+                id="comp-panel-breakdown"
+                data-tab-id="breakdown"
+                aria-labelledby="comp-tab-breakdown"
+                {...(activeCompTab !== 'breakdown' ? { hidden: 'until-found' } : {})}
+              >
+                <ComparatorBreakdownTab
+                  vehicleA={vehicleA}
+                  vehicleB={vehicleB}
+                  priceA={priceA}
+                  odoA={odoA}
+                  priceB={priceB}
+                  odoB={odoB}
+                  tcoA={tcoA}
+                  tcoB={tcoB}
+                  horizonYears={horizonYears}
+                  depreciationDiffTotal={depreciationDiffTotal}
+                  maintenanceDiffTotal={maintenanceDiffTotal}
+                  total5YrSavingsB={total5YrSavingsB}
+                  monthlyCostDeltaB={monthlyCostDeltaB}
+                  onApplyPreset={onApplyPreset}
+                  onPromoteVehicleB={handlePromoteVehicleB}
                 />
-              </g>
-            )}
-          </svg>
-        </div>
+              </div>
 
-        {/* Break-Even Interpretation Banner */}
-        <div className="p-3.5 rounded-lg bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-            <p className="text-ink dark:text-zinc-200">
-              {breakEvenTrajectory.status === 'crossover' ? (
-                <>
-                  <strong>Break-Even Crossover:</strong>{' '}
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                    {formatDistance(breakEvenTrajectory.breakEvenMiles)} (~{breakEvenTrajectory.breakEvenYears} yrs)
-                  </span>
-                  . Beyond this distance, {vehicleB.name} delivers net savings through lower fuel and maintenance costs.
-                </>
-              ) : breakEvenTrajectory.status === 'b_always_cheaper' ? (
-                <>
-                  <strong>Immediate Savings:</strong> <strong>{vehicleB.name}</strong> has a lower purchase price and running cost, remaining cheaper from mile zero.
-                </>
-              ) : (
-                <>
-                  <strong>{vehicleA.name} More Economical:</strong> Across this mileage profile, {vehicleA.name} maintains a lower total ownership cost.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
+              <div
+                role="tabpanel"
+                id="comp-panel-curve"
+                data-tab-id="curve"
+                aria-labelledby="comp-tab-curve"
+                {...(activeCompTab !== 'curve' ? { hidden: 'until-found' } : {})}
+              >
+                <ComparatorCurveTab
+                  vehicleA={vehicleA}
+                  vehicleB={vehicleB}
+                  breakEvenTrajectory={breakEvenTrajectory}
+                />
+              </div>
 
-      {/* Side-by-Side Known Issues at Current Mileage */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-              <h3 className="text-sm font-sans font-bold tracking-tight text-ink dark:text-zinc-50">
-                Known Vulnerabilities at <span className="font-mono tabular-nums">{formatDistance(odoA)}</span>
-              </h3>
+              <div
+                role="tabpanel"
+                id="comp-panel-risks"
+                data-tab-id="risks"
+                aria-labelledby="comp-tab-risks"
+                {...(activeCompTab !== 'risks' ? { hidden: 'until-found' } : {})}
+              >
+                <ComparatorRisksTab
+                  vehicleA={vehicleA}
+                  vehicleB={vehicleB}
+                  odoA={odoA}
+                  odoB={odoB}
+                  riskA={riskA}
+                  riskB={riskB}
+                  knownIssuesA={knownIssuesA}
+                  knownIssuesB={knownIssuesB}
+                />
+              </div>
             </div>
-            <p className="text-xs font-sans font-medium text-muted dark:text-zinc-400 mt-0.5">
-              Documented engineering flaws and active wear windows for selected powertrains
-            </p>
-          </div>
-          <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400">
-            Database: DriveLedger Curated Dossier
-          </span>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Vehicle A Known Issues */}
-          <div className="space-y-3 min-w-0">
-            <div className="flex items-center justify-between text-xs pb-1 border-b border-zinc-200 dark:border-zinc-800 font-sans font-semibold">
-              <span className="text-ink dark:text-zinc-200 truncate">{vehicleA.name} ({vehicleA.engineCode})</span>
-              <span className="text-muted dark:text-zinc-400 shrink-0 ml-2"><span className="font-mono tabular-nums">{knownIssuesA.length}</span> known issues</span>
-            </div>
-
-            {knownIssuesA.length === 0 ? (
-              <p className="text-xs font-sans text-muted dark:text-zinc-400 py-3 text-center italic">
-                No severe vulnerabilities documented in this mileage window.
-              </p>
-            ) : (
-              knownIssuesA.map((issue) => {
-                const isActive =
-                  currentKm >= (issue.criticalMileage?.minKm || 0) &&
-                  currentKm <= (issue.criticalMileage?.maxKm || 999999);
-                return (
-                  <div
-                    key={issue.id}
-                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors min-w-0 ${
-                      isActive
-                        ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/50'
-                        : 'bg-white dark:bg-[#121215] border-zinc-200 dark:border-zinc-800'
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-1 min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-sans font-bold text-ink dark:text-zinc-50 truncate">{issue.name}</span>
-                        {isActive && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-sans font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 shrink-0">
-                            Active Window
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0 text-[11px]">
-                        {region === 'EU'
-                          ? issue.criticalMileage?.display
-                          : `${formatDistance(Math.round((issue.criticalMileage?.minKm || 0) / 1.609344 / 1000) * 1000, false)} – ${formatDistance(Math.round((issue.criticalMileage?.maxKm || 0) / 1.609344 / 1000) * 1000)}`}
-                      </span>
-                    </div>
-                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
-                      {issue.symptoms}
-                    </p>
-                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
-                      <span>
-                        Repair:{' '}
-                        <strong className="font-mono tabular-nums">
-                          {region === 'EU'
-                            ? issue.repairCost?.formattedEur
-                            : region === 'UK' && issue.repairCost?.parts
-                              ? `£${Math.round((issue.repairCost.parts.min + issue.repairCost.labor.min) * 0.85).toLocaleString()} – £${Math.round((issue.repairCost.parts.max + issue.repairCost.labor.max) * 0.85).toLocaleString()}`
-                              : issue.repairCost?.formattedUsd || issue.repairCost?.formattedEur}
-                        </strong>
-                      </span>
-                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
           </div>
 
-          {/* Vehicle B Known Issues */}
-          <div className="space-y-3 min-w-0">
-            <div className="flex items-center justify-between text-xs pb-1 border-b border-zinc-200 dark:border-zinc-800 font-sans font-semibold">
-              <span className="text-ink dark:text-zinc-200 truncate">{vehicleB.name} ({vehicleB.engineCode})</span>
-              <span className="text-muted dark:text-zinc-400 shrink-0 ml-2"><span className="font-mono tabular-nums">{knownIssuesB.length}</span> known issues</span>
-            </div>
-
-            {knownIssuesB.length === 0 ? (
-              <p className="text-xs font-sans text-muted dark:text-zinc-400 py-3 text-center italic">
-                No severe vulnerabilities documented in this mileage window.
-              </p>
-            ) : (
-              knownIssuesB.map((issue) => {
-                const isActive =
-                  currentKm >= (issue.criticalMileage?.minKm || 0) &&
-                  currentKm <= (issue.criticalMileage?.maxKm || 999999);
-                return (
-                  <div
-                    key={issue.id}
-                    className={`p-3 rounded-lg border text-xs space-y-1.5 transition-colors min-w-0 ${
-                      isActive
-                        ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/50'
-                        : 'bg-white dark:bg-[#121215] border-zinc-200 dark:border-zinc-800'
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-1 min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-sans font-bold text-ink dark:text-zinc-50 truncate">{issue.name}</span>
-                        {isActive && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-sans font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 shrink-0">
-                            Active Window
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0 text-[11px]">
-                        {region === 'EU'
-                          ? issue.criticalMileage?.display
-                          : `${formatDistance(Math.round((issue.criticalMileage?.minKm || 0) / 1.609344 / 1000) * 1000, false)} – ${formatDistance(Math.round((issue.criticalMileage?.maxKm || 0) / 1.609344 / 1000) * 1000)}`}
-                      </span>
-                    </div>
-                    <p className="text-body dark:text-zinc-300 leading-normal text-[11px] font-sans break-words">
-                      {issue.symptoms}
-                    </p>
-                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] text-muted dark:text-zinc-400 font-sans">
-                      <span>
-                        Repair:{' '}
-                        <strong className="font-mono tabular-nums">
-                          {region === 'EU'
-                            ? issue.repairCost?.formattedEur
-                            : region === 'UK' && issue.repairCost?.parts
-                              ? `£${Math.round((issue.repairCost.parts.min + issue.repairCost.labor.min) * 0.85).toLocaleString()} – £${Math.round((issue.repairCost.parts.max + issue.repairCost.labor.max) * 0.85).toLocaleString()}`
-                              : issue.repairCost?.formattedUsd || issue.repairCost?.formattedEur}
-                        </strong>
-                      </span>
-                      <span className="font-sans text-primary-600 dark:text-primary-400 font-semibold truncate max-w-full">{issue.prevention.slice(0, 45)}...</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Side-by-Side Detailed Financial Table */}
-      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <table className="w-full min-w-[560px] text-left text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-xs font-sans font-semibold text-muted dark:text-zinc-400">
-              <th className="py-3 px-3">Cost &amp; Telemetry Category</th>
-              <th className="py-3 px-3 text-right">{vehicleA.name}</th>
-              <th className="py-3 px-3 text-right">{vehicleB.name}</th>
-              <th className="py-3 px-3 text-right">Difference (Delta)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 font-mono text-xs text-body dark:text-zinc-300">
-            <tr>
-              <td className="py-3 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-200">Purchase Price</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(priceA)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(priceB)}</td>
-              <td className="py-3 px-3 text-right tabular-nums font-semibold text-ink dark:text-zinc-50">
-                {priceB - priceA >= 0 ? '+' : ''}
-                {formatCurrency(priceB - priceA)}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-3 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-200">5-Year Depreciation</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoA.totalDepreciationUsd)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoB.totalDepreciationUsd)}</td>
-              <td
-                className={`py-3 px-3 text-right tabular-nums font-semibold ${
-                  depreciationDiffTotal >= 0
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-rose-700 dark:text-rose-400'
-                }`}
-              >
-                {depreciationDiffTotal >= 0 ? '-' : '+'}
-                {formatCurrency(Math.abs(depreciationDiffTotal))}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-3 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-200">
-                Fuel / Energy ({horizonYears} Years)
-              </td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoA.totalFuelUsd)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoB.totalFuelUsd)}</td>
-              <td
-                className={`py-3 px-3 text-right tabular-nums font-semibold ${
-                  tcoA.totalFuelUsd - tcoB.totalFuelUsd >= 0
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-rose-700 dark:text-rose-400'
-                }`}
-              >
-                {tcoA.totalFuelUsd - tcoB.totalFuelUsd >= 0 ? '-' : '+'}
-                {formatCurrency(Math.abs(tcoA.totalFuelUsd - tcoB.totalFuelUsd))}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-3 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-200">
-                Maintenance Reserve Buffer
-              </td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoA.totalMaintenanceUsd)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoB.totalMaintenanceUsd)}</td>
-              <td
-                className={`py-3 px-3 text-right tabular-nums font-semibold ${
-                  maintenanceDiffTotal >= 0
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-rose-700 dark:text-rose-400'
-                }`}
-              >
-                {maintenanceDiffTotal >= 0 ? '-' : '+'}
-                {formatCurrency(Math.abs(maintenanceDiffTotal))}
-              </td>
-            </tr>
-            <tr>
-              <td className="py-3 px-3 font-sans text-xs font-medium text-ink dark:text-zinc-200">
-                Insurance ({horizonYears} Years)
-              </td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoA.totalInsuranceUsd)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(tcoB.totalInsuranceUsd)}</td>
-              <td className="py-3 px-3 text-right tabular-nums">
-                {tcoB.totalInsuranceUsd - tcoA.totalInsuranceUsd >= 0 ? '+' : ''}
-                {formatCurrency(tcoB.totalInsuranceUsd - tcoA.totalInsuranceUsd)}
-              </td>
-            </tr>
-            <tr className="bg-zinc-100/80 dark:bg-zinc-900 font-semibold text-xs">
-              <td className="py-3 px-3 font-sans font-bold text-ink dark:text-zinc-50">
-                Total 5-Year True Cost to Own
-              </td>
-              <td className="py-3 px-3 text-right tabular-nums font-bold text-ink dark:text-zinc-50">
-                {formatCurrency(tcoA.totalEconomicCostUsd)} ({formatCurrency(tcoA.monthlyEconomicCostUsd)}/mo)
-              </td>
-              <td className="py-3 px-3 text-right tabular-nums font-bold text-ink dark:text-zinc-50">
-                {formatCurrency(tcoB.totalEconomicCostUsd)} ({formatCurrency(tcoB.monthlyEconomicCostUsd)}/mo)
-              </td>
-              <td
-                className={`py-3 px-3 text-right tabular-nums font-bold ${
-                  total5YrSavingsB >= 0
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-rose-700 dark:text-rose-400'
-                }`}
-              >
-                {total5YrSavingsB >= 0
-                  ? `-${formatCurrency(total5YrSavingsB)}`
-                  : `+${formatCurrency(Math.abs(total5YrSavingsB))}`}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Set Vehicle B as Primary Button */}
-      {onApplyPreset && (
-        <div className="pt-2 flex justify-end">
-          <button
-            type="button"
-            onClick={handlePromoteVehicleB}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 px-4 py-2 text-xs font-sans font-semibold text-ink dark:text-zinc-50 shadow-sm border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 transition-colors duration-150"
-          >
-            <span>Set Vehicle B as Primary</span>
-            <ArrowRight className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-          </button>
-        </div>
+          {/* Restrained Winner VIN Verification Slot */}
+          {(() => {
+            const winVehicle = bIsWinner ? vehicleB : vehicleA;
+            const winPrice = bIsWinner ? priceB : priceA;
+            const winOdo = bIsWinner ? odoB : odoA;
+            return (
+              <div className="pt-4 border-t border-border/80 dark:border-zinc-800">
+                <VinCheckBanner
+                  placement="comparator"
+                  vehicleName={winVehicle.name}
+                  purchasePriceUsd={winPrice}
+                  odometerMiles={winOdo}
+                />
+              </div>
+            );
+          })()}
+        </>
       )}
 
-      {/* Dynamic Winner VIN History Verification CTA + Zero-CLS AdSense Slot (when standalone /compare) */}
-      {(() => {
-        const bIsWinner = monthlySavingsB >= 0;
-        const winVehicle = bIsWinner ? vehicleB : vehicleA;
-        const winPrice = bIsWinner ? priceB : priceA;
-        const winOdo = bIsWinner ? odoB : odoA;
-        const winReserve = bIsWinner ? riskB.serviceReserveUsd : riskA.serviceReserveUsd;
-        return (
-          <div className="space-y-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-            <VinCheckBanner
-              placement="comparator"
-              vehicleName={winVehicle.name}
-              purchasePriceUsd={winPrice}
-              odometerMiles={winOdo}
+      {/* Tucked Crawlable & Find-in-Page Searchable Editorial Methodology + Internal Dossier Links */}
+      {standalone && (
+        <details className="dl-disclosure group rounded-2xl border border-border/80 dark:border-zinc-800 bg-surface-subtle/50 dark:bg-zinc-900/40 px-4 sm:px-5 py-1.5">
+          <summary className="min-h-[48px] py-2.5 flex items-center justify-between gap-3 text-left font-sans text-xs sm:text-sm font-semibold text-muted hover:text-ink dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+            <span>Comparison Methodology, Actuarial Notes &amp; Vehicle Dossiers</span>
+            <ChevronDown
+              aria-hidden="true"
+              className="w-4 h-4 shrink-0 transition-transform duration-200 group-open:rotate-180"
             />
-            {standalone && (
-              <nav aria-label="Compared Vehicle Telemetry Dossiers" className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-2 text-xs font-sans">
+          </summary>
+          <div className="pb-5 pt-2 space-y-5 border-t border-border/70 dark:border-zinc-800">
+            <ToolEditorialSection
+              tool="compare"
+              vehicleName={
+                hasBothVehicles && vehicleA && vehicleB
+                  ? `${vehicleA.shortName || vehicleA.name} vs ${vehicleB.shortName || vehicleB.name}`
+                  : ''
+              }
+              className="!mt-2 !shadow-none !border-0 !p-0 !bg-transparent"
+            />
+            {hasBothVehicles && vehicleA && vehicleB && (
+              <nav
+                aria-label="Compared Vehicle Telemetry Dossiers"
+                className="pt-3 border-t border-border/70 dark:border-zinc-800 flex flex-wrap items-center gap-2 text-xs font-sans"
+              >
                 <a
                   href={`/tco/${vehicleA.id}`}
                   onClick={(e) => {
@@ -1363,7 +856,7 @@ export default function VehicleComparator({
                       onNavigateToTco(vehicleA.id);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-600 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   {vehicleA.shortName || vehicleA.name} 5-Yr TCO
                 </a>
@@ -1375,7 +868,7 @@ export default function VehicleComparator({
                       onNavigateToRisk(vehicleA.id);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-600 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   {vehicleA.shortName || vehicleA.name} Risk Matrix
                 </a>
@@ -1387,7 +880,7 @@ export default function VehicleComparator({
                       onNavigateToTco(vehicleB.id);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-600 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   {vehicleB.shortName || vehicleB.name} 5-Yr TCO
                 </a>
@@ -1399,7 +892,7 @@ export default function VehicleComparator({
                       onNavigateToRisk(vehicleB.id);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-600 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   {vehicleB.shortName || vehicleB.name} Risk Matrix
                 </a>
@@ -1411,26 +904,14 @@ export default function VehicleComparator({
                       onNavigateToVehicles();
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-semibold text-primary-600 dark:text-emerald-400 hover:border-primary-500 transition-colors"
+                  className="min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl bg-surface dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 font-semibold text-[#183D22] dark:text-emerald-400 hover:border-primary-600 transition-colors"
                 >
                   All 35 Brands &amp; 179 Vehicles
                 </a>
               </nav>
             )}
           </div>
-        );
-      })()}
-      </>
-      )}
-      {standalone && (
-        <ToolEditorialSection
-          tool="compare"
-          vehicleName={
-            hasBothVehicles && vehicleA && vehicleB
-              ? `${vehicleA.shortName || vehicleA.name} vs ${vehicleB.shortName || vehicleB.name}`
-              : ''
-          }
-        />
+        </details>
       )}
     </Card>
   );

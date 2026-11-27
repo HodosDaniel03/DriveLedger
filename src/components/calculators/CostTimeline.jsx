@@ -60,34 +60,36 @@ export default function CostTimeline({
   const depSharePct = active.total > 0 ? Math.round((active.depreciation / active.total) * 100) : 0;
   const showTooltip = hoveredYear !== null || pinnedYear !== null;
 
-  // Extract categories dynamically from first point breakdown or fallback to standard palette
   const categories =
     points[0]?.breakdown && points[0].breakdown.length > 0
       ? points[0].breakdown
       : DEFAULT_CATEGORIES;
 
   return (
-    <Card className={`rounded-2xl border border-[#E6E6E1] dark:border-zinc-800 bg-white dark:bg-[#121215] shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-6 overflow-hidden ${className}`} aria-labelledby="timeline-heading">
-      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 min-w-0">
+    <Card className={`p-5 sm:p-6 overflow-hidden ${className}`} aria-labelledby="timeline-heading">
+      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 min-w-0 pb-4 border-b border-border/70 dark:border-zinc-800">
         <div className="min-w-0">
-          <span className="font-micro text-micro uppercase tracking-widest text-[#183D22] dark:text-emerald-400 font-semibold block">
-            Lifecycle trajectory
-          </span>
-          <h2 id="timeline-heading" className="text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-zinc-50 mt-0.5 scroll-mt-28 lg:scroll-mt-32">
+          <span className="sr-only">Lifecycle trajectory</span>
+          <h2
+            id="timeline-heading"
+            className="font-sans text-h3 font-bold tracking-tight text-ink dark:text-zinc-50 scroll-mt-28 lg:scroll-mt-32"
+          >
             Cost over time
           </h2>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted dark:text-zinc-400">Cumulative cost of ownership, year by year.</p>
+          <p className="mt-0.5 font-sans text-xs sm:text-sm text-muted dark:text-zinc-400">
+            Cumulative cost of ownership, year by year.
+          </p>
         </div>
-        <dl className="flex gap-6 text-left sm:text-right" aria-live="polite">
-          <div>
-            <dt className="text-xs text-muted dark:text-zinc-400">After year {active.year}</dt>
-            <dd className="text-xl font-bold tabular-nums tracking-tight text-ink dark:text-zinc-50 font-code">
+        <dl className="flex gap-6 text-left sm:text-right divide-x divide-border/70 dark:divide-zinc-800" aria-live="polite">
+          <div className="pr-0 sm:pr-0">
+            <dt className="font-sans text-xs text-muted dark:text-zinc-400">After year {active.year}</dt>
+            <dd className="text-lg sm:text-xl font-bold tabular-nums tracking-tight text-ink dark:text-zinc-50 font-mono">
               {formatCurrency(active.total)}
             </dd>
           </div>
-          <div className="hidden sm:block">
-            <dt className="text-xs text-muted dark:text-zinc-400">Depreciation share</dt>
-            <dd className="text-xl font-bold tabular-nums tracking-tight text-[#183D22] dark:text-emerald-400 font-code">
+          <div className="hidden sm:block pl-6">
+            <dt className="font-sans text-xs text-muted dark:text-zinc-400">Depreciation share</dt>
+            <dd className="text-lg sm:text-xl font-bold tabular-nums tracking-tight text-[#183D22] dark:text-emerald-400 font-mono">
               {depSharePct}%
             </dd>
           </div>
@@ -96,7 +98,7 @@ export default function CostTimeline({
 
       {/* 10-Year Interactive Stacked Bar Chart */}
       <div
-        className="mt-8 sm:mt-10 flex h-56 sm:h-64 items-end gap-1 sm:gap-3 relative min-w-0"
+        className="mt-7 sm:mt-8 flex h-52 sm:h-60 items-end gap-1.5 sm:gap-3 relative min-w-0"
         role="img"
         aria-label={`Cumulative cost chart. After 10 years: ${formatCurrency(maxTotal)}.`}
         onMouseLeave={() => {
@@ -111,7 +113,6 @@ export default function CostTimeline({
           const isBarHighlighted = isActive || isPinned;
           const heightPct = Math.min(100, Math.max(12, Math.round((p.total / maxTotal) * 100)));
 
-          // Horizontal tooltip clamping: left-aligned for Y1-Y3, right-aligned for Y8-Y10, centered for Y4-Y7
           let alignmentClass = 'left-1/2 -translate-x-1/2';
           if (p.year <= 3) {
             alignmentClass = 'left-0';
@@ -140,35 +141,25 @@ export default function CostTimeline({
               onFocus={() => setHoveredYear(p.year)}
               onBlur={() => setHoveredYear(null)}
               onMouseEnter={() => setHoveredYear(p.year)}
-              className="relative flex h-full flex-1 min-w-0 flex-col items-center justify-end gap-1.5 sm:gap-2 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
+              className="relative flex h-full flex-1 min-w-0 flex-col items-center justify-end gap-1.5 sm:gap-2 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 rounded-lg"
             >
-              {/* Stacked Bar Container */}
-              <div
-                className="relative w-full"
-                style={{ height: `${heightPct}%` }}
-              >
-                {/* Rich Floating Tooltip Card */}
+              <div className="relative w-full" style={{ height: `${heightPct}%` }}>
                 {isActive && showTooltip && (
                   <div
-                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-52 sm:w-64 max-w-[calc(100vw-3rem)] rounded-xl border border-border/80 dark:border-zinc-700/80 bg-surface/98 dark:bg-zinc-900/95 backdrop-blur-md p-2.5 sm:p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
+                    className={`absolute bottom-full mb-2.5 z-30 pointer-events-none w-52 sm:w-64 max-w-[calc(100dvw-2.5rem)] rounded-xl border border-border/90 dark:border-zinc-700/80 bg-surface/98 dark:bg-zinc-900/95 backdrop-blur-md p-3 shadow-xl transition-opacity duration-150 ${alignmentClass}`}
                     role="tooltip"
                     aria-hidden="false"
                   >
-                    <div className="flex items-center justify-between pb-1.5 border-b border-border/60 dark:border-zinc-800">
-                      <div>
-                        <span className="font-micro text-[10px] uppercase font-semibold tracking-wider text-muted dark:text-zinc-400 block">
-                          Year {p.year} Lifecycle
-                        </span>
-                        <span className="font-h3 text-xs sm:text-sm font-bold text-ink dark:text-zinc-50">
-                          Cumulative Total
-                        </span>
-                      </div>
-                      <span className="font-code text-xs sm:text-sm font-bold text-ink dark:text-zinc-50 tabular-nums">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-border/70 dark:border-zinc-800">
+                      <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-50">
+                        Year {p.year} Total
+                      </span>
+                      <span className="font-mono text-xs sm:text-sm font-bold text-ink dark:text-zinc-50 tabular-nums">
                         {formatCurrency(p.total)}
                       </span>
                     </div>
 
-                    <div className="mt-2 space-y-1.5 text-xs">
+                    <div className="mt-2 space-y-1 text-xs">
                       {p.breakdown.map((b) => {
                         const isDimmed = activeHighlight !== null && activeHighlight !== b.id;
                         const isCatHighlighted = activeHighlight === b.id;
@@ -177,7 +168,7 @@ export default function CostTimeline({
                             key={b.id}
                             className={`flex items-center justify-between py-0.5 px-1 rounded transition-opacity duration-150 min-w-0 ${
                               isDimmed ? 'opacity-35' : 'opacity-100'
-                            } ${isCatHighlighted ? 'bg-primary-50/70 dark:bg-emerald-950/60 font-semibold' : ''}`}
+                            } ${isCatHighlighted ? 'bg-surface-subtle dark:bg-zinc-800 font-semibold' : ''}`}
                           >
                             <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
                               <span
@@ -185,11 +176,11 @@ export default function CostTimeline({
                                 style={{ backgroundColor: b.color }}
                                 aria-hidden="true"
                               />
-                              <span className="truncate text-ink dark:text-zinc-200 text-[11px] sm:text-xs">
+                              <span className="truncate font-sans text-ink dark:text-zinc-200 text-[11px] sm:text-xs">
                                 {b.label}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0 font-code tabular-nums text-[11px] sm:text-xs">
+                            <div className="flex items-center gap-1.5 shrink-0 font-mono tabular-nums text-[11px] sm:text-xs">
                               <span className="font-medium text-ink dark:text-zinc-100">
                                 {formatCurrency(b.amountUsd)}
                               </span>
@@ -204,10 +195,10 @@ export default function CostTimeline({
                   </div>
                 )}
 
-                {/* 5 Stacked Bar Layers (Bottom to Top via flex-col-reverse) */}
+                {/* 5 Stacked Bar Layers */}
                 <div
                   className={`flex w-full h-full flex-col-reverse overflow-hidden rounded-t-lg transition-[height,opacity] duration-200 ease-out ${
-                    isBarHighlighted ? 'ring-2 ring-primary-600/50 shadow-sm' : 'opacity-85 group-hover:opacity-100'
+                    isBarHighlighted ? 'ring-2 ring-primary-600/50 dark:ring-emerald-400/50' : 'opacity-85 group-hover:opacity-100'
                   }`}
                   onMouseLeave={() => handleHighlight(null)}
                 >
@@ -239,11 +230,10 @@ export default function CostTimeline({
                 </div>
               </div>
 
-              {/* Year Label */}
               <span
-                className={`text-[10px] sm:text-xs tabular-nums font-code transition-colors ${
+                className={`text-[11px] sm:text-xs tabular-nums font-mono transition-colors ${
                   isCurrentSelected
-                    ? 'font-bold text-ink dark:text-zinc-50 underline decoration-primary-600 dark:decoration-emerald-400 decoration-2'
+                    ? 'font-bold text-ink dark:text-zinc-50 underline decoration-primary-600 dark:decoration-emerald-400 decoration-2 underline-offset-4'
                     : isPinned
                     ? 'font-bold text-primary-600 dark:text-emerald-400'
                     : 'text-faint dark:text-zinc-400'
@@ -257,7 +247,7 @@ export default function CostTimeline({
       </div>
 
       {/* 5-Category Synchronized Interactive Legend */}
-      <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-x-5 gap-y-1.5 text-xs text-body dark:text-zinc-300 pt-3 border-t border-border dark:border-zinc-800 min-w-0">
+      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-body dark:text-zinc-300 pt-3 border-t border-border/70 dark:border-zinc-800 min-w-0">
         {categories.map((cat) => {
           const isCategoryDimmed = activeHighlight !== null && activeHighlight !== cat.id;
           const isCategoryHighlighted = activeHighlight === cat.id;
@@ -270,12 +260,16 @@ export default function CostTimeline({
               onFocus={() => handleHighlight(cat.id)}
               onBlur={() => handleHighlight(null)}
               title={cat.label}
-              className={`flex items-center gap-2 min-w-0 max-w-full font-medium transition-[opacity,transform] duration-200 cursor-pointer rounded px-1.5 py-1 -mx-1.5 ${
-                isCategoryDimmed ? 'opacity-25' : 'opacity-100'
-              } ${isCategoryHighlighted ? 'bg-surface-subtle dark:bg-zinc-800 font-semibold scale-105' : 'text-body dark:text-zinc-300 hover:text-ink dark:hover:text-zinc-50'}`}
+              className={`min-h-[44px] sm:min-h-[32px] inline-flex items-center gap-2 min-w-0 max-w-full font-sans font-medium transition-opacity duration-150 cursor-pointer rounded-lg px-2 py-1 -mx-1 ${
+                isCategoryDimmed ? 'opacity-30' : 'opacity-100'
+              } ${
+                isCategoryHighlighted
+                  ? 'bg-surface-subtle dark:bg-zinc-800 text-ink dark:text-zinc-50 font-semibold'
+                  : 'text-body dark:text-zinc-300 hover:text-ink dark:hover:text-zinc-50'
+              }`}
             >
               <span
-                className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform duration-200"
+                className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: cat.color }}
                 aria-hidden="true"
               />

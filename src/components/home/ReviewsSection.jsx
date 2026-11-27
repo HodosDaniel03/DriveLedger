@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, ShieldCheck, CheckCircle2, FileText, Plus } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import CommunityInvoiceModal, { loadCommunityInvoices } from './CommunityInvoiceModal';
 import { RiskBadge } from '../common/OdometerPrimitives';
 import { useUnits } from '../../context/UnitContext';
@@ -123,10 +123,12 @@ export default function ReviewsSection({
   communityInvoices: externalInvoices,
   onOpenInvoiceModal,
   onInvoiceSubmitted,
+  embedded = false,
 }) {
   const { formatCurrency, formatDistance } = useUnits();
   const [localInvoices, setLocalInvoices] = useState(() => loadCommunityInvoices());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     setLocalInvoices(loadCommunityInvoices());
@@ -134,6 +136,7 @@ export default function ReviewsSection({
 
   const activeCommunityInvoices = externalInvoices !== undefined ? externalInvoices : localInvoices;
   const allReviews = [...activeCommunityInvoices, ...REVIEWS];
+  const visibleReviews = embedded && !showAll ? allReviews.slice(0, 4) : allReviews;
 
   const handleOpenModal = () => {
     if (onOpenInvoiceModal) {
@@ -152,119 +155,114 @@ export default function ReviewsSection({
   };
 
   return (
-    <section className="mb-12">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+    <section className={embedded ? '' : 'mb-10'}>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
         <div>
-          <span className="font-micro text-micro uppercase tracking-widest text-primary-600 dark:text-primary-400 font-semibold block">
-            Community Cost Notes &amp; Quote Benchmarks
-          </span>
-          <h2 className="text-2xl font-bold tracking-tight text-ink dark:text-zinc-100 mt-1">
+          <h3 className="text-h3 font-sans font-semibold tracking-tight text-ink dark:text-zinc-50">
             Owner Feedback &amp; Workshop Quote Comparisons
-          </h2>
+          </h3>
+          <p className="text-xs sm:text-sm font-sans text-muted dark:text-zinc-400 mt-1">
+            Independent specialist invoices benchmarked against franchise dealer service desk averages.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {activeCommunityInvoices.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-muted dark:text-zinc-400 font-sans font-medium">
-              <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-sans font-medium">
-                <span className="font-mono tabular-nums">{activeCommunityInvoices.length}</span> saved in your browser
-              </span>
-            </div>
+            <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40 text-[11px] font-sans font-medium">
+              <span className="font-mono tabular-nums">{activeCommunityInvoices.length}</span> saved locally
+            </span>
           )}
           <button
             type="button"
             onClick={handleOpenModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-sans font-semibold bg-subtle dark:bg-zinc-800 hover:bg-primary-50 dark:hover:bg-zinc-700 text-primary-700 dark:text-primary-300 border border-border dark:border-zinc-700 transition-colors"
+            className="min-h-[44px] sm:min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-sans font-semibold bg-surface-subtle dark:bg-zinc-800 hover:bg-canvas dark:hover:bg-zinc-700 text-[#183D22] dark:text-emerald-300 border border-border dark:border-zinc-700 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus aria-hidden="true" className="w-3.5 h-3.5" />
             <span>Compare Workshop Quote</span>
           </button>
         </div>
       </div>
 
       {allReviews.length === 0 ? (
-        <div className="p-8 rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-sm text-center max-w-2xl mx-auto">
-          <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-400 mx-auto mb-3">
-            <FileText className="w-5 h-5" />
+        <div className="p-8 rounded-xl bg-surface-subtle/60 dark:bg-zinc-900/50 border border-border/80 dark:border-zinc-800 text-center max-w-2xl mx-auto">
+          <div className="w-10 h-10 rounded-xl bg-surface dark:bg-zinc-800 border border-border dark:border-zinc-700 flex items-center justify-center text-primary-600 dark:text-emerald-400 mx-auto mb-3">
+            <FileText aria-hidden="true" className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-ink dark:text-zinc-100 mb-1.5">
-            Be the first to share your experience or compare a workshop quote
-          </h3>
+          <h4 className="text-base font-semibold text-ink dark:text-zinc-100 mb-1.5">
+            Compare a workshop quote against regional benchmarks
+          </h4>
           <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed mb-5">
-            DriveLedger is a newly launched independent project, and we do not display fabricated testimonials. You can compare your repair quote against our regional cost estimates and save your notes locally in your browser.
+            Evaluate parts and labor quotes locally in your browser with zero sign-up required.
           </p>
           <button
             type="button"
             onClick={handleOpenModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold bg-primary-600 hover:bg-primary-700 text-white transition-colors shadow-sm"
+            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-sans font-semibold bg-[#183D22] hover:bg-[#122E19] text-white transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus aria-hidden="true" className="w-4 h-4" />
             <span>Compare &amp; Save a Repair Quote</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {allReviews.map((rev) => (
-            <div
-              key={rev.id}
-              className="p-6 rounded-xl bg-surface dark:bg-[#121215] border border-border dark:border-zinc-800 shadow-sm hover:shadow-card-hover hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 ease-out flex flex-col justify-between min-w-0"
-            >
-              <div className="min-w-0">
-                {/* Rating Stars & Community Tag */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1 text-amber-500 shrink-0">
-                    {[...Array(rev.rating || 5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-                    ))}
-                  </div>
-                  {rev.isCommunitySubmission || rev.isBenchmarkSample ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 text-[11px] font-sans font-medium shrink-0">
-                      <FileText className="w-2.5 h-2.5" />
-                      <span>
-                        <span className="font-mono tabular-nums">
-                          {formatCurrency(Number(rev.amountPaid || 0))}
-                        </span>{' '}
-                        Quote
-                      </span>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {visibleReviews.map((rev) => (
+              <article
+                key={rev.id}
+                className="cq-card p-5 rounded-xl bg-surface-subtle/70 dark:bg-zinc-900/60 border border-border/80 dark:border-zinc-800 flex flex-col justify-between min-w-0"
+              >
+                <div className="min-w-0">
+                  {/* Single concise invoice badge + savings metric (static card: zero hover lift) */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <span className="text-xs font-sans font-semibold text-emerald-700 dark:text-emerald-400">
+                      {rev.benchmarkAvgUsd && rev.amountPaid
+                        ? `Saved ${formatCurrency(Math.max(0, rev.benchmarkAvgUsd - rev.amountPaid))} vs ${formatCurrency(rev.benchmarkAvgUsd)} dealer avg`
+                        : rev.savingsText}
                     </span>
-                  ) : (
-                    <RiskBadge level="low" label="Saved Note" />
-                  )}
-                </div>
-
-                {/* Savings / Benchmark Hook */}
-                <div className="mb-2 text-xs font-sans font-bold text-success-text dark:text-emerald-400 truncate">
-                  {rev.benchmarkAvgUsd && rev.amountPaid
-                    ? `Saved ${formatCurrency(Math.max(0, rev.benchmarkAvgUsd - rev.amountPaid))} vs ${formatCurrency(rev.benchmarkAvgUsd)} Dealer Avg`
-                    : rev.savingsText}
-                </div>
-
-                {rev.assembly && (
-                  <div className="mb-2 text-[11px] font-sans font-medium text-primary-600 dark:text-primary-400 truncate">
-                    Service: {rev.assembly}
+                    {rev.isCommunitySubmission || rev.isBenchmarkSample ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface dark:bg-zinc-800 text-ink dark:text-zinc-200 border border-border/80 dark:border-zinc-700 text-[11px] font-mono tabular-nums font-semibold shrink-0">
+                        {formatCurrency(Number(rev.amountPaid || 0))} paid
+                      </span>
+                    ) : (
+                      <RiskBadge level="low" label="Saved Note" />
+                    )}
                   </div>
-                )}
 
-                {/* Review Text */}
-                <p className="text-xs text-body dark:text-zinc-300 leading-relaxed mb-4">
-                  "{rev.review}"
-                </p>
-              </div>
+                  {rev.assembly && (
+                    <div className="mb-2 text-xs font-sans font-semibold text-ink dark:text-zinc-100 truncate">
+                      {rev.assembly}
+                    </div>
+                  )}
 
-              {/* Author & Vehicle Metadata */}
-              <div className="pt-3 border-t border-border dark:border-zinc-800 text-xs min-w-0">
-                <div className="font-bold text-ink dark:text-zinc-100 flex items-center justify-between gap-2 min-w-0">
-                  <span className="truncate">{rev.name}</span>
-                  <span className="text-[10px] font-code tabular-nums text-muted dark:text-zinc-400 flex items-center gap-1 shrink-0">
+                  <p className="text-xs font-sans text-body dark:text-zinc-300 leading-relaxed mb-4">
+                    &ldquo;{rev.review}&rdquo;
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-border/70 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs font-sans min-w-0">
+                  <div className="min-w-0 truncate">
+                    <span className="font-semibold text-ink dark:text-zinc-200">{rev.vehicle}</span>
+                    <span className="text-muted dark:text-zinc-400"> · {rev.name.split('·')[0].trim()}</span>
+                  </div>
+                  <span className="text-[11px] font-mono tabular-nums text-muted dark:text-zinc-400 shrink-0">
                     {rev.odometerMiles ? formatDistance(rev.odometerMiles) : rev.verifiedOdometer}
                   </span>
                 </div>
-                <div className="text-[11px] text-muted dark:text-zinc-400 truncate mt-0.5">
-                  {rev.vehicle} · {rev.role}
-                </div>
-              </div>
+              </article>
+            ))}
+          </div>
+
+          {embedded && allReviews.length > 4 && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowAll((prev) => !prev)}
+                className="min-h-[44px] sm:min-h-[38px] px-4 py-2 rounded-xl border border-border dark:border-zinc-800 bg-surface hover:bg-surface-subtle dark:bg-zinc-900 dark:hover:bg-zinc-800 text-xs font-sans font-semibold text-ink dark:text-zinc-200 transition-colors"
+              >
+                {showAll ? 'Show fewer benchmarks' : `View all ${allReviews.length} verified workshop benchmarks`}
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {!onOpenInvoiceModal && (

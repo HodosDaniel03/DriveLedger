@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Sliders, Check } from 'lucide-react';
-import { MONETIZATION_CONFIG } from '../../config/monetizationConfig';
 
 export const COOKIE_CONSENT_STORAGE_KEY = 'shiftmetric_cookie_consent';
 
@@ -208,45 +207,46 @@ export default function CookieConsentBanner({
     <aside
       data-testid="cookie-consent-banner"
       aria-label="GDPR and CCPA Cookie Consent Banner"
-      className={`fixed bottom-0 inset-x-0 ${isOpenOverride ? 'z-50' : 'z-40'} p-2 sm:p-3 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print`}
+      className={`fixed bottom-0 inset-x-0 ${isOpenOverride ? 'z-50' : 'z-40'} p-0 sm:p-3 safe-area-x safe-area-bottom pointer-events-none print:hidden no-print`}
     >
-      <div className="mx-auto max-w-[1280px] max-h-[85dvh] overflow-y-auto pointer-events-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-lg px-3.5 py-2.5 sm:px-5 sm:py-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 lg:gap-4">
+      <div className="mx-auto max-w-[1280px] max-h-[85dvh] overflow-y-auto pointer-events-auto rounded-none sm:rounded-2xl border-t sm:border border-border dark:border-zinc-800 bg-surface/95 dark:bg-[#121215]/95 backdrop-blur-md shadow-lg px-3 py-2 sm:px-5 sm:py-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-1.5 sm:gap-4">
           <div className="flex items-center gap-2.5 max-w-3xl min-w-0">
-            <div className="hidden sm:flex w-7 h-7 shrink-0 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
+            <div className="hidden sm:flex w-7 h-7 shrink-0 rounded-lg bg-primary-50 dark:bg-emerald-950/60 text-primary-600 dark:text-emerald-400 border border-primary-100 dark:border-emerald-800 items-center justify-center">
               <Shield className="w-3.5 h-3.5" aria-hidden="true" />
             </div>
             <p className="text-[11px] sm:text-xs font-sans text-body dark:text-zinc-300 leading-snug min-w-0">
-              <strong className="text-ink dark:text-zinc-50 font-semibold">Privacy &amp; Cookies:</strong>{' '}
-              {MONETIZATION_CONFIG.brandName} runs calculator math locally and uses essential storage plus, with consent, Google AdSense (DoubleClick DART) cookies.{' '}
+              We use essential cookies and, with consent, AdSense cookies.{' '}
               <a
                 href="#cookies"
                 onClick={(e) => {
                   e.preventDefault();
                   if (onOpenPolicyModal) onOpenPolicyModal('cookies');
                 }}
-                className="font-semibold text-primary-600 dark:text-primary-400 underline hover:text-primary-700 whitespace-nowrap"
+                className="font-semibold text-primary-600 dark:text-emerald-400 underline hover:text-primary-700 dark:hover:text-emerald-300 whitespace-nowrap"
               >
-                Cookie &amp; AdSense DART Policy
+                Cookie Policy
               </a>
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-nowrap shrink-0">
             <button
               type="button"
               data-testid="cookie-settings-toggle"
               onClick={() => setShowSettings((prev) => !prev)}
-              className="min-h-[38px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2.5 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg border border-border-strong dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-900 px-2.5 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-200 hover:bg-surface-container dark:hover:bg-zinc-800 transition-colors whitespace-nowrap"
             >
-              <Sliders className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Cookie Settings</span>
+              <Sliders className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>
+                <span className="sr-only sm:not-sr-only">Cookie </span>Settings
+              </span>
             </button>
             <button
               type="button"
               data-testid="cookie-essential-only"
               onClick={handleEssentialOnly}
-              className="min-h-[38px] sm:min-h-0 inline-flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center rounded-lg border border-border-strong dark:border-zinc-700 bg-surface dark:bg-zinc-900 px-2.5 sm:px-3 py-1.5 text-xs font-sans font-semibold text-ink dark:text-zinc-100 hover:bg-surface-subtle dark:hover:bg-zinc-800 transition-colors whitespace-nowrap"
             >
               Essential Only
             </button>
@@ -254,9 +254,9 @@ export default function CookieConsentBanner({
               type="button"
               data-testid="cookie-accept-all"
               onClick={handleAcceptAll}
-              className="min-h-[38px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-xs font-sans font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+              className="min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 px-3 sm:px-3.5 py-1.5 text-xs font-sans font-semibold text-white shadow-xs transition-colors whitespace-nowrap"
             >
-              <Check className="w-3.5 h-3.5" aria-hidden="true" />
+              <Check className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span>Accept All</span>
             </button>
           </div>
@@ -265,13 +265,13 @@ export default function CookieConsentBanner({
         {showSettings && (
           <div
             data-testid="cookie-granular-settings"
-            className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-sans"
+            className="mt-3 pt-3 border-t border-border dark:border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-sans"
           >
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 flex flex-col justify-between gap-2">
+            <div className="rounded-xl bg-surface-subtle/80 dark:bg-zinc-900/70 p-3 flex flex-col justify-between gap-2">
               <div>
                 <div className="flex items-center justify-between gap-2 font-semibold text-ink dark:text-zinc-100">
                   <span>1. Strictly Necessary Storage</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold shrink-0">
                     Always Active
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export default function CookieConsentBanner({
               </div>
             </div>
 
-            <label className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 flex flex-col justify-between gap-2 cursor-pointer">
+            <label className="rounded-xl bg-surface-subtle/80 dark:bg-zinc-900/70 p-3 flex flex-col justify-between gap-2 cursor-pointer">
               <div>
                 <div className="flex items-center justify-between gap-2 font-semibold text-ink dark:text-zinc-100">
                   <span>2. Anonymous Diagnostic Telemetry</span>
@@ -289,7 +289,7 @@ export default function CookieConsentBanner({
                     type="checkbox"
                     checked={analyticsEnabled}
                     onChange={(e) => setAnalyticsEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                    className="h-4 w-4 rounded border-border-strong dark:border-zinc-600 accent-primary-600 dark:accent-emerald-500"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-muted dark:text-zinc-400 leading-relaxed">
@@ -298,7 +298,7 @@ export default function CookieConsentBanner({
               </div>
             </label>
 
-            <label className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3 flex flex-col justify-between gap-2 cursor-pointer">
+            <label className="rounded-xl bg-surface-subtle/80 dark:bg-zinc-900/70 p-3 flex flex-col justify-between gap-2 cursor-pointer">
               <div>
                 <div className="flex items-center justify-between gap-2 font-semibold text-ink dark:text-zinc-100">
                   <span>3. Google AdSense &amp; DART Cookies</span>
@@ -306,7 +306,7 @@ export default function CookieConsentBanner({
                     type="checkbox"
                     checked={advertisingEnabled}
                     onChange={(e) => setAdvertisingEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500"
+                    className="h-4 w-4 rounded border-border-strong dark:border-zinc-600 accent-primary-600 dark:accent-emerald-500"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-muted dark:text-zinc-400 leading-relaxed">
@@ -315,14 +315,14 @@ export default function CookieConsentBanner({
               </div>
             </label>
 
-            <div className="md:col-span-3 flex items-center justify-between pt-1">
+            <div className="md:col-span-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
               <span className="text-[11px] text-muted dark:text-zinc-400">
                 CCPA / CPRA Notice: Selecting &ldquo;Essential Only&rdquo; enforces your &ldquo;Do Not Sell or Share My Personal Information&rdquo; opt-out right.
               </span>
               <button
                 type="button"
                 onClick={handleSaveCustom}
-                className="rounded-lg bg-ink dark:bg-zinc-100 px-4 py-1.5 text-xs font-sans font-semibold text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
+                className="min-h-[44px] sm:min-h-0 rounded-lg bg-ink dark:bg-zinc-100 px-4 py-1.5 text-xs font-sans font-semibold text-white dark:text-zinc-900 hover:opacity-90 transition-opacity shrink-0"
               >
                 Save Selected Preferences
               </button>

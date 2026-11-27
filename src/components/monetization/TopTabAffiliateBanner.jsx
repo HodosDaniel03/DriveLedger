@@ -89,19 +89,19 @@ export default function TopTabAffiliateBanner({
     return (
       <aside
         data-testid={`affiliate-banner-${config.type}`}
-        className={`relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+        className={`relative overflow-hidden rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 shadow-card print:hidden no-print ${className}`}
         aria-label="Partner Recommendation"
       >
         <div className="flex items-start gap-3.5 mb-3">
-          <div className="flex w-9 h-9 shrink-0 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
-            <IconComp className="w-4 h-4" />
+          <div className="flex w-9 h-9 shrink-0 rounded-xl bg-primary-50 dark:bg-emerald-950/60 text-primary-600 dark:text-emerald-400 border border-primary-100 dark:border-emerald-800 items-center justify-center">
+            <IconComp className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <Pill tone="neutral">
                 {config.badge}
               </Pill>
-              <span className="text-[11px] font-sans font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+              <span className="text-[11px] font-sans font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
                 {config.highlightBadge}
               </span>
             </div>
@@ -115,29 +115,29 @@ export default function TopTabAffiliateBanner({
           {config.description}
         </p>
 
-        <div className="flex flex-col gap-1.5 pt-1 pb-3 text-xs font-sans font-medium text-body dark:text-zinc-300 border-t border-zinc-200/70 dark:border-zinc-800">
+        <div className="flex flex-col gap-1.5 pt-1 pb-3 text-xs font-sans font-medium text-body dark:text-zinc-300 border-t border-border/70 dark:border-zinc-800">
           {config.features.map((feat) => (
             <span key={feat} className="inline-flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" aria-hidden="true" />
               <span>{feat}</span>
             </span>
           ))}
         </div>
 
-        <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800 flex flex-col gap-1">
+        <div className="pt-2 border-t border-border/70 dark:border-zinc-800 flex flex-col gap-1">
           <a
             href={config.href || linkProps.href}
             target={linkProps.target}
             rel={linkProps.rel}
-            className="group w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
+            className="group w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 px-4 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
           >
             <span>{config.ctaText}</span>
-            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 transition-transform duration-300 motion-reduce:transition-none group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" />
           </a>
           <span className="text-[10px] text-muted dark:text-zinc-400 font-sans text-center">
             {FTC_PROXIMATE_DISCLOSURE}
           </span>
-          <span className="text-[10px] text-faint dark:text-zinc-500 font-sans font-medium text-center">
+          <span className="text-[10px] text-muted dark:text-zinc-400 font-sans font-medium text-center">
             {config.trustProof}
           </span>
         </div>
@@ -148,13 +148,13 @@ export default function TopTabAffiliateBanner({
   return (
     <aside
       data-testid={`affiliate-banner-${config.type}`}
-      className={`relative overflow-hidden w-full max-w-full min-w-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+      className={`relative overflow-hidden w-full max-w-full min-w-0 rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-6 shadow-card print:hidden no-print ${className}`}
       aria-label="Partner Recommendation"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between min-w-0">
         <div className="flex items-start gap-4 max-w-3xl min-w-0">
-          <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800 items-center justify-center">
-            <IconComp className="w-5 h-5" />
+          <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-primary-50 dark:bg-emerald-950/60 text-primary-600 dark:text-emerald-400 border border-primary-100 dark:border-emerald-800 items-center justify-center">
+            <IconComp className="w-5 h-5" aria-hidden="true" />
           </div>
 
           <div className="space-y-2 min-w-0">
@@ -162,7 +162,7 @@ export default function TopTabAffiliateBanner({
               <Pill tone="neutral">
                 {config.badge}
               </Pill>
-              <span className="text-[11px] font-sans font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+              <span className="text-[11px] font-sans font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
                 {config.highlightBadge}
               </span>
               <span className="hidden md:inline text-[11px] font-sans font-medium text-muted dark:text-zinc-400">
@@ -182,7 +182,7 @@ export default function TopTabAffiliateBanner({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs font-sans font-medium text-body dark:text-zinc-300">
               {config.features.map((feat) => (
                 <span key={feat} className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" aria-hidden="true" />
                   <span>{feat}</span>
                 </span>
               ))}
@@ -195,15 +195,15 @@ export default function TopTabAffiliateBanner({
             href={config.href || linkProps.href}
             target={linkProps.target}
             rel={linkProps.rel}
-            className="group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-700 active:scale-[0.98]"
+            className="group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 px-5 py-2.5 text-xs font-sans font-semibold text-white shadow-sm transition-[background-color,transform] duration-150 motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
           >
             <span>{config.ctaText}</span>
-            <ArrowRight aria-hidden="true" className="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight aria-hidden="true" className="w-4 h-4 shrink-0 transition-transform duration-300 motion-reduce:transition-none group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" />
           </a>
           <span className="text-[11px] text-muted dark:text-zinc-400 font-sans">
             {FTC_PROXIMATE_DISCLOSURE}
           </span>
-          <span className="text-[10px] text-faint dark:text-zinc-500 font-sans font-medium">
+          <span className="text-[10px] text-muted dark:text-zinc-400 font-sans font-medium">
             {config.trustProof} ({config.region})
           </span>
         </div>

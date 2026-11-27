@@ -242,14 +242,14 @@ export default function VinCheckBanner({
       id="affiliate-cta-vin-check"
       data-testid="vin-check-banner"
       data-placement={placement}
-      className={`affiliate-cta-vin-check relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-5 shadow-card transition-[transform,box-shadow] duration-200 ease-out hover:shadow-card-hover print:hidden no-print ${className}`}
+      className={`affiliate-cta-vin-check relative overflow-hidden rounded-2xl border border-border dark:border-zinc-800 bg-surface dark:bg-[#121215] p-4 sm:p-5 shadow-card print:hidden no-print ${className}`}
       aria-label="carVertical Vehicle History Report"
     >
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
         <div className="flex items-center gap-2">
           <CarVerticalLogo withPill={true} imgClassName="h-5 w-auto object-contain" />
           {stepLabel && (
-            <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+            <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
               {stepLabel}
             </span>
           )}
@@ -260,17 +260,17 @@ export default function VinCheckBanner({
           type="button"
           onClick={handleCopyCode}
           title="Click to copy 20% discount coupon code"
-          className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-[11px] font-sans font-semibold text-[#0068FF] dark:text-blue-300 transition-colors cursor-pointer"
+          className="group min-h-[36px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-[11px] font-sans font-semibold text-[#0052CC] dark:text-blue-300 transition-colors cursor-pointer"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-mono text-emerald-700 dark:text-emerald-300">Code Copied!</span>
+              <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+              <span className="font-mono text-emerald-800 dark:text-emerald-300">Code Copied!</span>
             </>
           ) : (
             <>
               <span>Code: <span className="font-mono uppercase font-bold">{CARVERTICAL_DISCOUNT_CODE}</span> (20% OFF)</span>
-              <CopyIcon className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <CopyIcon className="w-3 h-3 opacity-70 group-hover:opacity-100 transition-opacity" />
             </>
           )}
         </button>
@@ -285,10 +285,10 @@ export default function VinCheckBanner({
       </p>
 
       {/* Verification Features Badges */}
-      <div className="flex flex-col gap-1.5 pt-1 pb-3 text-xs font-sans font-medium text-body dark:text-zinc-300 border-t border-zinc-200/70 dark:border-zinc-800">
+      <div className="flex flex-col gap-1.5 pt-1 pb-3 text-xs font-sans font-medium text-body dark:text-zinc-300 border-t border-border/70 dark:border-zinc-800">
         {features.map((feat) => (
           <span key={feat} className="inline-flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{feat}</span>
           </span>
         ))}
@@ -298,9 +298,9 @@ export default function VinCheckBanner({
       {isDecoding && (
         <div
           data-testid="vin-decoding-indicator"
-          className="mb-3 p-2.5 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/30 flex items-center gap-2 text-xs font-sans text-blue-700 dark:text-blue-300"
+          className="mb-3 p-2.5 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/30 flex items-center gap-2 text-xs font-sans text-[#0052CC] dark:text-blue-300"
         >
-          <RotateCcw className="w-4 h-4 animate-spin text-[#0068FF] shrink-0" />
+          <RotateCcw className="w-4 h-4 animate-spin motion-reduce:animate-none text-[#0052CC] dark:text-blue-300 shrink-0" aria-hidden="true" />
           <span>Contacting NHTSA vPIC database for official factory vehicle specifications...</span>
         </div>
       )}
@@ -311,7 +311,7 @@ export default function VinCheckBanner({
           data-testid="vin-decode-error"
           className="mb-3 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50/80 dark:bg-amber-950/30 flex items-start gap-2 text-xs font-sans text-amber-800 dark:text-amber-200"
         >
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
             <span>{decodeError}</span>
           </div>
@@ -326,13 +326,13 @@ export default function VinCheckBanner({
         >
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-600 animate-pulse motion-reduce:animate-none" />
+              <span className="text-[11px] font-sans font-bold text-emerald-800 dark:text-emerald-300">
                 Factory VIN Decoded
               </span>
             </div>
             {decodedData.PlantCountry && (
-              <span className="text-[10px] font-sans px-2 py-0.5 rounded-full bg-white/90 dark:bg-zinc-800/90 text-zinc-600 dark:text-zinc-300 border border-emerald-200 dark:border-emerald-900/40">
+              <span className="text-[10px] font-sans px-2 py-0.5 rounded-full bg-surface/90 dark:bg-zinc-800/90 text-body dark:text-zinc-300 border border-emerald-200 dark:border-emerald-900/40">
                 Plant: {decodedData.PlantCountry}
               </span>
             )}
@@ -356,14 +356,14 @@ export default function VinCheckBanner({
               </span>
             )}
             {engineBadge && (
-              <span className="px-2 py-0.5 rounded-md font-medium bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-emerald-200 dark:border-emerald-900/50">
+              <span className="px-2 py-0.5 rounded-md font-medium bg-surface dark:bg-zinc-800 text-body dark:text-zinc-200 border border-emerald-200 dark:border-emerald-900/50">
                 {engineBadge}
               </span>
             )}
           </div>
 
           {/* High-contrast conversion prompt verbatim */}
-          <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 text-xs font-sans leading-relaxed text-zinc-800 dark:text-zinc-200 shadow-sm">
+          <div className="p-2.5 rounded-lg bg-surface/90 dark:bg-zinc-900/90 text-xs font-sans leading-relaxed text-body dark:text-zinc-200">
             <p className="font-medium text-emerald-950 dark:text-emerald-200">
               Factory specifications confirmed. Note: Free government VIN decoding does NOT reveal odometer rollbacks, hidden accident damage, salvage titles, or theft records. Unlock the full history report on carVertical below (20% OFF code: mydriveledger).
             </p>
@@ -379,26 +379,27 @@ export default function VinCheckBanner({
               type="text"
               value={vinOrPlate}
               onChange={handleInputChange}
+              aria-label="Enter 17-digit VIN or License Plate"
               placeholder="Enter 17-digit VIN or License Plate (Optional)"
               maxLength={20}
-              className="w-full h-10 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-sans text-ink dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#0068FF] focus:border-transparent transition-all uppercase tracking-wide"
+              className="w-full min-h-[44px] px-3 rounded-lg border border-border-strong dark:border-border-strong bg-surface dark:bg-zinc-900 text-base sm:text-xs font-sans text-ink dark:text-zinc-100 placeholder-muted dark:placeholder-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0052CC] dark:focus-visible:outline-blue-400 transition-colors uppercase tracking-wide"
             />
           </div>
           <button
             type="button"
             onClick={() => triggerDecode(vinOrPlate)}
             disabled={isDecoding}
-            className="shrink-0 h-10 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 text-xs font-sans font-medium text-ink dark:text-zinc-200 transition-colors disabled:opacity-60 cursor-pointer"
+            className="shrink-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3 rounded-lg border border-border-strong dark:border-zinc-700 bg-surface-subtle dark:bg-zinc-800/80 hover:bg-surface-container dark:hover:bg-zinc-700/80 text-xs font-sans font-medium text-ink dark:text-zinc-200 transition-colors disabled:opacity-60 cursor-pointer"
             title="Decode official factory specifications via US NHTSA database"
           >
             {isDecoding ? (
               <>
-                <RotateCcw className="w-3.5 h-3.5 animate-spin text-[#0068FF]" />
+                <RotateCcw className="w-3.5 h-3.5 animate-spin motion-reduce:animate-none text-[#0052CC] dark:text-blue-300" aria-hidden="true" />
                 <span>Decoding Specs...</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                <Sparkles className="w-3.5 h-3.5 text-[#0052CC] dark:text-blue-400" aria-hidden="true" />
                 <span>Decode Free Factory Specs</span>
               </>
             )}
@@ -407,20 +408,20 @@ export default function VinCheckBanner({
             href={targetUrl}
             target="_blank"
             rel="sponsored noopener noreferrer"
-            className="group shrink-0 h-10 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-[#0068FF] hover:bg-[#0055d4] active:scale-[0.98] text-white text-xs font-sans font-semibold shadow-sm transition-[background-color,transform]"
+            className="group shrink-0 min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-[#0052CC] hover:bg-[#0041A3] active:scale-[0.98] motion-reduce:active:scale-100 text-white text-xs font-sans font-semibold shadow-sm transition-[background-color,transform] motion-reduce:transition-none"
           >
             <span>Check Vehicle History (20% OFF)</span>
-            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+            <ArrowRight aria-hidden="true" className="w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none group-hover:translate-x-0.5 motion-reduce:group-hover:translate-x-0" />
           </a>
         </div>
       </form>
 
-      <div className="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1">
+      <div className="pt-2.5 border-t border-border/70 dark:border-zinc-800 space-y-1">
         <div className="flex flex-wrap items-center justify-between text-[10px] font-sans text-muted dark:text-zinc-400">
           <span>{FTC_PROXIMATE_DISCLOSURE}</span>
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">Run Instant VIN Check · 20% OFF</span>
+          <span className="font-medium text-emerald-700 dark:text-emerald-400">Run Instant VIN Check · 20% OFF</span>
         </div>
-        <p className="text-[9.5px] font-sans text-faint dark:text-zinc-500 leading-normal">
+        <p className="text-[9.5px] font-sans text-muted dark:text-zinc-400 leading-normal">
           {CARVERTICAL_LEGAL_ATTRIBUTION}
         </p>
       </div>

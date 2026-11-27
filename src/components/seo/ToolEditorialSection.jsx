@@ -201,15 +201,11 @@ export default function ToolEditorialSection({
     <section
       id="tool-editorial-section"
       aria-label="Editorial Methodology and Technical Context"
-      className={`mt-12 bg-surface dark:bg-zinc-900 rounded-3xl p-6 sm:p-10 border border-border dark:border-zinc-800 shadow-sm space-y-8 editorial ${className}`}
+      className={`mt-12 bg-surface dark:bg-[#121215] rounded-2xl p-6 sm:p-8 border border-border/80 dark:border-zinc-800 shadow-card dark:shadow-none space-y-6 editorial ${className}`}
     >
       {/* Header */}
-      <div className="space-y-2 border-b border-border dark:border-zinc-800 pb-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-primary-50 dark:bg-emerald-950/60 text-primary-700 dark:text-emerald-300 border border-primary-100 dark:border-emerald-800">
-          <Info className="w-3.5 h-3.5" />
-          Technical Methodology &amp; Engineering White Paper
-        </div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-ink dark:text-zinc-50 tracking-tight">
+      <div className="space-y-1.5 border-b border-border/80 dark:border-zinc-800 pb-5">
+        <h2 className="text-h2 font-sans font-bold text-ink dark:text-zinc-50 tracking-tight">
           {data.title} {vehicleName ? `(${vehicleName})` : ''} {activeCode ? `[${activeCode}]` : ''}
         </h2>
         <p className="text-xs sm:text-sm text-muted dark:text-zinc-400">
@@ -225,10 +221,10 @@ export default function ToolEditorialSection({
           onClick={() => setOpenMethodology(!openMethodology)}
           aria-expanded={openMethodology}
           aria-controls={`tool-methodology-${tool}`}
-          className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-canvas dark:bg-zinc-900/60 border border-border dark:border-zinc-800 text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
+          className="min-h-[48px] w-full flex items-center justify-between p-4 rounded-xl bg-surface-subtle dark:bg-zinc-900/60 text-left font-bold text-sm sm:text-base text-ink dark:text-zinc-100 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
         >
           <span className="flex items-center gap-2.5">
-            <Calculator className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
+            <Calculator aria-hidden="true" className="w-4 h-4 text-primary-600 dark:text-emerald-400 shrink-0" />
             <span>How We Calculate This &amp; Engineering Methodology</span>
           </span>
           <ChevronDown
@@ -245,16 +241,16 @@ export default function ToolEditorialSection({
           searchable
           onBeforeMatch={() => setOpenMethodology(true)}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
             {data.pillars.map((pillar, idx) => {
               const Icon = pillar.icon;
               return (
                 <div
                   key={idx}
-                  className="p-5 sm:p-6 rounded-2xl bg-canvas dark:bg-zinc-900/60 border border-border dark:border-zinc-800 space-y-3"
+                  className="p-5 sm:p-6 rounded-xl bg-surface-subtle/80 dark:bg-zinc-900/60 space-y-3"
                 >
                   <div className="flex items-center gap-2.5 font-bold text-sm text-ink dark:text-zinc-100">
-                    <div className="p-2 rounded-xl bg-primary-50 dark:bg-zinc-800 text-primary-600 dark:text-emerald-400">
+                    <div className="p-2 rounded-lg bg-surface dark:bg-zinc-800 text-primary-600 dark:text-emerald-400">
                       <Icon className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <h3>{pillar.heading}</h3>
@@ -279,22 +275,22 @@ export default function ToolEditorialSection({
           Frequently Asked Questions &amp; Practical Advice
         </h3>
 
-        <div className="divide-y divide-border dark:divide-zinc-800">
+        <div className="divide-y divide-border/80 dark:divide-zinc-800">
           {data.faqs.map((faq, idx) => (
             <details
               key={idx}
               name={`tool-faq-${tool}`}
               open={idx === 0}
-              className="group py-3.5"
+              className="dl-disclosure group py-1"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-left font-semibold text-xs sm:text-sm text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors [&::-webkit-details-marker]:hidden">
+              <summary className="min-h-[44px] py-2.5 flex cursor-pointer items-center justify-between gap-3 text-left font-semibold text-xs sm:text-sm text-ink dark:text-zinc-200 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors">
                 <span>{faq.q}</span>
                 <ChevronDown
                   aria-hidden="true"
-                  className="w-4 h-4 shrink-0 text-muted transition-transform duration-200 group-open:rotate-180 group-open:text-primary-600 dark:group-open:text-emerald-400"
+                  className="w-4 h-4 shrink-0 text-muted dark:text-zinc-400 transition-transform duration-200 group-open:rotate-180 group-open:text-primary-600 dark:group-open:text-emerald-400"
                 />
               </summary>
-              <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed pt-2.5">
+              <p className="text-xs sm:text-sm text-body dark:text-zinc-300 leading-relaxed pb-3 max-w-[68ch] text-pretty">
                 {faq.a}
               </p>
             </details>

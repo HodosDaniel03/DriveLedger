@@ -30,8 +30,8 @@ export default function VehicleSilhouette({
 
   return (
     <div
-      className={`relative select-none overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 ${
-        interactive ? 'transition-transform duration-200 ease-out hover:scale-[1.02]' : ''
+      className={`relative aspect-[16/9] select-none overflow-hidden rounded-xl bg-surface-subtle dark:bg-zinc-900 ${
+        interactive ? 'transition-transform duration-200 ease-out motion-reduce:transition-none hover:scale-[1.02] motion-reduce:hover:scale-100' : ''
       } ${className}`}
       title={displayTitle}
       role="img"
@@ -41,6 +41,8 @@ export default function VehicleSilhouette({
         <img
           src={activeSrc}
           alt={displayTitle}
+          width={960}
+          height={540}
           loading="lazy"
           onError={() => {
             if (activeSrc !== fallbackSegmentUrl) {
@@ -52,11 +54,11 @@ export default function VehicleSilhouette({
           className="w-full h-full object-cover object-center block"
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 p-3 text-center">
-          <span className="font-sans text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle dark:bg-zinc-900 text-muted dark:text-zinc-400 p-3 text-center">
+          <span className="font-sans text-xs font-semibold text-ink dark:text-zinc-200">
             {vehicle?.shortName || vehicle?.name || 'Vehicle'}
           </span>
-          <span className="font-sans text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+          <span className="font-sans text-[11px] text-muted dark:text-zinc-400 mt-0.5">
             {archetypeLabel}
           </span>
         </div>

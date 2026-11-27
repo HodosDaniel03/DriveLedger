@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Car, Search, ShieldAlert, Calculator, CheckCircle2, ArrowLeft, ArrowRight, Wrench } from 'lucide-react';
+import { Search, ShieldAlert, Calculator, CheckCircle2, ArrowLeft, ArrowRight, Wrench } from 'lucide-react';
 import { VEHICLE_PRESETS } from '../data/vehiclePresets';
 import {
   BRAND_DIRECTORY,
@@ -107,7 +107,7 @@ export default function VehiclesCatalogPage({
                 onNavigateToBrand(null);
               }
             }}
-            className="inline-flex items-center gap-1.5 font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+            className="min-h-[44px] inline-flex items-center gap-1.5 py-2 font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>All {BRAND_DIRECTORY.length} Brands Directory</span>
@@ -117,27 +117,23 @@ export default function VehiclesCatalogPage({
         </nav>
 
         {/* Brand Hub Hero & Summary Telemetry */}
-        <header className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-6 sm:p-8 shadow-sm space-y-6">
+        <header className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card dark:shadow-none space-y-5">
           <div className="space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 dark:bg-emerald-950/50 border border-primary-100 dark:border-emerald-800 text-primary-700 dark:text-emerald-300 text-xs font-sans font-semibold uppercase tracking-wider">
-              <Car className="w-3.5 h-3.5" />
-              <span>{activeBrand.name} Reliability &amp; Ownership Hub</span>
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-sans font-extrabold tracking-tight text-ink dark:text-zinc-50">
+            <h1 className="text-h1 font-bold tracking-tight text-balance text-ink dark:text-zinc-50">
               {activeBrand.name} Maintenance Cost, 5-Year TCO &amp; Reliability (2026)
             </h1>
-            <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
+            <p className="text-sm sm:text-base font-sans text-pretty text-body dark:text-zinc-300 leading-relaxed max-w-[65ch]">
               {activeBrand.name} maintenance costs average {formatCurrency(brandTelemetry.avgAnnualMaintenanceUsd)}/yr ({formatCurrency(brandTelemetry.avg5YrMaintenanceUsd)} over 5 years). Compare 5-year True Cost to Own (TCO), non-linear depreciation, powertrain wear schedules, and pre-purchase inspection checklists across all {activeBrand.modelCount} benchmarked {activeBrand.name} configurations.
             </p>
           </div>
 
           {/* Brand-Level Quantitative Summary Metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 block">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-4 lg:gap-0 lg:divide-x divide-border/70 dark:divide-zinc-800 pt-4 border-t border-border/70 dark:border-zinc-800">
+            <div className="lg:px-4 lg:first:pl-0 min-w-0">
+              <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 block">
                 Benchmarked Models
               </span>
-              <span className="font-mono tabular-nums text-lg sm:text-xl font-bold text-ink dark:text-zinc-50">
+              <span className="font-mono tabular-nums text-lg sm:text-xl font-bold text-ink dark:text-zinc-50 mt-0.5 block">
                 {brandTelemetry.modelCount}
               </span>
               <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 truncate mt-0.5">
@@ -145,11 +141,11 @@ export default function VehiclesCatalogPage({
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 block">
+            <div className="lg:px-4 min-w-0">
+              <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 block">
                 Avg 5-Year TCO
               </span>
-              <span className="font-mono tabular-nums text-lg sm:text-xl font-bold text-ink dark:text-zinc-50">
+              <span className="font-mono tabular-nums text-lg sm:text-xl font-bold text-ink dark:text-zinc-50 mt-0.5 block">
                 {formatCurrency(brandTelemetry.avg5YrTcoUsd)}
               </span>
               <span className="block text-[11px] font-mono tabular-nums text-muted dark:text-zinc-400 mt-0.5">
@@ -157,11 +153,11 @@ export default function VehiclesCatalogPage({
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-muted dark:text-zinc-400 block">
+            <div className="lg:px-4 min-w-0">
+              <span className="text-xs font-sans font-medium text-muted dark:text-zinc-400 block">
                 5-Yr TCO Range
               </span>
-              <span className="font-mono tabular-nums text-base sm:text-lg font-bold text-ink dark:text-zinc-50">
+              <span className="font-mono tabular-nums text-base sm:text-lg font-bold text-ink dark:text-zinc-50 mt-0.5 block">
                 {formatCurrency(brandTelemetry.min5YrTcoUsd)} – {formatCurrency(brandTelemetry.max5YrTcoUsd)}
               </span>
               <span className="block text-[11px] font-sans text-muted dark:text-zinc-400 mt-0.5">
@@ -169,8 +165,8 @@ export default function VehiclesCatalogPage({
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50">
-              <span className="text-[11px] font-sans uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-semibold block">
+            <div className="lg:px-4 lg:last:pr-0 min-w-0">
+              <span className="text-xs font-sans font-semibold text-emerald-700 dark:text-emerald-400 block">
                 Lowest-Cost {activeBrand.name}
               </span>
               <a
@@ -182,11 +178,11 @@ export default function VehiclesCatalogPage({
                     onNavigateToTco(brandTelemetry.lowestTcoModel.preset.id);
                   }
                 }}
-                className="font-sans text-sm font-bold text-emerald-900 dark:text-emerald-200 hover:underline block truncate mt-0.5"
+                className="min-h-[44px] inline-flex items-center py-1 font-sans text-sm font-bold text-primary-600 dark:text-emerald-400 hover:underline max-w-full truncate"
               >
                 {brandTelemetry.lowestTcoModel.preset.shortName || brandTelemetry.lowestTcoModel.preset.name}
               </a>
-              <span className="block text-[11px] font-mono tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">
+              <span className="block text-[11px] font-mono tabular-nums text-emerald-700 dark:text-emerald-400">
                 {formatCurrency(brandTelemetry.lowestTcoModel.total5YrTcoUsd)} / 5 yrs
               </span>
             </div>
@@ -202,10 +198,11 @@ export default function VehiclesCatalogPage({
               <input
                 id="brand-hub-search"
                 type="search"
+                aria-label={`Filter ${activeBrand.name} models`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Filter ${activeBrand.name} models by engine code, trim, or known risk...`}
-                className="w-full h-11 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-canvas dark:bg-zinc-900 pl-10 pr-4 text-sm font-sans text-ink dark:text-zinc-100 placeholder:text-muted outline-none focus:border-primary-600"
+                className="w-full min-h-[44px] h-11 rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 pl-10 pr-4 text-base sm:text-sm font-sans text-ink dark:text-zinc-100 placeholder:text-muted outline-none focus:border-primary-600 dark:focus:border-emerald-500"
               />
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -215,11 +212,12 @@ export default function VehiclesCatalogPage({
                   <button
                     key={pf.id}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => setPowertrainFilter(pf.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-sans font-semibold border transition-colors ${
+                    className={`min-h-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-xs font-sans font-semibold border transition-colors ${
                       active
                         ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
-                        : 'bg-canvas dark:bg-zinc-900 text-body dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        : 'bg-surface-subtle dark:bg-zinc-900 text-body dark:text-zinc-300 border-border dark:border-zinc-800 hover:border-border-strong dark:hover:border-zinc-700'
                     }`}
                   >
                     {pf.label}
@@ -239,7 +237,7 @@ export default function VehiclesCatalogPage({
           </div>
 
           {filteredBrandModels.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-8 text-center text-sm text-muted dark:text-zinc-400">
+            <div className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-6 text-center text-sm text-muted dark:text-zinc-400 shadow-card dark:shadow-none">
               No {activeBrand.name} models match your active filter. Try resetting the powertrain filter or clearing the search box.
             </div>
           ) : (
@@ -249,7 +247,7 @@ export default function VehiclesCatalogPage({
                 return (
                   <article
                     key={car.id}
-                    className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 shadow-xs hover:border-primary-500/60 dark:hover:border-emerald-700 transition-colors flex flex-col justify-between gap-4 min-w-0"
+                    className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card dark:shadow-none flex flex-col justify-between gap-4 min-w-0"
                   >
                     <div className="space-y-3 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -264,47 +262,47 @@ export default function VehiclesCatalogPage({
                                   onNavigateToTco(car.id);
                                 }
                               }}
-                              className="hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
+                              className="inline-flex items-center min-h-[44px] py-1 text-base font-sans font-bold text-ink dark:text-zinc-50 hover:text-primary-600 dark:hover:text-emerald-400 hover:underline"
                             >
                               {car.name}
                             </a>
                           </h3>
-                          <p className="text-xs font-mono text-muted dark:text-zinc-400 mt-0.5 truncate">
+                          <p className="text-xs font-mono text-muted dark:text-zinc-400 truncate">
                             {car.engineCode} · {car.powerHp} HP · {car.fuelType}
                           </p>
                         </div>
-                        <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-sans font-semibold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                        <span className="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-sans font-medium bg-surface-subtle dark:bg-zinc-800/70 text-body dark:text-zinc-300 border border-border/80 dark:border-zinc-700/60 mt-2">
                           {car.segment || 'Standard'}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800">
-                          <span className="block text-[10px] uppercase tracking-wider text-muted dark:text-zinc-400 font-sans">
+                      <div className="grid grid-cols-2 divide-x divide-border/70 dark:divide-zinc-800 border-y border-border/70 dark:border-zinc-800/80 py-2.5 text-xs">
+                        <div className="pr-3 min-w-0">
+                          <span className="block text-xs text-muted dark:text-zinc-400 font-sans">
                             5-Year TCO
                           </span>
-                          <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100">
+                          <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100 mt-0.5 block">
                             {formatCurrency(item.total5YrTcoUsd)}
                           </span>
-                          <span className="block text-[10px] font-mono tabular-nums text-muted dark:text-zinc-400">
+                          <span className="block text-[11px] font-mono tabular-nums text-muted dark:text-zinc-400">
                             {formatCurrency(item.monthlyTcoUsd)}/mo
                           </span>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800">
-                          <span className="block text-[10px] uppercase tracking-wider text-muted dark:text-zinc-400 font-sans">
+                        <div className="pl-3 min-w-0">
+                          <span className="block text-xs text-muted dark:text-zinc-400 font-sans">
                             5-Yr Maintenance
                           </span>
-                          <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100">
+                          <span className="font-mono tabular-nums font-bold text-sm text-ink dark:text-zinc-100 mt-0.5 block">
                             {formatCurrency(item.maintenance5YrUsd)}
                           </span>
-                          <span className="block text-[10px] font-mono tabular-nums text-muted dark:text-zinc-400">
+                          <span className="block text-[11px] font-mono tabular-nums text-muted dark:text-zinc-400">
                             Base {formatDistance(car.defaultOdometerMiles || 35000)}
                           </span>
                         </div>
                       </div>
 
                       {car.criticalDefectTag && (
-                        <div className="flex items-start gap-2 text-[11px] font-sans text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/40 rounded-lg px-2.5 py-2">
+                        <div className="flex items-start gap-2 text-xs font-sans text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/25 rounded-xl px-3 py-2.5">
                           <Wrench className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                           <span className="line-clamp-2">
                             <strong>Watchpoint:</strong> {car.criticalDefectTag}
@@ -314,7 +312,7 @@ export default function VehiclesCatalogPage({
                     </div>
 
                     {/* Direct Action Links */}
-                    <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs font-sans font-semibold">
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 text-xs font-sans font-semibold">
                       <a
                         href={`/tco/${car.id}`}
                         onClick={(e) => {
@@ -324,7 +322,7 @@ export default function VehiclesCatalogPage({
                             onNavigateToTco(car.id);
                           }
                         }}
-                        className="inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors text-center"
+                        className="min-h-[44px] inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-lg bg-[#183D22] text-white hover:bg-[#183D22]/90 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors text-center"
                       >
                         <Calculator className="w-3.5 h-3.5 shrink-0" />
                         <span>TCO</span>
@@ -338,7 +336,7 @@ export default function VehiclesCatalogPage({
                             onNavigateToRisk(car);
                           }
                         }}
-                        className="inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-amber-800 dark:text-amber-300 hover:border-amber-500 transition-colors text-center"
+                        className="min-h-[44px] inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-lg bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-700 text-amber-800 dark:text-amber-300 hover:border-amber-500 transition-colors text-center"
                       >
                         <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                         <span>Risk</span>
@@ -352,7 +350,7 @@ export default function VehiclesCatalogPage({
                             onNavigateToChecklist(car.id);
                           }
                         }}
-                        className="inline-flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-emerald-800 dark:text-emerald-300 hover:border-emerald-500 transition-colors text-center"
+                        className="min-h-[44px] inline-flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-lg bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-700 text-emerald-800 dark:text-emerald-300 hover:border-emerald-500 transition-colors text-center"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                         <span>PPI</span>
@@ -368,10 +366,10 @@ export default function VehiclesCatalogPage({
         {/* Cross-Link Navigation to Other 34 Brand Hubs & Full Directory */}
         <nav
           aria-label="Explore Other Automotive Brands"
-          className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-xs space-y-3"
+          className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card dark:shadow-none space-y-3"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-sans font-bold uppercase tracking-wider text-ink dark:text-zinc-100">
+            <h2 className="text-base font-sans font-bold text-ink dark:text-zinc-100">
               Explore Other Manufacturers ({siblingBrands.length} Brands)
             </h2>
             <a
@@ -382,15 +380,15 @@ export default function VehiclesCatalogPage({
                   onNavigateToBrand(null);
                 }
               }}
-              className="inline-flex items-center gap-1 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
+              className="min-h-[44px] inline-flex items-center gap-1 py-2 text-xs font-sans font-semibold text-primary-600 dark:text-emerald-400 hover:underline"
             >
               <span>View All {VEHICLE_PRESETS.length} Vehicles</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>
-          <ul className="flex flex-wrap gap-1.5 text-xs font-sans">
+          <ul className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 text-xs font-sans">
             {siblingBrands.map((b) => (
-              <li key={b.slug}>
+              <li key={b.slug} className="min-w-0">
                 <a
                   href={`/vehicles/${b.slug}`}
                   onClick={(e) => {
@@ -399,10 +397,10 @@ export default function VehiclesCatalogPage({
                       onNavigateToBrand(b.slug);
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="min-h-[44px] w-full sm:w-auto justify-between sm:justify-start inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-border-strong dark:hover:border-zinc-700 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
-                  <span>{b.name}</span>
-                  <span className="text-[10px] font-mono tabular-nums text-muted dark:text-zinc-500">
+                  <span className="truncate">{b.name}</span>
+                  <span className="text-[11px] font-mono tabular-nums text-muted dark:text-zinc-500 shrink-0">
                     {b.modelCount}
                   </span>
                 </a>
@@ -420,22 +418,18 @@ export default function VehiclesCatalogPage({
   return (
     <div data-testid="vehicles-catalog-page" className="space-y-8">
       {/* Header */}
-      <header className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-6 sm:p-8 shadow-sm space-y-5">
+      <header className="rounded-2xl border border-border/80 dark:border-zinc-800/90 bg-surface dark:bg-[#121215] p-5 sm:p-6 shadow-card dark:shadow-none space-y-5">
         <div className="space-y-2 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 dark:bg-emerald-950/50 border border-primary-100 dark:border-emerald-800 text-primary-700 dark:text-emerald-300 text-xs font-sans font-semibold uppercase tracking-wider">
-            <Car className="w-3.5 h-3.5" />
-            <span>Complete HTML Vehicle Directory</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-sans font-extrabold tracking-tight text-ink dark:text-zinc-50">
+          <h1 className="text-h1 font-bold tracking-tight text-balance text-ink dark:text-zinc-50">
             All {BRAND_DIRECTORY.length} Brands &amp; {VEHICLE_PRESETS.length} Vehicle Telemetry Profiles
           </h1>
-          <p className="text-xs sm:text-sm font-sans text-body dark:text-zinc-300 leading-relaxed">
+          <p className="text-sm sm:text-base font-sans text-pretty text-body dark:text-zinc-300 leading-relaxed max-w-[65ch]">
             Explore every benchmarked vehicle in the DriveLedger database. Open any dedicated manufacturer hub below or jump straight to a model&apos;s 5-Year True Cost to Own (TCO) breakdown, Powertrain Maintenance Risk Matrix, or model-specific Pre-Purchase Inspection (PPI) checklist.
           </p>
         </div>
 
         {/* Search & Powertrain Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-3 pt-2">
+        <div className="flex flex-col md:flex-row gap-3 pt-1">
           <div className="relative flex-1">
             <Search
               aria-hidden="true"
@@ -444,10 +438,11 @@ export default function VehiclesCatalogPage({
             <input
               id="vehicles-catalog-search"
               type="search"
+              aria-label="Filter vehicle catalog by brand, model, engine code, or segment"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter by brand, model, engine code, or segment (e.g. BMW, TDI, Hybrid, Tesla)..."
-              className="w-full h-11 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-canvas dark:bg-zinc-900 pl-10 pr-4 text-sm font-sans text-ink dark:text-zinc-100 placeholder:text-muted outline-none focus:border-primary-600"
+              className="w-full min-h-[44px] h-11 rounded-xl border border-border dark:border-zinc-800 bg-surface-subtle dark:bg-zinc-900 pl-10 pr-4 text-base sm:text-sm font-sans text-ink dark:text-zinc-100 placeholder:text-muted outline-none focus:border-primary-600 dark:focus:border-emerald-500"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -457,11 +452,12 @@ export default function VehiclesCatalogPage({
                 <button
                   key={pf.id}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => setPowertrainFilter(pf.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-sans font-semibold border transition-colors ${
+                  className={`min-h-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-xs font-sans font-semibold border transition-colors ${
                     active
                       ? 'bg-[#183D22] text-white border-[#183D22] dark:bg-emerald-600 dark:border-emerald-500'
-                      : 'bg-canvas dark:bg-zinc-900 text-body dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                      : 'bg-surface-subtle dark:bg-zinc-900 text-body dark:text-zinc-300 border-border dark:border-zinc-800 hover:border-border-strong dark:hover:border-zinc-700'
                   }`}
                 >
                   {pf.label}
@@ -472,13 +468,13 @@ export default function VehiclesCatalogPage({
         </div>
 
         {/* Direct Links to Dedicated Brand Hub Pages (/vehicles/:brand) */}
-        <nav aria-label="Browse Dedicated Brand Hubs" className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
-          <span className="text-[10px] font-sans uppercase tracking-wider font-bold text-muted dark:text-zinc-400 block mb-2">
+        <nav aria-label="Browse Dedicated Brand Hubs" className="pt-3 border-t border-border/70 dark:border-zinc-800">
+          <span className="text-xs font-sans font-semibold text-muted dark:text-zinc-400 block mb-2">
             Dedicated Manufacturer Hubs ({BRAND_DIRECTORY.length} Brands)
           </span>
-          <ul className="flex flex-wrap gap-1.5 text-xs font-sans">
+          <ul className="flex overflow-x-auto sm:flex-wrap gap-2 pb-1 sm:pb-0 min-w-0 max-w-full text-xs font-sans">
             {BRAND_DIRECTORY.map((b) => (
-              <li key={b.slug}>
+              <li key={b.slug} className="shrink-0">
                 <a
                   href={`/vehicles/${b.slug}`}
                   onClick={(e) => {
@@ -487,10 +483,10 @@ export default function VehiclesCatalogPage({
                       onNavigateToBrand(b.slug);
                     }
                   }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-primary-500 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
+                  className="shrink-0 min-h-[44px] inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-subtle dark:bg-zinc-900 border border-border/80 dark:border-zinc-800 text-body dark:text-zinc-300 hover:border-border-strong dark:hover:border-zinc-700 hover:text-primary-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   <span>{b.name}</span>
-                  <span className="text-[10px] font-mono tabular-nums text-muted dark:text-zinc-500">
+                  <span className="text-[11px] font-mono tabular-nums text-muted dark:text-zinc-500">
                     {b.modelCount}
                   </span>
                 </a>
@@ -500,16 +496,16 @@ export default function VehiclesCatalogPage({
         </nav>
 
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-sans text-muted dark:text-zinc-400 pt-1">
-          <span className="inline-flex items-center gap-1">
-            <Calculator className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+        <div className="flex flex-wrap items-center gap-4 text-xs font-sans text-muted dark:text-zinc-400 pt-1">
+          <span className="inline-flex items-center gap-1.5">
+            <Calculator className="w-3.5 h-3.5 text-primary-600 dark:text-emerald-400" />
             <strong>TCO:</strong> 5-Year True Cost to Own
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1.5">
             <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <strong>Risk:</strong> Powertrain Risk Matrix &amp; Known Defects
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <strong>PPI:</strong> Pre-Purchase Inspection Checklist
           </span>
@@ -517,7 +513,7 @@ export default function VehiclesCatalogPage({
       </header>
 
       {/* Full Brand & Model HTML Catalog */}
-      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-surface dark:bg-[#121215] p-5 sm:p-7 shadow-sm">
+      <section className="space-y-4">
         <BrandModelDirectory
           onSelectPreset={onSelectPreset}
           onNavigateToTco={onNavigateToTco}
